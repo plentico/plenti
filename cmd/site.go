@@ -18,6 +18,8 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 )
@@ -55,6 +57,16 @@ var siteCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("site called")
+		newpath := filepath.Join(".", args[0])
+		os.MkdirAll(newpath, os.ModePerm)
+		dirs := []string{
+			filepath.Join(newpath, "assets"),
+			filepath.Join(newpath, "content"),
+			filepath.Join(newpath, "templates"),
+		}
+		for _, dir := range dirs {
+			os.MkdirAll(dir, os.ModePerm)
+		}
 	},
 }
 
