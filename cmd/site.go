@@ -16,6 +16,7 @@ limitations under the License.
 package cmd
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -23,7 +24,7 @@ import (
 
 // siteCmd represents the site command
 var siteCmd = &cobra.Command{
-	Use:   "site",
+	Use:   "site [name]",
 	Short: "Creates default folders and files for a new site",
 	Long: `The project scaffolding follows this convention:
 - config.yml = sitewide configuration
@@ -40,6 +41,18 @@ var siteCmd = &cobra.Command{
 - node_modules/ = frontend libraries managed by npm
 - package.json = npm configuration file
 `,
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) < 1 {
+			return errors.New("requires a name argument")
+		}
+		if len(args) > 1 {
+			return errors.New("names cannot have spaces")
+		}
+		if len(args) == 1 {
+			return nil
+		}
+		return fmt.Errorf("invalid name specified: %s", args[0])
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("site called")
 	},
