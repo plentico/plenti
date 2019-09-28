@@ -18,6 +18,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -57,16 +58,39 @@ var siteCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("site called")
+
+		// Create directory structure
 		newpath := filepath.Join(".", args[0])
 		os.MkdirAll(newpath, os.ModePerm)
 		dirs := []string{
 			filepath.Join(newpath, "assets"),
+			filepath.Join(newpath, "assets/css"),
+			filepath.Join(newpath, "assets/js"),
+			filepath.Join(newpath, "assets/img"),
 			filepath.Join(newpath, "content"),
+			filepath.Join(newpath, "content/pages"),
 			filepath.Join(newpath, "templates"),
+			filepath.Join(newpath, "templates/routed"),
+			filepath.Join(newpath, "templates/components"),
+			filepath.Join(newpath, "templates/layouts"),
 		}
 		for _, dir := range dirs {
 			os.MkdirAll(dir, os.ModePerm)
 		}
+
+		// Populate config.json
+		configDefaults := []byte(`{
+	"baseurl": "http://example.org/",
+	"title":   "My New Plenti Site",
+	"types": {
+		"pages": "/:filename"
+	}
+}`)
+		err := ioutil.WriteFile(newpath+"/config.json", configDefaults, 0755)
+		if err != nil {
+			fmt.Printf("Unable to write file: %v", err)
+		}
+
 	},
 }
 
