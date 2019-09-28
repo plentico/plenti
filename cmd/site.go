@@ -78,17 +78,43 @@ var siteCmd = &cobra.Command{
 			os.MkdirAll(dir, os.ModePerm)
 		}
 
-		// Populate config.json
-		configDefaults := []byte(`{
+		// Populate file defaults
+		defaults := map[string][]byte{
+			"/config.json": []byte(`{
 	"baseurl": "http://example.org/",
-	"title":   "My New Plenti Site",
+	"title": "My New Plenti Site",
 	"types": {
 		"pages": "/:filename"
 	}
-}`)
-		err := ioutil.WriteFile(newpath+"/config.json", configDefaults, 0755)
-		if err != nil {
-			fmt.Printf("Unable to write file: %v", err)
+}`),
+			"/content/pages/_archetype.json": []byte(`{
+	"title": "",
+	"desc": "",
+	"author": ""
+}`),
+			"/content/pages/_index.json": []byte(`{
+	"title": "My Site Homepage",
+	"intro": {
+		"slogan": "Welcome to a faster way to web",
+		"color": "red"
+	}
+}`),
+			"/content/pages/about.json": []byte(`{
+	"title": "About Me",
+	"desc": "Tell us about yourself",
+	"author" "Your name"
+}`),
+			"/content/pages/contact.json": []byte(`{
+	"title": "Contact",
+	"desc": "Maybe add a <a href='https://plentiform.com'>plentiform</a>?",
+	"author" "Your name"
+}`),
+		}
+		for file, content := range defaults {
+			err := ioutil.WriteFile(newpath+file, content, 0755)
+			if err != nil {
+				fmt.Printf("Unable to write file: %v", err)
+			}
 		}
 
 	},
