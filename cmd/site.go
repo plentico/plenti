@@ -22,6 +22,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"plenti/defaults"
+
 	"github.com/spf13/cobra"
 )
 
@@ -78,11 +80,19 @@ var siteCmd = &cobra.Command{
 			os.MkdirAll(dir, os.ModePerm)
 		}
 
-		// Populate default file code
-		for file, content := range defaults {
-			err := ioutil.WriteFile(newpath+file, content, 0755)
-			if err != nil {
-				fmt.Printf("Unable to write file: %v", err)
+		// Get code templates from defaults dir
+		allDefaults := []map[string][]byte{
+			defaults.Config,
+			defaults.Content,
+			defaults.Templates,
+		}
+		// Create files and populate default file code
+		for _, defaultGroup := range allDefaults {
+			for file, content := range defaultGroup {
+				err := ioutil.WriteFile(newpath+file, content, 0755)
+				if err != nil {
+					fmt.Printf("Unable to write file: %v", err)
+				}
 			}
 		}
 

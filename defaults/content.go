@@ -1,6 +1,6 @@
-package cmd
+package defaults
 
-var defaults = map[string][]byte{
+var Content = map[string][]byte{
 	"/config.json": []byte(`{
 	"baseurl": "http://example.org/",
 	"title": "My New Plenti Site",
