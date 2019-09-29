@@ -6,6 +6,10 @@ var Config = map[string][]byte{
 	"title": "My New Plenti Site",
 	"types": {
 		"pages": "/:filename"
+	},
+	"build": "public",
+	"local": {
+		"port": 3000
 	}
 }`),
 }

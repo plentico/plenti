@@ -82,6 +82,7 @@ var siteCmd = &cobra.Command{
 
 		// Get code templates from defaults dir
 		allDefaults := []map[string][]byte{
+			defaults.Assets,
 			defaults.Config,
 			defaults.Content,
 			defaults.Templates,
