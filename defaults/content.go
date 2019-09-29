@@ -1,13 +1,6 @@
 package defaults
 
 var Content = map[string][]byte{
-	"/config.json": []byte(`{
-	"baseurl": "http://example.org/",
-	"title": "My New Plenti Site",
-	"types": {
-		"pages": "/:filename"
-	}
-}`),
 	"/content/pages/_archetype.json": []byte(`{
 	"title": "",
 	"desc": "",

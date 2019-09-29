@@ -12,4 +12,5 @@ var Config = map[string][]byte{
 		"port": 3000
 	}
 }`),
+	"/.gitignore": []byte(`public`),
 }
