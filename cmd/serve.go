@@ -22,12 +22,16 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/spf13/cobra"
 )
 
 type SiteConfig struct {
 	Build string `json:"build"`
+	Local struct {
+		Port int `json:"port"`
+	} `json:"local"`
 }
 
 // serveCmd represents the serve command
@@ -67,9 +71,15 @@ You can also set a different port in your site config file.`,
 		fs := http.FileServer(http.Dir(buildDir))
 		http.Handle("/", fs)
 
+		port := 3000
+		// Attempt to set build directory from config file
+		if siteConfig.Local.Port > -1 {
+			port = siteConfig.Local.Port
+		}
+
 		// Start the webserver
-		fmt.Printf("Visit your site at http://localhost:3000/\n")
-		http.ListenAndServe(":3000", nil)
+		fmt.Printf("Visit your site at http://localhost:%v/\n", port)
+		http.ListenAndServe(":"+strconv.Itoa(port), nil)
 	},
 }
 
