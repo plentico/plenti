@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -40,7 +41,6 @@ your site config.
 
 You can also set a different port in your site config file.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("serve called")
 
 		// Read site config file from the project
 		configFile, _ := ioutil.ReadFile("config.json")
@@ -56,12 +56,19 @@ You can also set a different port in your site config file.`,
 			buildDir = siteConfig.Build
 		}
 
+		// Check that the build directory exists
+		if _, err := os.Stat(buildDir); os.IsNotExist(err) {
+			fmt.Printf("The \"%v\" build directory does not exist, check your config.json file.\n", buildDir)
+			log.Fatal(err)
+		} else {
+			fmt.Printf("Serving site from your \"%v\" directory.\n", buildDir)
+		}
 		// Point to folder containing the built site
 		fs := http.FileServer(http.Dir(buildDir))
 		http.Handle("/", fs)
 
 		// Start the webserver
-		log.Println("Listening on http://localhost:3000/")
+		fmt.Printf("Visit your site at http://localhost:3000/\n")
 		http.ListenAndServe(":3000", nil)
 	},
 }
