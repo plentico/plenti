@@ -51,7 +51,8 @@ You can also set a different port in your site config file.`,
 		var siteConfig SiteConfig
 		err := json.Unmarshal(configFile, &siteConfig)
 		if err != nil {
-			fmt.Printf("Unable to read config file: %v", err)
+			fmt.Printf("Unable to read config file.\n")
+			log.Fatal(err)
 		}
 
 		buildDir := "public"
