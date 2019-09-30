@@ -16,12 +16,18 @@ limitations under the License.
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 
 	"github.com/spf13/cobra"
 )
+
+type SiteConfig struct {
+	Build string `json:"build"`
+}
 
 // serveCmd represents the serve command
 var serveCmd = &cobra.Command{
@@ -35,9 +41,26 @@ your site config.
 You can also set a different port in your site config file.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("serve called")
-		fs := http.FileServer(http.Dir("public"))
+
+		// Read site config file from the project
+		configFile, _ := ioutil.ReadFile("config.json")
+		var siteConfig SiteConfig
+		err := json.Unmarshal(configFile, &siteConfig)
+		if err != nil {
+			fmt.Printf("Unable to read config file: %v", err)
+		}
+
+		buildDir := "public"
+		// Attempt to set build directory from config file
+		if siteConfig.Build != "" {
+			buildDir = siteConfig.Build
+		}
+
+		// Point to folder containing the built site
+		fs := http.FileServer(http.Dir(buildDir))
 		http.Handle("/", fs)
 
+		// Start the webserver
 		log.Println("Listening on http://localhost:3000/")
 		http.ListenAndServe(":3000", nil)
 	},
