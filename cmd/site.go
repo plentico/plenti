@@ -86,6 +86,7 @@ var siteCmd = &cobra.Command{
 			defaults.Config,
 			defaults.Content,
 			defaults.Templates,
+			defaults.Vendor,
 		}
 		// Create files and populate default file code
 		for _, defaultGroup := range allDefaults {
