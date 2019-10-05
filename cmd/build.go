@@ -18,8 +18,10 @@ package cmd
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
+	"plenti/readers"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -33,11 +35,17 @@ var buildCmd = &cobra.Command{
 of your choosing. The files that are created are all
 you need to deploy for your website.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("build called")
 
-		// TODO: use SiteConfig struct
-		newpath := filepath.Join(".", "public")
-		os.MkdirAll(newpath, os.ModePerm)
+		// Create build directory based on config file.
+		siteConfig := readers.GetSiteConfig()
+		newpath := filepath.Join(".", siteConfig.BuildDir)
+		err := os.MkdirAll(newpath, os.ModePerm)
+		if err != nil {
+			fmt.Printf("Unable to create \"%v\" build directory\n", siteConfig.BuildDir)
+			log.Fatal(err)
+		} else {
+			fmt.Printf("Creating \"%v\" build directory\n", siteConfig.BuildDir)
+		}
 
 		// TODO: replace hardcoded scaffolding
 		var publicHTML = map[string][]byte{
