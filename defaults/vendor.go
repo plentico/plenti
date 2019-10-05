@@ -9,17 +9,23 @@ node_modules`),
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "webpack --mode development"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@babel/core": "^7.6.2",
+    "@babel/preset-env": "^7.6.2",
     "react": "^16.10.1",
-		"react-dom": "^16.10.2"
-	},
-	"devDependencies": {
-		"@babel/preset-react": "^7.0.0"
-	}
+    "react-dom": "^16.10.2"
+  },
+  "devDependencies": {
+    "@babel/preset-react": "^7.0.0",
+    "babel-loader": "^8.0.6",
+    "webpack": "^4.41.0",
+    "webpack-cli": "^3.3.9"
+  }
 }`),
 	"/.babelrc": []byte(`{
   "presets": [
@@ -28,7 +34,7 @@ node_modules`),
   ]
 }`),
 	"/webpack.config.js": []byte(`module.exports = {
-  entry: './src/index.js',
+  entry: './templates/layouts/html.js',
   module: {
     rules: [
       {
@@ -42,12 +48,12 @@ node_modules`),
     extensions: ['*', '.js', '.jsx']
   },
   output: {
-    path: __dirname + '/dist',
+    path: __dirname + '/public/dist',
     publicPath: '/',
     filename: 'bundle.js'
   },
   devServer: {
-    contentBase: './dist'
+    contentBase: './public/dist'
   }
 };`),
 }
