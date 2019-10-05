@@ -18,7 +18,9 @@ package cmd
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -35,7 +37,9 @@ you need to deploy for your website.`,
 
 		// TODO: use SiteConfig struct
 		newpath := filepath.Join(".", "public")
+		os.MkdirAll(newpath, os.ModePerm)
 
+		// TODO: replace hardcoded scaffolding
 		var publicHTML = map[string][]byte{
 			"/index.html": []byte(`<!DOCTYPE html>
 <html>
@@ -43,13 +47,13 @@ you need to deploy for your website.`,
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
     <title>Home | Plenti</title>
-    link
   </head>
   <body>
     <h1>Welcome to Plenti</h1>
-    <a href="/about">About</a>
+    <p>Run <pre>npm install</pre> and <pre>npm run dev</pre> to get started.</p>
+    <p><a href="/about">About us</a>.</p>
     <div id="app"></div>
-    <script src="dist/bundle.js"></script>
+    <script src="/dist/bundle.js"></script>
   </body>
 </html>`),
 			"/about/index.html": []byte(`<!DOCTYPE html>
@@ -58,15 +62,26 @@ you need to deploy for your website.`,
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
     <title>About | Plenti</title>
-    link
   </head>
   <body>
     <h1>About page</h1>
-    <a href="/">Go home</a>.
+    <p><a href="/">Go home</a>.</p>
+    <div id="app"></div>
+    <script src="/dist/bundle.js"></script>
   </body>
 </html>`),
 		}
 		for file, content := range publicHTML {
+			subDirs := strings.Split(file, "/")
+			prevDir := newpath
+			for _, subDir := range subDirs {
+				// If a file extension exists, don't create directory
+				if strings.Contains(subDir, ".") {
+					break
+				}
+				os.MkdirAll(prevDir+subDir, os.ModePerm)
+				prevDir = prevDir + "/" + subDir
+			}
 			err := ioutil.WriteFile(newpath+file, content, 0755)
 			if err != nil {
 				fmt.Printf("Unable to write file: %v", err)
