@@ -16,23 +16,16 @@ limitations under the License.
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 
+	"plenti/readers"
+
 	"github.com/spf13/cobra"
 )
-
-type SiteConfig struct {
-	Build string `json:"build"`
-	Local struct {
-		Port int `json:"port"`
-	} `json:"local"`
-}
 
 // serveCmd represents the serve command
 var serveCmd = &cobra.Command{
@@ -46,30 +39,17 @@ your site config.
 You can also set a different port in your site config file.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		// Read site config file from the project
-		configFile, _ := ioutil.ReadFile("config.json")
-		var siteConfig SiteConfig
-		err := json.Unmarshal(configFile, &siteConfig)
-		if err != nil {
-			fmt.Printf("Unable to read config file.\n")
-			log.Fatal(err)
-		}
-
-		buildDir := "public"
-		// Attempt to set build directory from config file
-		if siteConfig.Build != "" {
-			buildDir = siteConfig.Build
-		}
+		siteConfig := readers.GetSiteConfig()
 
 		// Check that the build directory exists
-		if _, err := os.Stat(buildDir); os.IsNotExist(err) {
-			fmt.Printf("The \"%v\" build directory does not exist, check your config.json file.\n", buildDir)
+		if _, err := os.Stat(siteConfig.BuildDir); os.IsNotExist(err) {
+			fmt.Printf("The \"%v\" build directory does not exist, check your config.json file.\n", siteConfig.BuildDir)
 			log.Fatal(err)
 		} else {
-			fmt.Printf("Serving site from your \"%v\" directory.\n", buildDir)
+			fmt.Printf("Serving site from your \"%v\" directory.\n", siteConfig.BuildDir)
 		}
 		// Point to folder containing the built site
-		fs := http.FileServer(http.Dir(buildDir))
+		fs := http.FileServer(http.Dir(siteConfig.BuildDir))
 		http.Handle("/", fs)
 
 		port := 3000
