@@ -31,5 +31,10 @@ func GetSiteConfig() SiteConfig {
 		siteConfig.BuildDir = "public"
 	}
 
+	// If local server port is not set in config, use default
+	if siteConfig.Local.Port <= 0 {
+		siteConfig.Local.Port = 3000
+	}
+
 	return siteConfig
 }

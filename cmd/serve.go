@@ -52,15 +52,12 @@ You can also set a different port in your site config file.`,
 		fs := http.FileServer(http.Dir(siteConfig.BuildDir))
 		http.Handle("/", fs)
 
-		port := 3000
-		// Attempt to set build directory from config file
-		if siteConfig.Local.Port > -1 {
-			port = siteConfig.Local.Port
-		}
-
 		// Start the webserver
-		fmt.Printf("Visit your site at http://localhost:%v/\n", port)
-		http.ListenAndServe(":"+strconv.Itoa(port), nil)
+		fmt.Printf("Visit your site at http://localhost:%v/\n", siteConfig.Local.Port)
+		err := http.ListenAndServe(":"+strconv.Itoa(siteConfig.Local.Port), nil)
+		if err != nil {
+			log.Fatal(err)
+		}
 	},
 }
 

@@ -1,5 +1,5 @@
 /*
-Copyright © 2019 NAME HERE <EMAIL ADDRESS>
+Copyright © 2019 Jantcu jim.fisk@jantcu.com
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,6 +26,8 @@ import (
 
 	"github.com/spf13/cobra"
 )
+
+var BuildDirFlag string
 
 // buildCmd represents the build command
 var buildCmd = &cobra.Command{
@@ -102,8 +104,6 @@ you need to deploy for your website.`,
 		}
 	},
 }
-
-var BuildDirFlag string
 
 func init() {
 	rootCmd.AddCommand(buildCmd)
