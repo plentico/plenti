@@ -1,0 +1,90 @@
+/*
+Copyright © 2019 NAME HERE <EMAIL ADDRESS>
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+package cmd
+
+import (
+	"fmt"
+	"io/ioutil"
+	"path/filepath"
+
+	"github.com/spf13/cobra"
+)
+
+// buildCmd represents the build command
+var buildCmd = &cobra.Command{
+	Use:   "build",
+	Short: "Creates the static assets for your site",
+	Long: `Build generates the actual HTML, JS, and CSS into a directory
+of your choosing. The files that are created are all
+you need to deploy for your website.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("build called")
+
+		// TODO: use SiteConfig struct
+		newpath := filepath.Join(".", "public")
+
+		var publicHTML = map[string][]byte{
+			"/index.html": []byte(`<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>Home | Plenti</title>
+    link
+  </head>
+  <body>
+    <h1>Welcome to Plenti</h1>
+    <a href="/about">About</a>
+    <div id="app"></div>
+    <script src="dist/bundle.js"></script>
+  </body>
+</html>`),
+			"/about/index.html": []byte(`<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>About | Plenti</title>
+    link
+  </head>
+  <body>
+    <h1>About page</h1>
+    <a href="/">Go home</a>.
+  </body>
+</html>`),
+		}
+		for file, content := range publicHTML {
+			err := ioutil.WriteFile(newpath+file, content, 0755)
+			if err != nil {
+				fmt.Printf("Unable to write file: %v", err)
+			}
+		}
+	},
+}
+
+func init() {
+	rootCmd.AddCommand(buildCmd)
+
+	// Here you will define your flags and configuration settings.
+
+	// Cobra supports Persistent Flags which will work for this command
+	// and all subcommands, e.g.:
+	// buildCmd.PersistentFlags().String("foo", "", "A help for foo")
+
+	// Cobra supports local flags which will only run when this command
+	// is called directly, e.g.:
+	// buildCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
