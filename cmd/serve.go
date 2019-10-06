@@ -41,6 +41,8 @@ your site config.
 You can also set a different port in your site config file.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
+		buildCmd.Run(cmd, args)
+
 		siteConfig := readers.GetSiteConfig()
 
 		// Check that the build directory exists
