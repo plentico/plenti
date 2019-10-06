@@ -29,6 +29,18 @@ import (
 
 var BuildDirFlag string
 
+func setBuildDir(siteConfig readers.SiteConfig) string {
+	var buildDir string
+	// Check if directory is overridden by flag.
+	if BuildDirFlag != "" {
+		// If dir flag exists, use it.
+		buildDir = BuildDirFlag
+	} else {
+		buildDir = siteConfig.BuildDir
+	}
+	return buildDir
+}
+
 // buildCmd represents the build command
 var buildCmd = &cobra.Command{
 	Use:   "build",
@@ -38,22 +50,19 @@ of your choosing. The files that are created are all
 you need to deploy for your website.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		// Create build directory based on config file.
+		// Get settings from config file.
 		siteConfig := readers.GetSiteConfig()
 
-		// Check if directory is overridden by flag.
-		if BuildDirFlag != "" {
-			// If dir flag exists, use it.
-			siteConfig.BuildDir = BuildDirFlag
-		}
+		// Check flags and config for directory to build to
+		buildDir := setBuildDir(siteConfig)
 
-		newpath := filepath.Join(".", siteConfig.BuildDir)
+		newpath := filepath.Join(".", buildDir)
 		err := os.MkdirAll(newpath, os.ModePerm)
 		if err != nil {
-			fmt.Printf("Unable to create \"%v\" build directory\n", siteConfig.BuildDir)
+			fmt.Printf("Unable to create \"%v\" build directory\n", buildDir)
 			log.Fatal(err)
 		} else {
-			fmt.Printf("Creating \"%v\" build directory\n", siteConfig.BuildDir)
+			fmt.Printf("Creating \"%v\" build directory\n", buildDir)
 		}
 
 		// TODO: replace hardcoded scaffolding

@@ -41,26 +41,23 @@ your site config.
 You can also set a different port in your site config file.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		// Run build command before starting server
-		buildCmd.Run(cmd, args)
-
+		// Get settings from config file.
 		siteConfig := readers.GetSiteConfig()
 
-		// Check if directory is overridden by flag.
-		if BuildDirFlag != "" {
-			// If dir flag exists, use it.
-			siteConfig.BuildDir = BuildDirFlag
-		}
+		// Run build command before starting server
+		buildCmd.Run(cmd, args)
+		// Check flags and config for directory to build to
+		buildDir := setBuildDir(siteConfig)
 
 		// Check that the build directory exists
-		if _, err := os.Stat(siteConfig.BuildDir); os.IsNotExist(err) {
-			fmt.Printf("The \"%v\" build directory does not exist, check your config.json file.\n", siteConfig.BuildDir)
+		if _, err := os.Stat(buildDir); os.IsNotExist(err) {
+			fmt.Printf("The \"%v\" build directory does not exist, check your config.json file.\n", buildDir)
 			log.Fatal(err)
 		} else {
-			fmt.Printf("Serving site from your \"%v\" directory.\n", siteConfig.BuildDir)
+			fmt.Printf("Serving site from your \"%v\" directory.\n", buildDir)
 		}
 		// Point to folder containing the built site
-		fs := http.FileServer(http.Dir(siteConfig.BuildDir))
+		fs := http.FileServer(http.Dir(buildDir))
 		http.Handle("/", fs)
 
 		// Check if port is overridden by flag
