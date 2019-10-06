@@ -59,7 +59,6 @@ var siteCmd = &cobra.Command{
 		return fmt.Errorf("invalid name specified: %s", args[0])
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("site called")
 
 		// Create directory structure
 		newpath := filepath.Join(".", args[0])
@@ -97,6 +96,8 @@ var siteCmd = &cobra.Command{
 				}
 			}
 		}
+
+		fmt.Printf("Created plenti site scaffolding in \"%v\" folder\n", newpath)
 
 	},
 }
