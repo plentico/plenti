@@ -27,6 +27,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var PortFlag int
+
 // serveCmd represents the serve command
 var serveCmd = &cobra.Command{
 	Use:   "serve",
@@ -52,6 +54,11 @@ You can also set a different port in your site config file.`,
 		fs := http.FileServer(http.Dir(siteConfig.BuildDir))
 		http.Handle("/", fs)
 
+		// Check if port is overridden by flag
+		if PortFlag > 0 {
+			// If dir flag exists, use it
+			siteConfig.Local.Port = PortFlag
+		}
 		// Start the webserver
 		fmt.Printf("Visit your site at http://localhost:%v/\n", siteConfig.Local.Port)
 		err := http.ListenAndServe(":"+strconv.Itoa(siteConfig.Local.Port), nil)
@@ -73,4 +80,5 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// serveCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	serveCmd.Flags().IntVarP(&PortFlag, "port", "p", 0, "Port for local server")
 }
