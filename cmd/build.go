@@ -40,11 +40,13 @@ you need to deploy for your website.`,
 
 		// Create build directory based on config file.
 		siteConfig := readers.GetSiteConfig()
+
 		// Check if directory is overridden by flag.
 		if BuildDirFlag != "" {
 			// If dir flag exists, use it.
 			siteConfig.BuildDir = BuildDirFlag
 		}
+
 		newpath := filepath.Join(".", siteConfig.BuildDir)
 		err := os.MkdirAll(newpath, os.ModePerm)
 		if err != nil {

@@ -41,9 +41,16 @@ your site config.
 You can also set a different port in your site config file.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
+		// Run build command before starting server
 		buildCmd.Run(cmd, args)
 
 		siteConfig := readers.GetSiteConfig()
+
+		// Check if directory is overridden by flag.
+		if BuildDirFlag != "" {
+			// If dir flag exists, use it.
+			siteConfig.BuildDir = BuildDirFlag
+		}
 
 		// Check that the build directory exists
 		if _, err := os.Stat(siteConfig.BuildDir); os.IsNotExist(err) {
@@ -83,4 +90,5 @@ func init() {
 	// is called directly, e.g.:
 	// serveCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	serveCmd.Flags().IntVarP(&PortFlag, "port", "p", 0, "Port for local server")
+	serveCmd.Flags().StringVarP(&BuildDirFlag, "dir", "d", "", "Build directory to create")
 }
