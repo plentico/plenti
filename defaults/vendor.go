@@ -34,7 +34,7 @@ node_modules`),
   ]
 }`),
 	"/webpack.config.js": []byte(`module.exports = {
-  entry: './templates/layouts/html.js',
+  entry: './templates/entry.js',
   module: {
     rules: [
       {

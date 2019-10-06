@@ -1,25 +1,37 @@
 package defaults
 
 var Templates = map[string][]byte{
-	"/templates/layouts/html.js": []byte(`import React from 'react';
+	"/templates/entry.js": []byte(`import React from 'react';
 import ReactDOM from 'react-dom';
+import HTML from './layouts/html';
+
+ReactDOM.hydrate(
+	<HTML />,
+	document.getElementsByTagName('html')[0]
+);`),
+	"/templates/layouts/html.js": []byte(`import React, { Component } from 'react';
 import Head from './head';
 
 const title = "Home | Plenti";
 const heading = "Welcome to plenti!";
 const desc = "Your HTML page has been hydrated and you've enabled React with Webpack and Babel!";
 
-ReactDOM.hydrate(
-  <html>
-   <Head title={title} />
-    <body>
-      <h1>{heading}</h1>
-      <p>{desc}</p>
-      <p><a href="/about">About us</a>.</p>
-    </body>
-  </html>,
-	document.getElementsByTagName('html')[0]
-);`),
+class HTML extends Component {
+	render() {
+		return (
+			<html>
+				<Head title={title} />
+				<body>
+					<h1>{heading}</h1>
+					<p>{desc}</p>
+					<p><a href="/about">About us</a>.</p>
+				</body>
+			</html>
+		);
+	}
+}
+
+export default HTML;`),
 	"/templates/layouts/head.js": []byte(`import React, { Component } from 'react';
 
 class Head extends Component {
