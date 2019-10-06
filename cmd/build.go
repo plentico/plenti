@@ -128,5 +128,5 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// buildCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	buildCmd.Flags().StringVarP(&BuildDirFlag, "dir", "d", "", "Build directory to create")
+	buildCmd.Flags().StringVarP(&BuildDirFlag, "dir", "d", "", "change name of the build directory")
 }

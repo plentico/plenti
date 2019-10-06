@@ -28,6 +28,7 @@ import (
 )
 
 var PortFlag int
+var BuildFlag bool
 
 func setPort(siteConfig readers.SiteConfig) int {
 	var port int
@@ -57,8 +58,11 @@ You can also set a different port in your site config file.`,
 		// Get settings from config file.
 		siteConfig := readers.GetSiteConfig()
 
-		// Run build command before starting server
-		buildCmd.Run(cmd, args)
+		// Skip build command if BuildFlag is set to False
+		if BuildFlag {
+			// Run build command before starting server
+			buildCmd.Run(cmd, args)
+		}
 		// Check flags and config for directory to build to
 		buildDir := setBuildDir(siteConfig)
 
@@ -97,6 +101,7 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// serveCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	serveCmd.Flags().IntVarP(&PortFlag, "port", "p", 0, "Port for local server")
-	serveCmd.Flags().StringVarP(&BuildDirFlag, "dir", "d", "", "Build directory to create")
+	serveCmd.Flags().IntVarP(&PortFlag, "port", "p", 0, "change port for local server")
+	serveCmd.Flags().StringVarP(&BuildDirFlag, "dir", "d", "", "change name of the build directory")
+	serveCmd.Flags().BoolVarP(&BuildFlag, "build", "b", true, "set \"false\" to disable build step")
 }
