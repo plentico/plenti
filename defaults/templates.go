@@ -6,10 +6,11 @@ import ReactDOM from 'react-dom';
 import HTML from './layouts/html';
 
 ReactDOM.hydrate(
-	<HTML />,
-	document.getElementsByTagName('html')[0]
+  <HTML />,
+  document.getElementsByTagName('html')[0]
 );`),
 	"/templates/layouts/html.js": []byte(`import React, { Component } from 'react';
+import { BrowserRouter, Route, Link, Switch } from 'react-router-dom';
 import Head from './head';
 
 const title = "Home | Plenti";
@@ -17,18 +18,56 @@ const heading = "Welcome to plenti!";
 const desc = "Your HTML page has been hydrated and you've enabled React with Webpack and Babel!";
 
 class HTML extends Component {
-	render() {
-		return (
-			<html>
-				<Head title={title} />
-				<body>
-					<h1>{heading}</h1>
-					<p>{desc}</p>
-					<p><a href="/about">About us</a>.</p>
-				</body>
-			</html>
-		);
-	}
+  render() {
+    return (
+      <html>
+        <Head title={title} />
+        <body>
+          <BrowserRouter>
+            <Switch>
+              <Route exact path="/" component={Home} />
+              <Route path="/about" component={About} />
+              <Route component={NoMatch} />
+            </Switch>
+          </BrowserRouter>
+        </body>
+      </html>
+    );
+  }
+}
+
+class Home extends Component {
+  render() {
+    return (
+      <div>
+        <h1>{heading}</h1>
+        <p>{desc}</p>
+        <p>This is the home page. <Link to="/about">About us</Link>.</p>
+      </div>
+    );
+  }
+}
+
+class About extends Component {
+  render() {
+    return (
+      <div>
+        <h1>About</h1>
+        <p>This is the about page. <Link to="/">Go Home</Link>.</p>
+      </div>
+    );
+  }
+}
+
+class NoMatch extends React.Component {    
+  render() {
+    return (
+      <div>
+        <div>404: Nuttin here.</div>
+        <Link to="/">Go Home</Link>
+      </div>
+    );
+  }
 }
 
 export default HTML;`),

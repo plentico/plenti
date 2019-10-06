@@ -18,7 +18,8 @@ node_modules`),
     "@babel/core": "^7.6.2",
     "@babel/preset-env": "^7.6.2",
     "react": "^16.10.1",
-    "react-dom": "^16.10.2"
+    "react-dom": "^16.10.2",
+    "react-router-dom": "^5.1.2"
   },
   "devDependencies": {
     "@babel/preset-react": "^7.0.0",
