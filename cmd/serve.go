@@ -29,6 +29,19 @@ import (
 
 var PortFlag int
 
+func setPort(siteConfig readers.SiteConfig) int {
+	var port int
+	// Check if port is overridden by flag
+	if PortFlag > 0 {
+		// If dir flag exists, use it
+		port = PortFlag
+	} else {
+		// Else use value from config file
+		port = siteConfig.Local.Port
+	}
+	return port
+}
+
 // serveCmd represents the serve command
 var serveCmd = &cobra.Command{
 	Use:   "serve",
@@ -60,14 +73,12 @@ You can also set a different port in your site config file.`,
 		fs := http.FileServer(http.Dir(buildDir))
 		http.Handle("/", fs)
 
-		// Check if port is overridden by flag
-		if PortFlag > 0 {
-			// If dir flag exists, use it
-			siteConfig.Local.Port = PortFlag
-		}
+		// Check flags and config for local server port
+		port := setPort(siteConfig)
+
 		// Start the webserver
-		fmt.Printf("Visit your site at http://localhost:%v/\n", siteConfig.Local.Port)
-		err := http.ListenAndServe(":"+strconv.Itoa(siteConfig.Local.Port), nil)
+		fmt.Printf("Visit your site at http://localhost:%v/\n", port)
+		err := http.ListenAndServe(":"+strconv.Itoa(port), nil)
 		if err != nil {
 			log.Fatal(err)
 		}
