@@ -12,26 +12,37 @@ ReactDOM.hydrate(
 	"/templates/layouts/html.js": []byte(`import React, { Component } from 'react';
 import { BrowserRouter, Route, Link, Switch } from 'react-router-dom';
 import Head from './head';
+import Router from '../routes';
 
 const title = "Home | Plenti";
-const heading = "Welcome to plenti!";
-const desc = "Your HTML page has been hydrated and you've enabled React with Webpack and Babel!";
 
 class HTML extends Component {
   render() {
     return (
-      <html>
+      <html lang="en" dir="ltr">
         <Head title={title} />
         <body>
-          <BrowserRouter>
-            <Switch>
-              <Route exact path="/" component={Home} />
-              <Route path="/about" component={About} />
-              <Route component={NoMatch} />
-            </Switch>
-          </BrowserRouter>
+          <Router />
         </body>
       </html>
+    );
+  }
+}
+
+export default HTML;`),
+	"/templates/routes.js": []byte(`import React, { Component } from 'react';
+import { BrowserRouter, Route, Link, Switch } from 'react-router-dom';
+
+class Router extends Component {
+  render() {
+    return (
+      <BrowserRouter>
+        <Switch>
+          <Route exact path="/" component={Home} />
+          <Route path="/about" component={About} />
+          <Route component={NoMatch} />
+        </Switch>
+      </BrowserRouter>
     );
   }
 }
@@ -40,8 +51,7 @@ class Home extends Component {
   render() {
     return (
       <div>
-        <h1>{heading}</h1>
-        <p>{desc}</p>
+        <h1>Home</h1>
         <p>This is the home page. <Link to="/about">About us</Link>.</p>
       </div>
     );
@@ -70,7 +80,7 @@ class NoMatch extends React.Component {
   }
 }
 
-export default HTML;`),
+export default Router;`),
 	"/templates/layouts/head.js": []byte(`import React, { Component } from 'react';
 
 class Head extends Component {
