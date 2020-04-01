@@ -1,12 +1,13 @@
 package defaults
 
+// Content : default types
 var Content = map[string][]byte{
-	"/content/pages/_archetype.json": []byte(`{
+	"/content/pages/_blueprint.json": []byte(`{
 	"title": "",
 	"desc": "",
 	"author": ""
 }`),
-	"/content/pages/_index.json": []byte(`{
+	"/content/_index.json": []byte(`{
 	"title": "My Site Homepage",
 	"intro": {
 		"slogan": "Welcome to a faster way to web",

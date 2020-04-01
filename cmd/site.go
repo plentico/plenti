@@ -32,17 +32,18 @@ var siteCmd = &cobra.Command{
 	Use:   "site [name]",
 	Short: "Creates default folders and files for a new site",
 	Long: `The project scaffolding follows this convention:
-- config.yml = sitewide configuration
+- plenti.json = sitewide configuration
 - content/ = json files that hold site content
 - content/pages/ = regular site pages in json format
-- content/pages/_archetype.json = template for the structure of a typical page
+- content/pages/_blueprint.json = template for the structure of a typical page
 - content/pages/_index.json = the aggregate, or landing page
 - content/pages/about.json = an example page
 - content/pages/contact.json = another example page
-- templates/ =  all react components
-- templates/routed/ = page level react components that correspond to content
-- templates/components/ = smaller react components that are used within larger ones
-- templates/layouts/ = base level html wrappers
+- layout/ =  the html structure of the site
+- layout/content/ = node level structure that has a route and correspond to content
+- layout/components/ = smaller reusable structures that can be used within larger ones
+- layout/global/ = base level html wrappers
+- layout/static/ = holds assets like images or videos
 - node_modules/ = frontend libraries managed by npm
 - package.json = npm configuration file
 `,
@@ -64,16 +65,15 @@ var siteCmd = &cobra.Command{
 		newpath := filepath.Join(".", args[0])
 		os.MkdirAll(newpath, os.ModePerm)
 		dirs := []string{
-			filepath.Join(newpath, "assets"),
-			filepath.Join(newpath, "assets/css"),
-			filepath.Join(newpath, "assets/js"),
-			filepath.Join(newpath, "assets/img"),
 			filepath.Join(newpath, "content"),
 			filepath.Join(newpath, "content/pages"),
-			filepath.Join(newpath, "templates"),
-			filepath.Join(newpath, "templates/routed"),
-			filepath.Join(newpath, "templates/components"),
-			filepath.Join(newpath, "templates/layouts"),
+			filepath.Join(newpath, "layout"),
+			filepath.Join(newpath, "layout/content"),
+			filepath.Join(newpath, "layout/components"),
+			filepath.Join(newpath, "layout/global"),
+			filepath.Join(newpath, "layout/ejected"),
+			filepath.Join(newpath, "layout/static"),
+			filepath.Join(newpath, "public"),
 		}
 		for _, dir := range dirs {
 			os.MkdirAll(dir, os.ModePerm)
@@ -81,11 +81,11 @@ var siteCmd = &cobra.Command{
 
 		// Get code templates from defaults dir
 		allDefaults := []map[string][]byte{
-			defaults.Assets,
 			defaults.Config,
 			defaults.Content,
-			defaults.Templates,
+			defaults.Layout,
 			defaults.Vendor,
+			defaults.Public,
 		}
 		// Create files and populate default file code
 		for _, defaultGroup := range allDefaults {

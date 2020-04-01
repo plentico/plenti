@@ -1,7 +1,8 @@
 package defaults
 
+// Config : sitewide configuration file defaults
 var Config = map[string][]byte{
-	"/config.json": []byte(`{
+	"/plenti.json": []byte(`{
 	"baseurl": "http://example.org/",
 	"title": "My New Plenti Site",
 	"types": {

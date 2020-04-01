@@ -1,60 +1,96 @@
 package defaults
 
+// Vendor : default third party dependencies
 var Vendor = map[string][]byte{
 	"/.gitignore": []byte(`public
 node_modules`),
 	"/package.json": []byte(`{
-  "name": "plenti-default",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "webpack --mode development"
+    "name": "svelte-app",
+    "version": "1.0.0",
+    "scripts": {
+      "build": "rollup -c",
+      "dev": "rollup -c -w",
+      "start": "sirv public"
+    },
+    "devDependencies": {
+      "@rollup/plugin-commonjs": "^11.0.0",
+      "@rollup/plugin-node-resolve": "^6.0.0",
+      "rollup": "^1.20.0",
+      "rollup-plugin-livereload": "^1.0.0",
+      "rollup-plugin-svelte": "^5.0.3",
+      "rollup-plugin-terser": "^5.1.2",
+      "sirv-cli": "^0.4.4",
+      "svelte": "^3.0.0"
+    },
+    "dependencies": {
+      "navaid": "^1.0.5"
+    }
+  }`),
+	"/rollup.config.js": []byte(`import svelte from 'rollup-plugin-svelte';
+  import resolve from '@rollup/plugin-node-resolve';
+  import commonjs from '@rollup/plugin-commonjs';
+  import livereload from 'rollup-plugin-livereload';
+  import { terser } from 'rollup-plugin-terser';
+  
+  const production = !process.env.ROLLUP_WATCH;
+  
+  export default [{
+    input: 'layout/ejected/main.js',
+    output: {
+      sourcemap: true,
+      format: 'esm',
+      name: 'app',
+      dir: 'public/build/spa'
+    },
+    plugins: [
+      svelte({
+        dev: !production,
+        css: css => {
+          css.write('public/build/bundle.css');
+        }
+      }),
+      resolve({
+        browser: true,
+        dedupe: importee => importee === 'svelte' || importee.startsWith('svelte/')
+      }),
+      commonjs(),
+      !production && serve(),
+      !production && livereload('public'),
+      production && terser()
+    ],
+    watch: {
+      clearScreen: false
+    }
   },
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "@babel/core": "^7.6.2",
-    "@babel/preset-env": "^7.6.2",
-    "react": "^16.10.1",
-    "react-dom": "^16.10.2",
-    "react-router-dom": "^5.1.2"
-  },
-  "devDependencies": {
-    "@babel/preset-react": "^7.0.0",
-    "babel-loader": "^8.0.6",
-    "webpack": "^4.41.0",
-    "webpack-cli": "^3.3.9"
-  }
-}`),
-	"/.babelrc": []byte(`{
-  "presets": [
-    "@babel/preset-env",
-    "@babel/preset-react"
-  ]
-}`),
-	"/webpack.config.js": []byte(`module.exports = {
-  entry: './templates/entry.js',
-  module: {
-    rules: [
-      {
-        test: /\.(js|jsx)$/,
-        exclude: /node_modules/,
-        use: ['babel-loader']
-      }
+  {
+    input: 'layout/ejected/main.js',
+    output: {
+      sourcemap: true,
+      format: 'cjs',
+      name: 'app',
+      dir: 'public/build/static'
+    },
+    plugins: [
+      svelte({
+        generate: 'ssr'
+      }),
     ]
-  },
-  resolve: {
-    extensions: ['*', '.js', '.jsx']
-  },
-  output: {
-    path: __dirname + '/public/dist',
-    publicPath: '/',
-    filename: 'bundle.js'
-  },
-  devServer: {
-    contentBase: './public/dist'
-  }
-};`),
+  }];
+  
+  function serve() {
+    let started = false;
+  
+    return {
+      writeBundle() {
+        if (!started) {
+          started = true;
+  
+          require('child_process').spawn('npm', ['run', 'start', '--', '--dev'], {
+            stdio: ['ignore', 'inherit', 'inherit'],
+            shell: true
+          });
+        }
+      }
+    };
+  }`),
 }
