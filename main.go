@@ -1,5 +1,5 @@
 /*
-Copyright © 2019 NAME HERE <EMAIL ADDRESS>
+Copyright © 2019 Jim Fisk <jim.fisk@jantcu.com>
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@ limitations under the License.
 */
 package main
 
-//go:generate go run generator.go
+//go:generate go run generators/defaults.go
 
 import "plenti/cmd"
 
