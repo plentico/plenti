@@ -1,27 +1,31 @@
 package defaults
 
-// Content : default types
-var Content = map[string][]byte{
-	"/content/pages/_blueprint.json": []byte(`{
-	"title": "",
-	"desc": "",
-	"author": ""
-}`),
-	"/content/_index.json": []byte(`{
-	"title": "My Site Homepage",
-	"intro": {
-		"slogan": "Welcome to a faster way to web",
-		"color": "red"
+import (
+	"fmt"
+	"io/ioutil"
+	"log"
+	"path/filepath"
+)
+
+func getFileContents() []byte {
+	absPath, _ := filepath.Abs("index.json")
+	index, err := ioutil.ReadFile(absPath)
+	if err != nil {
+		log.Fatal(err)
 	}
-}`),
-	"/content/pages/about.json": []byte(`{
-	"title": "About Me",
-	"desc": "Tell us about yourself",
-	"author": "Your name"
-}`),
-	"/content/pages/contact.json": []byte(`{
-	"title": "Contact",
-	"desc": "Maybe add a <a href='https://plentiform.com'>plentiform</a>?",
-	"author": "Your name"
-}`),
+	fmt.Println(index)
+	return index
+}
+
+//var index, _ = ioutil.ReadFile("../defaults/content/_index.json")
+var blueprint, _ = ioutil.ReadFile("./content/_blueprint.json.go")
+var about, _ = ioutil.ReadFile("./content/about.json.go")
+var contact, _ = ioutil.ReadFile("./content/contact.json.go")
+
+// Content : default types of content
+var Content = map[string][]byte{
+	"/content/_index.json":           getFileContents(),
+	"/content/pages/_blueprint.json": blueprint,
+	"/content/pages/about.json":      about,
+	"/content/pages/contact.json":    contact,
 }

@@ -15,8 +15,10 @@ limitations under the License.
 */
 package main
 
+//go:generate go run generator.go
+
 import "plenti/cmd"
 
 func main() {
-  cmd.Execute()
+	cmd.Execute()
 }
