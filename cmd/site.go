@@ -60,26 +60,15 @@ var siteCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 
-		// Create directory structure
+		// Create base directory for site
 		newpath := filepath.Join(".", args[0])
 		os.MkdirAll(newpath, os.ModePerm)
-		dirs := []string{
-			filepath.Join(newpath, "content"),
-			filepath.Join(newpath, "content/pages"),
-			filepath.Join(newpath, "layout"),
-			filepath.Join(newpath, "layout/content"),
-			filepath.Join(newpath, "layout/components"),
-			filepath.Join(newpath, "layout/global"),
-			filepath.Join(newpath, "layout/ejected"),
-			filepath.Join(newpath, "layout/static"),
-			filepath.Join(newpath, "public"),
-		}
-		for _, dir := range dirs {
-			os.MkdirAll(dir, os.ModePerm)
-		}
 
-		// Create files and populate default file code
+		// Loop through generated file defaults to create site scaffolding
 		for file, content := range generated.Defaults {
+			// Create the directories needed for the current file
+			os.MkdirAll(newpath+filepath.Dir(file), os.ModePerm)
+			// Create the current default file
 			err := ioutil.WriteFile(newpath+file, content, 0755)
 			if err != nil {
 				fmt.Printf("Unable to write file: %v", err)
