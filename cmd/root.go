@@ -15,11 +15,11 @@ var cfgFile string
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "plenti",
-	Short: "SSG with Go backend and React frontend",
+	Short: "SSG with Go backend and Svelte frontend",
 	Long: `
 Plenti is a dead simple SSG by Plentico.
 Go backend = speedy builds
-React frontend = snappy displays
+Svelte frontend = snappy displays
 	
 Learn more at https://plenti.co`,
 	// Uncomment the following line if your bare application

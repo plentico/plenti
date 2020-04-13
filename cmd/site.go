@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"plenti/generated"
 
@@ -61,6 +62,14 @@ var siteCmd = &cobra.Command{
 		}
 
 		fmt.Printf("Created plenti site scaffolding in \"%v\" folder\n", newpath)
+
+		fmt.Printf("Installing NPM dependencies...\n")
+		command := exec.Command("npm", "install")
+		command.Dir = newpath
+		command.Stdout = os.Stdout
+		command.Stderr = os.Stderr
+		command.Run()
+		fmt.Printf("NPM install complete!")
 
 	},
 }
