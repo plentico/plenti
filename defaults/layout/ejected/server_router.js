@@ -37,13 +37,10 @@ nodes.forEach(node => {
   const component = relative(topLevelComponent, process.cwd()).default;
   let { html, css } = component.render(props);
   // Inject Style.
-  let style = `<style>${css.code}</style>`;
+  let style = "<style>" + css.code + "</style>";
   html = injectString('prepend', style, '</head>', html);
   // Inject SPA entry point.
-  let entryPoint = `
-  <script type="module" src="https://unpkg.com/dimport?module" data-main="/.spa/main.js"></script>
-  <script nomodule src="https://unpkg.com/dimport/nomodule" data-main="/.spa/main.js"></script>
-	`;
+  let entryPoint = '<script type="module" src="https://unpkg.com/dimport?module" data-main="/.spa/main.js"></script><script nomodule src="https://unpkg.com/dimport/nomodule" data-main="/.spa/main.js"></script>';
   html = injectString('prepend', entryPoint, '</head>', html);
   // Inject ID used to hydrate SPA.
   let hydrator = ' id="hydrate-plenti"';
