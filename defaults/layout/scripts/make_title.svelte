@@ -1,10 +1,5 @@
-<script>
-  import Head from './Head.svelte';
-import Nav from './Nav.svelte';
-
-export let Route, node, allNodes;
-
-  const makeTitle = filename => {
+<script context="module">
+  export const makeTitle = filename => {
   if (filename == '_index.json') {
     return 'Home';
   } else if (filename) {
@@ -18,13 +13,3 @@ export let Route, node, allNodes;
   return filename;
   }
 </script>
-
-<html lang="en">
-<Head title={makeTitle(node.filename)} />
-<body>
-  <Nav />
-  <main>
-    <svelte:component this={Route} {...node.fields} {allNodes} />
-  </main>
-</body>
-</html>

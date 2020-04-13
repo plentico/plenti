@@ -12,13 +12,13 @@ export default [{
         sourcemap: true,
         format: 'esm',
         name: 'app',
-        dir: 'public/build/spa'
+        dir: 'public/.spa'
     },
     plugins: [
         svelte({
             dev: !production,
             css: css => {
-                css.write('public/build/bundle.css');
+                css.write('public/.spa/bundle.css');
             }
         }),
         resolve({
@@ -33,20 +33,6 @@ export default [{
     watch: {
         clearScreen: false
     }
-},
-{
-    input: 'layout/ejected/main.js',
-    output: {
-        sourcemap: true,
-        format: 'cjs',
-        name: 'app',
-        dir: 'public/build/static'
-    },
-    plugins: [
-        svelte({
-            generate: 'ssr'
-        }),
-    ]
 }];
 
 function serve() {
