@@ -1,4 +1,5 @@
-import Router from './client_router.svelte';
+//import Router from './client_router.svelte';
+import Router from './client_router.js'; // Needs .js extension when built.
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/jim-service-worker.js')

@@ -3,7 +3,6 @@
 <script>
   import Navaid from 'navaid';
   import DataSource from './data_source.js';
-  import { onDestroy } from 'svelte';
   import Html from '../global/html.svelte';
 
   let Route, node, allNodes;
@@ -34,6 +33,4 @@
     .on('/:slug', () => import('../content/pages.svelte').then(draw))
     .on('/blog/:slug', () => import('../content/blog.svelte').then(draw))
     .listen();
-
-  onDestroy(router.unlisten);
 </script>
