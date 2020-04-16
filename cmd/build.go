@@ -31,11 +31,11 @@ of your choosing. The files that are created are all
 you need to deploy for your website.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		//command := exec.Command("npm", "install")
 		_, err := exec.Command("node", "layout/ejected/server_router.js").Output()
 		if err != nil {
 			panic(err)
 		}
+		exec.Command("npx", "snowpack", "--include", "'public/spa/**/*'", "--dest", "'public/spa/web_modules'").Output()
 
 		/*
 					// Get settings from config file.
