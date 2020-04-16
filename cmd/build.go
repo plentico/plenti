@@ -52,6 +52,7 @@ you need to deploy for your website.`,
 			fmt.Printf("Creating \"%v\" build directory\n", buildDir)
 		}
 
+		// Create list of all file paths in the "/layout" folder.
 		var layoutFiles []string
 		layoutFilesErr := filepath.Walk("layout", func(path string, info os.FileInfo, err error) error {
 			layoutFiles = append(layoutFiles, path)
@@ -70,8 +71,19 @@ you need to deploy for your website.`,
 				// Create any sub directories need for filepath.
 				os.MkdirAll(destFile, os.ModePerm)
 			}
+			excludedFiles := []string{
+				"layout/ejected/build_client.js",
+				"layout/ejected/build_static.js",
+				"layout/ejected/server_router.js",
+			}
+			excluded := false
+			for _, excludedFile := range excludedFiles {
+				if excludedFile == layoutFile {
+					excluded = true
+				}
+			}
 			// If the file is already .js just copy it straight over to build dir.
-			if filepath.Ext(layoutFile) == ".js" {
+			if filepath.Ext(layoutFile) == ".js" && !excluded {
 				from, err := os.Open(layoutFile)
 				if err != nil {
 					fmt.Printf("Could not open source .js file for copying: %s\n", err)
@@ -110,10 +122,15 @@ you need to deploy for your website.`,
 
 		}
 
-		_, snowpackErr := exec.Command("npx", "snowpack", "--include", "'public/spa/**/*'", "--dest", "'public/spa/web_modules'").Output()
-		if snowpackErr != nil {
-			fmt.Printf("Snowpack failed to build npm dependencies: %s\n", snowpackErr)
-		}
+		fmt.Println("Running snowpack to build dependencies for ESM support")
+		snowpack := exec.Command("npx", "snowpack", "--include", "'public/spa/**/*'", "--dest", "'public/spa/web_modules'")
+		snowpack.Stdout = os.Stdout
+		snowpack.Stderr = os.Stderr
+		snowpack.Run()
+		//_, snowpackErr := exec.Command("npx", "snowpack", "--include", "'public/spa/**/*'", "--dest", "'public/spa/web_modules'").Output()
+		//if snowpackErr != nil {
+		//	fmt.Printf("Snowpack failed to build npm dependencies: %s\n", snowpackErr)
+		//}
 
 	},
 }
