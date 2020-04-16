@@ -1,8 +1,15 @@
 package cmd
 
 import (
+	"fmt"
+	"io"
+	"io/ioutil"
+	"log"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"plenti/readers"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -31,11 +38,83 @@ of your choosing. The files that are created are all
 you need to deploy for your website.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		_, err := exec.Command("node", "layout/ejected/server_router.js").Output()
+		// Get settings from config file.
+		siteConfig := readers.GetSiteConfig()
+
+		// Check flags and config for directory to build to.
+		buildDir := setBuildDir(siteConfig)
+
+		// Create the build directory for the site.
+		buildPath := filepath.Join(".", buildDir)
+		err := os.MkdirAll(buildPath, os.ModePerm)
 		if err != nil {
-			panic(err)
+			fmt.Printf("Unable to create \"%v\" build directory\n", buildDir)
+			log.Fatal(err)
+		} else {
+			fmt.Printf("Creating \"%v\" build directory\n", buildDir)
 		}
-		exec.Command("npx", "snowpack", "--include", "'public/spa/**/*'", "--dest", "'public/spa/web_modules'").Output()
+
+		var layoutFiles []string
+		layoutFilesErr := filepath.Walk("layout", func(path string, info os.FileInfo, err error) error {
+			layoutFiles = append(layoutFiles, path)
+			return nil
+		})
+		if layoutFilesErr != nil {
+			fmt.Printf("Could not get layout file: %s", layoutFilesErr)
+		}
+
+		for _, layoutFile := range layoutFiles {
+			// Create destination path.
+			destFile := buildPath + strings.Replace(layoutFile, "layout", "/spa", 1)
+			// Ensure current path is not a file (i.e. it's a directory).
+			//if !strings.Contains(layoutFile, ".") {
+			// Make sure path is a directory
+			fileInfo, _ := os.Stat(layoutFile)
+			if fileInfo.IsDir() {
+				// Create any sub directories need for filepath.
+				os.MkdirAll(destFile, os.ModePerm)
+			}
+			// If the file is already .js just copy it straight over to build dir.
+			if filepath.Ext(layoutFile) == ".js" {
+				from, err := os.Open(layoutFile)
+				if err != nil {
+					log.Fatal(err)
+				}
+				defer from.Close()
+
+				to, err := os.Create(destFile)
+				if err != nil {
+					log.Fatal(err)
+				}
+				defer to.Close()
+
+				_, fileCopyErr := io.Copy(to, from)
+				if err != nil {
+					log.Fatal(fileCopyErr)
+				}
+			}
+			if filepath.Ext(layoutFile) == ".svelte" {
+				fileContentByte, readFileErr := ioutil.ReadFile(layoutFile)
+				if readFileErr != nil {
+					log.Fatal(readFileErr)
+				}
+				fileContentStr := string(fileContentByte)
+				//fmt.Printf("contents: %s\n", fileContentStr)
+				output, buildErr := exec.Command("node", "layout/ejected/build_client.js", fileContentStr).Output()
+				//fmt.Printf("svelte output: %s\n", output)
+				if buildErr != nil {
+					fmt.Printf("Could not compile svelte: %s", buildErr)
+				}
+				destFile = strings.TrimSuffix(destFile, filepath.Ext(destFile)) + ".js"
+				err := ioutil.WriteFile(destFile, output, 0755)
+				if err != nil {
+					fmt.Printf("Unable to write file: %v", err)
+				}
+			}
+
+		}
+
+		//exec.Command("npx", "snowpack", "--include", "'public/spa/**/*'", "--dest", "'public/spa/web_modules'").Output()
 
 		/*
 					// Get settings from config file.

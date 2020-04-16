@@ -7,6 +7,7 @@ import (
 	"log"
 )
 
+// SiteConfig is the site's configuration file values.
 type SiteConfig struct {
 	BuildDir string `json:"build"`
 	Local    struct {
@@ -14,12 +15,13 @@ type SiteConfig struct {
 	} `json:"local"`
 }
 
+// GetSiteConfig reads the site's configuration file values.
 func GetSiteConfig() SiteConfig {
 
 	var siteConfig SiteConfig
 
 	// Read site config file from the project
-	configFile, _ := ioutil.ReadFile("config.json")
+	configFile, _ := ioutil.ReadFile("plenti.json")
 	err := json.Unmarshal(configFile, &siteConfig)
 	if err != nil {
 		fmt.Printf("Unable to read config file.\n")

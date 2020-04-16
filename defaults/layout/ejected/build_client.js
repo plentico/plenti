@@ -7,3 +7,5 @@ const args = process.argv.slice(2)
 export let { js, css } = svelte.compile(args[0], {
 	css: false
 });
+
+console.log(js.code);
