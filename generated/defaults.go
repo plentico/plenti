@@ -106,7 +106,10 @@ export let { js, css } = svelte.compile(args[0], {
 	css: false
 });
 
-console.log(js.code);`),
+// Return values to write files in Go.
+console.log(js.code);
+console.log("!plenti-split!");
+console.log(css.code);`),
 	"/layout/ejected/build_static.js": []byte(`import 'svelte/register.js';
 import relative from 'require-relative';
 

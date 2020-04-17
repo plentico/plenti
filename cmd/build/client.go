@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -67,17 +68,51 @@ func Client(buildPath string) {
 				fmt.Printf("Could not read contents of svelte source file: %s\n", readFileErr)
 			}
 			fileContentStr := string(fileContentByte)
-			//fmt.Printf("contents: %s\n", fileContentStr)
-			output, buildErr := exec.Command("node", "layout/ejected/build_client.js", fileContentStr).Output()
-			//fmt.Printf("svelte output: %s\n", output)
+			compiledBytes, buildErr := exec.Command("node", "layout/ejected/build_client.js", fileContentStr).Output()
 			if buildErr != nil {
-				fmt.Printf("Could not compile svelte: %s", buildErr)
+				fmt.Printf("Could not compile svelte to JS: %s\n", buildErr)
 			}
 			destFile = strings.TrimSuffix(destFile, filepath.Ext(destFile)) + ".js"
-			err := ioutil.WriteFile(destFile, output, 0755)
+			compiledStr := string(compiledBytes)
+			compiledStrs := strings.Split(compiledStr, "!plenti-split!")
+			//fmt.Println(compiledStrs)
+			//fmt.Println(compiledStrs[0])
+			jsStr := strings.TrimSpace(compiledStrs[0])
+			//fmt.Println(compiledStrs[1])
+			cssStr := strings.TrimSpace(compiledStrs[1])
+			jsStr = strings.Replace(jsStr, ".svelte", ".js", -1)
+			jsStr = strings.Replace(jsStr, "from \"svelte/internal\";", "from \"../web_modules/svelte/internal/index.js\";", -1)
+			jsStr = strings.Replace(jsStr, "from \"navaid\";", "from \"../web_modules/navaid.js\";", -1)
+			jsBytes := []byte(jsStr)
+			err := ioutil.WriteFile(destFile, jsBytes, 0755)
 			if err != nil {
 				fmt.Printf("Unable to write file: %v", err)
 			}
+			if cssStr != "null" {
+				cssFile, WriteStyleErr := os.OpenFile(buildPath+"/spa/bundle.css", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+				if WriteStyleErr != nil {
+					fmt.Printf("Could not open bundle.css for writing: %s", WriteStyleErr)
+				}
+				defer cssFile.Close()
+				if _, err := cssFile.WriteString(cssStr); err != nil {
+					log.Println(err)
+				}
+			}
+			/*
+				compiledStyle, buildStyleErr := exec.Command("node", "layout/ejected/build_client.js", fileContentStr, "css").Output()
+				compiledStyleString := string(compiledStyle)
+				if buildStyleErr != nil {
+					fmt.Printf("Could not compile svelte to CSS: %s\n", buildStyleErr)
+				}
+				cssFile, WriteStyleErr := os.OpenFile(buildPath+"/spa/bundle.css", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+				if WriteStyleErr != nil {
+					fmt.Printf("Could not write CSS: %s", WriteStyleErr)
+				}
+				defer cssFile.Close()
+				if _, err := cssFile.WriteString(compiledStyleString); err != nil {
+					log.Println(err)
+				}
+			*/
 		}
 
 	}
