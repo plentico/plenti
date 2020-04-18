@@ -10,7 +10,7 @@ import (
 )
 
 // DataSource builds json list from "content/" directory.
-func DataSource(buildPath string) map[string][]byte {
+func DataSource(buildPath string) []string {
 
 	nodesJSPath := buildPath + "/spa/ejected/nodes.js"
 	os.MkdirAll(buildPath+"/spa/ejected", os.ModePerm)
@@ -26,8 +26,7 @@ func DataSource(buildPath string) map[string][]byte {
 		fmt.Printf("Unable to write nodes.js file: %v", err)
 	}
 
-	//var contentFiles []string
-	var contentFiles map[string][]byte
+	var contentFiles []string
 	// Go through all sub directories in "content/" folder.
 	contentFilesErr := filepath.Walk("content", func(path string, info os.FileInfo, err error) error {
 		//contentFiles = append(contentFiles, path)
@@ -81,16 +80,11 @@ func DataSource(buildPath string) map[string][]byte {
 		fmt.Printf("Could not open nodes.js for writing: %s", openNodesJSErr)
 	}
 	defer nodesJSFile.Close()
-	nodesJSStr := "\n" + `];
-
-export default nodes;`
+	nodesJSStr := "\n];\n\nexport default nodes;"
 	if _, err := nodesJSFile.WriteString(nodesJSStr); err != nil {
 		log.Println(err)
 	}
-	/*
-		for _, contentFile := range contentFiles {
-		}
-	*/
+
 	return contentFiles
 
 }

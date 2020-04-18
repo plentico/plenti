@@ -23,12 +23,14 @@ func Client(buildPath string) {
 		fmt.Printf("Could not get layout file: %s", layoutFilesErr)
 	}
 
-	// Clear out any previous CSS.
 	stylePath := buildPath + "/spa/bundle.css"
-	deleteStyleErr := os.Remove(stylePath)
-	if deleteStyleErr != nil {
-		fmt.Println(deleteStyleErr)
-		return
+	// Clear out any previous CSS.
+	if _, stylePathExistsErr := os.Stat(stylePath); stylePathExistsErr == nil {
+		deleteStyleErr := os.Remove(stylePath)
+		if deleteStyleErr != nil {
+			fmt.Println(deleteStyleErr)
+			return
+		}
 	}
 
 	for _, layoutFile := range layoutFiles {
