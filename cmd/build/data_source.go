@@ -12,6 +12,10 @@ import (
 // DataSource builds json list from "content/" directory.
 func DataSource(buildPath string) []string {
 
+	fmt.Println("\nGathering data source from \"content/\" folder")
+
+	contentFileCounter := 0
+
 	nodesJSPath := buildPath + "/spa/ejected/nodes.js"
 	os.MkdirAll(buildPath+"/spa/ejected", os.ModePerm)
 	// Delete any previous nodes.js file.
@@ -66,6 +70,7 @@ func DataSource(buildPath string) []string {
 				if _, err := nodesJSFile.WriteString(contentsStr); err != nil {
 					log.Println(err)
 				}
+				contentFileCounter++
 			}
 		}
 		return nil
@@ -84,6 +89,8 @@ func DataSource(buildPath string) []string {
 	if _, err := nodesJSFile.WriteString(nodesJSStr); err != nil {
 		log.Println(err)
 	}
+
+	fmt.Printf("Number of content files used: %d\n", contentFileCounter)
 
 	return contentFiles
 

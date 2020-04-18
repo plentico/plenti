@@ -66,11 +66,8 @@ you need to deploy for your website.`,
 		elapsed = time.Since(start)
 		fmt.Printf("Creating client SPA took %s\n", elapsed)
 
-		start = time.Now()
 		// Run Snowpack.
 		build.Snowpack()
-		elapsed = time.Since(start)
-		fmt.Printf("Snowpack took %s\n", elapsed)
 
 		start = time.Now()
 		// Build the static HTML.

@@ -14,6 +14,8 @@ import (
 // Client builds the SPA.
 func Client(buildPath string) {
 
+	fmt.Println("\nBuilding client SPA using svelte compiler")
+
 	stylePath := buildPath + "/spa/bundle.css"
 	// Clear out any previous CSS.
 	if _, stylePathExistsErr := os.Stat(stylePath); stylePathExistsErr == nil {
@@ -23,6 +25,9 @@ func Client(buildPath string) {
 			return
 		}
 	}
+
+	copiedSourceCounter := 0
+	compiledComponentCounter := 0
 
 	// Go through all file paths in the "/layout" folder.
 	layoutFilesErr := filepath.Walk("layout", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
@@ -64,6 +69,7 @@ func Client(buildPath string) {
 			if err != nil {
 				fmt.Printf("Could not copy .js from source to destination: %s\n", fileCopyErr)
 			}
+			copiedSourceCounter++
 		}
 		// If the file is in .svelte format, compile it to .js
 		if filepath.Ext(layoutPath) == ".svelte" {
@@ -94,6 +100,7 @@ func Client(buildPath string) {
 			if err != nil {
 				fmt.Printf("Unable to write file: %v", err)
 			}
+			compiledComponentCounter++
 
 			// Get the CSS only from the script output.
 			cssStr := strings.TrimSpace(compiledStrArray[1])
@@ -114,5 +121,8 @@ func Client(buildPath string) {
 	if layoutFilesErr != nil {
 		fmt.Printf("Could not get layout file: %s", layoutFilesErr)
 	}
+
+	fmt.Printf("Number of source files copied: %d\n", copiedSourceCounter)
+	fmt.Printf("Number of components compiled: %d\n", compiledComponentCounter)
 
 }
