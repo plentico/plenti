@@ -52,13 +52,13 @@ you need to deploy for your website.`,
 		}
 
 		// Build JSON from "content/" directory.
-		//nodesList := build.DataSource(buildPath)
+		nodesList := build.DataSource(buildPath)
 
 		// Build the client SPA.
 		build.Client(buildPath)
 
 		// Build the static HTML.
-		//build.Static(nodesList)
+		build.Static(nodesList)
 
 	},
 }

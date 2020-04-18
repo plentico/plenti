@@ -13,15 +13,6 @@ import (
 
 // Client builds the SPA.
 func Client(buildPath string) {
-	// Create list of all file paths in the "/layout" folder.
-	var layoutFiles []string
-	layoutFilesErr := filepath.Walk("layout", func(path string, info os.FileInfo, err error) error {
-		layoutFiles = append(layoutFiles, path)
-		return nil
-	})
-	if layoutFilesErr != nil {
-		fmt.Printf("Could not get layout file: %s", layoutFilesErr)
-	}
 
 	stylePath := buildPath + "/spa/bundle.css"
 	// Clear out any previous CSS.
@@ -33,12 +24,12 @@ func Client(buildPath string) {
 		}
 	}
 
-	for _, layoutFile := range layoutFiles {
+	// Go through all file paths in the "/layout" folder.
+	layoutFilesErr := filepath.Walk("layout", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
 		// Create destination path.
-		destFile := buildPath + strings.Replace(layoutFile, "layout", "/spa", 1)
+		destFile := buildPath + strings.Replace(layoutPath, "layout", "/spa", 1)
 		// Make sure path is a directory
-		fileInfo, _ := os.Stat(layoutFile)
-		if fileInfo.IsDir() {
+		if layoutFileInfo.IsDir() {
 			// Create any sub directories need for filepath.
 			os.MkdirAll(destFile, os.ModePerm)
 		}
@@ -51,13 +42,13 @@ func Client(buildPath string) {
 		// Check if the current file is in the excluded list.
 		excluded := false
 		for _, excludedFile := range excludedFiles {
-			if excludedFile == layoutFile {
+			if excludedFile == layoutPath {
 				excluded = true
 			}
 		}
 		// If the file is already in .js format just copy it straight over to build dir.
-		if filepath.Ext(layoutFile) == ".js" && !excluded {
-			from, err := os.Open(layoutFile)
+		if filepath.Ext(layoutPath) == ".js" && !excluded {
+			from, err := os.Open(layoutPath)
 			if err != nil {
 				fmt.Printf("Could not open source .js file for copying: %s\n", err)
 			}
@@ -75,8 +66,8 @@ func Client(buildPath string) {
 			}
 		}
 		// If the file is in .svelte format, compile it to .js
-		if filepath.Ext(layoutFile) == ".svelte" {
-			fileContentByte, readFileErr := ioutil.ReadFile(layoutFile)
+		if filepath.Ext(layoutPath) == ".svelte" {
+			fileContentByte, readFileErr := ioutil.ReadFile(layoutPath)
 			if readFileErr != nil {
 				fmt.Printf("Could not read contents of svelte source file: %s\n", readFileErr)
 			}
@@ -118,7 +109,10 @@ func Client(buildPath string) {
 				}
 			}
 		}
-
+		return nil
+	})
+	if layoutFilesErr != nil {
+		fmt.Printf("Could not get layout file: %s", layoutFilesErr)
 	}
 
 	fmt.Println("Running snowpack to build dependencies for esm support")
