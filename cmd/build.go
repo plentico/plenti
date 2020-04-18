@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"plenti/cmd/build"
 	"plenti/readers"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -34,6 +35,8 @@ of your choosing. The files that are created are all
 you need to deploy for your website.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
+		buildStart := time.Now()
+
 		// Get settings from config file.
 		siteConfig := readers.GetSiteConfig()
 
@@ -51,14 +54,32 @@ you need to deploy for your website.`,
 			fmt.Printf("Creating \"%v\" build directory\n", buildDir)
 		}
 
+		start := time.Now()
 		// Build JSON from "content/" directory.
 		nodesList := build.DataSource(buildPath)
+		elapsed := time.Since(start)
+		fmt.Printf("Creating data_source took %s\n", elapsed)
 
+		start = time.Now()
 		// Build the client SPA.
 		build.Client(buildPath)
+		elapsed = time.Since(start)
+		fmt.Printf("Creating client SPA took %s\n", elapsed)
 
+		start = time.Now()
+		// Run Snowpack.
+		build.Snowpack()
+		elapsed = time.Since(start)
+		fmt.Printf("Snowpack took %s\n", elapsed)
+
+		start = time.Now()
 		// Build the static HTML.
 		build.Static(nodesList)
+		elapsed = time.Since(start)
+		fmt.Printf("Creating static HTML took %s\n", elapsed)
+
+		elapsed = time.Since(buildStart)
+		fmt.Printf("\nTotal build took %s\n", elapsed)
 
 	},
 }

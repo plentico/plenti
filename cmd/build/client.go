@@ -115,10 +115,4 @@ func Client(buildPath string) {
 		fmt.Printf("Could not get layout file: %s", layoutFilesErr)
 	}
 
-	fmt.Println("Running snowpack to build dependencies for esm support")
-	snowpack := exec.Command("npx", "snowpack", "--include", "'public/spa/**/*.js'", "--dest", "'public/spa/web_modules'")
-	snowpack.Stdout = os.Stdout
-	snowpack.Stderr = os.Stderr
-	snowpack.Run()
-
 }
