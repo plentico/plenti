@@ -21,7 +21,7 @@ func DataSource(buildPath string) map[string][]byte {
 	}
 
 	// Start the new nodes.js file.
-	err := ioutil.WriteFile(nodesJSPath, []byte(`const nodes = [`), 0755)
+	err := ioutil.WriteFile(nodesJSPath, []byte(`const nodes = [`+"\n"), 0755)
 	if err != nil {
 		fmt.Printf("Unable to write nodes.js file: %v", err)
 	}
@@ -32,25 +32,41 @@ func DataSource(buildPath string) map[string][]byte {
 	contentFilesErr := filepath.Walk("content", func(path string, info os.FileInfo, err error) error {
 		//contentFiles = append(contentFiles, path)
 		if !info.IsDir() {
-			fileContentByte, readFileErr := ioutil.ReadFile(path)
-			if readFileErr != nil {
-				fmt.Printf("Could not read content file: %s\n", readFileErr)
-			}
-			fileContentStr := string(fileContentByte)
-			// TODO: Need to check for path overrides from siteConfig reader.
-			contents := []byte(`{
+			// Get individual path arguments.
+			parts := strings.Split(path, "/")
+			contentType := parts[1]
+			fileName := parts[len(parts)-1]
+
+			// Don't add _blueprint.json or other special named files starting with underscores.
+			if fileName[:1] != "_" {
+
+				// Get the contents of the file.
+				fileContentByte, readFileErr := ioutil.ReadFile(path)
+				if readFileErr != nil {
+					fmt.Printf("Could not read content file: %s\n", readFileErr)
+				}
+				fileContentStr := string(fileContentByte)
+
+				// Check for index.json outside of type declaration.
+				if contentType == "index.json" {
+					contentType = "index"
+					path = "/"
+				}
+				// TODO: Need to check for path overrides from siteConfig reader.
+				contents := []byte(`{
 	"path": "` + strings.TrimSuffix(path, filepath.Ext(path)) + `",
-	"type": "blog",
-	"filename": "post1.json",
-	"fields": ` + fileContentStr + `},`)
-			nodesJSFile, openNodesJSErr := os.OpenFile(nodesJSPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-			if openNodesJSErr != nil {
-				fmt.Printf("Could not open nodes.js for writing: %s", openNodesJSErr)
-			}
-			defer nodesJSFile.Close()
-			contentsStr := string(contents)
-			if _, err := nodesJSFile.WriteString(contentsStr); err != nil {
-				log.Println(err)
+	"type": "` + contentType + `",
+	"filename": "` + fileName + `",
+	"fields": ` + fileContentStr + "\n},\n")
+				nodesJSFile, openNodesJSErr := os.OpenFile(nodesJSPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+				if openNodesJSErr != nil {
+					fmt.Printf("Could not open nodes.js for writing: %s", openNodesJSErr)
+				}
+				defer nodesJSFile.Close()
+				contentsStr := string(contents)
+				if _, err := nodesJSFile.WriteString(contentsStr); err != nil {
+					log.Println(err)
+				}
 			}
 		}
 		return nil
@@ -65,7 +81,7 @@ func DataSource(buildPath string) map[string][]byte {
 		fmt.Printf("Could not open nodes.js for writing: %s", openNodesJSErr)
 	}
 	defer nodesJSFile.Close()
-	nodesJSStr := `];
+	nodesJSStr := "\n" + `];
 
 export default nodes;`
 	if _, err := nodesJSFile.WriteString(nodesJSStr); err != nil {
