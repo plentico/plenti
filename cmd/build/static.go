@@ -1,6 +1,6 @@
 package build
 
 // Static builds the html fallbacks.
-func Static() {
+func Static(nodesList map[string][]byte) {
 
 }

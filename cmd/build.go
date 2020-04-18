@@ -51,6 +51,8 @@ you need to deploy for your website.`,
 			fmt.Printf("Creating \"%v\" build directory\n", buildDir)
 		}
 
+		// Build JSON from "content/" directory.
+		build.DataSource(buildPath)
 		// Build the client SPA.
 		build.Client(buildPath)
 

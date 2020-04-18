@@ -56,7 +56,7 @@ You can also set a different port in your site config file.`,
 
 		// Check that the build directory exists
 		if _, err := os.Stat(buildDir); os.IsNotExist(err) {
-			fmt.Printf("The \"%v\" build directory does not exist, check your config.json file.\n", buildDir)
+			fmt.Printf("The \"%v\" build directory does not exist, check your plenti.json file.\n", buildDir)
 			log.Fatal(err)
 		} else {
 			fmt.Printf("Serving site from your \"%v\" directory.\n", buildDir)
