@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"plenti/cmd/build"
 	"plenti/readers"
@@ -62,9 +63,15 @@ you need to deploy for your website.`,
 
 		start = time.Now()
 		// Build the client SPA.
-		build.Client(buildPath)
+		clientBuildStr := build.Client(buildPath)
+		fmt.Printf("Client build string: %s", clientBuildStr)
 		elapsed = time.Since(start)
 		fmt.Printf("Creating client SPA took %s\n", elapsed)
+
+		_, buildErr := exec.Command("node", "layout/ejected/build_client.js", clientBuildStr).Output()
+		if buildErr != nil {
+			fmt.Printf("Could not compile svelte to JS: %s\n", buildErr)
+		}
 
 		// Run Snowpack.
 		//build.Snowpack()
