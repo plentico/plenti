@@ -16,8 +16,10 @@ func DataSource(buildPath string) []string {
 
 	contentFileCounter := 0
 
-	nodesJSPath := buildPath + "/spa/ejected/nodes.js"
-	os.MkdirAll(buildPath+"/spa/ejected", os.ModePerm)
+	//nodesJSPath := buildPath + "/spa/ejected/nodes.js"
+	//os.MkdirAll(buildPath+"/spa/ejected", os.ModePerm)
+	nodesJSPath := "layout/ejected/nodes.js"
+	os.MkdirAll("layout/spa/ejected", os.ModePerm)
 	// Delete any previous nodes.js file.
 	deleteNodesJSErr := os.Remove(nodesJSPath)
 	if deleteNodesJSErr != nil {

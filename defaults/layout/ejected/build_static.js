@@ -14,4 +14,9 @@ const route = relative(args[1], process.cwd()).default;
 args[2].Route = route; // Add the correct component class instance.
 
 // Create the static HTML and CSS.
-export let { html, css } = component.render(args[1]);
+let { html, css } = component.render(args[1]);
+
+// Return values to write files in Go.
+console.log(html);
+console.log("!plenti-split!");
+console.log(css.code);
