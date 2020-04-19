@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -84,20 +85,26 @@ func Client(buildPath string) string {
 			fileContentStr = strings.Replace(fileContentStr, ".svelte", ".js", -1)
 			fileContentStr = strings.Replace(fileContentStr, "from \"svelte/internal\";", "from \"../web_modules/svelte/internal/index.js\";", -1)
 			fileContentStr = strings.Replace(fileContentStr, "from \"navaid\";", "from \"../web_modules/navaid.js\";", -1)
-			escapedFileContentStr := html.EscapeString(fileContentStr)
+			fileContentStr = html.EscapeString(fileContentStr)
 
-			/*
-				reN := regexp.MustCompile(`\r?\n`)
-				reT := regexp.MustCompile(`\t`)
-				reS := regexp.MustCompile(`\s+`)
-				singleLineFileContentStr := reN.ReplaceAllString(escapedFileContentStr, " ")
-				noTabFileContentStr := reT.ReplaceAllString(singleLineFileContentStr, " ")
-				noSpaceFileContentStr := reS.ReplaceAllString(noTabFileContentStr, " ")
+			// Remove newlines.
+			reN := regexp.MustCompile(`\r?\n`)
+			fileContentStr = reN.ReplaceAllString(fileContentStr, " ")
+			// Remove tabs.
+			reT := regexp.MustCompile(`\t`)
+			fileContentStr = reT.ReplaceAllString(fileContentStr, " ")
+			// Reduce extra whitespace to a single space.
+			reS := regexp.MustCompile(`\s+`)
+			fileContentStr = reS.ReplaceAllString(fileContentStr, " ")
 
-				destFile = strings.TrimSuffix(destFile, filepath.Ext(destFile)) + ".js"
+			// Convert opening curly brackets to HTML escape character.
+			fileContentStr = strings.Replace(fileContentStr, "{", "&#123;", -1)
+			// Convert closing curly brackets to HTML escape character.
+			fileContentStr = strings.Replace(fileContentStr, "}", "&#125;", -1)
 
-				clientBuildStr = clientBuildStr + "{ \"component\": \"" + noSpaceFileContentStr + "\", \"destPath\": \"" + destFile + "\", \"stylePath\": \"" + stylePath + "\"},"
-			*/
+			destFile = strings.TrimSuffix(destFile, filepath.Ext(destFile)) + ".js"
+
+			clientBuildStr = clientBuildStr + "{ \"component\": \"" + fileContentStr + "\", \"destPath\": \"" + destFile + "\", \"stylePath\": \"" + stylePath + "\"},"
 			/*
 							clientBuildStr = clientBuildStr + fmt.Sprintf(`{
 					"component": "%s",
@@ -105,11 +112,12 @@ func Client(buildPath string) string {
 					"stylePath": "%s"
 				},`, escapedFileContentStr, destFile, stylePath)
 			*/
-			clientBuildStr = clientBuildStr + "{" +
-				"\"component\": `" + escapedFileContentStr + "`," +
-				"\"destPath\": \"" + destFile + "\"," +
-				"\"stylePath\": \"" + stylePath + "\"},"
-
+			/*
+				clientBuildStr = clientBuildStr + "{" +
+					"\"component\": `" + escapedFileContentStr + "`," +
+					"\"destPath\": \"" + destFile + "\"," +
+					"\"stylePath\": \"" + stylePath + "\"},"
+			*/
 			/*
 				// Execute node script to compile .svelte to .js
 				compiledBytes, buildErr := exec.Command("node", "layout/ejected/build_client.js", fileContentStr).Output()
@@ -151,7 +159,7 @@ func Client(buildPath string) string {
 		return nil
 	})
 
-	clientBuildStr = clientBuildStr + "];"
+	clientBuildStr = strings.TrimSuffix(clientBuildStr, ",") + "]"
 
 	if layoutFilesErr != nil {
 		fmt.Printf("Could not get layout file: %s", layoutFilesErr)
