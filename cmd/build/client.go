@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 )
 
 // Client builds the SPA.
@@ -103,11 +104,17 @@ func Client(buildPath string) {
 
 func compileSvelte(fileContentStr string, destFile string, stylePath string, wg *sync.WaitGroup) {
 
+	start := time.Now()
+
 	// Execute node script to compile .svelte to .js
 	compiledBytes, buildErr := exec.Command("node", "layout/ejected/build_client.js", fileContentStr).Output()
 	if buildErr != nil {
 		fmt.Printf("Could not compile svelte to JS: %s\n", buildErr)
 	}
+
+	elapsed := time.Since(start)
+	fmt.Printf("Compiling component took %s\n", elapsed)
+
 	compiledStr := string(compiledBytes)
 	compiledStrArray := strings.Split(compiledStr, "!plenti-split!")
 
