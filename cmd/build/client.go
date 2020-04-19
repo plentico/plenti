@@ -9,12 +9,15 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 )
 
 // Client builds the SPA.
 func Client(buildPath string) {
 
 	fmt.Println("\nBuilding client SPA using svelte compiler")
+
+	var wg sync.WaitGroup
 
 	stylePath := buildPath + "/spa/bundle.css"
 	// Clear out any previous CSS.
@@ -78,43 +81,12 @@ func Client(buildPath string) {
 				fmt.Printf("Could not read contents of svelte source file: %s\n", readFileErr)
 			}
 			fileContentStr := string(fileContentByte)
-			// Execute node script to compile .svelte to .js
-			compiledBytes, buildErr := exec.Command("node", "layout/ejected/build_client.js", fileContentStr).Output()
-			if buildErr != nil {
-				fmt.Printf("Could not compile svelte to JS: %s\n", buildErr)
-			}
-			compiledStr := string(compiledBytes)
-			compiledStrArray := strings.Split(compiledStr, "!plenti-split!")
 
-			// Get the JS only from the script output.
-			jsStr := strings.TrimSpace(compiledStrArray[0])
-			// Convert file extensions to be snowpack friendly.
-			jsStr = strings.Replace(jsStr, ".svelte", ".js", -1)
-			jsStr = strings.Replace(jsStr, "from \"svelte/internal\";", "from \"../web_modules/svelte/internal/index.js\";", -1)
-			jsStr = strings.Replace(jsStr, "from \"navaid\";", "from \"../web_modules/navaid.js\";", -1)
+			wg.Add(1)
+			go compileSvelte(fileContentStr, destFile, stylePath, &wg)
 
-			// Write compiled .js to build directory.
-			jsBytes := []byte(jsStr)
-			destFile = strings.TrimSuffix(destFile, filepath.Ext(destFile)) + ".js"
-			err := ioutil.WriteFile(destFile, jsBytes, 0755)
-			if err != nil {
-				fmt.Printf("Unable to write file: %v", err)
-			}
 			compiledComponentCounter++
 
-			// Get the CSS only from the script output.
-			cssStr := strings.TrimSpace(compiledStrArray[1])
-			// If there is CSS, write it into the bundle.css file.
-			if cssStr != "null" {
-				cssFile, WriteStyleErr := os.OpenFile(stylePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-				if WriteStyleErr != nil {
-					fmt.Printf("Could not open bundle.css for writing: %s", WriteStyleErr)
-				}
-				defer cssFile.Close()
-				if _, err := cssFile.WriteString(cssStr); err != nil {
-					log.Println(err)
-				}
-			}
 		}
 		return nil
 	})
@@ -122,7 +94,50 @@ func Client(buildPath string) {
 		fmt.Printf("Could not get layout file: %s", layoutFilesErr)
 	}
 
+	wg.Wait()
+
 	fmt.Printf("Number of source files copied: %d\n", copiedSourceCounter)
 	fmt.Printf("Number of components compiled: %d\n", compiledComponentCounter)
 
+}
+
+func compileSvelte(fileContentStr string, destFile string, stylePath string, wg *sync.WaitGroup) {
+
+	// Execute node script to compile .svelte to .js
+	compiledBytes, buildErr := exec.Command("node", "layout/ejected/build_client.js", fileContentStr).Output()
+	if buildErr != nil {
+		fmt.Printf("Could not compile svelte to JS: %s\n", buildErr)
+	}
+	compiledStr := string(compiledBytes)
+	compiledStrArray := strings.Split(compiledStr, "!plenti-split!")
+
+	// Get the JS only from the script output.
+	jsStr := strings.TrimSpace(compiledStrArray[0])
+	// Convert file extensions to be snowpack friendly.
+	jsStr = strings.Replace(jsStr, ".svelte", ".js", -1)
+	jsStr = strings.Replace(jsStr, "from \"svelte/internal\";", "from \"../web_modules/svelte/internal/index.js\";", -1)
+	jsStr = strings.Replace(jsStr, "from \"navaid\";", "from \"../web_modules/navaid.js\";", -1)
+
+	// Write compiled .js to build directory.
+	jsBytes := []byte(jsStr)
+	destFile = strings.TrimSuffix(destFile, filepath.Ext(destFile)) + ".js"
+	err := ioutil.WriteFile(destFile, jsBytes, 0755)
+	if err != nil {
+		fmt.Printf("Unable to write file: %v", err)
+	}
+
+	// Get the CSS only from the script output.
+	cssStr := strings.TrimSpace(compiledStrArray[1])
+	// If there is CSS, write it into the bundle.css file.
+	if cssStr != "null" {
+		cssFile, WriteStyleErr := os.OpenFile(stylePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if WriteStyleErr != nil {
+			fmt.Printf("Could not open bundle.css for writing: %s", WriteStyleErr)
+		}
+		defer cssFile.Close()
+		if _, err := cssFile.WriteString(cssStr); err != nil {
+			log.Println(err)
+		}
+	}
+	wg.Done()
 }

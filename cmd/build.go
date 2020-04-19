@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"plenti/cmd/build"
 	"plenti/readers"
@@ -61,13 +60,11 @@ you need to deploy for your website.`,
 		elapsed := time.Since(start)
 		fmt.Printf("Creating data_source took %s\n", elapsed)
 
-		/*
-			start = time.Now()
-			// Build the client SPA.
-			build.Client(buildPath)
-			elapsed = time.Since(start)
-			fmt.Printf("Creating client SPA took %s\n", elapsed)
-		*/
+		start = time.Now()
+		// Build the client SPA.
+		build.Client(buildPath)
+		elapsed = time.Since(start)
+		fmt.Printf("Creating client SPA took %s\n", elapsed)
 
 		// Run Snowpack.
 		//build.Snowpack()
@@ -80,12 +77,14 @@ you need to deploy for your website.`,
 			fmt.Printf("Creating static HTML took %s\n", elapsed)
 		*/
 
-		_, NodeErr := exec.Command("node", "layout/ejected/server_router.js").Output()
-		if NodeErr != nil {
-			panic(NodeErr)
-		}
+		/*
+			_, NodeErr := exec.Command("node", "layout/ejected/server_router.js").Output()
+			if NodeErr != nil {
+				panic(NodeErr)
+			}
+			//elapsed := time.Since(buildStart)
+		*/
 		fmt.Println(nodesList)
-		//elapsed := time.Since(buildStart)
 
 		elapsed = time.Since(buildStart)
 		fmt.Printf("\nTotal build took %s\n", elapsed)
