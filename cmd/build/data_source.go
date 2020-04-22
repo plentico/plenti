@@ -9,17 +9,10 @@ import (
 	"strings"
 )
 
-type ContentNode struct {
-	nodeType string
-	nodePath string
-}
-
 // DataSource builds json list from "content/" directory.
-func DataSource(buildPath string) []ContentNode {
+func DataSource(buildPath string) string {
 
 	fmt.Println("\nGathering data source from \"content/\" folder")
-
-	contentFileCounter := 0
 
 	nodesJSPath := buildPath + "/spa/ejected/nodes.js"
 	os.MkdirAll(buildPath+"/spa/ejected", os.ModePerm)
@@ -29,13 +22,18 @@ func DataSource(buildPath string) []ContentNode {
 		fmt.Println(deleteNodesJSErr)
 	}
 
+	// Set up counter for logging output.
+	contentFileCounter := 0
+
+	// Start the string that will be sent to nodejs for compiling.
+	staticBuildStr := "["
+
 	// Start the new nodes.js file.
 	err := ioutil.WriteFile(nodesJSPath, []byte(`const nodes = [`+"\n"), 0755)
 	if err != nil {
 		fmt.Printf("Unable to write nodes.js file: %v", err)
 	}
 
-	var contentFiles []ContentNode
 	// Go through all sub directories in "content/" folder.
 	contentFilesErr := filepath.Walk("content", func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
@@ -46,9 +44,6 @@ func DataSource(buildPath string) []ContentNode {
 
 			// Don't add _blueprint.json or other special named files starting with underscores.
 			if fileName[:1] != "_" {
-
-				// Add to list of data_source files for creating static HTML.
-				contentFiles = append(contentFiles, ContentNode{contentType, path})
 
 				// Get the contents of the file.
 				fileContentByte, readFileErr := ioutil.ReadFile(path)
@@ -62,9 +57,16 @@ func DataSource(buildPath string) []ContentNode {
 					contentType = "index"
 					path = "/"
 				}
+
+				// Remove file extension from path.
+				path = strings.TrimSuffix(path, filepath.Ext(path))
+
+				// Add to list of data_source files for creating static HTML.
+				staticBuildStr = staticBuildStr + "{ \"type\": \"" + contentType + "\", \"path\": \"" + path + "\"},"
+
 				// TODO: Need to check for path overrides from siteConfig reader.
 				contents := []byte(`{
-	"path": "` + strings.TrimSuffix(path, filepath.Ext(path)) + `",
+	"path": "` + path + `",
 	"type": "` + contentType + `",
 	"filename": "` + fileName + `",
 	"fields": ` + fileContentStr + "\n},\n")
@@ -97,8 +99,11 @@ func DataSource(buildPath string) []ContentNode {
 		log.Println(err)
 	}
 
+	// End the string that will be sent to nodejs for compiling.
+	staticBuildStr = strings.TrimSuffix(staticBuildStr, ",") + "]"
+
 	fmt.Printf("Number of content files used: %d\n", contentFileCounter)
 
-	return contentFiles
+	return staticBuildStr
 
 }

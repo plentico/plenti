@@ -57,7 +57,7 @@ you need to deploy for your website.`,
 
 		start := time.Now()
 		// Build JSON from "content/" directory.
-		nodeList := build.DataSource(buildPath)
+		staticBuildStr := build.DataSource(buildPath)
 		elapsed := time.Since(start)
 		fmt.Printf("Creating data_source took %s\n", elapsed)
 
@@ -67,14 +67,18 @@ you need to deploy for your website.`,
 		elapsed = time.Since(start)
 		fmt.Printf("Prepping client SPA data took %s\n", elapsed)
 
-		start = time.Now()
-		// Prep the static HTML.
-		build.Static(nodeList)
-		elapsed = time.Since(start)
-		fmt.Printf("Preparing static HTML took %s\n", elapsed)
+		/*
+			start = time.Now()
+			// Prep the static HTML.
+			build.Static(nodeList)
+			elapsed = time.Since(start)
+			fmt.Printf("Preparing static HTML took %s\n", elapsed)
+		*/
+
+		fmt.Printf("staticBuildStr: %s", staticBuildStr)
 
 		start = time.Now()
-		_, buildErr := exec.Command("node", "layout/ejected/build.js", clientBuildStr).Output()
+		_, buildErr := exec.Command("node", "layout/ejected/build.js", clientBuildStr, staticBuildStr).Output()
 		if buildErr != nil {
 			fmt.Printf("\nCould not compile svelte to JS: %s\n", buildErr)
 		}

@@ -21,9 +21,9 @@ const ensureDirExists = filePath => {
 	fs.mkdirSync(dirname);
 }
 
-let buildStr = JSON.parse(args[0]);
+let clientBuildStr = JSON.parse(args[0]);
 
-buildStr.forEach(arg => {
+clientBuildStr.forEach(arg => {
 	// Create component JS that can run in the browser.
 	let { js, css } = svelte.compile(arg.component, {
 		css: false
@@ -44,16 +44,20 @@ buildStr.forEach(arg => {
 // Start static HTML build:
 // ------------------------
 
-/*
+let staticBuildStr = JSON.parse(args[1]);
+
 let wrapper = path.join(path.resolve(), 'layout/global/html.svelte')
 const component = relative(wrapper, process.cwd()).default;
 
-// args[1] is the path to /layout/content .svelte files.
-const route = relative(args[1], process.cwd()).default;
+/*
+clientBuildStr.forEach(arg => {
+	// args[1] is the path to /layout/content .svelte files.
+	const route = relative(args[1], process.cwd()).default;
 
-// args[2] is the props being passed.
-args[2].Route = route; // Add the correct component class instance.
+	// args[2] is the props being passed.
+	args[2].Route = route; // Add the correct component class instance.
 
-// Create the static HTML and CSS.
-let { html, css } = component.render(args[1]);
+	// Create the static HTML and CSS.
+	let { html, css } = component.render(args[1]);
+});
 */
