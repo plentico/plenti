@@ -96,12 +96,18 @@ node_modules`),
 
 <p><a href="/">Back home</a></p>
 `),
-	"/layout/ejected/build_client.js": []byte(`import svelte from 'svelte/compiler.js';
+	"/layout/ejected/build.js": []byte(`import svelte from 'svelte/compiler.js';
+import 'svelte/register.js';
+import relative from 'require-relative';
 import path from 'path';
 import fs from 'fs';
 
 // Get the arguments from Go command execution.
 const args = process.argv.slice(2)
+
+// -----------------------
+// Start client SPA build:
+// -----------------------
 
 // Create any missing sub folders.
 const ensureDirExists = filePath => {
@@ -132,10 +138,23 @@ buildStr.forEach(arg => {
 	}
 });
 
-// Return values to write files in Go.
-//console.log(js.code);
-//console.log("!plenti-split!");
-//console.log(css.code);`),
+// ------------------------
+// Start static HTML build:
+// ------------------------
+
+/*
+let wrapper = path.join(path.resolve(), 'layout/global/html.svelte')
+const component = relative(wrapper, process.cwd()).default;
+
+// args[1] is the path to /layout/content .svelte files.
+const route = relative(args[1], process.cwd()).default;
+
+// args[2] is the props being passed.
+args[2].Route = route; // Add the correct component class instance.
+
+// Create the static HTML and CSS.
+let { html, css } = component.render(args[1]);
+*/`),
 	"/layout/ejected/build_static.js": []byte(`import 'svelte/register.js';
 import relative from 'require-relative';
 

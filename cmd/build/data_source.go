@@ -35,7 +35,6 @@ func DataSource(buildPath string) []string {
 	var contentFiles []string
 	// Go through all sub directories in "content/" folder.
 	contentFilesErr := filepath.Walk("content", func(path string, info os.FileInfo, err error) error {
-		//contentFiles = append(contentFiles, path)
 		if !info.IsDir() {
 			// Get individual path arguments.
 			parts := strings.Split(path, "/")
@@ -44,6 +43,9 @@ func DataSource(buildPath string) []string {
 
 			// Don't add _blueprint.json or other special named files starting with underscores.
 			if fileName[:1] != "_" {
+
+				// Add to list of data_source files for creating static HTML.
+				contentFiles = append(contentFiles, path)
 
 				// Get the contents of the file.
 				fileContentByte, readFileErr := ioutil.ReadFile(path)

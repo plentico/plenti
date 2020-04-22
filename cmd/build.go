@@ -57,7 +57,7 @@ you need to deploy for your website.`,
 
 		start := time.Now()
 		// Build JSON from "content/" directory.
-		nodesList := build.DataSource(buildPath)
+		nodeList := build.DataSource(buildPath)
 		elapsed := time.Since(start)
 		fmt.Printf("Creating data_source took %s\n", elapsed)
 
@@ -69,29 +69,20 @@ you need to deploy for your website.`,
 
 		start = time.Now()
 		// Prep the static HTML.
-		build.Static(nodesList)
+		build.Static(nodeList)
 		elapsed = time.Since(start)
 		fmt.Printf("Preparing static HTML took %s\n", elapsed)
 
 		start = time.Now()
 		_, buildErr := exec.Command("node", "layout/ejected/build.js", clientBuildStr).Output()
 		if buildErr != nil {
-			fmt.Printf("Could not compile svelte to JS: %s\n", buildErr)
+			fmt.Printf("\nCould not compile svelte to JS: %s\n", buildErr)
 		}
 		elapsed = time.Since(start)
-		fmt.Printf("Compiling components and creating static HTML took %s\n", elapsed)
+		fmt.Printf("\nCompiling components and creating static HTML took %s\n", elapsed)
 
 		// Run Snowpack.
-		//build.Snowpack()
-
-		/*
-			_, NodeErr := exec.Command("node", "layout/ejected/server_router.js").Output()
-			if NodeErr != nil {
-				panic(NodeErr)
-			}
-			//elapsed := time.Since(buildStart)
-		*/
-		fmt.Println(nodesList)
+		build.Snowpack(buildPath)
 
 		elapsed = time.Since(buildStart)
 		fmt.Printf("\nTotal build took %s\n", elapsed)

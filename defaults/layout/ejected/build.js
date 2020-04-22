@@ -44,6 +44,7 @@ buildStr.forEach(arg => {
 // Start static HTML build:
 // ------------------------
 
+/*
 let wrapper = path.join(path.resolve(), 'layout/global/html.svelte')
 const component = relative(wrapper, process.cwd()).default;
 
@@ -55,3 +56,4 @@ args[2].Route = route; // Add the correct component class instance.
 
 // Create the static HTML and CSS.
 let { html, css } = component.render(args[1]);
+*/

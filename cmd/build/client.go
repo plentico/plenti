@@ -14,7 +14,7 @@ import (
 // Client builds the SPA.
 func Client(buildPath string) string {
 
-	fmt.Println("\nBuilding client SPA using svelte compiler")
+	fmt.Println("\nPrepping client SPA for svelte compiler")
 
 	stylePath := buildPath + "/spa/bundle.css"
 	// Clear out any previous CSS.
@@ -28,8 +28,11 @@ func Client(buildPath string) string {
 		}
 	*/
 
+	// Set up counters for logging output.
 	copiedSourceCounter := 0
 	compiledComponentCounter := 0
+
+	// Start the string that will be sent to nodejs for compiling.
 	clientBuildStr := "["
 
 	// Go through all file paths in the "/layout" folder.
@@ -43,6 +46,7 @@ func Client(buildPath string) string {
 		}
 		// Make list of files not to copy to build.
 		excludedFiles := []string{
+			"layout/ejected/build.js",
 			"layout/ejected/build_client.js",
 			"layout/ejected/build_static.js",
 			"layout/ejected/server_router.js",
@@ -72,7 +76,9 @@ func Client(buildPath string) string {
 			if err != nil {
 				fmt.Printf("Could not copy .js from source to destination: %s\n", fileCopyErr)
 			}
+
 			copiedSourceCounter++
+
 		}
 		// If the file is in .svelte format, compile it to .js
 		if filepath.Ext(layoutPath) == ".svelte" {
@@ -85,6 +91,8 @@ func Client(buildPath string) string {
 			fileContentStr = strings.Replace(fileContentStr, ".svelte", ".js", -1)
 			fileContentStr = strings.Replace(fileContentStr, "from \"svelte/internal\";", "from \"../web_modules/svelte/internal/index.js\";", -1)
 			fileContentStr = strings.Replace(fileContentStr, "from \"navaid\";", "from \"../web_modules/navaid.js\";", -1)
+
+			// Encode HTML so it can be represented as a string.
 			fileContentStr = html.EscapeString(fileContentStr)
 
 			// Remove newlines.
@@ -102,8 +110,10 @@ func Client(buildPath string) string {
 			// Convert closing curly brackets to HTML escape character.
 			fileContentStr = strings.Replace(fileContentStr, "}", "&#125;", -1)
 
+			// Replace .svelte file extension with .js.
 			destFile = strings.TrimSuffix(destFile, filepath.Ext(destFile)) + ".js"
 
+			// Create string representing array of objects to be passed to nodejs.
 			clientBuildStr = clientBuildStr + "{ \"component\": \"" + fileContentStr + "\", \"destPath\": \"" + destFile + "\", \"stylePath\": \"" + stylePath + "\"},"
 
 			compiledComponentCounter++
@@ -111,12 +121,12 @@ func Client(buildPath string) string {
 		}
 		return nil
 	})
-
-	clientBuildStr = strings.TrimSuffix(clientBuildStr, ",") + "]"
-
 	if layoutFilesErr != nil {
 		fmt.Printf("Could not get layout file: %s", layoutFilesErr)
 	}
+
+	// End the string that will be sent to nodejs for compiling.
+	clientBuildStr = strings.TrimSuffix(clientBuildStr, ",") + "]"
 
 	fmt.Printf("Number of source files copied: %d\n", copiedSourceCounter)
 	fmt.Printf("Number of components to be compiled: %d\n", compiledComponentCounter)

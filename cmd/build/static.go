@@ -3,7 +3,7 @@ package build
 import "fmt"
 
 // Static builds the html fallbacks.
-func Static(nodesList []string) {
+func Static(nodeList []string) {
 
-	fmt.Println("\nCreating static HTML using svelte/register")
+	fmt.Println("\nPreparing static HTML for svelte/register")
 }
