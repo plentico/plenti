@@ -9,8 +9,13 @@ import (
 	"strings"
 )
 
+type ContentNode struct {
+	nodeType string
+	nodePath string
+}
+
 // DataSource builds json list from "content/" directory.
-func DataSource(buildPath string) []string {
+func DataSource(buildPath string) []ContentNode {
 
 	fmt.Println("\nGathering data source from \"content/\" folder")
 
@@ -18,8 +23,6 @@ func DataSource(buildPath string) []string {
 
 	nodesJSPath := buildPath + "/spa/ejected/nodes.js"
 	os.MkdirAll(buildPath+"/spa/ejected", os.ModePerm)
-	//nodesJSPath := "layout/ejected/nodes.js"
-	//os.MkdirAll("layout/spa/ejected", os.ModePerm)
 	// Delete any previous nodes.js file.
 	deleteNodesJSErr := os.Remove(nodesJSPath)
 	if deleteNodesJSErr != nil {
@@ -32,7 +35,7 @@ func DataSource(buildPath string) []string {
 		fmt.Printf("Unable to write nodes.js file: %v", err)
 	}
 
-	var contentFiles []string
+	var contentFiles []ContentNode
 	// Go through all sub directories in "content/" folder.
 	contentFilesErr := filepath.Walk("content", func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
@@ -45,7 +48,7 @@ func DataSource(buildPath string) []string {
 			if fileName[:1] != "_" {
 
 				// Add to list of data_source files for creating static HTML.
-				contentFiles = append(contentFiles, path)
+				contentFiles = append(contentFiles, ContentNode{contentType, path})
 
 				// Get the contents of the file.
 				fileContentByte, readFileErr := ioutil.ReadFile(path)
