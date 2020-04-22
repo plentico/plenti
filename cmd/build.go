@@ -62,27 +62,27 @@ you need to deploy for your website.`,
 		fmt.Printf("Creating data_source took %s\n", elapsed)
 
 		start = time.Now()
-		// Build the client SPA.
+		// Prep the client SPA.
 		clientBuildStr := build.Client(buildPath)
-		fmt.Printf("Client build string: %s", clientBuildStr)
 		elapsed = time.Since(start)
-		fmt.Printf("Creating client SPA took %s\n", elapsed)
+		fmt.Printf("Prepping client SPA data took %s\n", elapsed)
 
-		_, buildErr := exec.Command("node", "layout/ejected/build_client.js", clientBuildStr).Output()
+		start = time.Now()
+		// Prep the static HTML.
+		build.Static(nodesList)
+		elapsed = time.Since(start)
+		fmt.Printf("Preparing static HTML took %s\n", elapsed)
+
+		start = time.Now()
+		_, buildErr := exec.Command("node", "layout/ejected/build.js", clientBuildStr).Output()
 		if buildErr != nil {
 			fmt.Printf("Could not compile svelte to JS: %s\n", buildErr)
 		}
+		elapsed = time.Since(start)
+		fmt.Printf("Compiling components and creating static HTML took %s\n", elapsed)
 
 		// Run Snowpack.
 		//build.Snowpack()
-
-		/*
-			start = time.Now()
-			// Build the static HTML.
-			build.Static(nodesList)
-			elapsed = time.Since(start)
-			fmt.Printf("Creating static HTML took %s\n", elapsed)
-		*/
 
 		/*
 			_, NodeErr := exec.Command("node", "layout/ejected/server_router.js").Output()

@@ -105,53 +105,6 @@ func Client(buildPath string) string {
 			destFile = strings.TrimSuffix(destFile, filepath.Ext(destFile)) + ".js"
 
 			clientBuildStr = clientBuildStr + "{ \"component\": \"" + fileContentStr + "\", \"destPath\": \"" + destFile + "\", \"stylePath\": \"" + stylePath + "\"},"
-			/*
-							clientBuildStr = clientBuildStr + fmt.Sprintf(`{
-					"component": "%s",
-					"destPath": "%s",
-					"stylePath": "%s"
-				},`, escapedFileContentStr, destFile, stylePath)
-			*/
-			/*
-				clientBuildStr = clientBuildStr + "{" +
-					"\"component\": `" + escapedFileContentStr + "`," +
-					"\"destPath\": \"" + destFile + "\"," +
-					"\"stylePath\": \"" + stylePath + "\"},"
-			*/
-			/*
-				// Execute node script to compile .svelte to .js
-				compiledBytes, buildErr := exec.Command("node", "layout/ejected/build_client.js", fileContentStr).Output()
-				if buildErr != nil {
-					fmt.Printf("Could not compile svelte to JS: %s\n", buildErr)
-				}
-
-				compiledStr := string(compiledBytes)
-				compiledStrArray := strings.Split(compiledStr, "!plenti-split!")
-
-				// Get the JS only from the script output.
-				jsStr := strings.TrimSpace(compiledStrArray[0])
-
-				// Write compiled .js to build directory.
-				jsBytes := []byte(jsStr)
-				err := ioutil.WriteFile(destFile, jsBytes, 0755)
-				if err != nil {
-					fmt.Printf("Unable to write file: %v", err)
-				}
-
-				// Get the CSS only from the script output.
-				cssStr := strings.TrimSpace(compiledStrArray[1])
-				// If there is CSS, write it into the bundle.css file.
-				if cssStr != "null" {
-					cssFile, WriteStyleErr := os.OpenFile(stylePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-					if WriteStyleErr != nil {
-						fmt.Printf("Could not open bundle.css for writing: %s", WriteStyleErr)
-					}
-					defer cssFile.Close()
-					if _, err := cssFile.WriteString(cssStr); err != nil {
-						log.Println(err)
-					}
-				}
-			*/
 
 			compiledComponentCounter++
 
@@ -166,7 +119,7 @@ func Client(buildPath string) string {
 	}
 
 	fmt.Printf("Number of source files copied: %d\n", copiedSourceCounter)
-	fmt.Printf("Number of components compiled: %d\n", compiledComponentCounter)
+	fmt.Printf("Number of components to be compiled: %d\n", compiledComponentCounter)
 
 	return clientBuildStr
 
