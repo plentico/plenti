@@ -54,14 +54,18 @@ func DataSource(buildPath string) (string, string) {
 				}
 				fileContentStr := string(fileContentByte)
 
+				// Remove file extension from path.
+				path = strings.TrimSuffix(path, filepath.Ext(path))
+				// Remove the "content" folder from path.
+				path = strings.TrimPrefix(path, "content")
+
+				destPath := buildPath + "/" + path + ".html"
+
 				// Check for index.json outside of type declaration.
 				if contentType == "index.json" {
 					contentType = "index"
 					path = "/"
 				}
-
-				// Remove file extension from path.
-				path = strings.TrimSuffix(path, filepath.Ext(path))
 
 				// TODO: Need to check for path overrides from siteConfig reader.
 				nodeDetailsStr := "{\n" +
@@ -72,7 +76,6 @@ func DataSource(buildPath string) (string, string) {
 
 				// Create path for source .svelte template.
 				componentPath := "layout/content/" + contentType + ".svelte"
-				destPath := buildPath + "/" + path + ".html"
 
 				//encodedNodeDetails := html.EscapeString(nodeDetailsStr)
 				encodedNodeDetails := nodeDetailsStr

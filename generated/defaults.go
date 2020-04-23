@@ -6,6 +6,18 @@ package generated
 var Defaults = map[string][]byte{
 	"/.gitignore": []byte(`public
 node_modules`),
+	"/content/blog/post-3_has_a_long_filename.json": []byte(`{
+    "title": "Post 3",
+    "description": "Third of the blog posts."
+}`),
+	"/content/blog/post1.json": []byte(`{
+    "title": "Post 1",
+    "description": "First blog post."
+}`),
+	"/content/blog/post2.json": []byte(`{
+    "title": "Post 2",
+    "description": "Second blog post."
+}`),
 	"/content/index.json": []byte(`{
 	"title": "My Site Homepage",
 	"intro": {
