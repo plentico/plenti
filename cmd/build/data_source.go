@@ -29,7 +29,7 @@ func DataSource(buildPath string) string {
 	staticBuildStr := "["
 
 	// Start the new nodes.js file.
-	err := ioutil.WriteFile(nodesJSPath, []byte(`const nodes = [`+"\n"), 0755)
+	err := ioutil.WriteFile(nodesJSPath, []byte(`const nodes = [`), 0755)
 	if err != nil {
 		fmt.Printf("Unable to write nodes.js file: %v", err)
 	}
@@ -61,25 +61,33 @@ func DataSource(buildPath string) string {
 				// Remove file extension from path.
 				path = strings.TrimSuffix(path, filepath.Ext(path))
 
-				// Add to list of data_source files for creating static HTML.
-				staticBuildStr = staticBuildStr + "{ \"type\": \"" + contentType + "\", \"path\": \"" + path + "\"},"
-
 				// TODO: Need to check for path overrides from siteConfig reader.
-				contents := []byte(`{
-	"path": "` + path + `",
-	"type": "` + contentType + `",
-	"filename": "` + fileName + `",
-	"fields": ` + fileContentStr + "\n},\n")
+				nodeDetailsStr := "{\n" +
+					"\"path\": \"" + path + "\",\n" +
+					"\"type\": \"" + contentType + "\",\n" +
+					"\"filename\": \"" + fileName + "\",\n" +
+					"\"fields\": " + fileContentStr + "\n}"
+
+				// Create path for source .svelte template.
+				componentPath := "layout/content/" + contentType + ".svelte"
+				destPath := buildPath + "/" + path + ".html"
+				// Add to list of data_source files for creating static HTML.
+				staticBuildStr = staticBuildStr + "{ \"node\": \"" + nodeDetailsStr + "\", \"componentPath\": \"" + componentPath + "\", \"destPath\": \"" + destPath + "\"},"
+
+				// Create new nodes.js file if it doesn't already exist, or add to it if it does.
 				nodesJSFile, openNodesJSErr := os.OpenFile(nodesJSPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 				if openNodesJSErr != nil {
 					fmt.Printf("Could not open nodes.js for writing: %s", openNodesJSErr)
 				}
+				// Write to the file with info from current file in "/content" folder.
 				defer nodesJSFile.Close()
-				contentsStr := string(contents)
-				if _, err := nodesJSFile.WriteString(contentsStr); err != nil {
+				if _, err := nodesJSFile.WriteString(nodeDetailsStr + ","); err != nil {
 					log.Println(err)
 				}
+
+				// Increment counter for logging purposes.
 				contentFileCounter++
+
 			}
 		}
 		return nil
@@ -94,7 +102,7 @@ func DataSource(buildPath string) string {
 		fmt.Printf("Could not open nodes.js for writing: %s", openNodesJSErr)
 	}
 	defer nodesJSFile.Close()
-	nodesJSStr := "\n];\n\nexport default nodes;"
+	nodesJSStr := "];\n\nexport default nodes;"
 	if _, err := nodesJSFile.WriteString(nodesJSStr); err != nil {
 		log.Println(err)
 	}
