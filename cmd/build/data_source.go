@@ -6,11 +6,12 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
 // DataSource builds json list from "content/" directory.
-func DataSource(buildPath string) string {
+func DataSource(buildPath string) (string, string) {
 
 	fmt.Println("\nGathering data source from \"content/\" folder")
 
@@ -27,6 +28,7 @@ func DataSource(buildPath string) string {
 
 	// Start the string that will be sent to nodejs for compiling.
 	staticBuildStr := "["
+	allNodesStr := "["
 
 	// Start the new nodes.js file.
 	err := ioutil.WriteFile(nodesJSPath, []byte(`const nodes = [`), 0755)
@@ -71,8 +73,21 @@ func DataSource(buildPath string) string {
 				// Create path for source .svelte template.
 				componentPath := "layout/content/" + contentType + ".svelte"
 				destPath := buildPath + "/" + path + ".html"
+
+				//encodedNodeDetails := html.EscapeString(nodeDetailsStr)
+				encodedNodeDetails := nodeDetailsStr
+				// Remove newlines.
+				reN := regexp.MustCompile(`\r?\n`)
+				encodedNodeDetails = reN.ReplaceAllString(encodedNodeDetails, " ")
+				// Remove tabs.
+				reT := regexp.MustCompile(`\t`)
+				encodedNodeDetails = reT.ReplaceAllString(encodedNodeDetails, " ")
+				// Reduce extra whitespace to a single space.
+				reS := regexp.MustCompile(`\s+`)
+				encodedNodeDetails = reS.ReplaceAllString(encodedNodeDetails, " ")
 				// Add to list of data_source files for creating static HTML.
-				staticBuildStr = staticBuildStr + "{ \"node\": \"" + nodeDetailsStr + "\", \"componentPath\": \"" + componentPath + "\", \"destPath\": \"" + destPath + "\"},"
+				staticBuildStr = staticBuildStr + "{ \"node\": " + encodedNodeDetails + ", \"componentPath\": \"" + componentPath + "\", \"destPath\": \"" + destPath + "\"},"
+				allNodesStr = allNodesStr + encodedNodeDetails + ","
 
 				// Create new nodes.js file if it doesn't already exist, or add to it if it does.
 				nodesJSFile, openNodesJSErr := os.OpenFile(nodesJSPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -109,9 +124,10 @@ func DataSource(buildPath string) string {
 
 	// End the string that will be sent to nodejs for compiling.
 	staticBuildStr = strings.TrimSuffix(staticBuildStr, ",") + "]"
+	allNodesStr = strings.TrimSuffix(allNodesStr, ",") + "]"
 
 	fmt.Printf("Number of content files used: %d\n", contentFileCounter)
 
-	return staticBuildStr
+	return staticBuildStr, allNodesStr
 
 }

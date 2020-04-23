@@ -44,23 +44,33 @@ clientBuildStr.forEach(arg => {
 // Start static HTML build:
 // ------------------------
 
+console.log(args[1]);
+console.log("\n\n");
+console.log(args[2]);
 let staticBuildStr = JSON.parse(args[1]);
+let allNodes = JSON.parse(args[2]);
 
-let wrapper = path.join(path.resolve(), 'layout/global/html.svelte')
-const component = relative(wrapper, process.cwd()).default;
+let htmlWrapper = path.join(path.resolve(), 'layout/global/html.svelte')
+const component = relative(htmlWrapper, process.cwd()).default;
 
 staticBuildStr.forEach(arg => {
-	// args[1] is the path to /layout/content .svelte files.
-	const route = relative(args[1], process.cwd()).default;
+
+	let componentPath = path.join(path.resolve(), arg.componentPath);
+	let destPath = path.join(path.resolve(), arg.destPath);
+
+	const route = relative(componentPath, process.cwd()).default;
 
 	let props = {
 		Route: route,
 		node: arg.node,
-		allNodes: args[2]
+		allNodes: allNodes
 	};
-	// args[2] is the props being passed.
-	//args[2].Route = route; // Add the correct component class instance.
 
 	// Create the static HTML and CSS.
 	let { html, css } = component.render(props);
+
+	// Write .html file to filesystem.
+  	ensureDirExists(destPath);
+	fs.promises.writeFile(destPath, html);
+	  
 });
