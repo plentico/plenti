@@ -7,9 +7,9 @@ import fs from 'fs';
 // Get the arguments from Go command execution.
 const args = process.argv.slice(2)
 
-// -----------------------
-// Start client SPA build:
-// -----------------------
+// -----------------
+// Helper Functions:
+// -----------------
 
 // Create any missing sub folders.
 const ensureDirExists = filePath => {
@@ -20,6 +20,19 @@ const ensureDirExists = filePath => {
 	ensureDirExists(dirname);
 	fs.mkdirSync(dirname);
 }
+
+// Concatenates HTML strings together.
+const injectString = (order, content, element, html) => {
+	if (order == 'prepend') {
+		return html.replace(element, content + element);
+	} else if (order == 'append') {
+		return html.replace(element, element + content);
+	}
+};
+
+// -----------------------
+// Start client SPA build:
+// -----------------------
 
 let clientBuildStr = JSON.parse(args[0]);
 
@@ -44,10 +57,6 @@ clientBuildStr.forEach(arg => {
 // Start static HTML build:
 // ------------------------
 
-//console.log(args[1]);
-//console.log("\n\n");
-//console.log(args[2]);
-
 let staticBuildStr = JSON.parse(args[1]);
 let allNodes = JSON.parse(args[2]);
 
@@ -69,6 +78,16 @@ staticBuildStr.forEach(arg => {
 
 	// Create the static HTML and CSS.
 	let { html, css } = component.render(props);
+
+	// Inject Style.
+	let style = "<style>" + css.code + "</style>";
+	html = injectString('prepend', style, '</head>', html);
+	// Inject SPA entry point.
+	let entryPoint = '<script type="module" src="https://unpkg.com/dimport?module" data-main="/spa/ejected/main.js"></script><script nomodule src="https://unpkg.com/dimport/nomodule" data-main="/spa/ejected/main.js"></script>';
+	html = injectString('prepend', entryPoint, '</head>', html);
+	// Inject ID used to hydrate SPA.
+	let hydrator = ' id="hydrate-plenti"';
+	html = injectString('append', hydrator, '<html', html);
 
 	// Write .html file to filesystem.
   	ensureDirExists(destPath);
