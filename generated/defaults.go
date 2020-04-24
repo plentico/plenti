@@ -152,6 +152,9 @@ clientBuildStr.forEach(arg => {
 		css: false
 	});
 
+	// Find svelte internals in snowpack directory.
+	js.code = js.code.replace(/from "svelte\/internal"\;/g, 'from "../web_modules/svelte/internal/index.js";');
+	  
 	// Write JS to build directory.
 	ensureDirExists(arg.destPath);
 	fs.promises.writeFile(arg.destPath, js.code);
@@ -170,6 +173,7 @@ clientBuildStr.forEach(arg => {
 let staticBuildStr = JSON.parse(args[1]);
 let allNodes = JSON.parse(args[2]);
 
+// Create the component that wraps all nodes.
 let htmlWrapper = path.join(path.resolve(), 'layout/global/html.svelte')
 const component = relative(htmlWrapper, process.cwd()).default;
 
@@ -178,8 +182,10 @@ staticBuildStr.forEach(arg => {
 	let componentPath = path.join(path.resolve(), arg.componentPath);
 	let destPath = path.join(path.resolve(), arg.destPath);
 
+	// Set route used in svelte:component as "this" value.
 	const route = relative(componentPath, process.cwd()).default;
 
+	// Set props so component can access field values, etc.
 	let props = {
 		Route: route,
 		node: arg.node,
