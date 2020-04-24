@@ -13,12 +13,7 @@ type SiteConfig struct {
 	Local    struct {
 		Port int `json:"port"`
 	} `json:"local"`
-	//Types struct {
 	Types map[string]string `json:"types"`
-	//TypeName string `json:"pages"`
-	//TypeName map[string]*json.RawMessage `json:"-"`
-	//TypeName map[string]string `json:"-"`
-	//} `json:"types"`
 }
 
 // GetSiteConfig reads the site's configuration file values.

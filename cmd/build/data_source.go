@@ -60,6 +60,21 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 				// Remove the "content" folder from path.
 				path = strings.TrimPrefix(path, "content")
 
+				// Check for path overrides from plenti.json config file.
+				for configContentType, slug := range siteConfig.Types {
+					fmt.Printf("cct is: %s\n", configContentType)
+					fmt.Printf("ct is: %s\n", contentType)
+					if configContentType == contentType {
+						slug = strings.Replace(slug, ":filename", fileName, -1)
+						slug = strings.Replace(slug, "_", "-", -1)
+						slug = strings.ToLower(slug)
+						slug = strings.TrimSuffix(slug, filepath.Ext(slug))
+						path = slug
+					}
+					fmt.Printf("slug is: %s\n", slug)
+					fmt.Printf("path is: %s\n", path)
+				}
+
 				destPath := buildPath + "/" + path + ".html"
 
 				// Check for index.json outside of type declaration.
@@ -68,11 +83,6 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 					path = "/"
 				}
 
-				// TODO: Need to check for path overrides from siteConfig reader.
-				for contentType, slug := range siteConfig.Types {
-					fmt.Printf("type is: %s\n", contentType)
-					fmt.Printf("slug is: %s\n", slug)
-				}
 				nodeDetailsStr := "{\n" +
 					"\"path\": \"" + path + "\",\n" +
 					"\"type\": \"" + contentType + "\",\n" +
