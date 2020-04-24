@@ -154,9 +154,10 @@ clientBuildStr.forEach(arg => {
 // Start static HTML build:
 // ------------------------
 
-console.log(args[1]);
-console.log("\n\n");
-console.log(args[2]);
+//console.log(args[1]);
+//console.log("\n\n");
+//console.log(args[2]);
+
 let staticBuildStr = JSON.parse(args[1]);
 let allNodes = JSON.parse(args[2]);
 

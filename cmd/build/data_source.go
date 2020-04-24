@@ -6,12 +6,13 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"plenti/readers"
 	"regexp"
 	"strings"
 )
 
 // DataSource builds json list from "content/" directory.
-func DataSource(buildPath string) (string, string) {
+func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string) {
 
 	fmt.Println("\nGathering data source from \"content/\" folder")
 
@@ -68,6 +69,10 @@ func DataSource(buildPath string) (string, string) {
 				}
 
 				// TODO: Need to check for path overrides from siteConfig reader.
+				for contentType, slug := range siteConfig.Types {
+					fmt.Printf("type is: %s\n", contentType)
+					fmt.Printf("slug is: %s\n", slug)
+				}
 				nodeDetailsStr := "{\n" +
 					"\"path\": \"" + path + "\",\n" +
 					"\"type\": \"" + contentType + "\",\n" +

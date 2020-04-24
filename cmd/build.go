@@ -57,7 +57,7 @@ you need to deploy for your website.`,
 
 		start := time.Now()
 		// Build JSON from "content/" directory.
-		staticBuildStr, allNodesStr := build.DataSource(buildPath)
+		staticBuildStr, allNodesStr := build.DataSource(buildPath, siteConfig)
 		elapsed := time.Since(start)
 		fmt.Printf("Creating data_source took %s\n", elapsed)
 
