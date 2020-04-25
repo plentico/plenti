@@ -71,13 +71,13 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 					}
 				}
 
-				destPath := buildPath + "/" + path + ".html"
-
 				// Check for index.json outside of type declaration.
 				if contentType == "index.json" {
 					contentType = "index"
 					path = "/"
 				}
+
+				destPath := buildPath + "/" + path + "/index.html"
 
 				nodeDetailsStr := "{\n" +
 					"\"path\": \"" + path + "\",\n" +
