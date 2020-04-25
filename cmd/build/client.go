@@ -2,12 +2,9 @@ package build
 
 import (
 	"fmt"
-	"html"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 )
 
@@ -84,46 +81,11 @@ func Client(buildPath string) string {
 			// If the file is in .svelte format, compile it to .js
 			if filepath.Ext(layoutPath) == ".svelte" {
 
-				fileContentByte, readFileErr := ioutil.ReadFile(layoutPath)
-				if readFileErr != nil {
-					fmt.Printf("Could not read contents of svelte source file: %s\n", readFileErr)
-				}
-
-				// Remove all comments.
-				reC := regexp.MustCompile("(?s)//.*?\n|/\\*.*?\\*/")
-				fileContentByte = reC.ReplaceAll(fileContentByte, nil)
-
-				fileContentStr := string(fileContentByte)
-				// Convert file extensions to be snowpack friendly.
-				fileContentStr = strings.Replace(fileContentStr, ".svelte", ".js", -1)
-				//fileContentStr = strings.Replace(fileContentStr, "from \"svelte/internal\";", "from \"../web_modules/svelte/internal/index.js\";", -1)
-				fileContentStr = strings.Replace(fileContentStr, "from \"navaid\";", "from \"../web_modules/navaid.js\";", -1)
-				fileContentStr = strings.Replace(fileContentStr, "from 'navaid';", "from '../web_modules/navaid.js';", -1)
-
-				// Encode HTML so it can be represented as a string.
-				fileContentStr = html.EscapeString(fileContentStr)
-
-				fmt.Println(fileContentStr)
-				// Remove newlines.
-				reN := regexp.MustCompile(`\r?\n`)
-				fileContentStr = reN.ReplaceAllString(fileContentStr, " ")
-				// Remove tabs.
-				reT := regexp.MustCompile(`\t`)
-				fileContentStr = reT.ReplaceAllString(fileContentStr, " ")
-				// Reduce extra whitespace to a single space.
-				reS := regexp.MustCompile(`\s+`)
-				fileContentStr = reS.ReplaceAllString(fileContentStr, " ")
-
-				// Convert opening curly brackets to HTML escape character.
-				fileContentStr = strings.Replace(fileContentStr, "{", "&#123;", -1)
-				// Convert closing curly brackets to HTML escape character.
-				fileContentStr = strings.Replace(fileContentStr, "}", "&#125;", -1)
-
 				// Replace .svelte file extension with .js.
 				destFile = strings.TrimSuffix(destFile, filepath.Ext(destFile)) + ".js"
 
 				// Create string representing array of objects to be passed to nodejs.
-				clientBuildStr = clientBuildStr + "{ \"component\": \"" + fileContentStr + "\", \"destPath\": \"" + destFile + "\", \"stylePath\": \"" + stylePath + "\"},"
+				clientBuildStr = clientBuildStr + "{ \"layoutPath\": \"" + layoutPath + "\", \"destPath\": \"" + destFile + "\", \"stylePath\": \"" + stylePath + "\"},"
 
 				compiledComponentCounter++
 
