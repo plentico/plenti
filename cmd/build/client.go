@@ -88,6 +88,11 @@ func Client(buildPath string) string {
 				if readFileErr != nil {
 					fmt.Printf("Could not read contents of svelte source file: %s\n", readFileErr)
 				}
+
+				// Remove all comments.
+				reC := regexp.MustCompile("(?s)//.*?\n|/\\*.*?\\*/")
+				fileContentByte = reC.ReplaceAll(fileContentByte, nil)
+
 				fileContentStr := string(fileContentByte)
 				// Convert file extensions to be snowpack friendly.
 				fileContentStr = strings.Replace(fileContentStr, ".svelte", ".js", -1)
@@ -98,6 +103,7 @@ func Client(buildPath string) string {
 				// Encode HTML so it can be represented as a string.
 				fileContentStr = html.EscapeString(fileContentStr)
 
+				fmt.Println(fileContentStr)
 				// Remove newlines.
 				reN := regexp.MustCompile(`\r?\n`)
 				fileContentStr = reN.ReplaceAllString(fileContentStr, " ")
