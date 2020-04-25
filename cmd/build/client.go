@@ -93,6 +93,7 @@ func Client(buildPath string) string {
 				fileContentStr = strings.Replace(fileContentStr, ".svelte", ".js", -1)
 				//fileContentStr = strings.Replace(fileContentStr, "from \"svelte/internal\";", "from \"../web_modules/svelte/internal/index.js\";", -1)
 				fileContentStr = strings.Replace(fileContentStr, "from \"navaid\";", "from \"../web_modules/navaid.js\";", -1)
+				fileContentStr = strings.Replace(fileContentStr, "from 'navaid';", "from '../web_modules/navaid.js';", -1)
 
 				// Encode HTML so it can be represented as a string.
 				fileContentStr = html.EscapeString(fileContentStr)

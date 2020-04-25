@@ -113,6 +113,7 @@ import 'svelte/register.js';
 import relative from 'require-relative';
 import path from 'path';
 import fs from 'fs';
+import ent from 'ent';
 
 // Get the arguments from Go command execution.
 const args = process.argv.slice(2)
@@ -147,8 +148,11 @@ const injectString = (order, content, element, html) => {
 let clientBuildStr = JSON.parse(args[0]);
 
 clientBuildStr.forEach(arg => {
+
+	let component = ent.decode(arg.component);
+
 	// Create component JS that can run in the browser.
-	let { js, css } = svelte.compile(arg.component, {
+	let { js, css } = svelte.compile(component, {
 		css: false
 	});
 
@@ -613,6 +617,7 @@ nodes.forEach(node => {
     "start": "sirv public"
   },
   "devDependencies": {
+    "ent": "^2.2.0",
     "sirv-cli": "^0.4.4",
     "require-relative": "^0.8.7",
     "snowpack": "^1.6.0"
