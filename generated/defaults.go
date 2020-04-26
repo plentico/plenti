@@ -12,18 +12,19 @@ node_modules`),
     "author": "text",
     "date": "date"
 }`),
-	"/content/blog/post-3_has_a_long_filename.json": []byte(`{
-    "title": "Post 3",
+	"/content/blog/adding_pletiform.json": []byte(`{
+    "title": "Build sites with good form",
     "body": [
-        "The third of the posts"
+        "Need an easy webform solution?",
+        "Try adding a <a href='https://plentiform.com' target='blank' rel='noopener noreferrer'>plentiform</a>! (Coming soon)"
     ],
     "author": "Jim Fisk",
     "date": "1/26/2020"
 }`),
 	"/content/blog/post1.json": []byte(`{
-    "title": "Build sites with good form",
+    "title": "Post 1",
     "body": [
-        "Need to collect user info, try adding a <a href='https://plentiform.com'>plentiform</a>? (Coming soon)"
+        "The first of the posts"
     ],
     "author": "Jim Fisk",
     "date": "1/24/2020"
@@ -51,9 +52,9 @@ node_modules`),
 	"/content/pages/about.json": []byte(`{
 	"title": "About Plenti",
 	"description": [
-		"Plenti is <a href=\"https://jamstack.org/\" target=\"blank\" rel=\"noopener noreferrer\">JAMstack</a> framework with a modern frontend for creating dynamic experiences. We've cut out as many dependencies as possible so you can focus on being productive instead of wrestling with a complicated toolchain.",
-		"The <a href=\"https://svelte.dev/\" target=\"blank\" rel=\"noopener noreferrer\">Svelte</a> frontend <em>cuts weight</em> so users get a snappy experience, even with bad internet connections or underpowered devices.",
-		"The <a href=\"https://golang.org/\" target=\"blank\" rel=\"noopener noreferrer\">Go</a> backend <em>cuts wait</em> so apps build faster allowing devs to get more done and editors to get realtime feedback on content changes.",
+		"Plenti is <a href='https://jamstack.org/' target='blank' rel='noopener noreferrer'>JAMstack</a> framework with a modern frontend for creating dynamic experiences. We've cut out as many dependencies as possible so you can focus on being productive instead of wrestling with a complicated toolchain.",
+		"The <a href='https://svelte.dev/' target='blank' rel='noopener noreferrer'>Svelte</a> frontend <em>cuts weight</em> so users get a snappy experience, even with bad internet connections or underpowered devices.",
+		"The <a href='https://golang.org/' target='blank' rel='noopener noreferrer'>Go</a> backend <em>cuts wait</em> so apps build faster allowing devs to get more done and editors to get realtime feedback on content changes.",
 		"Thanks for taking a look!"
 	],
 	"author": "Jim Fisk"

@@ -1,6 +1,6 @@
 <script>
 	export let title, intro, allNodes;
-  import Grid from '../components/grid.svelte';
+	import Grid from '../components/grid.svelte';
 </script>
 
 <h1>{title}</h1>
