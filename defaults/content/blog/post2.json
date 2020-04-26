@@ -1,4 +1,8 @@
 {
     "title": "Post 2",
-    "description": "Second blog post."
+    "body": [
+        "This is the second post."
+    ],
+    "author": "Jim Fisk",
+    "date": "1/25/2020"
 }

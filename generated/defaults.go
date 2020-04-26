@@ -6,17 +6,35 @@ package generated
 var Defaults = map[string][]byte{
 	"/.gitignore": []byte(`public
 node_modules`),
+	"/content/blog/_blueprint.json": []byte(`{
+    "title": "text",
+    "body": ["text"],
+    "author": "text",
+    "date": "date"
+}`),
 	"/content/blog/post-3_has_a_long_filename.json": []byte(`{
     "title": "Post 3",
-    "description": "Third of the blog posts."
+    "body": [
+        "The third of the posts"
+    ],
+    "author": "Jim Fisk",
+    "date": "1/26/2020"
 }`),
 	"/content/blog/post1.json": []byte(`{
     "title": "Build sites with good form",
-    "description": "Need to collect user info, try adding a <a href='https://plentiform.com'>plentiform</a>? (Coming soon)"
+    "body": [
+        "Need to collect user info, try adding a <a href='https://plentiform.com'>plentiform</a>? (Coming soon)"
+    ],
+    "author": "Jim Fisk",
+    "date": "1/24/2020"
 }`),
 	"/content/blog/post2.json": []byte(`{
     "title": "Post 2",
-    "description": "Second blog post."
+    "body": [
+        "This is the second post."
+    ],
+    "author": "Jim Fisk",
+    "date": "1/25/2020"
 }`),
 	"/content/index.json": []byte(`{
 	"title": "My Plenti Site",
@@ -33,9 +51,9 @@ node_modules`),
 	"/content/pages/about.json": []byte(`{
 	"title": "About Plenti",
 	"description": [
-		"Plenti is JAMstack framework with a modern frontend for creating dynamic experiences. We've cut out as many dependencies as possible so you can focus on being productive instead of wrestling with a complicated toolchain.",
-		"The Svelte frontend <em>cuts weight</em> so users get a snappy experience, even with bad internet connections or underpowered devices.",
-		"The Go backend <em>cuts wait</em> so apps build faster allowing devs to get more done and editors to get realtime feedback on content changes.",
+		"Plenti is <a href=\"https://jamstack.org/\" target=\"blank\" rel=\"noopener noreferrer\">JAMstack</a> framework with a modern frontend for creating dynamic experiences. We've cut out as many dependencies as possible so you can focus on being productive instead of wrestling with a complicated toolchain.",
+		"The <a href=\"https://svelte.dev/\" target=\"blank\" rel=\"noopener noreferrer\">Svelte</a> frontend <em>cuts weight</em> so users get a snappy experience, even with bad internet connections or underpowered devices.",
+		"The <a href=\"https://golang.org/\" target=\"blank\" rel=\"noopener noreferrer\">Go</a> backend <em>cuts wait</em> so apps build faster allowing devs to get more done and editors to get realtime feedback on content changes.",
 		"Thanks for taking a look!"
 	],
 	"author": "Jim Fisk"
@@ -48,11 +66,12 @@ node_modules`),
 	"author": "Jim Fisk"
 }`),
 	"/layout/components/grid.svelte": []byte(`<script>
+  import { sortByDate } from '../scripts/sort_by_date.svelte';
   export let items, filter;
 </script>
 
 <div class="grid">
-  {#each items as item}
+  {#each sortByDate(items) as item}
 		{#if item.type == filter}
       <a class="grid-item" href="{item.path}">{item.fields.title}</a>
 		{/if}
@@ -77,15 +96,25 @@ node_modules`),
 </style>
 `),
 	"/layout/content/blog.svelte": []byte(`<script>
-	export let title, description;
+	export let title, body, author, date;
 </script>
 
 <h1>{title}</h1>
-<p><em>Blog template</em></p>
-<div>
-  <div><strong>Title: </strong><span>{title}</span></div>
-  <div><strong>Desc: </strong><span>{description}</span></div>
-</div>
+
+<p><em>{#if author}Written by {author}{/if}{#if date}&nbsp;on {date}{/if}</em></p>
+
+{#if body}
+  <div>
+    {#each body as paragraph}
+      <p>{@html paragraph}</p>
+    {/each}
+  </div>
+{/if}
+
+<details>
+  <summary>Uses the "Blog" template</summary>
+  <pre><code>layout/content/blog.svelte</code></pre>
+</details>
 
 <p><a href="/">Back home</a></p>
 `),
@@ -95,18 +124,26 @@ node_modules`),
 </script>
 
 <h1>{title}</h1>
-{#if intro}
-	<section id="intro"><p>{@html intro.slogan}</p></section>
-{/if}
-<h3>Recent blog posts:</h3>
-<Grid items={allNodes} filter="blog" />
+
+{#if intro}<section id="intro"><p>{@html intro.slogan}</p></section>{/if}
+
+<div>
+	<h3>Recent blog posts:</h3>
+	<Grid items={allNodes} filter="blog" />
+	<br />
+</div>
+
+<details>
+  <summary>Uses the "Index" template</summary>
+  <pre><code>layout/content/index.svelte</code></pre>
+</details>
 `),
 	"/layout/content/pages.svelte": []byte(`<script>
-	export let title, description, author;
+	export let title, description;
 </script>
 
 <h1>{title}</h1>
-<p><em>Page template</em></p>
+
 {#if description}
   <div>
     {#each description as paragraph}
@@ -114,9 +151,11 @@ node_modules`),
     {/each}
   </div>
 {/if}
-{#if author}
-  <p>- <em>{author}</em></p>
-{/if}
+
+<details>
+  <summary>Uses the "Pages" template</summary>
+  <pre><code>layout/content/pages.svelte</code></pre>
+</details>
 
 <p><a href="/">Back home</a></p>
 `),
@@ -626,6 +665,23 @@ nodes.forEach(node => {
   }
 </script>
 `),
+	"/layout/scripts/sort_by_date.svelte": []byte(`<script context="module">
+  export const sortByDate = (items, order) => {
+    items.sort((a, b) => { 
+      // Must have a field specifically named "date" to work.
+      // Feel free to extend to other custom named date fields.
+      if (a.fields.hasOwnProperty("date") && b.fields.hasOwnProperty("date")) {
+        let aDate = new Date(a.fields.date);
+        let bDate = new Date(b.fields.date);
+        if (order == "oldest") {
+            return aDate - bDate;
+        }
+        return bDate - aDate;
+      }
+    });
+    return items;
+  };
+</script>`),
 	"/package.json": []byte(`{
   "name": "my-plenti-app",
   "version": "1.0.0",

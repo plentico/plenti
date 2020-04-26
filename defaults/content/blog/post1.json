@@ -1,4 +1,8 @@
 {
     "title": "Build sites with good form",
-    "description": "Need to collect user info, try adding a <a href='https://plentiform.com'>plentiform</a>? (Coming soon)"
+    "body": [
+        "Need to collect user info, try adding a <a href='https://plentiform.com'>plentiform</a>? (Coming soon)"
+    ],
+    "author": "Jim Fisk",
+    "date": "1/24/2020"
 }

@@ -1,9 +1,10 @@
 <script>
+  import { sortByDate } from '../scripts/sort_by_date.svelte';
   export let items, filter;
 </script>
 
 <div class="grid">
-  {#each items as item}
+  {#each sortByDate(items) as item}
 		{#if item.type == filter}
       <a class="grid-item" href="{item.path}">{item.fields.title}</a>
 		{/if}

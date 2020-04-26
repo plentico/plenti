@@ -1,9 +1,9 @@
 <script>
-	export let title, description, author;
+	export let title, description;
 </script>
 
 <h1>{title}</h1>
-<p><em>Page template</em></p>
+
 {#if description}
   <div>
     {#each description as paragraph}
@@ -11,8 +11,10 @@
     {/each}
   </div>
 {/if}
-{#if author}
-  <p>- <em>{author}</em></p>
-{/if}
+
+<details>
+  <summary>Uses the "Pages" template</summary>
+  <pre><code>layout/content/pages.svelte</code></pre>
+</details>
 
 <p><a href="/">Back home</a></p>
