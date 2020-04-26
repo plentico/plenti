@@ -2,7 +2,7 @@
   <div class="container">
     <span id="brand"><a href="/">Home</a></span>
     <a href="/about">About</a>&nbsp;
-    <a href="/anything">Anything</a>
+    <a href="/contact">Contact</a>
   </div>
 </nav>
 

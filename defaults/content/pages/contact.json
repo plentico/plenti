@@ -1,5 +1,7 @@
 {
 	"title": "Contact",
-	"desc": "Maybe add a <a href='https://plentiform.com'>plentiform</a>?",
-	"author": "Your name"
+	"description": [
+		"The project is 100% open source, so if you'd like to fork it for your own purposes, or help us out by reporting bugs / contributing code: <a href=\"https://github.com/plentico/plenti\">https://github.com/plentico/plenti</a>"
+	],
+	"author": "Jim Fisk"
 }

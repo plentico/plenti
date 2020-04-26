@@ -11,34 +11,41 @@ node_modules`),
     "description": "Third of the blog posts."
 }`),
 	"/content/blog/post1.json": []byte(`{
-    "title": "Post 1",
-    "description": "First blog post."
+    "title": "Build sites with good form",
+    "description": "Need to collect user info, try adding a <a href='https://plentiform.com'>plentiform</a>? (Coming soon)"
 }`),
 	"/content/blog/post2.json": []byte(`{
     "title": "Post 2",
     "description": "Second blog post."
 }`),
 	"/content/index.json": []byte(`{
-	"title": "My Site Homepage",
+	"title": "My Plenti Site",
 	"intro": {
-		"slogan": "Welcome to a faster way to web",
+		"slogan": "Visit the <a href=\"https://svelte.dev/tutorial\">Svelte tutorial</a> to learn how to build Svelte apps.",
 		"color": "red"
 	}
 }`),
 	"/content/pages/_blueprint.json": []byte(`{
-	"title": "",
-	"desc": "",
-	"author": ""
+	"title": "text",
+	"description": ["text"],
+	"author": "text"
 }`),
 	"/content/pages/about.json": []byte(`{
-	"title": "About Me",
-	"desc": "Tell us about yourself",
-	"author": "Your name"
+	"title": "About Plenti",
+	"description": [
+		"Plenti is JAMstack framework with a modern frontend for creating dynamic experiences. We've cut out as many dependencies as possible so you can focus on being productive instead of wrestling with a complicated toolchain.",
+		"The Svelte frontend <em>cuts weight</em> so users get a snappy experience, even with bad internet connections or underpowered devices.",
+		"The Go backend <em>cuts wait</em> so apps build faster allowing devs to get more done and editors to get realtime feedback on content changes.",
+		"Thanks for taking a look!"
+	],
+	"author": "Jim Fisk"
 }`),
 	"/content/pages/contact.json": []byte(`{
 	"title": "Contact",
-	"desc": "Maybe add a <a href='https://plentiform.com'>plentiform</a>?",
-	"author": "Your name"
+	"description": [
+		"The project is 100% open source, so if you'd like to fork it for your own purposes, or help us out by reporting bugs / contributing code: <a href=\"https://github.com/plentico/plenti\">https://github.com/plentico/plenti</a>"
+	],
+	"author": "Jim Fisk"
 }`),
 	"/layout/components/grid.svelte": []byte(`<script>
   export let items, filter;
@@ -83,28 +90,33 @@ node_modules`),
 <p><a href="/">Back home</a></p>
 `),
 	"/layout/content/index.svelte": []byte(`<script>
-	export let name;
-	export let allNodes;
+	export let title, intro, allNodes;
   import Grid from '../components/grid.svelte';
 </script>
 
-<h1>{name}</h1>
-<section id="intro">
-	<p>Visit the <a href="https://svelte.dev/tutorial">Svelte tutorial</a> to learn how to build Svelte apps.</p>
-	<h3>Recent blog posts:</h3>
-  <Grid items={allNodes} filter="blog" />
-</section>
+<h1>{title}</h1>
+{#if intro}
+	<section id="intro"><p>{@html intro.slogan}</p></section>
+{/if}
+<h3>Recent blog posts:</h3>
+<Grid items={allNodes} filter="blog" />
 `),
 	"/layout/content/pages.svelte": []byte(`<script>
-	export let title, description;
+	export let title, description, author;
 </script>
 
 <h1>{title}</h1>
 <p><em>Page template</em></p>
-<div>
-  <div><strong>Title: </strong><span>{title}</span></div>
-  <div><strong>Desc: </strong><span>{description}</span></div>
-</div>
+{#if description}
+  <div>
+    {#each description as paragraph}
+      <p>{@html paragraph}</p>
+    {/each}
+  </div>
+{/if}
+{#if author}
+  <p>- <em>{author}</em></p>
+{/if}
 
 <p><a href="/">Back home</a></p>
 `),
@@ -306,8 +318,9 @@ export default DataSource;
 	"/layout/ejected/main.js": []byte(`//import Router from './client_router.svelte';
 import Router from './client_router.js'; // Needs .js extension when built.
 
+/*
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/jim-service-worker.js')
+  navigator.serviceWorker.register('/plenti-service-worker.js')
   .then((reg) => {
     console.log('Service Worker registration succeeded.');
   }).catch((error) => {
@@ -316,6 +329,7 @@ if ('serviceWorker' in navigator) {
 } else {
   console.log('Service Workers not supported by browser')
 }
+*/
 
 const replaceContainer = function ( Component, options ) {
   const frag = document.createDocumentFragment();
@@ -577,7 +591,7 @@ nodes.forEach(node => {
   <div class="container">
     <span id="brand"><a href="/">Home</a></span>
     <a href="/about">About</a>&nbsp;
-    <a href="/anything">Anything</a>
+    <a href="/contact">Contact</a>
   </div>
 </nav>
 
@@ -613,7 +627,7 @@ nodes.forEach(node => {
 </script>
 `),
 	"/package.json": []byte(`{
-  "name": "svelte-app",
+  "name": "my-plenti-app",
   "version": "1.0.0",
   "type": "module",
   "devDependencies": {

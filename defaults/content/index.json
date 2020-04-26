@@ -1,7 +1,7 @@
 {
-	"title": "My Site Homepage",
+	"title": "My Plenti Site",
 	"intro": {
-		"slogan": "Welcome to a faster way to web",
+		"slogan": "Visit the <a href=\"https://svelte.dev/tutorial\">Svelte tutorial</a> to learn how to build Svelte apps.",
 		"color": "red"
 	}
 }

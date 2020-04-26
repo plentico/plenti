@@ -1,8 +1,9 @@
 //import Router from './client_router.svelte';
 import Router from './client_router.js'; // Needs .js extension when built.
 
+/*
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/jim-service-worker.js')
+  navigator.serviceWorker.register('/plenti-service-worker.js')
   .then((reg) => {
     console.log('Service Worker registration succeeded.');
   }).catch((error) => {
@@ -11,6 +12,7 @@ if ('serviceWorker' in navigator) {
 } else {
   console.log('Service Workers not supported by browser')
 }
+*/
 
 const replaceContainer = function ( Component, options ) {
   const frag = document.createDocumentFragment();

@@ -1,5 +1,10 @@
 {
-	"title": "About Me",
-	"desc": "Tell us about yourself",
-	"author": "Your name"
+	"title": "About Plenti",
+	"description": [
+		"Plenti is JAMstack framework with a modern frontend for creating dynamic experiences. We've cut out as many dependencies as possible so you can focus on being productive instead of wrestling with a complicated toolchain.",
+		"The Svelte frontend <em>cuts weight</em> so users get a snappy experience, even with bad internet connections or underpowered devices.",
+		"The Go backend <em>cuts wait</em> so apps build faster allowing devs to get more done and editors to get realtime feedback on content changes.",
+		"Thanks for taking a look!"
+	],
+	"author": "Jim Fisk"
 }
