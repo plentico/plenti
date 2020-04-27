@@ -5,20 +5,11 @@ class DataSource {
   constructor() {}
 
   static getNode(uri) {
-    let content;
-    nodes.map(node => {
-      if (node.path == uri) {
-        content = node;
-      }
-    });
-    return content ? content : '';
+    return nodes.find(node => node.path == uri);
   }
 
   static getAllNodes() {
-    let content = nodes.map(node => {
-      return node;
-    });
-    return content;
+    return nodes;
   }
 }
 
