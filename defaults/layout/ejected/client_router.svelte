@@ -28,9 +28,10 @@
   addEventListener('pushstate', track);
   addEventListener('popstate', track);
 
-  const router = Navaid('/', () => import('../global/404.svelte').then(draw))
-    .on('/', () => import('../content/index.svelte').then(draw))
-    .on('/:slug', () => import('../content/pages.svelte').then(draw))
-    .on('/blog/:slug', () => import('../content/blog.svelte').then(draw))
-    .listen();
+  const router = Navaid('/', () => import('../global/404.svelte').then(draw));
+
+  allNodes.forEach(node => {
+    router.on(node.path, () => import('../content/' + node.type + '.svelte').then(draw)).listen();
+  });
+
 </script>
