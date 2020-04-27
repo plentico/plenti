@@ -2,14 +2,18 @@
 
 <script>
   import Navaid from 'navaid';
-  import DataSource from './data_source.js';
+  import nodes from './nodes.js';
   import Html from '../global/html.svelte';
 
   let Route, node, allNodes;
 
+  const getNode = uri => {
+    return nodes.find(node => node.path == uri);
+  }
+
   let uri = location.pathname;
-  node = DataSource.getNode(uri);
-  allNodes = DataSource.getAllNodes();
+  node = getNode(uri);
+  allNodes = nodes;
 
   function draw(m) {
     Route = m.default;
@@ -20,8 +24,8 @@
     uri = obj.state || obj.uri;
     if (window.ga) ga.send('pageview', { dp:uri });
 
-    node = DataSource.getNode(uri);
-    allNodes = DataSource.getAllNodes();
+    node = getNode(uri);
+    allNodes = nodes;
   }
 
   addEventListener('replacestate', track);

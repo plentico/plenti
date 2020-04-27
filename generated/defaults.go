@@ -273,14 +273,18 @@ staticBuildStr.forEach(arg => {
 
 <script>
   import Navaid from 'navaid';
-  import DataSource from './data_source.js';
+  import nodes from './nodes.js';
   import Html from '../global/html.svelte';
 
   let Route, node, allNodes;
 
+  const getNode = uri => {
+    return nodes.find(node => node.path == uri);
+  }
+
   let uri = location.pathname;
-  node = DataSource.getNode(uri);
-  allNodes = DataSource.getAllNodes();
+  node = getNode(uri);
+  allNodes = nodes;
 
   function draw(m) {
     Route = m.default;
@@ -291,8 +295,8 @@ staticBuildStr.forEach(arg => {
     uri = obj.state || obj.uri;
     if (window.ga) ga.send('pageview', { dp:uri });
 
-    node = DataSource.getNode(uri);
-    allNodes = DataSource.getAllNodes();
+    node = getNode(uri);
+    allNodes = nodes;
   }
 
   addEventListener('replacestate', track);
@@ -306,23 +310,6 @@ staticBuildStr.forEach(arg => {
   });
 
 </script>
-`),
-	"/layout/ejected/data_source.js": []byte(`import nodes from './nodes.js';
-
-class DataSource {
-
-  constructor() {}
-
-  static getNode(uri) {
-    return nodes.find(node => node.path == uri);
-  }
-
-  static getAllNodes() {
-    return nodes;
-  }
-}
-
-export default DataSource;
 `),
 	"/layout/ejected/main.js": []byte(`//import Router from './client_router.svelte';
 import Router from './client_router.js'; // Needs .js extension when built.
