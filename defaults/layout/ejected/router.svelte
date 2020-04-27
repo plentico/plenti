@@ -1,11 +1,11 @@
-<Html {Route} {node} {allNodes} />
+<Html {route} {node} {allNodes} />
 
 <script>
   import Navaid from 'navaid';
   import nodes from './nodes.js';
   import Html from '../global/html.svelte';
 
-  let Route, node, allNodes;
+  let route, node, allNodes;
 
   const getNode = uri => {
     return nodes.find(node => node.path == uri);
@@ -16,7 +16,7 @@
   allNodes = nodes;
 
   function draw(m) {
-    Route = m.default;
+    route = m.default;
     window.scrollTo(0, 0);
   }
 

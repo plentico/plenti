@@ -269,50 +269,8 @@ staticBuildStr.forEach(arg => {
 	fs.promises.writeFile(destPath, html);
 	  
 });`),
-	"/layout/ejected/client_router.svelte": []byte(`<Html {Route} {node} {allNodes} />
-
-<script>
-  import Navaid from 'navaid';
-  import nodes from './nodes.js';
-  import Html from '../global/html.svelte';
-
-  let Route, node, allNodes;
-
-  const getNode = uri => {
-    return nodes.find(node => node.path == uri);
-  }
-
-  let uri = location.pathname;
-  node = getNode(uri);
-  allNodes = nodes;
-
-  function draw(m) {
-    Route = m.default;
-    window.scrollTo(0, 0);
-  }
-
-  function track(obj) {
-    uri = obj.state || obj.uri;
-    if (window.ga) ga.send('pageview', { dp:uri });
-
-    node = getNode(uri);
-    allNodes = nodes;
-  }
-
-  addEventListener('replacestate', track);
-  addEventListener('pushstate', track);
-  addEventListener('popstate', track);
-
-  const router = Navaid('/', () => import('../global/404.svelte').then(draw));
-
-  allNodes.forEach(node => {
-    router.on(node.path, () => import('../content/' + node.type + '.svelte').then(draw)).listen();
-  });
-
-</script>
-`),
 	"/layout/ejected/main.js": []byte(`//import Router from './client_router.svelte';
-import Router from './client_router.js'; // Needs .js extension when built.
+import Router from './router.js'; // Needs .js extension when built.
 
 /*
 if ('serviceWorker' in navigator) {
@@ -342,6 +300,48 @@ const app = replaceContainer( Router, {
 });
 
 export default app;
+`),
+	"/layout/ejected/router.svelte": []byte(`<Html {route} {node} {allNodes} />
+
+<script>
+  import Navaid from 'navaid';
+  import nodes from './nodes.js';
+  import Html from '../global/html.svelte';
+
+  let route, node, allNodes;
+
+  const getNode = uri => {
+    return nodes.find(node => node.path == uri);
+  }
+
+  let uri = location.pathname;
+  node = getNode(uri);
+  allNodes = nodes;
+
+  function draw(m) {
+    route = m.default;
+    window.scrollTo(0, 0);
+  }
+
+  function track(obj) {
+    uri = obj.state || obj.uri;
+    if (window.ga) ga.send('pageview', { dp:uri });
+
+    node = getNode(uri);
+    allNodes = nodes;
+  }
+
+  addEventListener('replacestate', track);
+  addEventListener('pushstate', track);
+  addEventListener('popstate', track);
+
+  const router = Navaid('/', () => import('../global/404.svelte').then(draw));
+
+  allNodes.forEach(node => {
+    router.on(node.path, () => import('../content/' + node.type + '.svelte').then(draw)).listen();
+  });
+
+</script>
 `),
 	"/layout/global/404.svelte": []byte(`<div>Oops... 404 not found</div>
 <a href="/">Go home?</a>`),
@@ -390,7 +390,7 @@ export default app;
   import Footer from './footer.svelte';
   import { makeTitle } from '../scripts/make_title.svelte';
 
-  export let Route, node, allNodes;
+  export let route, node, allNodes;
 </script>
 
 <html lang="en">
@@ -399,7 +399,7 @@ export default app;
   <Nav />
   <main>
     <div class="container">
-      <svelte:component this={Route} {...node.fields} {allNodes} />
+      <svelte:component this={route} {...node.fields} {allNodes} />
       <br />
     </div>
   </main>
