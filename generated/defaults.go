@@ -490,12 +490,12 @@ export default app;
   "version": "1.0.0",
   "type": "module",
   "devDependencies": {
-    "require-relative": "^0.8.7",
-    "snowpack": "^1.6.0",
-    "svelte": "^3.0.0"
+    "require-relative": "^0.8.7"
   },
   "dependencies": {
-    "navaid": "^1.0.5"
+    "navaid": "^1.0.5",
+    "regexparam": "^1.3.0",
+    "svelte": "^3.21.0"
   }
 }
 `),
