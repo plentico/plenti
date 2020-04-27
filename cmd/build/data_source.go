@@ -71,6 +71,9 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 					}
 				}
 
+				// Add trailing slash.
+				path = path + "/"
+
 				// Check for index.json outside of type declaration.
 				if contentType == "index.json" {
 					contentType = "index"

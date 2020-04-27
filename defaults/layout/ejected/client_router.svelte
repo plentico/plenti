@@ -28,7 +28,7 @@
   addEventListener('pushstate', track);
   addEventListener('popstate', track);
 
-  const router = Navaid('/')
+  const router = Navaid('/', () => import('../global/404.svelte').then(draw))
     .on('/', () => import('../content/index.svelte').then(draw))
     .on('/:slug', () => import('../content/pages.svelte').then(draw))
     .on('/blog/:slug', () => import('../content/blog.svelte').then(draw))

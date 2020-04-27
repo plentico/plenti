@@ -299,7 +299,7 @@ staticBuildStr.forEach(arg => {
   addEventListener('pushstate', track);
   addEventListener('popstate', track);
 
-  const router = Navaid('/')
+  const router = Navaid('/', () => import('../global/404.svelte').then(draw))
     .on('/', () => import('../content/index.svelte').then(draw))
     .on('/:slug', () => import('../content/pages.svelte').then(draw))
     .on('/blog/:slug', () => import('../content/blog.svelte').then(draw))
@@ -364,6 +364,8 @@ const app = replaceContainer( Router, {
 
 export default app;
 `),
+	"/layout/global/404.svelte": []byte(`<div>Oops... 404 not found</div>
+<a href="/">Go home?</a>`),
 	"/layout/global/footer.svelte": []byte(`<script>
   export let allNodes;
 </script>
