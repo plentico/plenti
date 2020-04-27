@@ -17,21 +17,14 @@ func Gopack(buildPath string) {
 
 	gopackDir := buildPath + "/spa/web_modules"
 
+	// If directory doesn't already exist, run gopack.
 	if _, err := os.Stat(gopackDir); os.IsNotExist(err) {
-		// If directory doesn't already exist, run gopack.
 		fmt.Println("\nRunning gopack to build dependencies for esm support")
-		// Create the web_modules directory in client app.
-		//os.MkdirAll(gopackDir, os.ModePerm)
+		// Find all the "dependencies" specified in package.json.
 		for module, version := range readers.GetNpmConfig().Dependencies {
-			fmt.Printf("npm config module: %s\n", module)
-			fmt.Printf("npm config version: %s\n\n", version)
+			fmt.Printf("npm module: %s, version %s\n", module, version)
+			// Walk through all sub directories of each dependency declared.
 			nodeModuleErr := filepath.Walk("node_modules/"+module, func(modulePath string, moduleFileInfo os.FileInfo, err error) error {
-				// Make sub directories.
-				/*
-					if moduleFileInfo.IsDir() {
-						os.MkdirAll(gopackDir+"/"+moduleFileInfo.Name(), os.ModePerm)
-					}
-				*/
 				// Only get ESM supported files.
 				if !moduleFileInfo.IsDir() && filepath.Ext(modulePath) == ".mjs" {
 					from, err := os.Open(modulePath)
@@ -40,13 +33,12 @@ func Gopack(buildPath string) {
 					}
 					defer from.Close()
 
+					// Remove "node_modules" from path and add "web_modules".
 					modulePath = gopackDir + strings.Replace(modulePath, "node_modules", "", 1)
-					fmt.Printf("modulePath is: %s\n", modulePath)
-					//destPath := gopackDir + "/" + modulePath
-					//to, err := os.Create(gopackDir + "/" + moduleFileInfo.Name())
+					// Create any subdirectories need to write file to "web_modules" destination.
 					os.MkdirAll(filepath.Dir(modulePath), os.ModePerm)
+
 					to, err := os.Create(modulePath)
-					//to, err := os.Create(destPath)
 					if err != nil {
 						fmt.Printf("Could not create destination .mjs file for copying: %s\n", err)
 					}
