@@ -1,5 +1,4 @@
-//import Router from './client_router.svelte';
-import Router from './router.js'; // Needs .js extension when built.
+import Router from './router.svelte';
 
 /*
 if ('serviceWorker' in navigator) {

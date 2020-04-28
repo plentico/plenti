@@ -207,12 +207,6 @@ clientBuildStr.forEach(arg => {
 	let { js, css } = svelte.compile(component, {
 		css: false
 	});
-
-	// Find svelte internals in snowpack directory.
-	//js.code = js.code.replace(/from "svelte\/internal"\;/g, 'from "../web_modules/svelte/internal/index.js";');
-  	//js.code = js.code.replace(/from "navaid"\;/g, 'from "../web_modules/navaid.js";');
-  	//js.code = js.code.replace(/\.svelte/g, '.js');
-  	//js.code = js.code.replace(/from "svelte"\;/g, 'from "../web_modules/svelte.js";');
 	  
 	// Write JS to build directory.
 	ensureDirExists(arg.destPath);
@@ -269,8 +263,7 @@ staticBuildStr.forEach(arg => {
 	fs.promises.writeFile(destPath, html);
 	  
 });`),
-	"/layout/ejected/main.js": []byte(`//import Router from './client_router.svelte';
-import Router from './router.js'; // Needs .js extension when built.
+	"/layout/ejected/main.js": []byte(`import Router from './router.svelte';
 
 /*
 if ('serviceWorker' in navigator) {
