@@ -63,10 +63,14 @@ func Gopack(buildPath string) {
 				fmt.Printf("Could not read file to convert to esm: %s\n", err)
 			}
 			fmt.Printf("The file to convert to esm is: %s\n", convertPath)
-			// Find any import statement in the file.
-			//reImport := regexp.MustCompile(`import(\s)((.*\n|.*){10})from(.*);`)
-			//reImport := regexp.MustCompile(`import(\s)(.*from(.*);|((.*\n){0,}))`)
-			//reImport := regexp.MustCompile(`import(\s)(.*from(.*);|((.*\n){0,}).*from(.*);)`)
+			// Find any import statement in the file (including multiline imports).
+			// () = brackets for grouping
+			// \s = space
+			// .* = any character
+			// | = or statement
+			// \n = newline
+			// {0,} = repeat any number of times
+			// \{ = just a closing curly bracket (escaped)
 			reImport := regexp.MustCompile(`import(\s)(.*from(.*);|((.*\n){0,})\}(\s)from(.*);)`)
 			// Get all the import statements.
 			importStatements := reImport.FindAll(contentBytes, -1)

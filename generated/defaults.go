@@ -335,10 +335,10 @@ export default app;
   addEventListener('pushstate', track);
   addEventListener('popstate', track);
 
-  const router = Navaid('/', () => import('../global/404.svelte').then(draw));
+  const router = Navaid('/', () => import('../global/404.js').then(draw));
 
   allNodes.forEach(node => {
-    router.on(node.path, () => import('../content/' + node.type + '.svelte').then(draw)).listen();
+    router.on(node.path, () => import('../content/' + node.type + '.js').then(draw)).listen();
   });
 
 </script>
