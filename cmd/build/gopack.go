@@ -115,13 +115,19 @@ func Gopack(buildPath string) {
 					// Convert string path to bytes.
 					replacePathBytes := []byte(replacePath)
 					// Actually replace the path to the dependency in the source content.
-					updatedContentBytes := reImport.ReplaceAll(contentBytes, rePath.ReplaceAll(importStatement, rePath.ReplaceAll(importPath, replacePathBytes)))
-					// Overwrite the old file with the new content that contains the updated import path.
-					overwriteImportErr := ioutil.WriteFile(convertPath, updatedContentBytes, 0644)
-					if overwriteImportErr != nil {
-						fmt.Printf("Could not overwite %s with new import: %s", convertPath, overwriteImportErr)
-					}
+					//contentBytes = reImport.ReplaceAll(contentBytes, rePath.ReplaceAll(importStatement, rePath.ReplaceAll(importPath, replacePathBytes)))
+					//contentBytes = reImport.ReplaceAll(reImport.Find(contentBytes), rePath.ReplaceAll(importStatement, rePath.ReplaceAll(importPath, replacePathBytes)))
+					//contentBytes = reImport.ReplaceAll(contentBytes, rePath.ReplaceAll(rePath.Find(importStatement), rePath.ReplaceAll(importPath, replacePathBytes)))
+					reFoundImport := regexp.MustCompile(string(importStatement))
+					//importStatements := reImport.FindAll(contentBytes, -1)
+					//contentBytes = reImport.ReplaceAll(contentBytes, rePath.ReplaceAll(reFoundImport.Find(importStatement), rePath.ReplaceAll(importPath, replacePathBytes)))
+					contentBytes = reFoundImport.ReplaceAll(contentBytes, rePath.ReplaceAll(importStatement, rePath.ReplaceAll(importPath, replacePathBytes)))
 				}
+			}
+			// Overwrite the old file with the new content that contains the updated import path.
+			overwriteImportErr := ioutil.WriteFile(convertPath, contentBytes, 0644)
+			if overwriteImportErr != nil {
+				fmt.Printf("Could not overwite %s with new import: %s", convertPath, overwriteImportErr)
 			}
 		}
 		return nil
