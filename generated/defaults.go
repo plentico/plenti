@@ -209,10 +209,10 @@ clientBuildStr.forEach(arg => {
 	});
 
 	// Find svelte internals in snowpack directory.
-	js.code = js.code.replace(/from "svelte\/internal"\;/g, 'from "../web_modules/svelte/internal/index.js";');
-  	js.code = js.code.replace(/from "navaid"\;/g, 'from "../web_modules/navaid.js";');
-  	js.code = js.code.replace(/\.svelte/g, '.js');
-  	js.code = js.code.replace(/from "svelte"\;/g, 'from "../web_modules/svelte.js";');
+	//js.code = js.code.replace(/from "svelte\/internal"\;/g, 'from "../web_modules/svelte/internal/index.js";');
+  	//js.code = js.code.replace(/from "navaid"\;/g, 'from "../web_modules/navaid.js";');
+  	//js.code = js.code.replace(/\.svelte/g, '.js');
+  	//js.code = js.code.replace(/from "svelte"\;/g, 'from "../web_modules/svelte.js";');
 	  
 	// Write JS to build directory.
 	ensureDirExists(arg.destPath);

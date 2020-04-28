@@ -63,7 +63,9 @@ func Gopack(buildPath string) {
 				fmt.Printf("Could not read file to convert to esm: %s\n", err)
 			}
 			fmt.Printf("The file to convert to esm is: %s\n", convertPath)
+			// Find any import statement in the file.
 			reImport := regexp.MustCompile("import(.*)from(.*);")
+			// Get all the import statements.
 			importStatements := reImport.FindAll(contentBytes, -1)
 			for _, importStatement := range importStatements {
 				fmt.Printf("the import statement is: %s\n", importStatement)
@@ -80,6 +82,10 @@ func Gopack(buildPath string) {
 				fullImportPath := filepath.Dir(convertPath) + "/" + importPathStr
 				fmt.Printf("Full import path is: %s\n", fullImportPath)
 				var foundImportPath string
+				if filepath.Ext(fullImportPath) == ".svelte" {
+					fullImportPath = strings.Replace(fullImportPath, ".svelte", ".js", 1)
+					foundImportPath = fullImportPath
+				}
 				// If the import points to a path that exists and it is a .js file (imports must reference the file specifically) then we don't need to convert anything.
 				if _, importExistsErr := os.Stat(fullImportPath); !os.IsNotExist(importExistsErr) && filepath.Ext(fullImportPath) == ".js" {
 					fmt.Printf("Skipping converting import in %s because import is valid: %s\n", convertPath, importStatement)
@@ -114,13 +120,9 @@ func Gopack(buildPath string) {
 					replacePath = "'" + replacePath + "'"
 					// Convert string path to bytes.
 					replacePathBytes := []byte(replacePath)
-					// Actually replace the path to the dependency in the source content.
-					//contentBytes = reImport.ReplaceAll(contentBytes, rePath.ReplaceAll(importStatement, rePath.ReplaceAll(importPath, replacePathBytes)))
-					//contentBytes = reImport.ReplaceAll(reImport.Find(contentBytes), rePath.ReplaceAll(importStatement, rePath.ReplaceAll(importPath, replacePathBytes)))
-					//contentBytes = reImport.ReplaceAll(contentBytes, rePath.ReplaceAll(rePath.Find(importStatement), rePath.ReplaceAll(importPath, replacePathBytes)))
+					// Find the specific import statement we're replacing.
 					reFoundImport := regexp.MustCompile(string(importStatement))
-					//importStatements := reImport.FindAll(contentBytes, -1)
-					//contentBytes = reImport.ReplaceAll(contentBytes, rePath.ReplaceAll(reFoundImport.Find(importStatement), rePath.ReplaceAll(importPath, replacePathBytes)))
+					// Actually replace the path to the dependency in the source content.
 					contentBytes = reFoundImport.ReplaceAll(contentBytes, rePath.ReplaceAll(importStatement, rePath.ReplaceAll(importPath, replacePathBytes)))
 				}
 			}
