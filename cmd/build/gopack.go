@@ -84,7 +84,11 @@ func Gopack(buildPath string) {
 							fmt.Printf("Update path with file: %s\n", replacePath)
 							replacePathBytes := []byte(replacePath)
 							updatedContentBytes := rePath.ReplaceAll(contentBytes, replacePathBytes)
-							fmt.Printf("The updates content: %s", updatedContentBytes)
+							//fmt.Printf("The updates content: %s", updatedContentBytes)
+							overwriteImportErr := ioutil.WriteFile(convertPath, updatedContentBytes, 0644)
+							if overwriteImportErr != nil {
+								fmt.Printf("Could not overwite %s with new import: %s", convertPath, overwriteImportErr)
+							}
 						}
 						return nil
 					})
