@@ -84,11 +84,13 @@ func Gopack(buildPath string) {
 					fmt.Printf("Skipping converting import in %s because import is valid: %s\n", convertPath, importStatement)
 				} else if importPathStr[:1] == "." {
 					// If the import starts with a dot (.) or double dot (..) look for the file it's trying to import from this relative path.
-					findMjsErr := filepath.Walk(fullImportPath, func(mjsPath string, mjsFileInfo os.FileInfo, err error) error {
+					findRelativeImportErr := filepath.Walk(fullImportPath, func(relativeImportPath string, relativeImportFileInfo os.FileInfo, err error) error {
 						// Only use .js files in imports (folders aren't specific enough).
-						if filepath.Ext(mjsPath) == ".js" {
+						if filepath.Ext(relativeImportPath) == ".js" {
 							// Remove "public" build dir from path.
-							replacePath := strings.Replace(mjsPath, buildPath, "", 1)
+							replacePath := strings.Replace(relativeImportPath, buildPath, "", 1)
+							// Wrap path in quotes.
+							replacePath = "'" + replacePath + "'"
 							fmt.Printf("Update path with file: %s\n", replacePath)
 							// Convert string path to bytes.
 							replacePathBytes := []byte(replacePath)
@@ -103,10 +105,28 @@ func Gopack(buildPath string) {
 						}
 						return nil
 					})
-					if findMjsErr != nil {
-						fmt.Printf("Could not find related .mjs file: %s", findMjsErr)
+					if findRelativeImportErr != nil {
+						fmt.Printf("Could not find related .mjs file: %s", findRelativeImportErr)
 					}
 				} else {
+					// A named import is being used, look for this in "web_modules/" dir.
+					findNamedImportErr := filepath.Walk(buildPath+"/spa/web_modules/"+importPathStr, func(namedImportPath string, namedImportFileInfo os.FileInfo, err error) error {
+						if filepath.Ext(namedImportPath) == ".js" {
+							fmt.Printf("named import path is: %s\n", namedImportPath)
+							replacePath := strings.Replace(namedImportPath, buildPath, "", 1)
+							replacePath = "'" + replacePath + "'"
+							replacePathBytes := []byte(replacePath)
+							updatedContentBytes := rePath.ReplaceAll(contentBytes, replacePathBytes)
+							overwriteImportErr := ioutil.WriteFile(convertPath, updatedContentBytes, 0644)
+							if overwriteImportErr != nil {
+								fmt.Printf("Could not overwite %s with new import: %s", convertPath, overwriteImportErr)
+							}
+						}
+						return nil
+					})
+					if findNamedImportErr != nil {
+						fmt.Printf("Could not find related .js file from named import: %s", findNamedImportErr)
+					}
 
 				}
 			}
