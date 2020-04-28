@@ -75,8 +75,7 @@ you need to deploy for your website.`,
 		elapsed = time.Since(start)
 		fmt.Printf("\nCompiling components and creating static HTML took %s\n", elapsed)
 
-		// Run Snowpack.
-		//build.Snowpack(buildPath)
+		// Run Gopack (custom Snowpack alternative).
 		build.Gopack(buildPath)
 
 		elapsed = time.Since(buildStart)
