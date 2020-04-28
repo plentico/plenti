@@ -79,6 +79,7 @@ func Gopack(buildPath string) {
 				// Make the path relative to the file that is specifying it as an import.
 				fullImportPath := filepath.Dir(convertPath) + "/" + importPathStr
 				fmt.Printf("Full import path is: %s\n", fullImportPath)
+				var foundImportPath string
 				// If the import points to a path that exists and it is a .js file (imports must reference the file specifically) then we don't need to convert anything.
 				if _, importExistsErr := os.Stat(fullImportPath); !os.IsNotExist(importExistsErr) && filepath.Ext(fullImportPath) == ".js" {
 					fmt.Printf("Skipping converting import in %s because import is valid: %s\n", convertPath, importStatement)
@@ -87,22 +88,7 @@ func Gopack(buildPath string) {
 					findRelativeImportErr := filepath.Walk(fullImportPath, func(relativeImportPath string, relativeImportFileInfo os.FileInfo, err error) error {
 						// Only use .js files in imports (folders aren't specific enough).
 						if filepath.Ext(relativeImportPath) == ".js" {
-							// Remove "public" build dir from path.
-							replacePath := strings.Replace(relativeImportPath, buildPath, "", 1)
-							// Wrap path in quotes.
-							replacePath = "'" + replacePath + "'"
-							fmt.Printf("Update path with file: %s\n", replacePath)
-							// Convert string path to bytes.
-							replacePathBytes := []byte(replacePath)
-							// Actually replace the path to the dependency in the source content.
-							//updatedContentBytes := reImport.ReplaceAll(contentBytes, rePath.ReplaceAll(contentBytes, replacePathBytes))
-							updatedContentBytes := reImport.ReplaceAll(contentBytes, rePath.ReplaceAll(importStatement, rePath.ReplaceAll(importPath, replacePathBytes)))
-							//fmt.Printf("The updates content: %s", updatedContentBytes)
-							// Overwrite the old file with the new content that contains the updated import path.
-							overwriteImportErr := ioutil.WriteFile(convertPath, updatedContentBytes, 0644)
-							if overwriteImportErr != nil {
-								fmt.Printf("Could not overwite %s with new import: %s", convertPath, overwriteImportErr)
-							}
+							foundImportPath = relativeImportPath
 						}
 						return nil
 					})
@@ -113,22 +99,28 @@ func Gopack(buildPath string) {
 					// A named import is being used, look for this in "web_modules/" dir.
 					findNamedImportErr := filepath.Walk(buildPath+"/spa/web_modules/"+importPathStr, func(namedImportPath string, namedImportFileInfo os.FileInfo, err error) error {
 						if filepath.Ext(namedImportPath) == ".js" {
-							fmt.Printf("named import path is: %s\n", namedImportPath)
-							replacePath := strings.Replace(namedImportPath, buildPath, "", 1)
-							replacePath = "'" + replacePath + "'"
-							replacePathBytes := []byte(replacePath)
-							updatedContentBytes := rePath.ReplaceAll(contentBytes, replacePathBytes)
-							overwriteImportErr := ioutil.WriteFile(convertPath, updatedContentBytes, 0644)
-							if overwriteImportErr != nil {
-								fmt.Printf("Could not overwite %s with new import: %s", convertPath, overwriteImportErr)
-							}
+							foundImportPath = namedImportPath
 						}
 						return nil
 					})
 					if findNamedImportErr != nil {
 						fmt.Printf("Could not find related .js file from named import: %s", findNamedImportErr)
 					}
-
+				}
+				if foundImportPath != "" {
+					// Remove "public" build dir from path.
+					replacePath := strings.Replace(foundImportPath, buildPath, "", 1)
+					// Wrap path in quotes.
+					replacePath = "'" + replacePath + "'"
+					// Convert string path to bytes.
+					replacePathBytes := []byte(replacePath)
+					// Actually replace the path to the dependency in the source content.
+					updatedContentBytes := reImport.ReplaceAll(contentBytes, rePath.ReplaceAll(importStatement, rePath.ReplaceAll(importPath, replacePathBytes)))
+					// Overwrite the old file with the new content that contains the updated import path.
+					overwriteImportErr := ioutil.WriteFile(convertPath, updatedContentBytes, 0644)
+					if overwriteImportErr != nil {
+						fmt.Printf("Could not overwite %s with new import: %s", convertPath, overwriteImportErr)
+					}
 				}
 			}
 		}
@@ -140,5 +132,9 @@ func Gopack(buildPath string) {
 
 	elapsed := time.Since(start)
 	fmt.Printf("Gopack took %s\n", elapsed)
+
+}
+
+func replaceImport(importPath string, buildPath string) {
 
 }
