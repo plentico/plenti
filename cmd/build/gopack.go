@@ -64,7 +64,10 @@ func Gopack(buildPath string) {
 			}
 			fmt.Printf("The file to convert to esm is: %s\n", convertPath)
 			// Find any import statement in the file.
-			reImport := regexp.MustCompile("import(.*)from(.*);")
+			//reImport := regexp.MustCompile(`import(\s)((.*\n|.*){10})from(.*);`)
+			//reImport := regexp.MustCompile(`import(\s)(.*from(.*);|((.*\n){0,}))`)
+			//reImport := regexp.MustCompile(`import(\s)(.*from(.*);|((.*\n){0,}).*from(.*);)`)
+			reImport := regexp.MustCompile(`import(\s)(.*from(.*);|((.*\n){0,})\}(\s)from(.*);)`)
 			// Get all the import statements.
 			importStatements := reImport.FindAll(contentBytes, -1)
 			for _, importStatement := range importStatements {
@@ -106,6 +109,7 @@ func Gopack(buildPath string) {
 					findNamedImportErr := filepath.Walk(buildPath+"/spa/web_modules/"+importPathStr, func(namedImportPath string, namedImportFileInfo os.FileInfo, err error) error {
 						if filepath.Ext(namedImportPath) == ".js" {
 							foundImportPath = namedImportPath
+							fmt.Printf("The found import path to use is: %s\n", foundImportPath)
 						}
 						return nil
 					})
