@@ -67,24 +67,35 @@ func Gopack(buildPath string) {
 			importStatements := reImport.FindAll(contentBytes, -1)
 			for _, importStatement := range importStatements {
 				fmt.Printf("the import statement is: %s\n", importStatement)
+				// Find the path specifically (part between single or double quotes).
 				rePath := regexp.MustCompile(`(?:'|").*(?:'|")`)
+				// Get path from the full import statement.
 				importPath := rePath.Find(importStatement)
+				// Convert path to a string.
 				importPathStr := string(importPath)
 				// Remove single or double quotes around path.
 				importPathStr = strings.Trim(importPathStr, `'"`)
 				fmt.Printf("the path is: %s\n", importPathStr)
+				// Make the path relative to the file that is specifying it as an import.
 				fullImportPath := filepath.Dir(convertPath) + "/" + importPathStr
 				fmt.Printf("Full import path is: %s\n", fullImportPath)
+				// If the import points to a path that exists and it is a .js file (imports must reference the file specifically) then we don't need to convert anything.
 				if _, importExistsErr := os.Stat(fullImportPath); !os.IsNotExist(importExistsErr) && filepath.Ext(fullImportPath) == ".js" {
 					fmt.Printf("Skipping converting import in %s because import is valid: %s\n", convertPath, importStatement)
 				} else if importPathStr[:1] == "." {
+					// If the import starts with a dot (.) or double dot (..) look for the file it's trying to import from this relative path.
 					findMjsErr := filepath.Walk(fullImportPath, func(mjsPath string, mjsFileInfo os.FileInfo, err error) error {
+						// Only use .js files in imports (folders aren't specific enough).
 						if filepath.Ext(mjsPath) == ".js" {
+							// Remove "public" build dir from path.
 							replacePath := strings.Replace(mjsPath, buildPath, "", 1)
 							fmt.Printf("Update path with file: %s\n", replacePath)
+							// Convert string path to bytes.
 							replacePathBytes := []byte(replacePath)
+							// Actually replace the path to the dependency in the source content.
 							updatedContentBytes := rePath.ReplaceAll(contentBytes, replacePathBytes)
 							//fmt.Printf("The updates content: %s", updatedContentBytes)
+							// Overwrite the old file with the new content that contains the updated import path.
 							overwriteImportErr := ioutil.WriteFile(convertPath, updatedContentBytes, 0644)
 							if overwriteImportErr != nil {
 								fmt.Printf("Could not overwite %s with new import: %s", convertPath, overwriteImportErr)
