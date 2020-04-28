@@ -62,7 +62,8 @@ func Gopack(buildPath string) {
 			if err != nil {
 				fmt.Printf("Could not read file to convert to esm: %s\n", err)
 			}
-			fmt.Printf("The file to convert to esm is: %s\n", convertPath)
+			//fmt.Printf("The file to convert to esm is: %s\n", convertPath)
+
 			// Find any import statement in the file (including multiline imports).
 			// () = brackets for grouping
 			// \s = space
@@ -75,7 +76,7 @@ func Gopack(buildPath string) {
 			// Get all the import statements.
 			importStatements := reImport.FindAll(contentBytes, -1)
 			for _, importStatement := range importStatements {
-				fmt.Printf("the import statement is: %s\n", importStatement)
+				//fmt.Printf("the import statement is: %s\n", importStatement)
 				// Find the path specifically (part between single or double quotes).
 				rePath := regexp.MustCompile(`(?:'|").*(?:'|")`)
 				// Get path from the full import statement.
@@ -84,10 +85,10 @@ func Gopack(buildPath string) {
 				importPathStr := string(importPath)
 				// Remove single or double quotes around path.
 				importPathStr = strings.Trim(importPathStr, `'"`)
-				fmt.Printf("the path is: %s\n", importPathStr)
+				//fmt.Printf("the path is: %s\n", importPathStr)
 				// Make the path relative to the file that is specifying it as an import.
 				fullImportPath := filepath.Dir(convertPath) + "/" + importPathStr
-				fmt.Printf("Full import path is: %s\n", fullImportPath)
+				//fmt.Printf("Full import path is: %s\n", fullImportPath)
 				var foundImportPath string
 				if filepath.Ext(fullImportPath) == ".svelte" {
 					fullImportPath = strings.Replace(fullImportPath, ".svelte", ".js", 1)
@@ -95,7 +96,7 @@ func Gopack(buildPath string) {
 				}
 				// If the import points to a path that exists and it is a .js file (imports must reference the file specifically) then we don't need to convert anything.
 				if _, importExistsErr := os.Stat(fullImportPath); !os.IsNotExist(importExistsErr) && filepath.Ext(fullImportPath) == ".js" {
-					fmt.Printf("Skipping converting import in %s because import is valid: %s\n", convertPath, importStatement)
+					//fmt.Printf("Skipping converting import in %s because import is valid: %s\n", convertPath, importStatement)
 				} else if importPathStr[:1] == "." {
 					// If the import starts with a dot (.) or double dot (..) look for the file it's trying to import from this relative path.
 					findRelativeImportErr := filepath.Walk(fullImportPath, func(relativeImportPath string, relativeImportFileInfo os.FileInfo, err error) error {
@@ -113,7 +114,7 @@ func Gopack(buildPath string) {
 					findNamedImportErr := filepath.Walk(buildPath+"/spa/web_modules/"+importPathStr, func(namedImportPath string, namedImportFileInfo os.FileInfo, err error) error {
 						if filepath.Ext(namedImportPath) == ".js" {
 							foundImportPath = namedImportPath
-							fmt.Printf("The found import path to use is: %s\n", foundImportPath)
+							//fmt.Printf("The found import path to use is: %s\n", foundImportPath)
 						}
 						return nil
 					})

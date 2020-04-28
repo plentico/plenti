@@ -240,7 +240,7 @@ staticBuildStr.forEach(arg => {
 
 	// Set props so component can access field values, etc.
 	let props = {
-		Route: route,
+		route: route,
 		node: arg.node,
 		allNodes: allNodes
 	};
