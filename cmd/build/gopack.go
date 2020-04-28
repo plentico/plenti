@@ -69,7 +69,6 @@ func Gopack(buildPath string) {
 				fmt.Printf("the import statement is: %s\n", importStatement)
 				rePath := regexp.MustCompile(`(?:'|").*(?:'|")`)
 				importPath := rePath.Find(importStatement)
-				//fmt.Printf("the path is: %s\n", importPath)
 				importPathStr := string(importPath)
 				// Remove single or double quotes around path.
 				importPathStr = strings.Trim(importPathStr, `'"`)
@@ -78,12 +77,24 @@ func Gopack(buildPath string) {
 				fmt.Printf("Full import path is: %s\n", fullImportPath)
 				if _, importExistsErr := os.Stat(fullImportPath); !os.IsNotExist(importExistsErr) && filepath.Ext(fullImportPath) == ".js" {
 					fmt.Printf("Skipping converting import in %s because import is valid: %s\n", convertPath, importStatement)
+				} else if importPathStr[:1] == "." {
+					findMjsErr := filepath.Walk(fullImportPath, func(mjsPath string, mjsFileInfo os.FileInfo, err error) error {
+						if filepath.Ext(mjsPath) == ".js" {
+							replacePath := strings.Replace(mjsPath, buildPath, "", 1)
+							fmt.Printf("Update path with file: %s\n", replacePath)
+							replacePathBytes := []byte(replacePath)
+							updatedContentBytes := rePath.ReplaceAll(contentBytes, replacePathBytes)
+							fmt.Printf("The updates content: %s", updatedContentBytes)
+						}
+						return nil
+					})
+					if findMjsErr != nil {
+						fmt.Printf("Could not find related .mjs file: %s", findMjsErr)
+					}
+				} else {
+
 				}
-				//importStatement.ReplaceAll()
 			}
-			//contentBytes = re.ReplaceAll(contentBytes, []byte("T"))
-			//contentStr := string(contentBytes)
-			//if strings.Contains(contentStr, "import") {}
 		}
 		return nil
 	})
