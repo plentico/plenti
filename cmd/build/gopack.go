@@ -95,7 +95,8 @@ func Gopack(buildPath string) {
 							// Convert string path to bytes.
 							replacePathBytes := []byte(replacePath)
 							// Actually replace the path to the dependency in the source content.
-							updatedContentBytes := rePath.ReplaceAll(contentBytes, replacePathBytes)
+							//updatedContentBytes := reImport.ReplaceAll(contentBytes, rePath.ReplaceAll(contentBytes, replacePathBytes))
+							updatedContentBytes := reImport.ReplaceAll(contentBytes, rePath.ReplaceAll(importStatement, rePath.ReplaceAll(importPath, replacePathBytes)))
 							//fmt.Printf("The updates content: %s", updatedContentBytes)
 							// Overwrite the old file with the new content that contains the updated import path.
 							overwriteImportErr := ioutil.WriteFile(convertPath, updatedContentBytes, 0644)
