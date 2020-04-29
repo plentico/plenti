@@ -7,7 +7,10 @@
 
   let route, node, allNodes;
 
-  const getNode = uri => {
+  const getNode = (uri, removeTrailingSlash = false) => {
+    if (removeTrailingSlash) {
+      return nodes.find(node => node.path.replace(/\/$/, "") == uri);
+    }
     return nodes.find(node => node.path == uri);
   }
 
@@ -25,6 +28,9 @@
     if (window.ga) ga.send('pageview', { dp:uri });
 
     node = getNode(uri);
+    if (node === undefined) {
+      node = getNode(uri, true);
+    }
     allNodes = nodes;
   }
 
