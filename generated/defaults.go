@@ -331,7 +331,13 @@ export default app;
   addEventListener('pushstate', track);
   addEventListener('popstate', track);
 
-  const router = Navaid('/', () => import('../global/404.js').then(draw));
+  const handle404 = node => {
+    if (node === "undefined") {             
+      import('../global/404.js').then(draw);
+    }
+  }
+
+  const router = Navaid('/', handle404(node));
 
   allNodes.forEach(node => {
     router.on(node.path, () => import('../content/' + node.type + '.js').then(draw)).listen();
