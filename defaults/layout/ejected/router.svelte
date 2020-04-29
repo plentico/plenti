@@ -7,15 +7,15 @@
 
   let route, node, allNodes;
 
-  const getNode = (uri, removeTrailingSlash = false) => {
-    if (removeTrailingSlash) {
-      return nodes.find(node => node.path.replace(/\/$/, "") == uri);
-    }
-    return nodes.find(node => node.path == uri);
+  const getNode = (uri, trailingSlash = "") => {
+    return nodes.find(node => node.path + trailingSlash == uri);
   }
 
   let uri = location.pathname;
   node = getNode(uri);
+  if (node === undefined) {
+    node = getNode(uri, "/");
+  }
   allNodes = nodes;
 
   function draw(m) {
@@ -28,9 +28,6 @@
     if (window.ga) ga.send('pageview', { dp:uri });
 
     node = getNode(uri);
-    if (node === undefined) {
-      node = getNode(uri, true);
-    }
     allNodes = nodes;
   }
 
@@ -42,6 +39,7 @@
 
   allNodes.forEach(node => {
     router.on(node.path, () => import('../content/' + node.type + '.js').then(draw)).listen();
+    router.on(node.path+"/", () => import('../content/' + node.type + '.js').then(draw)).listen();
   });
 
 </script>
