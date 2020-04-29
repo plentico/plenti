@@ -340,8 +340,16 @@ export default app;
   const router = Navaid('/', handle404(node));
 
   allNodes.forEach(node => {
-    router.on(node.path, () => import('../content/' + node.type + '.js').then(draw)).listen();
-    router.on(node.path+"/", () => import('../content/' + node.type + '.js').then(draw)).listen();
+    router.on(node.path, () => {
+      // Check if the url visited ends in a trailing slash (besides the homepage).
+      if (uri.length > 1 && uri.slice(-1) == "/") {
+        // Redirect to the same path without the trailing slash.
+        router.route(node.path, false);
+      } else {
+        import('../content/' + node.type + '.js').then(draw);
+      }
+    }).listen();
+
   });
 
 </script>
