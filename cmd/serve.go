@@ -5,10 +5,12 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"plenti/readers"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/cobra"
 )
 
@@ -68,12 +70,19 @@ You can also set a different port in your site config file.`,
 		// Check flags and config for local server port
 		port := setPort(siteConfig)
 
+		//go Watch(buildDir)
+		go Watch(buildDir)
+		//done := Watch(buildDir)
+
 		// Start the webserver
 		fmt.Printf("Visit your site at http://localhost:%v/\n", port)
 		err := http.ListenAndServe(":"+strconv.Itoa(port), nil)
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		//done <- true
+
 	},
 }
 
@@ -92,4 +101,58 @@ func init() {
 	serveCmd.Flags().IntVarP(&PortFlag, "port", "p", 0, "change port for local server")
 	serveCmd.Flags().StringVarP(&BuildDirFlag, "dir", "d", "", "change name of the build directory")
 	serveCmd.Flags().BoolVarP(&BuildFlag, "build", "b", true, "set \"false\" to disable build step")
+}
+
+var watcher *fsnotify.Watcher
+
+// Watch looks for updates to filesystem to prompt a site rebuild.
+//func Watch(buildPath string) chan bool {
+func Watch(buildPath string) {
+
+	// Creates a new file watcher.
+	watcher, _ = fsnotify.NewWatcher()
+	defer watcher.Close()
+
+	// Starting at the root of the project, find subdirectories.
+	if err := filepath.Walk(".", watchDir(buildPath)); err != nil {
+		fmt.Println("ERROR", err)
+	}
+
+	// Create channel.
+	done := make(chan bool)
+
+	go func() {
+		for {
+			select {
+			// watch for events
+			case event := <-watcher.Events:
+				fmt.Printf("EVENT! %#v\n", event)
+				Build()
+				done <- true
+
+			// watch for errors
+			case err := <-watcher.Errors:
+				fmt.Println("ERROR", err)
+
+			// listen exit signal
+			case <-done:
+				break
+			}
+		}
+	}()
+
+	<-done
+	//return done
+}
+
+// Closure that enables passing buildPath as arg to callback.
+func watchDir(buildPath string) filepath.WalkFunc {
+	// Callback for walk func: searches for directories to add watchers to.
+	return func(path string, fi os.FileInfo, err error) error {
+		// Add watchers only to nested directory and skip the "public" build dir.
+		if fi.Mode().IsDir() && fi.Name() != buildPath {
+			return watcher.Add(path)
+		}
+		return nil
+	}
 }
