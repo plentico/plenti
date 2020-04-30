@@ -70,10 +70,7 @@ You can also set a different port in your site config file.`,
 		// Check flags and config for local server port
 		port := setPort(siteConfig)
 
-		// Create channel.
-		//done := make(chan bool)
-
-		//go Watch(buildDir, done)
+		// Watch filesystem for changes.
 		go Watch(buildDir)
 
 		// Start the webserver
@@ -82,8 +79,6 @@ You can also set a different port in your site config file.`,
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		//done <- true
 
 	},
 }
@@ -108,9 +103,7 @@ func init() {
 var watcher *fsnotify.Watcher
 
 // Watch looks for updates to filesystem to prompt a site rebuild.
-//func Watch(buildPath string) chan bool {
 func Watch(buildPath string) {
-	//func Watch(buildPath string, done chan bool) {
 
 	// Creates a new file watcher.
 	watcher, _ = fsnotify.NewWatcher()
@@ -126,30 +119,23 @@ func Watch(buildPath string) {
 	go func() {
 		for {
 			select {
-			// watch for events
+			// Watch for events.
 			case event := <-watcher.Events:
-				if event.Op&fsnotify.Write == fsnotify.Write {
-					fmt.Printf("EVENT! %#v\n", event)
+				if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Remove == fsnotify.Remove || event.Op&fsnotify.Rename == fsnotify.Rename {
+					fmt.Printf("\nFile update detected: %#v\n", event)
 					Build()
 				}
 
-			// watch for errors
+			// Watch for errors.
 			case err := <-watcher.Errors:
 				if err != nil {
-					fmt.Println("ERROR", err)
+					fmt.Printf("\nFile watching error: %s\n", err)
 				}
-
-			// listen exit signal
-			case <-done:
-				break
 			}
 		}
 	}()
 
 	<-done
-
-	//<-done
-	//return done
 }
 
 // Closure that enables passing buildPath as arg to callback.

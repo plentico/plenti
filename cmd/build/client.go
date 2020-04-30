@@ -14,16 +14,6 @@ func Client(buildPath string) string {
 	fmt.Println("\nPrepping client SPA for svelte compiler")
 
 	stylePath := buildPath + "/spa/bundle.css"
-	// Clear out any previous CSS.
-	/*
-		if _, stylePathExistsErr := os.Stat(stylePath); stylePathExistsErr == nil {
-			deleteStyleErr := os.Remove(stylePath)
-			if deleteStyleErr != nil {
-				fmt.Println(deleteStyleErr)
-				return
-			}
-		}
-	*/
 
 	// Set up counters for logging output.
 	copiedSourceCounter := 0
