@@ -70,9 +70,11 @@ You can also set a different port in your site config file.`,
 		// Check flags and config for local server port
 		port := setPort(siteConfig)
 
-		//go Watch(buildDir)
+		// Create channel.
+		//done := make(chan bool)
+
+		//go Watch(buildDir, done)
 		go Watch(buildDir)
-		//done := Watch(buildDir)
 
 		// Start the webserver
 		fmt.Printf("Visit your site at http://localhost:%v/\n", port)
@@ -108,6 +110,7 @@ var watcher *fsnotify.Watcher
 // Watch looks for updates to filesystem to prompt a site rebuild.
 //func Watch(buildPath string) chan bool {
 func Watch(buildPath string) {
+	//func Watch(buildPath string, done chan bool) {
 
 	// Creates a new file watcher.
 	watcher, _ = fsnotify.NewWatcher()
@@ -118,7 +121,6 @@ func Watch(buildPath string) {
 		fmt.Println("ERROR", err)
 	}
 
-	// Create channel.
 	done := make(chan bool)
 
 	go func() {
@@ -126,13 +128,16 @@ func Watch(buildPath string) {
 			select {
 			// watch for events
 			case event := <-watcher.Events:
-				fmt.Printf("EVENT! %#v\n", event)
-				Build()
-				done <- true
+				if event.Op&fsnotify.Write == fsnotify.Write {
+					fmt.Printf("EVENT! %#v\n", event)
+					Build()
+				}
 
 			// watch for errors
 			case err := <-watcher.Errors:
-				fmt.Println("ERROR", err)
+				if err != nil {
+					fmt.Println("ERROR", err)
+				}
 
 			// listen exit signal
 			case <-done:
@@ -142,6 +147,8 @@ func Watch(buildPath string) {
 	}()
 
 	<-done
+
+	//<-done
 	//return done
 }
 
@@ -149,8 +156,12 @@ func Watch(buildPath string) {
 func watchDir(buildPath string) filepath.WalkFunc {
 	// Callback for walk func: searches for directories to add watchers to.
 	return func(path string, fi os.FileInfo, err error) error {
-		// Add watchers only to nested directory and skip the "public" build dir.
-		if fi.Mode().IsDir() && fi.Name() != buildPath {
+		// Skip the "public" build dir to avoid infinite loops.
+		if fi.IsDir() && fi.Name() == buildPath {
+			return filepath.SkipDir
+		}
+		// Add watchers only to nested directory.
+		if fi.Mode().IsDir() {
 			return watcher.Add(path)
 		}
 		return nil
