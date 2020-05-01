@@ -6,13 +6,11 @@
 
 <p><em>{#if author}Written by {author}{/if}{#if date}&nbsp;on {date}{/if}</em></p>
 
-{#if body}
-  <div>
-    {#each body as paragraph}
-      <p>{@html paragraph}</p>
-    {/each}
-  </div>
-{/if}
+<div>
+  {#each body as paragraph}
+    <p>{@html paragraph}</p>
+  {/each}
+</div>
 
 <details>
   <summary>Uses the "Blog" template</summary>

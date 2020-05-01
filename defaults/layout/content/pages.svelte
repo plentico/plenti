@@ -4,13 +4,11 @@
 
 <h1>{title}</h1>
 
-{#if description}
-  <div>
-    {#each description as paragraph}
-      <p>{@html paragraph}</p>
-    {/each}
-  </div>
-{/if}
+<div>
+  {#each description as paragraph}
+    <p>{@html paragraph}</p>
+  {/each}
+</div>
 
 <details>
   <summary>Uses the "Pages" template</summary>

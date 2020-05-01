@@ -106,13 +106,11 @@ node_modules`),
 
 <p><em>{#if author}Written by {author}{/if}{#if date}&nbsp;on {date}{/if}</em></p>
 
-{#if body}
-  <div>
-    {#each body as paragraph}
-      <p>{@html paragraph}</p>
-    {/each}
-  </div>
-{/if}
+<div>
+  {#each body as paragraph}
+    <p>{@html paragraph}</p>
+  {/each}
+</div>
 
 <details>
   <summary>Uses the "Blog" template</summary>
@@ -128,7 +126,9 @@ node_modules`),
 
 <h1>{title}</h1>
 
-{#if intro}<section id="intro"><p>{@html intro.slogan}</p></section>{/if}
+<section id="intro">
+	<p>{@html intro.slogan}</p>
+</section>
 
 <div>
 	<h3>Recent blog posts:</h3>
@@ -147,13 +147,11 @@ node_modules`),
 
 <h1>{title}</h1>
 
-{#if description}
-  <div>
-    {#each description as paragraph}
-      <p>{@html paragraph}</p>
-    {/each}
-  </div>
-{/if}
+<div>
+  {#each description as paragraph}
+    <p>{@html paragraph}</p>
+  {/each}
+</div>
 
 <details>
   <summary>Uses the "Pages" template</summary>
@@ -317,12 +315,14 @@ export default app;
   allNodes = nodes;
 
   function draw(m) {
+    node = getNode(uri);
     route = m.default;
     window.scrollTo(0, 0);
   }
 
   function track(obj) {
     uri = obj.state || obj.uri;
+    /*
     if (window.ga) ga.send('pageview', { dp:uri });
 
     node = getNode(uri);
@@ -335,6 +335,7 @@ export default app;
       handle404(node);
     }
     allNodes = nodes;
+    */
   }
 
   addEventListener('replacestate', track);

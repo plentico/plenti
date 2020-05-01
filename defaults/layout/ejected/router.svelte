@@ -19,12 +19,14 @@
   allNodes = nodes;
 
   function draw(m) {
+    node = getNode(uri);
     route = m.default;
     window.scrollTo(0, 0);
   }
 
   function track(obj) {
     uri = obj.state || obj.uri;
+    /*
     if (window.ga) ga.send('pageview', { dp:uri });
 
     node = getNode(uri);
@@ -37,6 +39,7 @@
       handle404(node);
     }
     allNodes = nodes;
+    */
   }
 
   addEventListener('replacestate', track);

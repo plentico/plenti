@@ -5,7 +5,9 @@
 
 <h1>{title}</h1>
 
-{#if intro}<section id="intro"><p>{@html intro.slogan}</p></section>{/if}
+<section id="intro">
+	<p>{@html intro.slogan}</p>
+</section>
 
 <div>
 	<h3>Recent blog posts:</h3>
