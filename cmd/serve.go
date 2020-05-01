@@ -62,7 +62,7 @@ You can also set a different port in your site config file.`,
 			fmt.Printf("The \"%v\" build directory does not exist, check your plenti.json file.\n", buildDir)
 			log.Fatal(err)
 		} else {
-			fmt.Printf("Serving site from your \"%v\" directory.\n", buildDir)
+			fmt.Printf("\nServing site from your \"%v\" directory.\n", buildDir)
 		}
 		// Point to folder containing the built site
 		fs := http.FileServer(http.Dir(buildDir))

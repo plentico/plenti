@@ -56,6 +56,7 @@ func Build() {
 	// Clear out any previous build dir of the same name.
 	if _, buildPathExistsErr := os.Stat(buildPath); buildPathExistsErr == nil {
 		deleteBuildErr := os.RemoveAll(buildPath)
+		fmt.Printf("\nRemoving old \"%v\" build directory\n", buildPath)
 		if deleteBuildErr != nil {
 			fmt.Println(deleteBuildErr)
 			return
@@ -68,7 +69,7 @@ func Build() {
 	if err != nil {
 		fmt.Printf("Unable to create \"%v\" build directory: %s\n", buildDir, err)
 	} else {
-		fmt.Printf("Creating \"%v\" build directory\n", buildDir)
+		fmt.Printf("\nCreating \"%v\" build directory\n", buildDir)
 	}
 
 	start := time.Now()

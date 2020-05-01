@@ -18,11 +18,6 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 
 	nodesJSPath := buildPath + "/spa/ejected/nodes.js"
 	os.MkdirAll(buildPath+"/spa/ejected", os.ModePerm)
-	// Delete any previous nodes.js file.
-	deleteNodesJSErr := os.Remove(nodesJSPath)
-	if deleteNodesJSErr != nil {
-		fmt.Println(deleteNodesJSErr)
-	}
 
 	// Set up counter for logging output.
 	contentFileCounter := 0
