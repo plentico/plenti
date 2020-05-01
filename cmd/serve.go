@@ -133,7 +133,9 @@ func Watch(buildPath string) {
 					events = append(events, event)
 				}
 			case <-ticker.C:
+				// Checks on set interval if there are events.
 				if len(events) > 0 {
+					// Display messages for each events in batch.
 					for _, event := range events {
 						if event.Op&fsnotify.Write == fsnotify.Write {
 							fmt.Printf("\nFile write detected: %#v\n", event)
@@ -145,7 +147,9 @@ func Watch(buildPath string) {
 							fmt.Printf("\nFile rename detected: %#v\n", event)
 						}
 					}
+					// Rebuild only one time for all batched events.
 					Build()
+					// Empty the batch array.
 					events = make([]fsnotify.Event, 0)
 				}
 
