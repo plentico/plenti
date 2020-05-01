@@ -134,14 +134,16 @@ func Watch(buildPath string) {
 				}
 			case <-ticker.C:
 				if len(events) > 0 {
-					if events[len(events)-1].Op&fsnotify.Write == fsnotify.Write {
-						fmt.Printf("\nFile write detected: %#v\n", events[len(events)-1])
-					}
-					if events[len(events)-1].Op&fsnotify.Remove == fsnotify.Remove {
-						fmt.Printf("\nFile delete detected: %#v\n", events[len(events)-1])
-					}
-					if events[len(events)-1].Op&fsnotify.Rename == fsnotify.Rename {
-						fmt.Printf("\nFile rename detected: %#v\n", events[len(events)-1])
+					for _, event := range events {
+						if event.Op&fsnotify.Write == fsnotify.Write {
+							fmt.Printf("\nFile write detected: %#v\n", event)
+						}
+						if event.Op&fsnotify.Remove == fsnotify.Remove {
+							fmt.Printf("\nFile delete detected: %#v\n", event)
+						}
+						if event.Op&fsnotify.Rename == fsnotify.Rename {
+							fmt.Printf("\nFile rename detected: %#v\n", event)
+						}
 					}
 					Build()
 					events = make([]fsnotify.Event, 0)
