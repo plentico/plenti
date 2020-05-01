@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 )
 
 // SiteConfig is the site's configuration file values.
@@ -25,8 +24,7 @@ func GetSiteConfig() SiteConfig {
 	configFile, _ := ioutil.ReadFile("plenti.json")
 	err := json.Unmarshal(configFile, &siteConfig)
 	if err != nil {
-		fmt.Printf("Unable to read config file.\n")
-		log.Fatal(err)
+		fmt.Printf("Unable to read site config file: %s\n", err)
 	}
 
 	// If build directory is not set in config, use default

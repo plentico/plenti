@@ -54,17 +54,14 @@ func Build() {
 	buildPath := filepath.Join(".", buildDir)
 
 	// Clear out any previous build dir of the same name.
-	/*
-		if _, buildPathExistsErr := os.Stat(buildPath); buildPathExistsErr == nil {
-			deleteBuildErr := os.RemoveAll(buildPath)
-			if deleteBuildErr != nil {
-				fmt.Println(deleteBuildErr)
-				return
-			}
+	if _, buildPathExistsErr := os.Stat(buildPath); buildPathExistsErr == nil {
+		deleteBuildErr := os.RemoveAll(buildPath)
+		if deleteBuildErr != nil {
+			fmt.Println(deleteBuildErr)
+			return
 		}
-	*/
-	// TODO: Is deleting the previous public dir ^ necessary?
-	// Should this automatically happen after stopping local server?
+	}
+	// TODO: Should this automatically happen after stopping local server?
 
 	// Create the buildPath directory.
 	err := os.MkdirAll(buildPath, os.ModePerm)

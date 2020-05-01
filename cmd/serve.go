@@ -121,9 +121,13 @@ func Watch(buildPath string) {
 			select {
 			// Watch for events.
 			case event := <-watcher.Events:
-				if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Remove == fsnotify.Remove || event.Op&fsnotify.Rename == fsnotify.Rename {
-					fmt.Printf("\nFile update detected: %#v\n", event)
-					Build()
+				// Don't rebuild when build dir is added or deleted.
+				if event.Name != "./"+buildPath {
+					// Rebuild if file is changed, deleted, or renamed.
+					if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Remove == fsnotify.Remove || event.Op&fsnotify.Rename == fsnotify.Rename {
+						fmt.Printf("\nFile update detected: %#v\n", event)
+						Build()
+					}
 				}
 
 			// Watch for errors.

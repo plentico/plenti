@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 )
 
 // NpmConfig is the NPM configuration file values from package.json.
@@ -21,8 +20,7 @@ func GetNpmConfig() NpmConfig {
 	configFile, _ := ioutil.ReadFile("package.json")
 	err := json.Unmarshal(configFile, &npmConfig)
 	if err != nil {
-		fmt.Printf("Unable to read config file.\n")
-		log.Fatal(err)
+		fmt.Printf("Unable to read npm config file: %s\n", err)
 	}
 
 	return npmConfig
