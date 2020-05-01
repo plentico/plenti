@@ -118,7 +118,7 @@ func Watch(buildPath string) {
 	done := make(chan bool)
 
 	// Set delay for batching events.
-	ticker := time.NewTicker(1000 * time.Millisecond)
+	ticker := time.NewTicker(300 * time.Millisecond)
 	// Create array for storing double firing events (happens when saving files in some text editors).
 	events := make([]fsnotify.Event, 0)
 
@@ -129,29 +129,23 @@ func Watch(buildPath string) {
 			case event := <-watcher.Events:
 				// Don't rebuild when build dir is added or deleted.
 				if event.Name != "./"+buildPath {
-					// Add current event to array for checking double firing events (common in most text editors).
+					// Add current event to array for batching.
 					events = append(events, event)
-
-					// Delete / Move events should only fire once so run rebuild on them.
-					if event.Op&fsnotify.Remove == fsnotify.Remove || event.Op&fsnotify.Rename == fsnotify.Rename {
-						fmt.Printf("\nFile delete / move detected: %#v\n", event)
-						Build()
-						events = make([]fsnotify.Event, 0)
-					}
-
 				}
 			case <-ticker.C:
-				//if event.Name != "./"+buildPath {
-				// Check if two events fired and are the same event and are Write events (editing files).
-				//if len(events) > 1 && event.Op&fsnotify.Write == fsnotify.Write {
-				if len(events) > 1 && events[len(events)-1].Op&fsnotify.Write == fsnotify.Write {
-					// Use the last event and rebuild on file change, delete, rename.
-					//fmt.Printf("\nFile update detected: %#v\n", event)
-					fmt.Printf("\nFile write detected: %#v\n", events[len(events)-1])
+				if len(events) > 0 {
+					if events[len(events)-1].Op&fsnotify.Write == fsnotify.Write {
+						fmt.Printf("\nFile write detected: %#v\n", events[len(events)-1])
+					}
+					if events[len(events)-1].Op&fsnotify.Remove == fsnotify.Remove {
+						fmt.Printf("\nFile delete detected: %#v\n", events[len(events)-1])
+					}
+					if events[len(events)-1].Op&fsnotify.Rename == fsnotify.Rename {
+						fmt.Printf("\nFile rename detected: %#v\n", events[len(events)-1])
+					}
 					Build()
 					events = make([]fsnotify.Event, 0)
 				}
-				//}
 
 			// Watch for errors.
 			case err := <-watcher.Errors:
