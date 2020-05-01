@@ -96,6 +96,8 @@ node_modules`),
   }
 </style>
 `),
+	"/layout/content/404.svelte": []byte(`<div>Oops... 404 not found</div>
+<a href="/">Go home?</a>`),
 	"/layout/content/blog.svelte": []byte(`<script>
 	export let title, body, author, date;
 </script>
@@ -324,6 +326,14 @@ export default app;
     if (window.ga) ga.send('pageview', { dp:uri });
 
     node = getNode(uri);
+    if (node === undefined) {
+      node = {
+        "path": "/404",
+        "type": "404",
+        "filename": "404.json"
+      }
+      handle404(node);
+    }
     allNodes = nodes;
   }
 
@@ -332,8 +342,8 @@ export default app;
   addEventListener('popstate', track);
 
   const handle404 = node => {
-    if (node === "undefined") {             
-      import('../global/404.js').then(draw);
+    if (node.filename == "404.json") {             
+      import('../content/404.js').then(draw);
     }
   }
 
@@ -354,8 +364,6 @@ export default app;
 
 </script>
 `),
-	"/layout/global/404.svelte": []byte(`<div>Oops... 404 not found</div>
-<a href="/">Go home?</a>`),
 	"/layout/global/footer.svelte": []byte(`<script>
   export let allNodes;
 </script>
@@ -500,6 +508,7 @@ export default app;
   "name": "my-plenti-app",
   "version": "1.0.0",
   "type": "module",
+  "private": true,
   "devDependencies": {
     "require-relative": "^0.8.7"
   },
