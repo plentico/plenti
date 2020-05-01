@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"plenti/readers"
 
@@ -116,6 +117,8 @@ func Watch(buildPath string) {
 
 	done := make(chan bool)
 
+	// Set delay for batching events.
+	ticker := time.NewTicker(1000 * time.Millisecond)
 	// Create array for storing double firing events (happens when saving files in some text editors).
 	events := make([]fsnotify.Event, 0)
 
@@ -131,28 +134,24 @@ func Watch(buildPath string) {
 
 					// Delete / Move events should only fire once so run rebuild on them.
 					if event.Op&fsnotify.Remove == fsnotify.Remove || event.Op&fsnotify.Rename == fsnotify.Rename {
-						fmt.Printf("\nFile update detected: %#v\n", event)
+						fmt.Printf("\nFile delete / move detected: %#v\n", event)
 						Build()
 						events = make([]fsnotify.Event, 0)
 					}
 
-					// Check if two events fired and are the same event and are Write events (editing files).
-					if len(events) > 1 && events[0] == events[1] && event.Op&fsnotify.Write == fsnotify.Write {
-						// Use the last event and rebuild on file change, delete, rename.
-						fmt.Printf("\nFile update detected: %#v\n", event)
-						Build()
-						events = make([]fsnotify.Event, 0)
-					} else if len(events) > 1 && events[0] != events[1] {
-						// If two events are fired but are different, run both.
-						for _, event := range events {
-							if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Remove == fsnotify.Remove || event.Op&fsnotify.Rename == fsnotify.Rename {
-								fmt.Printf("\nFile update detected: %#v\n", event)
-								Build()
-								events = make([]fsnotify.Event, 0)
-							}
-						}
-					}
 				}
+			case <-ticker.C:
+				//if event.Name != "./"+buildPath {
+				// Check if two events fired and are the same event and are Write events (editing files).
+				//if len(events) > 1 && event.Op&fsnotify.Write == fsnotify.Write {
+				if len(events) > 1 && events[len(events)-1].Op&fsnotify.Write == fsnotify.Write {
+					// Use the last event and rebuild on file change, delete, rename.
+					//fmt.Printf("\nFile update detected: %#v\n", event)
+					fmt.Printf("\nFile write detected: %#v\n", events[len(events)-1])
+					Build()
+					events = make([]fsnotify.Event, 0)
+				}
+				//}
 
 			// Watch for errors.
 			case err := <-watcher.Errors:
