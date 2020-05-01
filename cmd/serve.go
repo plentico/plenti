@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"time"
 
 	"plenti/readers"
 
@@ -117,9 +116,8 @@ func Watch(buildPath string) {
 
 	done := make(chan bool)
 
-	//tick := time.Tick(time.Duration(1000))
+	// Create array for storing double firing events (happens when saving files in some text editors).
 	events := make([]fsnotify.Event, 0)
-	run := make(chan bool)
 
 	go func() {
 		for {
@@ -128,35 +126,31 @@ func Watch(buildPath string) {
 			case event := <-watcher.Events:
 				// Don't rebuild when build dir is added or deleted.
 				if event.Name != "./"+buildPath {
-					// Account for double firing events (common in most text editors).
+					// Add current event to array for checking double firing events (common in most text editors).
 					events = append(events, event)
-					// Check if two events fired and are the same event (editing files).
-					if len(events) > 1 && events[0] == events[1] {
+
+					// Delete / Move events should only fire once so run rebuild on them.
+					if event.Op&fsnotify.Remove == fsnotify.Remove || event.Op&fsnotify.Rename == fsnotify.Rename {
+						fmt.Printf("\nFile update detected: %#v\n", event)
+						Build()
+						events = make([]fsnotify.Event, 0)
+					}
+
+					// Check if two events fired and are the same event and are Write events (editing files).
+					if len(events) > 1 && events[0] == events[1] && event.Op&fsnotify.Write == fsnotify.Write {
 						// Use the last event and rebuild on file change, delete, rename.
-						if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Remove == fsnotify.Remove || event.Op&fsnotify.Rename == fsnotify.Rename {
-							run <- true
-							fmt.Printf("\nFile update detected: %#v\n", event)
-							Build()
-						}
+						fmt.Printf("\nFile update detected: %#v\n", event)
+						Build()
 						events = make([]fsnotify.Event, 0)
 					} else if len(events) > 1 && events[0] != events[1] {
 						// If two events are fired but are different, run both.
 						for _, event := range events {
 							if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Remove == fsnotify.Remove || event.Op&fsnotify.Rename == fsnotify.Rename {
-								run <- true
 								fmt.Printf("\nFile update detected: %#v\n", event)
 								Build()
+								events = make([]fsnotify.Event, 0)
 							}
 						}
-					} else {
-						// Catch when only one event is fired (adding / deleting files).
-						//fmt.Printf("Ran the timer")
-						go func() {
-							time.Sleep(1 * time.Second)
-							if !<-run {
-								fmt.Printf("Ran the timer")
-							}
-						}()
 					}
 				}
 
