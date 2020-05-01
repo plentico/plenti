@@ -20,39 +20,27 @@
 
   function draw(m) {
     node = getNode(uri);
+    if (node === undefined) {
+      node = {
+        "path": "/404",
+        "type": "404",
+        "filename": "404.json",
+        "fields": {}
+      }
+    }
     route = m.default;
     window.scrollTo(0, 0);
   }
 
   function track(obj) {
     uri = obj.state || obj.uri;
-    /*
-    if (window.ga) ga.send('pageview', { dp:uri });
-
-    node = getNode(uri);
-    if (node === undefined) {
-      node = {
-        "path": "/404",
-        "type": "404",
-        "filename": "404.json"
-      }
-      handle404(node);
-    }
-    allNodes = nodes;
-    */
   }
 
   addEventListener('replacestate', track);
   addEventListener('pushstate', track);
   addEventListener('popstate', track);
 
-  const handle404 = node => {
-    if (node.filename == "404.json") {             
-      import('../content/404.js').then(draw);
-    }
-  }
-
-  const router = Navaid('/', handle404(node));
+  const router = Navaid('/', () => import('../content/404.js').then(draw));
 
   allNodes.forEach(node => {
     router.on(node.path, () => {
@@ -63,8 +51,10 @@
       } else {
         import('../content/' + node.type + '.js').then(draw);
       }
-    }).listen();
+    });
 
   });
+
+  router.listen();
 
 </script>
