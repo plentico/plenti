@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"plenti/readers"
 
@@ -116,6 +117,10 @@ func Watch(buildPath string) {
 
 	done := make(chan bool)
 
+	//tick := time.Tick(time.Duration(1000))
+	events := make([]fsnotify.Event, 0)
+	run := make(chan bool)
+
 	go func() {
 		for {
 			select {
@@ -123,10 +128,35 @@ func Watch(buildPath string) {
 			case event := <-watcher.Events:
 				// Don't rebuild when build dir is added or deleted.
 				if event.Name != "./"+buildPath {
-					// Rebuild if file is changed, deleted, or renamed.
-					if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Remove == fsnotify.Remove || event.Op&fsnotify.Rename == fsnotify.Rename {
-						fmt.Printf("\nFile update detected: %#v\n", event)
-						Build()
+					// Account for double firing events (common in most text editors).
+					events = append(events, event)
+					// Check if two events fired and are the same event (editing files).
+					if len(events) > 1 && events[0] == events[1] {
+						// Use the last event and rebuild on file change, delete, rename.
+						if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Remove == fsnotify.Remove || event.Op&fsnotify.Rename == fsnotify.Rename {
+							run <- true
+							fmt.Printf("\nFile update detected: %#v\n", event)
+							Build()
+						}
+						events = make([]fsnotify.Event, 0)
+					} else if len(events) > 1 && events[0] != events[1] {
+						// If two events are fired but are different, run both.
+						for _, event := range events {
+							if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Remove == fsnotify.Remove || event.Op&fsnotify.Rename == fsnotify.Rename {
+								run <- true
+								fmt.Printf("\nFile update detected: %#v\n", event)
+								Build()
+							}
+						}
+					} else {
+						// Catch when only one event is fired (adding / deleting files).
+						//fmt.Printf("Ran the timer")
+						go func() {
+							time.Sleep(1 * time.Second)
+							if !<-run {
+								fmt.Printf("Ran the timer")
+							}
+						}()
 					}
 				}
 
