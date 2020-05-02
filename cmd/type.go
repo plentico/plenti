@@ -1,38 +1,66 @@
-/*
-Copyright © 2020 NAME HERE <EMAIL ADDRESS>
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 )
 
 // typeCmd represents the type command
 var typeCmd = &cobra.Command{
-	Use:   "type",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Use:   "type [name]",
+	Short: "A content type with structured fields",
+	Long: `Types allow you to group content by their data structure.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+The following are examples of types you could create that share common fields:
+- pages
+- blog_posts
+- news
+- events
+
+You can define any type you'd like, with any field structure you desire.
+There are no required fields when creating your new type.
+
+Any individual file within a type can contain variations in its field structure.
+Just make sure to account for this in the corresponding '/layout/content/<your_type>.svelte' file.
+
+Optionally add a _blueprint.json file to define the default field structure for the type.
+`,
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) < 1 {
+			return errors.New("requires a name argument")
+		}
+		if len(args) > 1 {
+			return errors.New("names cannot have spaces")
+		}
+		if len(args) == 1 {
+			return nil
+		}
+		return fmt.Errorf("invalid name specified: %s", args[0])
+	},
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("type called")
+		typeName := args[0]
+		typePath := "content/" + typeName
+		if _, typeDirExistsErr := os.Stat(typePath); os.IsNotExist(typeDirExistsErr) {
+			if _, singleTypeFileExistsErr := os.Stat(typePath + ".json"); os.IsNotExist(singleTypeFileExistsErr) {
+				fmt.Printf("Creating new Type called: %s\n", typeName)
+				createTypeErr := os.MkdirAll(typePath, os.ModePerm)
+				if createTypeErr != nil {
+					fmt.Printf("Can't create type named \"%s\": %s", typeName, createTypeErr)
+				}
+				_, createBlueprintErr := os.OpenFile(typePath+"/_blueprint.json", os.O_RDONLY|os.O_CREATE, os.ModePerm)
+				if createBlueprintErr != nil {
+					fmt.Printf("Can't create _blueprint.json for type \"%s\": %s", typeName, createTypeErr)
+				}
+			} else {
+				fmt.Printf("A single file Type with the same name located at \"content/%s.json\" already exists\n", typeName)
+			}
+		} else {
+			fmt.Printf("A Type with the same name located at \"content/%s/\" already exists\n", typeName)
+		}
+
 	},
 }
 
