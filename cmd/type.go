@@ -42,23 +42,33 @@ Optionally add a _blueprint.json file to define the default field structure for 
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		typeName := args[0]
-		typePath := "content/" + typeName
-		if _, typeDirExistsErr := os.Stat(typePath); os.IsNotExist(typeDirExistsErr) {
-			if _, singleTypeFileExistsErr := os.Stat(typePath + ".json"); os.IsNotExist(singleTypeFileExistsErr) {
-				fmt.Printf("Creating new Type called: %s\n", typeName)
-				createTypeErr := os.MkdirAll(typePath, os.ModePerm)
-				if createTypeErr != nil {
-					fmt.Printf("Can't create type named \"%s\": %s", typeName, createTypeErr)
+		typeContentPath := "content/" + typeName
+		if _, typeDirExistsErr := os.Stat(typeContentPath); os.IsNotExist(typeDirExistsErr) {
+			if _, singleTypeFileExistsErr := os.Stat(typeContentPath + ".json"); os.IsNotExist(singleTypeFileExistsErr) {
+				fmt.Printf("Creating new Type content source: %s/\n", typeContentPath)
+				createTypeContentErr := os.MkdirAll(typeContentPath, os.ModePerm)
+				if createTypeContentErr != nil {
+					fmt.Printf("Can't create type named \"%s\": %s", typeName, createTypeContentErr)
 				}
-				_, createBlueprintErr := os.OpenFile(typePath+"/_blueprint.json", os.O_RDONLY|os.O_CREATE, os.ModePerm)
+				_, createBlueprintErr := os.OpenFile(typeContentPath+"/_blueprint.json", os.O_RDONLY|os.O_CREATE, os.ModePerm)
 				if createBlueprintErr != nil {
-					fmt.Printf("Can't create _blueprint.json for type \"%s\": %s", typeName, createTypeErr)
+					fmt.Printf("Can't create _blueprint.json for type \"%s\": %s", typeName, createTypeContentErr)
 				}
 			} else {
-				fmt.Printf("A single file Type with the same name located at \"content/%s.json\" already exists\n", typeName)
+				fmt.Printf("A single file Type content source with the same name located at \"%s.json\" already exists\n", typeContentPath)
 			}
 		} else {
-			fmt.Printf("A Type with the same name located at \"content/%s/\" already exists\n", typeName)
+			fmt.Printf("A Type content source with the same name located at \"%s/\" already exists\n", typeContentPath)
+		}
+		typeLayoutPath := "layout/content/" + typeName + ".svelte"
+		if _, typeLayoutFileExistsErr := os.Stat(typeLayoutPath); os.IsNotExist(typeLayoutFileExistsErr) {
+			fmt.Printf("Creating new Type layout: %s\n", typeLayoutPath)
+			_, createTypeLayoutErr := os.OpenFile(typeLayoutPath, os.O_RDONLY|os.O_CREATE, os.ModePerm)
+			if createTypeLayoutErr != nil {
+				fmt.Printf("Can't create layout for type \"%s\": %s", typeName, createTypeLayoutErr)
+			}
+		} else {
+			fmt.Printf("A Type layout with the same name located at \"%s\" already exists\n", typeLayoutPath)
 		}
 
 	},
