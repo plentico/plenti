@@ -21,11 +21,16 @@
   function draw(m) {
     node = getNode(uri);
     if (node === undefined) {
-      node = {
-        "path": "/404",
-        "type": "404",
-        "filename": "404.json",
-        "fields": {}
+      // Check if there is a 404 data source.
+      node = getNode("/404");
+      if (node === undefined) {
+        // If no 404.json data source exists, pass placeholder values.
+        node = {
+          "path": "/404",
+          "type": "404",
+          "filename": "404.json",
+          "fields": {}
+        }
       }
     }
     route = m.default;
