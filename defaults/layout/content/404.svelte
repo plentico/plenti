@@ -1,2 +1,2 @@
-<div>Oops... 404 not found</div>
+<h1>Oops... 404 not found</h1>
 <a href="/">Go home?</a>
