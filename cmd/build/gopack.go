@@ -151,7 +151,3 @@ func Gopack(buildPath string) {
 	fmt.Printf("Gopack took %s\n", elapsed)
 
 }
-
-func replaceImport(importPath string, buildPath string) {
-
-}

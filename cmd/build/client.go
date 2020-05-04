@@ -34,9 +34,6 @@ func Client(buildPath string) string {
 			// Make list of files not to copy to build.
 			excludedFiles := []string{
 				"layout/ejected/build.js",
-				"layout/ejected/build_client.js",
-				"layout/ejected/build_static.js",
-				"layout/ejected/server_router.js",
 			}
 			// Check if the current file is in the excluded list.
 			excluded := false

@@ -72,6 +72,8 @@ func Build() {
 		fmt.Printf("\nCreating \"%v\" build directory\n", buildDir)
 	}
 
+	removeFiles := build.EjectTemp()
+
 	start := time.Now()
 	// Build JSON from "content/" directory.
 	staticBuildStr, allNodesStr := build.DataSource(buildPath, siteConfig)
@@ -94,6 +96,8 @@ func Build() {
 
 	// Run Gopack (custom Snowpack alternative).
 	build.Gopack(buildPath)
+
+	build.EjectClean(removeFiles)
 
 	elapsed = time.Since(buildStart)
 	fmt.Printf("\nTotal build took %s\n", elapsed)
