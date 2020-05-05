@@ -111,6 +111,20 @@ func init() {
 }
 
 func ejectFile(filePath string, content []byte) {
+	if _, fileExistsErr := os.Stat(filePath); fileExistsErr == nil {
+		overwritePrompt := promptui.Select{
+			Label: "'" + filePath + "' has already been ejected, do you want to overwrite it?",
+			Items: []string{"Yes", "No"},
+		}
+		_, overwrite, overwriteErr := overwritePrompt.Run()
+		if overwriteErr != nil {
+			fmt.Printf("Prompt failed %v\n", overwriteErr)
+			return
+		}
+		if overwrite == "No" {
+			return
+		}
+	}
 	os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
 	writeCoreFileErr := ioutil.WriteFile(filePath, content, os.ModePerm)
 	if writeCoreFileErr != nil {
