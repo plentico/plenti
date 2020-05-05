@@ -31,16 +31,24 @@ continue to work properly and you will have to manually apply any
 updates that are made to the core files (these are normally applied
 automatically).`,
 	Run: func(cmd *cobra.Command, args []string) {
+		allEjectableFiles := []string{}
+		for file := range generated.Ejected {
+			allEjectableFiles = append(allEjectableFiles, file)
+		}
 		if len(args) < 1 && EjectAll {
 			fmt.Println("All flag used, eject all core files.")
+			for _, file := range allEjectableFiles {
+				filePath := "layout/ejected" + file
+				os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
+				writeCoreFileErr := ioutil.WriteFile(filePath, generated.Ejected[file], os.ModePerm)
+				if writeCoreFileErr != nil {
+					fmt.Printf("Unable to write file: %v\n", writeCoreFileErr)
+				}
+			}
 			return
 		}
 		if len(args) < 1 {
 			fmt.Printf("Show all ejectable files as select list\n")
-			allEjectableFiles := []string{}
-			for file := range generated.Ejected {
-				allEjectableFiles = append(allEjectableFiles, file)
-			}
 			prompt := promptui.Select{
 				Label: "Select File to Eject",
 				Items: allEjectableFiles,
@@ -74,6 +82,14 @@ automatically).`,
 		}
 		if len(args) >= 1 {
 			fmt.Printf("Try to eject each file listed\n")
+			for _, arg := range args {
+				filePath := "layout/ejected/" + arg
+				os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
+				writeCoreFileErr := ioutil.WriteFile(filePath, generated.Ejected["/"+arg], os.ModePerm)
+				if writeCoreFileErr != nil {
+					fmt.Printf("Unable to write file: %v\n", writeCoreFileErr)
+				}
+			}
 		}
 	},
 }
