@@ -2,6 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"plenti/generated"
 
 	"github.com/manifoldco/promptui"
@@ -47,7 +50,27 @@ automatically).`,
 				fmt.Printf("Prompt failed %v\n", err)
 				return
 			}
-			fmt.Printf("You choose %q\n", result)
+			confirmPrompt := promptui.Select{
+				Label: "If ejected, this file will no longer receive updates and we can't gaurantee Plenti will work with your edits. Are you sure you want to proceed?",
+				Items: []string{"Yes", "No"},
+			}
+			_, confirmed, confirmErr := confirmPrompt.Run()
+			if confirmErr != nil {
+				fmt.Printf("Prompt failed %v\n", confirmErr)
+				return
+			}
+			if confirmed == "Yes" {
+				filePath := "layout/ejected" + result
+				fmt.Printf("Ejecting: %s\n", filePath)
+				os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
+				writeCoreFileErr := ioutil.WriteFile(filePath, generated.Ejected[result], os.ModePerm)
+				if writeCoreFileErr != nil {
+					fmt.Printf("Unable to write file: %v\n", writeCoreFileErr)
+				}
+			}
+			if confirmed == "No" {
+				fmt.Println("No file was ejected.")
+			}
 		}
 		if len(args) >= 1 {
 			fmt.Printf("Try to eject each file listed\n")
