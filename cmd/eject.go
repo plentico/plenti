@@ -39,11 +39,8 @@ automatically).`,
 			fmt.Println("All flag used, eject all core files.")
 			for _, file := range allEjectableFiles {
 				filePath := "layout/ejected" + file
-				os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
-				writeCoreFileErr := ioutil.WriteFile(filePath, generated.Ejected[file], os.ModePerm)
-				if writeCoreFileErr != nil {
-					fmt.Printf("Unable to write file: %v\n", writeCoreFileErr)
-				}
+				content := generated.Ejected[file]
+				ejectFile(filePath, content)
 			}
 			return
 		}
@@ -69,12 +66,8 @@ automatically).`,
 			}
 			if confirmed == "Yes" {
 				filePath := "layout/ejected" + result
-				fmt.Printf("Ejecting: %s\n", filePath)
-				os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
-				writeCoreFileErr := ioutil.WriteFile(filePath, generated.Ejected[result], os.ModePerm)
-				if writeCoreFileErr != nil {
-					fmt.Printf("Unable to write file: %v\n", writeCoreFileErr)
-				}
+				content := generated.Ejected[result]
+				ejectFile(filePath, content)
 			}
 			if confirmed == "No" {
 				fmt.Println("No file was ejected.")
@@ -92,13 +85,8 @@ automatically).`,
 				}
 				if fileExists {
 					filePath := "layout/ejected" + arg
-					os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
-					writeCoreFileErr := ioutil.WriteFile(filePath, generated.Ejected[arg], os.ModePerm)
-					if writeCoreFileErr != nil {
-						fmt.Printf("Unable to write file: %v\n", writeCoreFileErr)
-					} else {
-						fmt.Printf("Ejected %s\n", filePath)
-					}
+					content := generated.Ejected[arg]
+					ejectFile(filePath, content)
 				} else {
 					fmt.Printf("There is no ejectable file named %s. Run 'plenti eject' to see list of ejectable files.\n", arg)
 				}
@@ -120,4 +108,14 @@ func init() {
 	// is called directly, e.g.:
 	// ejectCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	ejectCmd.Flags().BoolVarP(&EjectAll, "all", "a", false, "Eject all core files")
+}
+
+func ejectFile(filePath string, content []byte) {
+	os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
+	writeCoreFileErr := ioutil.WriteFile(filePath, content, os.ModePerm)
+	if writeCoreFileErr != nil {
+		fmt.Printf("Unable to write file: %v\n", writeCoreFileErr)
+	} else {
+		fmt.Printf("Ejected %s\n", filePath)
+	}
 }
