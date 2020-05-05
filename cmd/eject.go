@@ -1,18 +1,3 @@
-/*
-Copyright © 2020 NAME HERE <EMAIL ADDRESS>
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
 package cmd
 
 import (
@@ -21,18 +6,36 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// EjectAll is a flag that allows users to eject all the core files to their local project.
+var EjectAll bool
+
 // ejectCmd represents the eject command
 var ejectCmd = &cobra.Command{
 	Use:   "eject",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Customize Plenti core files",
+	Long: `Ejecting allow you to have direct access to core files
+that are used to create a plenti app. Some examples include:
+- router.svelte (handles all paths for clientside app)
+- main.js (the entry point for the app + sets up hydration for spa)
+- build.js (runs the svelte compiler to turn class instances into js components and html)
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+You may want to edit this files directly if you need Plenti to do
+Something custom that it doesn't do out-of-the-box. However if you 
+choose to customize these files, there's no gaurantee that Plenti will
+continue to work properly and you will have to manually apply any 
+updates that are made to the core files (these are normally applied
+automatically).`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) < 1 && EjectAll {
+			fmt.Println("All flag used, eject all core files.")
+		}
 		fmt.Println("eject called")
+		if len(args) < 1 {
+			fmt.Printf("Show all ejectable files as select list\n")
+		}
+		if len(args) >= 1 {
+			fmt.Printf("Try to eject each file listed\n")
+		}
 	},
 }
 
@@ -48,4 +51,5 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// ejectCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	ejectCmd.Flags().BoolVarP(&EjectAll, "all", "a", false, "Eject all core files")
 }
