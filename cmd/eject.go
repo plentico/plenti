@@ -81,13 +81,26 @@ automatically).`,
 			}
 		}
 		if len(args) >= 1 {
-			fmt.Printf("Try to eject each file listed\n")
+			fmt.Printf("Attempting to eject each file listed\n")
 			for _, arg := range args {
-				filePath := "layout/ejected/" + arg
-				os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
-				writeCoreFileErr := ioutil.WriteFile(filePath, generated.Ejected["/"+arg], os.ModePerm)
-				if writeCoreFileErr != nil {
-					fmt.Printf("Unable to write file: %v\n", writeCoreFileErr)
+				arg = "/" + arg
+				fileExists := false
+				for ejectableFile := range generated.Ejected {
+					if ejectableFile == arg {
+						fileExists = true
+					}
+				}
+				if fileExists {
+					filePath := "layout/ejected" + arg
+					os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
+					writeCoreFileErr := ioutil.WriteFile(filePath, generated.Ejected[arg], os.ModePerm)
+					if writeCoreFileErr != nil {
+						fmt.Printf("Unable to write file: %v\n", writeCoreFileErr)
+					} else {
+						fmt.Printf("Ejected %s\n", filePath)
+					}
+				} else {
+					fmt.Printf("There is no ejectable file named %s. Run 'plenti eject' to see list of ejectable files.\n", arg)
 				}
 			}
 		}
