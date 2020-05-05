@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"plenti/generated"
 
+	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 )
 
@@ -28,10 +30,24 @@ automatically).`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 1 && EjectAll {
 			fmt.Println("All flag used, eject all core files.")
+			return
 		}
-		fmt.Println("eject called")
 		if len(args) < 1 {
 			fmt.Printf("Show all ejectable files as select list\n")
+			allEjectableFiles := []string{}
+			for file := range generated.Ejected {
+				allEjectableFiles = append(allEjectableFiles, file)
+			}
+			prompt := promptui.Select{
+				Label: "Select File to Eject",
+				Items: allEjectableFiles,
+			}
+			_, result, err := prompt.Run()
+			if err != nil {
+				fmt.Printf("Prompt failed %v\n", err)
+				return
+			}
+			fmt.Printf("You choose %q\n", result)
 		}
 		if len(args) >= 1 {
 			fmt.Printf("Try to eject each file listed\n")
