@@ -74,6 +74,8 @@ func Build() {
 
 	tempFiles := build.EjectTemp()
 
+	build.EjectCopy(buildPath)
+
 	start := time.Now()
 	// Build JSON from "content/" directory.
 	staticBuildStr, allNodesStr := build.DataSource(buildPath, siteConfig)
@@ -87,7 +89,7 @@ func Build() {
 	fmt.Printf("Prepping client SPA data took %s\n", elapsed)
 
 	start = time.Now()
-	svelteBuild := exec.Command("node", "layout/ejected/build.js", clientBuildStr, staticBuildStr, allNodesStr)
+	svelteBuild := exec.Command("node", "ejected/build.js", clientBuildStr, staticBuildStr, allNodesStr)
 	svelteBuild.Stdout = os.Stdout
 	svelteBuild.Stderr = os.Stderr
 	svelteBuild.Run()
