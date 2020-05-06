@@ -74,6 +74,8 @@ func Build() {
 
 	tempFiles := build.EjectTemp()
 
+	build.EjectCopy(buildPath)
+
 	start := time.Now()
 	// Build JSON from "content/" directory.
 	staticBuildStr, allNodesStr := build.DataSource(buildPath, siteConfig)

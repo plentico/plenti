@@ -12,6 +12,8 @@ func EjectClean(tempFiles []string) {
 
 	start := time.Now()
 
+	fmt.Printf("\nRemoving core files that aren't ejected:\n")
+
 	for _, file := range tempFiles {
 		fmt.Printf("Removing temp file '%s'\n", file)
 		os.Remove(file)

@@ -19,7 +19,7 @@ func Gopack(buildPath string) {
 
 	gopackDir := buildPath + "/spa/web_modules"
 
-	fmt.Println("\nRunning gopack to build esm support for:")
+	fmt.Println("\nRunning gopack to build esm support for npm dependencies:")
 	// Find all the "dependencies" specified in package.json.
 	for module, version := range readers.GetNpmConfig().Dependencies {
 		fmt.Printf("- %s, version %s\n", module, version)
