@@ -110,12 +110,12 @@ func Watch(buildPath string) {
 	watcher, _ = fsnotify.NewWatcher()
 	defer watcher.Close()
 
-	// Starting at the root of the project, find subdirectories.
+	// Watch specific directories for changes.
 	if err := filepath.Walk("content", watchDir(buildPath)); err != nil {
-		fmt.Println("Watching 'content/' folder for changes error: ", err)
+		fmt.Println("Error watching 'content/' folder for changes: ", err)
 	}
 	if err := filepath.Walk("layout", watchDir(buildPath)); err != nil {
-		fmt.Println("Watching 'layout/' folder for changes error: ", err)
+		fmt.Println("Error watching 'layout/' folder for changes: ", err)
 	}
 	watcher.Add("plenti.json")
 	watcher.Add("package.json")
@@ -138,15 +138,10 @@ func Watch(buildPath string) {
 					events = append(events, event)
 				}
 			case <-ticker.C:
-				buildDirChanged := false
 				// Checks on set interval if there are events.
 				if len(events) > 0 {
 					// Display messages for each events in batch.
 					for _, event := range events {
-						// If Mac picks up on "public" build dir changing, don't rebuild.
-						if event.Name == buildPath {
-							buildDirChanged = true
-						}
 						if event.Op&fsnotify.Write == fsnotify.Write {
 							fmt.Printf("\nFile write detected: %#v\n", event)
 						}
@@ -157,12 +152,10 @@ func Watch(buildPath string) {
 							fmt.Printf("\nFile rename detected: %#v\n", event)
 						}
 					}
-					if !buildDirChanged {
-						// Rebuild only one time for all batched events.
-						Build()
-						// Empty the batch array.
-						events = make([]fsnotify.Event, 0)
-					}
+					// Rebuild only one time for all batched events.
+					Build()
+					// Empty the batch array.
+					events = make([]fsnotify.Event, 0)
 
 				}
 
@@ -183,7 +176,7 @@ func watchDir(buildPath string) filepath.WalkFunc {
 	// Callback for walk func: searches for directories to add watchers to.
 	return func(path string, fi os.FileInfo, err error) error {
 		// Skip the "public" build dir to avoid infinite loops.
-		if fi.IsDir() && fi.Name() == buildPath || fi.Name() == "node_modules" {
+		if fi.IsDir() && fi.Name() == buildPath {
 			return filepath.SkipDir
 		}
 		// Add watchers only to nested directory.
