@@ -20,7 +20,7 @@ func EjectClean(tempFiles []string) {
 	// If no files were ejected by user, clean up the directory after build.
 	if len(tempFiles) == len(generated.Ejected) {
 		fmt.Println("Removing the ejected directory.")
-		os.Remove("layout/ejected")
+		os.Remove("ejected")
 	}
 
 	elapsed := time.Since(start)

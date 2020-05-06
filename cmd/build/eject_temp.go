@@ -14,7 +14,7 @@ func EjectTemp() []string {
 
 	start := time.Now()
 
-	ejectedPath := "layout/ejected"
+	ejectedPath := "ejected"
 
 	tempFiles := []string{}
 
