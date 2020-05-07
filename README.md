@@ -47,3 +47,12 @@ You can overide the default path structure in the site's configuration file (`pl
 }
 ```
 This would allow a content file located at `content/pages/page1.json` to appear in the following format: `https://example.com/page1`. **TODO**: The `:filename` is the only supported replacement pattern at the moment, this will be extended in the future to support any custom key that you define in your content source (e.g. `:title`, or `:date`, etc).
+
+### Layout
+All the templating is done in "disappearing" JS component framework called [Svelte](https://svelte.dev/). Svelte offers a simplified syntax and creates a welcoming developer experience for folks coming directly from an HTML/CSS background. It also offers some performance benefits over similar frameworks since it doesn't require a virtual dom and its runtime is rather small.
+
+**layout/global/html.svelte**: This file is important and changing its name will break your app. You could also potentially break your routing if you're not careful with `<svelte:component this={route} {...node.fields} {allNodes} />`. Once you're aware of those two things, this file shouldn't be too scary and is meant for you to customize.
+
+**layout/content/** Files that live in this folder correspond directly to the Types defined in your content source. For example if you have blog Type (`content/blog/post-whatever.json`) you would create a corresponding template at `layout/content/blog.svelte`. One template should be used per Type and it will feeds many content files to create multiple individual nodes (endpoints).
+
+The rest of the structure is really up to you. We try to create logical default folders, such as `layout/components/`for reusable widgets and `layout/scripts/` for helper functions, but feel free to completely change these and make the structure your own.
