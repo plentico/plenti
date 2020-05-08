@@ -2,7 +2,6 @@ package build
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,8 +14,7 @@ func Client(buildPath string) string {
 
 	stylePath := buildPath + "/spa/bundle.css"
 
-	// Set up counters for logging output.
-	copiedSourceCounter := 0
+	// Set up counter for logging output.
 	compiledComponentCounter := 0
 
 	// Start the string that will be sent to nodejs for compiling.
@@ -31,40 +29,6 @@ func Client(buildPath string) string {
 			// Create any sub directories need for filepath.
 			os.MkdirAll(destFile, os.ModePerm)
 		} else {
-			// Make list of files not to copy to build.
-			excludedFiles := []string{
-				"layout/ejected/build.js",
-			}
-			// Check if the current file is in the excluded list.
-			excluded := false
-			for _, excludedFile := range excludedFiles {
-				if excludedFile == layoutPath {
-					excluded = true
-				}
-			}
-			// If the file is already in .js format just copy it straight over to build dir.
-			if filepath.Ext(layoutPath) == ".js" && !excluded {
-				from, err := os.Open(layoutPath)
-				if err != nil {
-					fmt.Printf("Could not open source .js file for copying: %s\n", err)
-				}
-				defer from.Close()
-
-				to, err := os.Create(destFile)
-				if err != nil {
-					fmt.Printf("Could not create destination .js file for copying: %s\n", err)
-				}
-				defer to.Close()
-
-				_, fileCopyErr := io.Copy(to, from)
-				if err != nil {
-					fmt.Printf("Could not copy .js from source to destination: %s\n", fileCopyErr)
-				}
-
-				copiedSourceCounter++
-
-			}
-
 			// If the file is in .svelte format, compile it to .js
 			if filepath.Ext(layoutPath) == ".svelte" {
 
@@ -84,10 +48,13 @@ func Client(buildPath string) string {
 		fmt.Printf("Could not get layout file: %s", layoutFilesErr)
 	}
 
-	// End the string that will be sent to nodejs for compiling.
-	clientBuildStr = strings.TrimSuffix(clientBuildStr, ",") + "]"
+	// Get router from ejected core. NOTE if you remove this, trim the trailing comma below.
+	clientBuildStr = clientBuildStr + "{ \"layoutPath\": \"ejected/router.svelte\", \"destPath\": \"" + buildPath + "/spa/ejected/router.js\", \"stylePath\": \"" + stylePath + "\"}"
 
-	fmt.Printf("Number of source files copied: %d\n", copiedSourceCounter)
+	// End the string that will be sent to nodejs for compiling.
+	//clientBuildStr = strings.TrimSuffix(clientBuildStr, ",") + "]"
+	clientBuildStr = clientBuildStr + "]"
+
 	fmt.Printf("Number of components to be compiled: %d\n", compiledComponentCounter)
 
 	return clientBuildStr

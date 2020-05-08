@@ -110,10 +110,15 @@ func Watch(buildPath string) {
 	watcher, _ = fsnotify.NewWatcher()
 	defer watcher.Close()
 
-	// Starting at the root of the project, find subdirectories.
-	if err := filepath.Walk(".", watchDir(buildPath)); err != nil {
-		fmt.Println("ERROR", err)
+	// Watch specific directories for changes.
+	if err := filepath.Walk("content", watchDir(buildPath)); err != nil {
+		fmt.Println("Error watching 'content/' folder for changes: ", err)
 	}
+	if err := filepath.Walk("layout", watchDir(buildPath)); err != nil {
+		fmt.Println("Error watching 'layout/' folder for changes: ", err)
+	}
+	watcher.Add("plenti.json")
+	watcher.Add("package.json")
 
 	done := make(chan bool)
 
@@ -151,6 +156,7 @@ func Watch(buildPath string) {
 					Build()
 					// Empty the batch array.
 					events = make([]fsnotify.Event, 0)
+
 				}
 
 			// Watch for errors.

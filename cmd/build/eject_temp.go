@@ -14,7 +14,9 @@ func EjectTemp() []string {
 
 	start := time.Now()
 
-	ejectedPath := "layout/ejected"
+	fmt.Printf("\nEjecting core files to be used in build:\n")
+
+	ejectedPath := "ejected"
 
 	tempFiles := []string{}
 

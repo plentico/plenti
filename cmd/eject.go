@@ -38,7 +38,7 @@ automatically).`,
 		if len(args) < 1 && EjectAll {
 			fmt.Println("All flag used, eject all core files.")
 			for _, file := range allEjectableFiles {
-				filePath := "layout/ejected" + file
+				filePath := "ejected" + file
 				content := generated.Ejected[file]
 				ejectFile(filePath, content)
 			}
@@ -65,7 +65,7 @@ automatically).`,
 				return
 			}
 			if confirmed == "Yes" {
-				filePath := "layout/ejected" + result
+				filePath := "ejected" + result
 				content := generated.Ejected[result]
 				ejectFile(filePath, content)
 			}
@@ -84,7 +84,7 @@ automatically).`,
 					}
 				}
 				if fileExists {
-					filePath := "layout/ejected" + arg
+					filePath := "ejected" + arg
 					content := generated.Ejected[arg]
 					ejectFile(filePath, content)
 				} else {
