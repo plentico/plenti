@@ -39,7 +39,7 @@ The `content/` folder in a project is where all your data lives (in JSON format)
 - `content/blog/post1.json` = `https://example.com/blog/post1`
 - `content/events/event1.json` = `https://example.com/events/event1`
 
-You can overide the default path structure in the site's configuration file (`plenti.json`). For example if you had a Type called `pages` and you wanted it to appear at the top level of the side and not in the format `https://example.com/pages/page1`, you could add the following to `plenti.json`:
+You can overide the default path structure in the site's configuration file (`plenti.json`). For example if you had a Type called `pages` and you wanted it to appear at the top level of the site and not in the format `https://example.com/pages/page1`, you could add the following to `plenti.json`:
 
 ```json
 "types": {
