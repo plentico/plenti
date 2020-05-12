@@ -6,7 +6,7 @@
 	},
 	"components": [
 		{
-			"component": "uses",
+			"component": "template",
 			"fields": {"type": "index"}
 		}
 	]

@@ -1,6 +1,6 @@
 <script>
   export let title, description;
-  import Uses from "../components/uses.svelte";
+  import Uses from "../components/template.svelte";
 </script>
 
 <h1>{title}</h1>

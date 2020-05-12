@@ -17,20 +17,29 @@
   }
 </script>
 
-<details>
-  <summary>Uses the "{type}" template</summary>
+<div class="template">
+  <span>Template:</span>
   <pre>
-    <code bind:this={path}>layout/content/{type}.svelte</code><button on:click={copy}>{copyText}</button>
+    <code bind:this={path} class="{copyText}">layout/content/{type}.svelte</code>
+    <button on:click={copy}>{copyText}</button>
   </pre>
-</details>
+</div>
 
 <style>
-  summary {
-      cursor: pointer;
+  .template {
+    display: flex;
+    align-items: center;
+  }
+  pre {
+    display: flex;
+    padding-left: 5px;
   }
   code {
       background-color: var(--base);
       padding: 5px 10px;
+  }
+  code.copied {
+      color: crimson;
   }
   button {
     border: 1px solid rgba(0,0,0,.1);

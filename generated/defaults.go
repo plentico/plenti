@@ -45,7 +45,7 @@ node_modules`),
 	},
 	"components": [
 		{
-			"component": "uses",
+			"component": "template",
 			"fields": {"type": "index"}
 		}
 	]
@@ -102,7 +102,7 @@ node_modules`),
   }
 </style>
 `),
-	"/layout/components/uses.svelte": []byte(`<script>
+	"/layout/components/template.svelte": []byte(`<script>
   export let type;
 
   let path;
@@ -121,20 +121,29 @@ node_modules`),
   }
 </script>
 
-<details>
-  <summary>Uses the "{type}" template</summary>
+<div class="template">
+  <span>Template:</span>
   <pre>
-    <code bind:this={path}>layout/content/{type}.svelte</code><button on:click={copy}>{copyText}</button>
+    <code bind:this={path} class="{copyText}">layout/content/{type}.svelte</code>
+    <button on:click={copy}>{copyText}</button>
   </pre>
-</details>
+</div>
 
 <style>
-  summary {
-      cursor: pointer;
+  .template {
+    display: flex;
+    align-items: center;
+  }
+  pre {
+    display: flex;
+    padding-left: 5px;
   }
   code {
       background-color: var(--base);
       padding: 5px 10px;
+  }
+  code.copied {
+      color: crimson;
   }
   button {
     border: 1px solid rgba(0,0,0,.1);
@@ -149,7 +158,7 @@ node_modules`),
 <a href="/">Go home?</a>`),
 	"/layout/content/blog.svelte": []byte(`<script>
 	export let title, body, author, date;
-  import Uses from "../components/uses.svelte";
+  import Uses from "../components/template.svelte";
 </script>
 
 <h1>{title}</h1>
@@ -197,7 +206,7 @@ node_modules`),
 {/if}`),
 	"/layout/content/pages.svelte": []byte(`<script>
   export let title, description;
-  import Uses from "../components/uses.svelte";
+  import Uses from "../components/template.svelte";
 </script>
 
 <h1>{title}</h1>
