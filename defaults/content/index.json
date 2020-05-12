@@ -3,5 +3,11 @@
 	"intro": {
 		"slogan": "Visit the <a href=\"https://svelte.dev/tutorial\">Svelte tutorial</a> to learn how to build Svelte apps.",
 		"color": "red"
-	}
+	},
+	"components": [
+		{
+			"component": "uses",
+			"fields": {"type": "index"}
+		}
+	]
 }

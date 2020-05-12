@@ -42,7 +42,13 @@ node_modules`),
 	"intro": {
 		"slogan": "Visit the <a href=\"https://svelte.dev/tutorial\">Svelte tutorial</a> to learn how to build Svelte apps.",
 		"color": "red"
-	}
+	},
+	"components": [
+		{
+			"component": "uses",
+			"fields": {"type": "index"}
+		}
+	]
 }`),
 	"/content/pages/_blueprint.json": []byte(`{
 	"title": "text",
@@ -96,10 +102,29 @@ node_modules`),
   }
 </style>
 `),
+	"/layout/components/uses.svelte": []byte(`<script>
+  export let type;
+</script>
+
+<details>
+  <summary>Uses the "{type}" template</summary>
+  <pre><code>layout/content/{type}.svelte</code></pre>
+</details>
+
+<style>
+  summary {
+      cursor: pointer;
+  }
+  code {
+      background-color: var(--base);
+      padding: 5px 10px;
+  }
+</style>`),
 	"/layout/content/404.svelte": []byte(`<h1>Oops... 404 not found</h1>
 <a href="/">Go home?</a>`),
 	"/layout/content/blog.svelte": []byte(`<script>
 	export let title, body, author, date;
+  import Uses from "../components/uses.svelte";
 </script>
 
 <h1>{title}</h1>
@@ -112,16 +137,14 @@ node_modules`),
   {/each}
 </div>
 
-<details>
-  <summary>Uses the "Blog" template</summary>
-  <pre><code>layout/content/blog.svelte</code></pre>
-</details>
+<Uses type="blog" />
 
 <p><a href="/">Back home</a></p>
 `),
 	"/layout/content/index.svelte": []byte(`<script>
-	export let title, intro, allNodes;
+	export let title, intro, components, allNodes;
 	import Grid from '../components/grid.svelte';
+	import { loadComponent } from '../scripts/load_component.svelte';
 </script>
 
 <h1>{title}</h1>
@@ -136,13 +159,18 @@ node_modules`),
 	<br />
 </div>
 
-<details>
-  <summary>Uses the "Index" template</summary>
-  <pre><code>layout/content/index.svelte</code></pre>
-</details>
-`),
+{#if components}
+	{#each components as { component, fields }}
+		{#await loadComponent(component)}
+		{:then compClass}
+			<svelte:component this="{compClass}" {...fields} />
+		{:catch error}
+		{/await}
+	{/each}
+{/if}`),
 	"/layout/content/pages.svelte": []byte(`<script>
-	export let title, description;
+  export let title, description;
+  import Uses from "../components/uses.svelte";
 </script>
 
 <h1>{title}</h1>
@@ -153,13 +181,9 @@ node_modules`),
   {/each}
 </div>
 
-<details>
-  <summary>Uses the "Pages" template</summary>
-  <pre><code>layout/content/pages.svelte</code></pre>
-</details>
+<Uses type="pages" />
 
-<p><a href="/">Back home</a></p>
-`),
+<p><a href="/">Back home</a></p>`),
 	"/layout/global/footer.svelte": []byte(`<script>
   export let allNodes;
   import { makeTitle } from '../scripts/make_title.svelte';
@@ -266,9 +290,19 @@ node_modules`),
   }
 </style>
 `),
+	"/layout/scripts/load_component.svelte": []byte(`<script context="module">
+  export const loadComponent = component => {
+    let compClassPromise = import("../components/" + component + ".svelte").then(res => res.default);
+    // Fix "Unhandled promise rejection" error.
+    // See: https://github.com/sveltejs/sapper/issues/487#issuecomment-529145749
+    $: compClassPromise.catch(err => null)
+    return compClassPromise;
+  }
+</script>
+`),
 	"/layout/scripts/make_title.svelte": []byte(`<script context="module">
   export const makeTitle = filename => {
-  if (filename == '_index.json') {
+  if (filename == 'index.json') {
     return 'Home';
   } else if (filename) {
     // Remove file extension.

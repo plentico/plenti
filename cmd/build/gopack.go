@@ -1,6 +1,7 @@
 package build
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -64,6 +65,13 @@ func Gopack(buildPath string) {
 			}
 			//fmt.Printf("The file to convert to esm is: %s\n", convertPath)
 
+			reDynamicImport := regexp.MustCompile(`import\((?:'|").*(?:'|")\)`)
+			dynamicImportPaths := reDynamicImport.FindAll(contentBytes, -1)
+			for _, dynamicImportPath := range dynamicImportPaths {
+				fixedImportPath := bytes.ReplaceAll(dynamicImportPath, []byte(".svelte"), []byte(".js"))
+				contentBytes = reDynamicImport.ReplaceAll(contentBytes, fixedImportPath)
+			}
+
 			// Find any import statement in the file (including multiline imports).
 			// () = brackets for grouping
 			// \s = space
@@ -72,10 +80,10 @@ func Gopack(buildPath string) {
 			// \n = newline
 			// {0,} = repeat any number of times
 			// \{ = just a closing curly bracket (escaped)
-			reImport := regexp.MustCompile(`import(\s)(.*from(.*);|((.*\n){0,})\}(\s)from(.*);)`)
+			reStaticImport := regexp.MustCompile(`import(\s)(.*from(.*);|((.*\n){0,})\}(\s)from(.*);)`)
 			// Get all the import statements.
-			importStatements := reImport.FindAll(contentBytes, -1)
-			for _, importStatement := range importStatements {
+			staticImportStatements := reStaticImport.FindAll(contentBytes, -1)
+			for _, importStatement := range staticImportStatements {
 				//fmt.Printf("the import statement is: %s\n", importStatement)
 				// Find the path specifically (part between single or double quotes).
 				rePath := regexp.MustCompile(`(?:'|").*(?:'|")`)

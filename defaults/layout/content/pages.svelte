@@ -1,5 +1,6 @@
 <script>
-	export let title, description;
+  export let title, description;
+  import Uses from "../components/uses.svelte";
 </script>
 
 <h1>{title}</h1>
@@ -10,9 +11,6 @@
   {/each}
 </div>
 
-<details>
-  <summary>Uses the "Pages" template</summary>
-  <pre><code>layout/content/pages.svelte</code></pre>
-</details>
+<Uses type="pages" />
 
 <p><a href="/">Back home</a></p>

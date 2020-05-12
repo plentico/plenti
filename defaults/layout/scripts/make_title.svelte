@@ -1,6 +1,6 @@
 <script context="module">
   export const makeTitle = filename => {
-  if (filename == '_index.json') {
+  if (filename == 'index.json') {
     return 'Home';
   } else if (filename) {
     // Remove file extension.

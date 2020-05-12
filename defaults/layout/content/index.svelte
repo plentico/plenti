@@ -1,6 +1,7 @@
 <script>
-	export let title, intro, allNodes;
+	export let title, intro, components, allNodes;
 	import Grid from '../components/grid.svelte';
+	import { loadComponent } from '../scripts/load_component.svelte';
 </script>
 
 <h1>{title}</h1>
@@ -15,7 +16,12 @@
 	<br />
 </div>
 
-<details>
-  <summary>Uses the "Index" template</summary>
-  <pre><code>layout/content/index.svelte</code></pre>
-</details>
+{#if components}
+	{#each components as { component, fields }}
+		{#await loadComponent(component)}
+		{:then compClass}
+			<svelte:component this="{compClass}" {...fields} />
+		{:catch error}
+		{/await}
+	{/each}
+{/if}

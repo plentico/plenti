@@ -1,5 +1,6 @@
 <script>
 	export let title, body, author, date;
+  import Uses from "../components/uses.svelte";
 </script>
 
 <h1>{title}</h1>
@@ -12,9 +13,6 @@
   {/each}
 </div>
 
-<details>
-  <summary>Uses the "Blog" template</summary>
-  <pre><code>layout/content/blog.svelte</code></pre>
-</details>
+<Uses type="blog" />
 
 <p><a href="/">Back home</a></p>
