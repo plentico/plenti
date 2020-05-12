@@ -187,9 +187,11 @@ node_modules`),
 {#if components}
 	{#each components as { component, fields }}
 		{#await loadComponent(component)}
+			{console.log("loading component...")}
 		{:then compClass}
 			<svelte:component this="{compClass}" {...fields} />
 		{:catch error}
+			{console.log(error.message)}
 		{/await}
 	{/each}
 {/if}`),
@@ -321,7 +323,7 @@ node_modules`),
     let compClassPromise = import("../components/" + component + ".svelte").then(res => res.default);
     // Fix "Unhandled promise rejection" error.
     // See: https://github.com/sveltejs/sapper/issues/487#issuecomment-529145749
-    $: compClassPromise.catch(err => null)
+    compClassPromise.catch(err => null)
     return compClassPromise;
   }
 </script>
