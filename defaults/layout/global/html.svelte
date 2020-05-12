@@ -35,6 +35,7 @@
     max-width: 1024px;
     margin: 0 auto;
     flex-grow: 1;
+    padding: 0 20px;
   }
   :global(:root) {
     --primary: (50, 50, 50);
