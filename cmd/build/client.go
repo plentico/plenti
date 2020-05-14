@@ -4,13 +4,17 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 )
 
 // Client builds the SPA.
 func Client(buildPath string) string {
 
-	fmt.Println("\nPrepping client SPA for svelte compiler")
+	defer Benchmark(time.Now(), "Prepping client SPA data")
+
+	Log("\nPrepping client SPA for svelte compiler")
 
 	stylePath := buildPath + "/spa/bundle.css"
 
@@ -55,7 +59,7 @@ func Client(buildPath string) string {
 	//clientBuildStr = strings.TrimSuffix(clientBuildStr, ",") + "]"
 	clientBuildStr = clientBuildStr + "]"
 
-	fmt.Printf("Number of components to be compiled: %d\n", compiledComponentCounter)
+	Log("Number of components to be compiled: " + strconv.Itoa(compiledComponentCounter))
 
 	return clientBuildStr
 

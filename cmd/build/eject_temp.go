@@ -12,9 +12,9 @@ import (
 // EjectTemp temporarily writes ejectable core files to project filesystem.
 func EjectTemp() []string {
 
-	start := time.Now()
+	defer Benchmark(time.Now(), "Creating non-ejected core files for build")
 
-	fmt.Printf("\nEjecting core files to be used in build:\n")
+	Log("\nEjecting core files to be used in build:")
 
 	ejectedPath := "ejected"
 
@@ -26,7 +26,7 @@ func EjectTemp() []string {
 		// Create the directories needed for the current file
 		os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
 		if _, ejectedFileExistsErr := os.Stat(filePath); os.IsNotExist(ejectedFileExistsErr) {
-			fmt.Printf("Temp writing '%s' file.\n", file)
+			Log("Temp writing '" + file + "' file.")
 			// Create the current default file
 			writeCoreFileErr := ioutil.WriteFile(filePath, content, os.ModePerm)
 			if writeCoreFileErr != nil {
@@ -35,12 +35,9 @@ func EjectTemp() []string {
 				tempFiles = append(tempFiles, filePath)
 			}
 		} else {
-			fmt.Printf("File '%s' has been ejected already, skipping temp write.\n", file)
+			Log("File '" + file + "' has been ejected already, skipping temp write.")
 		}
 	}
-
-	elapsed := time.Since(start)
-	fmt.Printf("Creating non-ejected core files for build took %s\n", elapsed)
 
 	return tempFiles
 

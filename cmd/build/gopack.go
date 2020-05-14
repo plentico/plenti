@@ -16,14 +16,15 @@ import (
 // Gopack ensures ESM support for NPM dependencies.
 func Gopack(buildPath string) {
 
-	start := time.Now()
+	defer Benchmark(time.Now(), "Running Gopack")
 
 	gopackDir := buildPath + "/spa/web_modules"
 
-	fmt.Println("\nRunning gopack to build esm support for npm dependencies:")
+	Log("\nRunning gopack to build esm support for npm dependencies:")
+
 	// Find all the "dependencies" specified in package.json.
 	for module, version := range readers.GetNpmConfig().Dependencies {
-		fmt.Printf("- %s, version %s\n", module, version)
+		Log("- " + module + ", version " + version)
 		// Walk through all sub directories of each dependency declared.
 		nodeModuleErr := filepath.Walk("node_modules/"+module, func(modulePath string, moduleFileInfo os.FileInfo, err error) error {
 			// Only get ESM supported files.
@@ -154,8 +155,5 @@ func Gopack(buildPath string) {
 	if convertErr != nil {
 		fmt.Printf("Could not convert file to support esm: %s", convertErr)
 	}
-
-	elapsed := time.Since(start)
-	fmt.Printf("Gopack took %s\n", elapsed)
 
 }

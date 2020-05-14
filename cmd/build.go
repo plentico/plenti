@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"plenti/cmd/build"
 	"plenti/readers"
@@ -14,6 +13,12 @@ import (
 
 // BuildDirFlag allows users to override name of default build directory (public)
 var BuildDirFlag string
+
+// VerboseFlag provides users with additional logging information.
+var VerboseFlag bool
+
+// BenchmarkFlag provides users with build speed statistics to help identify bottlenecks.
+var BenchmarkFlag bool
 
 func setBuildDir(siteConfig readers.SiteConfig) string {
 	var buildDir string
@@ -42,7 +47,9 @@ you need to deploy for your website.`,
 // Build creates the compiled app that gets deployed.
 func Build() {
 
-	buildStart := time.Now()
+	build.CheckVerboseFlag(VerboseFlag)
+	build.CheckBenchmarkFlag(BenchmarkFlag)
+	defer build.Benchmark(time.Now(), "Total build", true)
 
 	// Get settings from config file.
 	siteConfig := readers.GetSiteConfig()
@@ -56,7 +63,7 @@ func Build() {
 	// Clear out any previous build dir of the same name.
 	if _, buildPathExistsErr := os.Stat(buildPath); buildPathExistsErr == nil {
 		deleteBuildErr := os.RemoveAll(buildPath)
-		fmt.Printf("\nRemoving old \"%v\" build directory\n", buildPath)
+		build.Log("Removing old '" + buildPath + "' build directory")
 		if deleteBuildErr != nil {
 			fmt.Println(deleteBuildErr)
 			return
@@ -69,40 +76,29 @@ func Build() {
 	if err != nil {
 		fmt.Printf("Unable to create \"%v\" build directory: %s\n", buildDir, err)
 	} else {
-		fmt.Printf("\nCreating \"%v\" build directory\n", buildDir)
+		build.Log("Creating '" + buildDir + "' build directory")
 	}
 
+	// Write ejectable core files to filesystem before building.
 	tempFiles := build.EjectTemp()
 
+	// Directly copy .js that don't need compiling to the build dir.
 	build.EjectCopy(buildPath)
 
-	start := time.Now()
 	// Build JSON from "content/" directory.
 	staticBuildStr, allNodesStr := build.DataSource(buildPath, siteConfig)
-	elapsed := time.Since(start)
-	fmt.Printf("Creating data_source took %s\n", elapsed)
 
-	start = time.Now()
 	// Prep the client SPA.
 	clientBuildStr := build.Client(buildPath)
-	elapsed = time.Since(start)
-	fmt.Printf("Prepping client SPA data took %s\n", elapsed)
 
-	start = time.Now()
-	svelteBuild := exec.Command("node", "ejected/build.js", clientBuildStr, staticBuildStr, allNodesStr)
-	svelteBuild.Stdout = os.Stdout
-	svelteBuild.Stderr = os.Stderr
-	svelteBuild.Run()
-	elapsed = time.Since(start)
-	fmt.Printf("\nCompiling components and creating static HTML took %s\n", elapsed)
+	// Run the build.js script using user local NodeJS.
+	build.ExecNode(clientBuildStr, staticBuildStr, allNodesStr)
 
-	// Run Gopack (custom Snowpack alternative).
+	// Run Gopack (custom Snowpack alternative) for ESM support.
 	build.Gopack(buildPath)
 
+	// Delete any ejectable files that the user didn't manually eject.
 	build.EjectClean(tempFiles)
-
-	elapsed = time.Since(buildStart)
-	fmt.Printf("\nTotal build took %s\n", elapsed)
 
 }
 
@@ -119,4 +115,6 @@ func init() {
 	// is called directly, e.g.:
 	// buildCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	buildCmd.Flags().StringVarP(&BuildDirFlag, "dir", "d", "", "change name of the build directory")
+	buildCmd.Flags().BoolVarP(&VerboseFlag, "verbose", "v", false, "show log messages")
+	buildCmd.Flags().BoolVarP(&BenchmarkFlag, "benchmark", "b", false, "display build time statistics")
 }
