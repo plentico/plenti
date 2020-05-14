@@ -12,7 +12,7 @@ import (
 // EjectTemp temporarily writes ejectable core files to project filesystem.
 func EjectTemp() []string {
 
-	start := time.Now()
+	defer Benchmark(time.Now(), "Creating non-ejected core files for build")
 
 	fmt.Printf("\nEjecting core files to be used in build:\n")
 
@@ -38,9 +38,6 @@ func EjectTemp() []string {
 			fmt.Printf("File '%s' has been ejected already, skipping temp write.\n", file)
 		}
 	}
-
-	elapsed := time.Since(start)
-	fmt.Printf("Creating non-ejected core files for build took %s\n", elapsed)
 
 	return tempFiles
 

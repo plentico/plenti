@@ -16,7 +16,7 @@ import (
 // Gopack ensures ESM support for NPM dependencies.
 func Gopack(buildPath string) {
 
-	start := time.Now()
+	defer Benchmark(time.Now(), "Running Gopack")
 
 	gopackDir := buildPath + "/spa/web_modules"
 
@@ -154,8 +154,5 @@ func Gopack(buildPath string) {
 	if convertErr != nil {
 		fmt.Printf("Could not convert file to support esm: %s", convertErr)
 	}
-
-	elapsed := time.Since(start)
-	fmt.Printf("Gopack took %s\n", elapsed)
 
 }

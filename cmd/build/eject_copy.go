@@ -11,7 +11,7 @@ import (
 // EjectCopy does a direct copy of any ejectable js files needed in spa build dir.
 func EjectCopy(buildPath string) {
 
-	start := time.Now()
+	defer Benchmark(time.Now(), "Copying ejectable core files for build")
 
 	fmt.Printf("\nCopying ejectable core files to their destination:\n")
 
@@ -61,8 +61,5 @@ func EjectCopy(buildPath string) {
 	}
 
 	fmt.Printf("Number of ejectable core files copied: %d\n", copiedSourceCounter)
-
-	elapsed := time.Since(start)
-	fmt.Printf("Copying ejectable core files for build took %s\n", elapsed)
 
 }

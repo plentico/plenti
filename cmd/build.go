@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"plenti/cmd/build"
 	"plenti/readers"
@@ -14,6 +13,12 @@ import (
 
 // BuildDirFlag allows users to override name of default build directory (public)
 var BuildDirFlag string
+
+// VerboseFlag provides users with additional logging information.
+var VerboseFlag bool
+
+// BenchmarkFlag provides users with build speed statistics to help identify bottlenecks.
+var BenchmarkFlag bool
 
 func setBuildDir(siteConfig readers.SiteConfig) string {
 	var buildDir string
@@ -42,7 +47,7 @@ you need to deploy for your website.`,
 // Build creates the compiled app that gets deployed.
 func Build() {
 
-	buildStart := time.Now()
+	defer build.Benchmark(time.Now(), "Total build")
 
 	// Get settings from config file.
 	siteConfig := readers.GetSiteConfig()
@@ -76,33 +81,18 @@ func Build() {
 
 	build.EjectCopy(buildPath)
 
-	start := time.Now()
 	// Build JSON from "content/" directory.
 	staticBuildStr, allNodesStr := build.DataSource(buildPath, siteConfig)
-	elapsed := time.Since(start)
-	fmt.Printf("Creating data_source took %s\n", elapsed)
 
-	start = time.Now()
 	// Prep the client SPA.
 	clientBuildStr := build.Client(buildPath)
-	elapsed = time.Since(start)
-	fmt.Printf("Prepping client SPA data took %s\n", elapsed)
 
-	start = time.Now()
-	svelteBuild := exec.Command("node", "ejected/build.js", clientBuildStr, staticBuildStr, allNodesStr)
-	svelteBuild.Stdout = os.Stdout
-	svelteBuild.Stderr = os.Stderr
-	svelteBuild.Run()
-	elapsed = time.Since(start)
-	fmt.Printf("\nCompiling components and creating static HTML took %s\n", elapsed)
+	build.ExecNode(clientBuildStr, staticBuildStr, allNodesStr)
 
 	// Run Gopack (custom Snowpack alternative).
 	build.Gopack(buildPath)
 
 	build.EjectClean(tempFiles)
-
-	elapsed = time.Since(buildStart)
-	fmt.Printf("\nTotal build took %s\n", elapsed)
 
 }
 
@@ -119,4 +109,6 @@ func init() {
 	// is called directly, e.g.:
 	// buildCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	buildCmd.Flags().StringVarP(&BuildDirFlag, "dir", "d", "", "change name of the build directory")
+	buildCmd.Flags().BoolVarP(&VerboseFlag, "verbose", "v", false, "show log messages")
+	buildCmd.Flags().BoolVarP(&BenchmarkFlag, "benchmark", "b", false, "display build time statistics")
 }

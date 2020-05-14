@@ -10,7 +10,7 @@ import (
 // EjectClean removes core files that hadn't been ejected to project filesystem.
 func EjectClean(tempFiles []string) {
 
-	start := time.Now()
+	defer Benchmark(time.Now(), "Cleaning up non-ejected core files")
 
 	fmt.Printf("\nRemoving core files that aren't ejected:\n")
 
@@ -24,8 +24,5 @@ func EjectClean(tempFiles []string) {
 		fmt.Println("Removing the ejected directory.")
 		os.Remove("ejected")
 	}
-
-	elapsed := time.Since(start)
-	fmt.Printf("Cleaning up non-ejected core files took %s\n", elapsed)
 
 }

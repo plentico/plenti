@@ -9,10 +9,13 @@ import (
 	"plenti/readers"
 	"regexp"
 	"strings"
+	"time"
 )
 
 // DataSource builds json list from "content/" directory.
 func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string) {
+
+	defer Benchmark(time.Now(), "Creating data_source")
 
 	fmt.Println("\nGathering data source from \"content/\" folder")
 

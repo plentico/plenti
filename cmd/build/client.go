@@ -5,10 +5,13 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // Client builds the SPA.
 func Client(buildPath string) string {
+
+	defer Benchmark(time.Now(), "Prepping client SPA data")
 
 	fmt.Println("\nPrepping client SPA for svelte compiler")
 
