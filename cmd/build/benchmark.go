@@ -14,7 +14,13 @@ func CheckBenchmarkFlag(flag bool) {
 }
 
 // Benchmark records time for individual build processes.
-func Benchmark(start time.Time, message string) {
+func Benchmark(start time.Time, message string, alwaysRun ...bool) {
+
+	// Check variadic args (used to mimic optional parameters).
+	if len(alwaysRun) == 1 {
+		// Optionally run benchmark even if user didn't pass flag.
+		benchmarkFlag = alwaysRun[0]
+	}
 
 	elapsed := time.Since(start)
 

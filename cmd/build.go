@@ -48,7 +48,7 @@ you need to deploy for your website.`,
 func Build() {
 
 	build.CheckBenchmarkFlag(BenchmarkFlag)
-	defer build.Benchmark(time.Now(), "Total build")
+	defer build.Benchmark(time.Now(), "Total build", true)
 
 	// Get settings from config file.
 	siteConfig := readers.GetSiteConfig()
