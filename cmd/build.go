@@ -47,7 +47,8 @@ you need to deploy for your website.`,
 // Build creates the compiled app that gets deployed.
 func Build() {
 
-	defer build.Benchmark(time.Now(), "Total build", BenchmarkFlag)
+	build.CheckBenchmarkFlag(BenchmarkFlag)
+	defer build.Benchmark(time.Now(), "Total build")
 
 	// Get settings from config file.
 	siteConfig := readers.GetSiteConfig()
