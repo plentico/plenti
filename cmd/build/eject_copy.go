@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 )
 
@@ -13,7 +14,7 @@ func EjectCopy(buildPath string) {
 
 	defer Benchmark(time.Now(), "Copying ejectable core files for build")
 
-	fmt.Printf("\nCopying ejectable core files to their destination:\n")
+	Log("\nCopying ejectable core files to their destination:")
 
 	copiedSourceCounter := 0
 
@@ -60,6 +61,6 @@ func EjectCopy(buildPath string) {
 		fmt.Printf("Could not get ejectable file: %s", ejectedFilesErr)
 	}
 
-	fmt.Printf("Number of ejectable core files copied: %d\n", copiedSourceCounter)
+	Log("Number of ejectable core files copied: " + strconv.Itoa(copiedSourceCounter))
 
 }

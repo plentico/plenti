@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"plenti/readers"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -17,7 +18,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 
 	defer Benchmark(time.Now(), "Creating data_source")
 
-	fmt.Println("\nGathering data source from \"content/\" folder")
+	Log("\nGathering data source from 'content/' folder")
 
 	nodesJSPath := buildPath + "/spa/ejected/nodes.js"
 	os.MkdirAll(buildPath+"/spa/ejected", os.ModePerm)
@@ -147,7 +148,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 	staticBuildStr = strings.TrimSuffix(staticBuildStr, ",") + "]"
 	allNodesStr = strings.TrimSuffix(allNodesStr, ",") + "]"
 
-	fmt.Printf("Number of content files used: %d\n", contentFileCounter)
+	Log("Number of content files used: " + strconv.Itoa(contentFileCounter))
 
 	return staticBuildStr, allNodesStr
 

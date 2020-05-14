@@ -5,11 +5,12 @@ import (
 	"time"
 )
 
+// Create global var since cmd.BenchmarkFlag is a circular dependency.
 var benchmarkFlag bool
 
 // CheckBenchmarkFlag sets global var if --benchmark flag is passed.
 func CheckBenchmarkFlag(flag bool) {
-	// Can't check cmd.BenchmarkFlag directly since circular dependencies aren't allowed.
+	// If --benchmark flag is passed by user, this will be set to true.
 	benchmarkFlag = flag
 }
 

@@ -47,6 +47,7 @@ you need to deploy for your website.`,
 // Build creates the compiled app that gets deployed.
 func Build() {
 
+	build.CheckVerboseFlag(VerboseFlag)
 	build.CheckBenchmarkFlag(BenchmarkFlag)
 	defer build.Benchmark(time.Now(), "Total build", true)
 
@@ -62,7 +63,7 @@ func Build() {
 	// Clear out any previous build dir of the same name.
 	if _, buildPathExistsErr := os.Stat(buildPath); buildPathExistsErr == nil {
 		deleteBuildErr := os.RemoveAll(buildPath)
-		fmt.Printf("\nRemoving old \"%v\" build directory\n", buildPath)
+		build.Log("Removing old '" + buildPath + "' build directory")
 		if deleteBuildErr != nil {
 			fmt.Println(deleteBuildErr)
 			return
@@ -75,11 +76,13 @@ func Build() {
 	if err != nil {
 		fmt.Printf("Unable to create \"%v\" build directory: %s\n", buildDir, err)
 	} else {
-		fmt.Printf("\nCreating \"%v\" build directory\n", buildDir)
+		build.Log("Creating '" + buildDir + "' build directory")
 	}
 
+	// Write ejectable core files to filesystem before building.
 	tempFiles := build.EjectTemp()
 
+	// Directly copy .js that don't need compiling to the build dir.
 	build.EjectCopy(buildPath)
 
 	// Build JSON from "content/" directory.
@@ -88,11 +91,13 @@ func Build() {
 	// Prep the client SPA.
 	clientBuildStr := build.Client(buildPath)
 
+	// Run the build.js script using user local NodeJS.
 	build.ExecNode(clientBuildStr, staticBuildStr, allNodesStr)
 
-	// Run Gopack (custom Snowpack alternative).
+	// Run Gopack (custom Snowpack alternative) for ESM support.
 	build.Gopack(buildPath)
 
+	// Delete any ejectable files that the user didn't manually eject.
 	build.EjectClean(tempFiles)
 
 }

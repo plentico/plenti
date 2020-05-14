@@ -1,7 +1,6 @@
 package build
 
 import (
-	"fmt"
 	"os"
 	"plenti/generated"
 	"time"
@@ -12,16 +11,16 @@ func EjectClean(tempFiles []string) {
 
 	defer Benchmark(time.Now(), "Cleaning up non-ejected core files")
 
-	fmt.Printf("\nRemoving core files that aren't ejected:\n")
+	Log("\nRemoving core files that aren't ejected:")
 
 	for _, file := range tempFiles {
-		fmt.Printf("Removing temp file '%s'\n", file)
+		Log("Removing temp file '" + file + "'")
 		os.Remove(file)
 	}
 
 	// If no files were ejected by user, clean up the directory after build.
 	if len(tempFiles) == len(generated.Ejected) {
-		fmt.Println("Removing the ejected directory.")
+		Log("Removing the ejected directory.")
 		os.Remove("ejected")
 	}
 
