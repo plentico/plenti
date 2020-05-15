@@ -85,6 +85,9 @@ func Build() {
 	// Directly copy .js that don't need compiling to the build dir.
 	build.EjectCopy(buildPath)
 
+	// Directly copy static assets to the build dir.
+	build.AssetsCopy(buildPath)
+
 	// Build JSON from "content/" directory.
 	staticBuildStr, allNodesStr := build.DataSource(buildPath, siteConfig)
 

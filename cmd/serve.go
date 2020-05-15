@@ -117,6 +117,9 @@ func Watch(buildPath string) {
 	if err := filepath.Walk("layout", watchDir(buildPath)); err != nil {
 		fmt.Println("Error watching 'layout/' folder for changes: ", err)
 	}
+	if err := filepath.Walk("assets", watchDir(buildPath)); err != nil {
+		fmt.Println("Error watching 'assets/' folder for changes: ", err)
+	}
 	watcher.Add("plenti.json")
 	watcher.Add("package.json")
 
