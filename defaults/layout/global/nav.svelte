@@ -20,5 +20,10 @@
   a {
     align-self: center;
     align-items: center;
+    color: var(--base-dark);
+    text-decoration: none;
+  }
+  img {
+    margin-right: 10px;
   }
 </style>

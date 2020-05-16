@@ -22,8 +22,14 @@
     display: flex;
     flex-grow: 1;
     height: 200px;
-    background: var(--base);
     align-items: center;
     justify-content: center;
+    background: var(--primary);
+    font-weight: bold;
+    border-radius: 5px;
+    color: white;
+  }
+  a::before {
+    content: none;
   }
 </style>

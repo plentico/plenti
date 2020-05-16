@@ -6,7 +6,7 @@
   <div class="container">
     <span>All nodes:</span>
     {#each allNodes as node}
-      <a href="{node.path}">{makeTitle(node.filename)}</a>&nbsp;
+      <a href="{node.path}">{makeTitle(node.filename)}</a>
     {/each}
   </div>
 </footer>
@@ -16,7 +16,16 @@
     min-height: 200px;
     display: flex;
     align-items: center;
-    background-color: var(--base);
+    background-color: var(--base-dark);
     margin-top: 100px;
+  }
+  span {
+    color: var(--primary);
+    font-weight: bold;
+  }
+  a {
+    color: white;
+    text-decoration: none;
+    margin-left: 10px;
   }
 </style>

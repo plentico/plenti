@@ -1,7 +1,8 @@
 {
 	"title": "Contact",
 	"description": [
-		"The project is 100% open source, so if you'd like to fork it for your own purposes, or help us out by reporting bugs / contributing code: <a href=\"https://github.com/plentico/plenti\">https://github.com/plentico/plenti</a>"
+		"Plenti is 100% free and open source!",
+		"You can fork it for your own purposes, or help us out by reporting bugs / contributing code on <a href='https://github.com/plentico/plenti' target='blank' rel='noopener noreferrer'>Our GitHub</a>."
 	],
 	"author": "Jim Fisk"
 }

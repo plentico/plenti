@@ -98,8 +98,13 @@ node_modules`),
 	"/content/index.json": []byte(`{
 	"title": "My Plenti Site",
 	"intro": {
-		"slogan": "Visit the <a href=\"https://svelte.dev/tutorial\">Svelte tutorial</a> to learn how to build Svelte apps.",
-		"color": "red"
+		"slogan": "Welcome to <a href='https://plenti.co' target='blank' rel='noopener noreferrer'>Plenti</a>! <em>A quicker way to build websites.</em>",
+		"help": [
+			"Take a look around to see how things work.",
+			"The bottom of each page will tell you where to find the corresponding template in your project.",
+			"If you get stuck or need extra help, just <a href=\"/contact\">let us know</a>",
+			"We hope you enjoy :)"
+		]
 	},
 	"components": [
 		{
@@ -116,7 +121,8 @@ node_modules`),
 	"/content/pages/about.json": []byte(`{
 	"title": "About Plenti",
 	"description": [
-		"Plenti is <a href='https://jamstack.org/' target='blank' rel='noopener noreferrer'>JAMstack</a> framework with a modern frontend for creating dynamic experiences. We've cut out as many dependencies as possible so you can focus on being productive instead of wrestling with a complicated toolchain.",
+		"Plenti is a minimalist <a href='https://jamstack.org/' target='blank' rel='noopener noreferrer'>JAMstack</a> framework that's flexible and easy to use.",
+		"We've cut out as many dependencies as possible so you can focus on being productive instead of wrestling with a complicated toolchain.",
 		"The <a href='https://svelte.dev/' target='blank' rel='noopener noreferrer'>Svelte</a> frontend <em>cuts weight</em> so users get a snappy experience, even with bad internet connections or underpowered devices.",
 		"The <a href='https://golang.org/' target='blank' rel='noopener noreferrer'>Go</a> backend <em>cuts wait</em> so apps build faster allowing devs to get more done and editors to get realtime feedback on content changes.",
 		"Thanks for taking a look!"
@@ -126,7 +132,8 @@ node_modules`),
 	"/content/pages/contact.json": []byte(`{
 	"title": "Contact",
 	"description": [
-		"The project is 100% open source, so if you'd like to fork it for your own purposes, or help us out by reporting bugs / contributing code: <a href=\"https://github.com/plentico/plenti\">https://github.com/plentico/plenti</a>"
+		"Plenti is 100% free and open source!",
+		"You can fork it for your own purposes, or help us out by reporting bugs / contributing code on <a href='https://github.com/plentico/plenti' target='blank' rel='noopener noreferrer'>Our GitHub</a>."
 	],
 	"author": "Jim Fisk"
 }`),
@@ -154,9 +161,15 @@ node_modules`),
     display: flex;
     flex-grow: 1;
     height: 200px;
-    background: var(--base);
     align-items: center;
     justify-content: center;
+    background: var(--primary);
+    font-weight: bold;
+    border-radius: 5px;
+    color: white;
+  }
+  a::before {
+    content: none;
   }
 </style>
 `),
@@ -172,7 +185,7 @@ node_modules`),
     try {
       copyText = "Copied";
       await navigator.clipboard.writeText(path.innerHTML);
-      setTimeout(() => copyText = "Copy", 800);
+      setTimeout(() => copyText = "Copy", 500);
     } catch (err) {
       console.error('Failed to copy!', err)
     }
@@ -201,7 +214,7 @@ node_modules`),
       padding: 5px 10px;
   }
   code.copied {
-      color: var(--primary);
+      background-color: var(--accent);
   }
   button {
     border: 1px solid rgba(0,0,0,.1);
@@ -245,6 +258,12 @@ node_modules`),
 	<p>{@html intro.slogan}</p>
 </section>
 
+<section id="intro">
+	{#each intro.help as paragraph}
+		<p>{@html paragraph}</p>
+	{/each}
+</section>
+
 <div>
 	<h3>Recent blog posts:</h3>
 	<Grid items={allNodes} filter="blog" />
@@ -286,7 +305,7 @@ node_modules`),
   <div class="container">
     <span>All nodes:</span>
     {#each allNodes as node}
-      <a href="{node.path}">{makeTitle(node.filename)}</a>&nbsp;
+      <a href="{node.path}">{makeTitle(node.filename)}</a>
     {/each}
   </div>
 </footer>
@@ -296,8 +315,17 @@ node_modules`),
     min-height: 200px;
     display: flex;
     align-items: center;
-    background-color: var(--base);
+    background-color: var(--base-dark);
     margin-top: 100px;
+  }
+  span {
+    color: var(--primary);
+    font-weight: bold;
+  }
+  a {
+    color: white;
+    text-decoration: none;
+    margin-left: 10px;
   }
 </style>
 `),
@@ -358,7 +386,7 @@ node_modules`),
   :global(:root) {
     --primary: rgb(34, 166, 237);
     --primary-dark: rgb(16, 92, 133);
-    --accent: gold;
+    --accent: rgb(254, 211, 48);
     --base: rgb(245, 245, 245);
     --base-dark: rgb(17, 17, 17);
   }
@@ -366,17 +394,25 @@ node_modules`),
     position: relative;
     text-decoration: none;
     color: var(--base-dark);
+    padding-bottom: 5px;
   }
-  :global(main a:after) {
+  :global(main a:before) {
     content: "";
-    position: absolute;
-    bottom: -10px;
-    left: 0;
-    height: 7px;
     width: 100%;
-    border: solid 2px var(--primary);
-    border-color: var(--primary) transparent transparent transparent;
-    border-radius: 50%;
+    height: 100%;
+    background-image: linear-gradient(to top, var(--accent) 25%, rgba(0, 0, 0, 0) 40%);  
+    position: absolute;
+    left: 0;
+    bottom: 2px;
+    z-index: -1;   
+    will-change: width;
+    transform: rotate(-2deg);
+    transform-origin: left bottom;
+    transition: width .1s ease-out;
+  }
+  :global(main a:hover:before) {
+    width: 0;
+    transition-duration: .15s;
   }
 </style>
 `),
@@ -402,6 +438,11 @@ node_modules`),
   a {
     align-self: center;
     align-items: center;
+    color: var(--base-dark);
+    text-decoration: none;
+  }
+  img {
+    margin-right: 10px;
   }
 </style>
 `),

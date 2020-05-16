@@ -40,7 +40,7 @@
   :global(:root) {
     --primary: rgb(34, 166, 237);
     --primary-dark: rgb(16, 92, 133);
-    --accent: gold;
+    --accent: rgb(254, 211, 48);
     --base: rgb(245, 245, 245);
     --base-dark: rgb(17, 17, 17);
   }
@@ -48,16 +48,24 @@
     position: relative;
     text-decoration: none;
     color: var(--base-dark);
+    padding-bottom: 5px;
   }
-  :global(main a:after) {
+  :global(main a:before) {
     content: "";
-    position: absolute;
-    bottom: -10px;
-    left: 0;
-    height: 7px;
     width: 100%;
-    border: solid 2px var(--primary);
-    border-color: var(--primary) transparent transparent transparent;
-    border-radius: 50%;
+    height: 100%;
+    background-image: linear-gradient(to top, var(--accent) 25%, rgba(0, 0, 0, 0) 40%);  
+    position: absolute;
+    left: 0;
+    bottom: 2px;
+    z-index: -1;   
+    will-change: width;
+    transform: rotate(-2deg);
+    transform-origin: left bottom;
+    transition: width .1s ease-out;
+  }
+  :global(main a:hover:before) {
+    width: 0;
+    transition-duration: .15s;
   }
 </style>

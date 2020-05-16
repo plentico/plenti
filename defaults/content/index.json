@@ -1,8 +1,13 @@
 {
 	"title": "My Plenti Site",
 	"intro": {
-		"slogan": "Visit the <a href=\"https://svelte.dev/tutorial\">Svelte tutorial</a> to learn how to build Svelte apps.",
-		"color": "red"
+		"slogan": "Welcome to <a href='https://plenti.co' target='blank' rel='noopener noreferrer'>Plenti</a>! <em>A quicker way to build websites.</em>",
+		"help": [
+			"Take a look around to see how things work.",
+			"The bottom of each page will tell you where to find the corresponding template in your project.",
+			"If you get stuck or need extra help, just <a href=\"/contact\">let us know</a>",
+			"We hope you enjoy :)"
+		]
 	},
 	"components": [
 		{

@@ -10,7 +10,7 @@
     try {
       copyText = "Copied";
       await navigator.clipboard.writeText(path.innerHTML);
-      setTimeout(() => copyText = "Copy", 800);
+      setTimeout(() => copyText = "Copy", 500);
     } catch (err) {
       console.error('Failed to copy!', err)
     }
@@ -39,7 +39,7 @@
       padding: 5px 10px;
   }
   code.copied {
-      color: var(--primary);
+      background-color: var(--accent);
   }
   button {
     border: 1px solid rgba(0,0,0,.1);

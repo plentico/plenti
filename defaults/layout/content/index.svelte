@@ -10,6 +10,12 @@
 	<p>{@html intro.slogan}</p>
 </section>
 
+<section id="intro">
+	{#each intro.help as paragraph}
+		<p>{@html paragraph}</p>
+	{/each}
+</section>
+
 <div>
 	<h3>Recent blog posts:</h3>
 	<Grid items={allNodes} filter="blog" />
