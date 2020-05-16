@@ -6,9 +6,9 @@ package generated
 var Defaults = map[string][]byte{
 	"/.gitignore": []byte(`public
 node_modules`),
-	"/assets/plenti.svg": []byte(`<?xml version="1.0" encoding="UTF-8"?>
+	"/assets/favicon.svg": []byte(`<?xml version="1.0" encoding="UTF-8"?>
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
-<svg width="37.351mm" height="37.351mm" version="1.1" viewBox="0 0 37.351 37.351" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<svg width="47.596mm" height="47.596mm" version="1.1" viewBox="0 0 47.596 47.596" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
  <metadata>
   <rdf:RDF>
    <cc:Work rdf:about="">
@@ -18,26 +18,48 @@ node_modules`),
    </cc:Work>
   </rdf:RDF>
  </metadata>
- <g transform="matrix(.82125 0 0 1 .85644 -.52917)">
-  <path d="m21.648 4.5162c-6.3412 0-11.886 2.2425-14.906 5.5881-1.7071 1.4294-4.6948 3.0274-6.3451 4.8992-2.1067 2.5006 4.8512 4.0176 4.9355 3.5132 3.2924 7.4995 9.9448 15.539 16.316 15.659 5.2012-0.66288 14.869-8.8176 16.935-15.905 1.5388-0.33171 5.0941-0.36828 4.2394-3.2676-0.77538-0.96414-6.2242-4.8903-6.3267-4.9642-3.0333-3.3098-8.5479-5.5232-14.848-5.5232z" fill="#22a6ed" fill-rule="evenodd"/>
-  <path d="m21.648 4.5162c-9.5704 0-17.329 5.1073-17.329 11.407 2.7439 8.1059 10.214 18.118 17.329 18.252 5.7885-0.73775 17.111-10.755 17.329-18.252 0-6.3002-7.7583-11.407-17.329-11.407z" fill="none"/>
-  <g transform="translate(-45.832 -105.33)" fill-rule="evenodd">
-   <path d="m55.19 130.96c-1.486-2.0735 7.8403 7.0493 12.324 7.0871 4.8974-0.29154 13.838-8.7206 12.619-7.2432-1.1598 1.7268-7.6713 8.6765-12.652 8.7053-5.4222-0.0543-10.702-6.333-12.29-8.5492z" fill="#1c7fc7"/>
-   <path d="m77.069 125.83c0-0.0211 0.36697 4.1258-3.4253 4.8676-3.7923-0.15207-4.1593-4.7915-4.1593-4.7915z" fill="#1c7fc7"/>
-   <path d="m77.604 123.27a4.21 6.6213 0 0 1-4.2101 6.6213 4.21 6.6213 0 0 1-4.21-6.6213 4.21 6.6213 0 0 1 4.21-6.6213 4.21 6.6213 0 0 1 4.2101 6.6213z" fill="#fff"/>
-   <path d="m57.792 125.85c0-8e-3 -0.36697 4.0827 3.4253 4.8676 3.7923-0.15206 4.0981-4.9436 4.0981-4.9436z" fill="#1c7fc7"/>
-   <path d="m65.693 123.27a4.21 6.6213 0 0 1-4.2101 6.6213 4.21 6.6213 0 0 1-4.21-6.6213 4.21 6.6213 0 0 1 4.21-6.6213 4.21 6.6213 0 0 1 4.2101 6.6213z" fill="#fff"/>
-  </g>
-  <g transform="translate(-45.832 -105.33)" fill="#082f58" fill-rule="evenodd">
-   <path d="m50.843 120.04c-0.81738 0.19161-2.8496 0.96099-2.4963 1.4176 0.34641 0.28078 2.6716 1.5627 2.6692 0.71228 0-0.74229 0.18804-2.2145-0.17296-2.1299z"/>
-   <ellipse cx="62.85" cy="123.67" rx="2.4372" ry="3.0305"/>
-   <ellipse cx="71.874" cy="123.67" rx="2.4372" ry="3.0305"/>
-  </g>
-  <path d="m21.648 4.5162c-6.3412 0-11.886 2.2425-14.906 5.5881l0.01481-0.089s-5.5771 4.015-6.3599 4.9882c-1.1253 3.8172 3.3221 2.5642 4.8924 3.7712l0.04313-0.25809c3.2924 7.4995 9.9448 15.539 16.316 15.659 5.2012-0.66288 14.869-8.8176 16.935-15.905 1.5388-0.33171 5.0941-0.36828 4.2394-3.2676-0.77538-0.96414-6.2242-4.8903-6.3267-4.9642-3.0333-3.3098-8.5479-5.5232-14.848-5.5232z" fill="none"/>
-  <g transform="translate(-45.832 -105.33)" fill-rule="evenodd">
-   <path d="m84.158 119.72c0.81738 0.19161 2.8497 0.96099 2.4963 1.4176-0.34641 0.28078-2.6716 1.5627-2.6692 0.71228 0-0.74229-0.18804-2.2145 0.17296-2.1299z" fill="#082f58"/>
-   <ellipse cx="70.913" cy="122.84" rx=".75036" ry=".93304" fill="#fff"/>
-   <ellipse cx="62.092" cy="122.84" rx=".75036" ry=".93304" fill="#fff"/>
+ <g transform="translate(-76.94 -96.762)" fill-rule="evenodd">
+  <rect x="78.35" y="98.172" width="44.777" height="44.777" rx="4.5237" ry="4.5237" fill="#22a6ed" stroke="#22a6ed" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.8191"/>
+  <path d="m88.5 112.76v26.379h8.4959v-15.879z" fill="#fff" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2401"/>
+  <ellipse cx="101.01" cy="113.8" rx="13.633" ry="12.244" fill="#fff"/>
+  <circle cx="97.99" cy="116.82" r="3.0232" fill="#22a6ed"/>
+ </g>
+</svg>
+`),
+	"/assets/planarian.svg": []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg width="17.198mm" height="10.181mm" version="1.1" viewBox="0 0 17.198 10.181" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+ <metadata>
+  <rdf:RDF>
+   <cc:Work rdf:about="">
+    <dc:format>image/svg+xml</dc:format>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:title/>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <g transform="translate(-40.209 -130.72)">
+  <g transform="matrix(1.3 0 0 1.1144 40.209 130.72)">
+   <path d="m6.6673 1.813e-4c-1.953 0-3.6607 0.69066-4.5908 1.7211-0.52576 0.44023-1.4459 0.9324-1.9542 1.5089-0.64883 0.77015 1.4941 1.2374 1.5201 1.082 1.014 2.3097 3.0629 4.7858 5.0251 4.8227 1.6019-0.20416 4.5794-2.7157 5.2157-4.8985 0.47393-0.10216 1.5689-0.11342 1.3057-1.0064-0.23881-0.29694-1.917-1.5061-1.9485-1.5289-0.93421-1.0194-2.6326-1.7011-4.573-1.7011z" fill="#22a6ed" fill-rule="evenodd" stroke-width=".30799"/>
+   <path d="m6.6673 1.813e-4c-2.9475 0-5.3371 1.573-5.3371 3.5132 0.84508 2.4965 3.1458 5.5801 5.3371 5.6214 1.7828-0.22722 5.2699-3.3124 5.3371-5.6214 0-1.9404-2.3894-3.5132-5.3371-3.5132z" fill="none" stroke-width=".30799"/>
+   <g transform="matrix(.30799 0 0 .30799 -14.116 -33.832)" fill-rule="evenodd">
+    <path d="m55.19 130.96c-1.486-2.0735 7.8403 7.0493 12.324 7.0871 4.8974-0.29154 13.838-8.7206 12.619-7.2432-1.1598 1.7268-7.6713 8.6765-12.652 8.7053-5.4222-0.0543-10.702-6.333-12.29-8.5492z" fill="#1c7fc7"/>
+    <path d="m77.069 125.83c0-0.0211 0.36697 4.1258-3.4253 4.8676-3.7923-0.15207-4.1593-4.7915-4.1593-4.7915z" fill="#1c7fc7"/>
+    <path d="m77.604 123.27a4.21 6.6213 0 0 1-4.2101 6.6213 4.21 6.6213 0 0 1-4.21-6.6213 4.21 6.6213 0 0 1 4.21-6.6213 4.21 6.6213 0 0 1 4.2101 6.6213z" fill="#fff"/>
+    <path d="m57.792 125.85c0-8e-3 -0.36697 4.0827 3.4253 4.8676 3.7923-0.15206 4.0981-4.9436 4.0981-4.9436z" fill="#1c7fc7"/>
+    <path d="m65.693 123.27a4.21 6.6213 0 0 1-4.2101 6.6213 4.21 6.6213 0 0 1-4.21-6.6213 4.21 6.6213 0 0 1 4.21-6.6213 4.21 6.6213 0 0 1 4.2101 6.6213z" fill="#fff"/>
+   </g>
+   <g transform="matrix(.30799 0 0 .30799 -14.116 -33.832)" fill="#082f58" fill-rule="evenodd">
+    <path d="m50.843 120.04c-0.81738 0.19161-2.8496 0.96099-2.4963 1.4176 0.34641 0.28078 2.6716 1.5627 2.6692 0.71228 0-0.74229 0.18804-2.2145-0.17296-2.1299z"/>
+    <ellipse cx="62.85" cy="123.67" rx="2.4372" ry="3.0305"/>
+    <ellipse cx="71.874" cy="123.67" rx="2.4372" ry="3.0305"/>
+   </g>
+   <path d="m6.6673 1.813e-4c-1.953 0-3.6607 0.69066-4.5908 1.7211l0.00456-0.027413s-1.7177 1.2366-1.9588 1.5363c-0.34657 1.1756 1.0232 0.78974 1.5068 1.1615l0.013284-0.079487c1.014 2.3097 3.0629 4.7858 5.0251 4.8227 1.6019-0.20416 4.5794-2.7157 5.2157-4.8985 0.47393-0.10216 1.5689-0.11342 1.3057-1.0064-0.23881-0.29694-1.917-1.5061-1.9485-1.5289-0.93421-1.0194-2.6326-1.7011-4.573-1.7011z" fill="none" stroke-width=".30799"/>
+   <g transform="matrix(.30799 0 0 .30799 -14.116 -33.832)" fill-rule="evenodd">
+    <path d="m84.158 119.72c0.81738 0.19161 2.8497 0.96099 2.4963 1.4176-0.34641 0.28078-2.6716 1.5627-2.6692 0.71228 0-0.74229-0.18804-2.2145 0.17296-2.1299z" fill="#082f58"/>
+    <ellipse cx="70.913" cy="122.84" rx=".75036" ry=".93304" fill="#fff"/>
+    <ellipse cx="62.092" cy="122.84" rx=".75036" ry=".93304" fill="#fff"/>
+   </g>
   </g>
  </g>
 </svg>
@@ -179,7 +201,7 @@ node_modules`),
       padding: 5px 10px;
   }
   code.copied {
-      color: crimson;
+      color: var(--primary);
   }
   button {
     border: 1px solid rgba(0,0,0,.1);
@@ -290,7 +312,7 @@ node_modules`),
   <title>{ title }</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet">
-  <link rel="icon" type="image/svg+xml" href="/assets/plenti.svg">
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
   <link rel='stylesheet' href='/spa/bundle.css'>
 </head>
 `),
@@ -334,32 +356,52 @@ node_modules`),
     padding: 0 20px;
   }
   :global(:root) {
-    --primary: (50, 50, 50);
-    --accent: rgb(1, 1, 1);
+    --primary: rgb(34, 166, 237);
+    --primary-dark: rgb(16, 92, 133);
+    --accent: gold;
     --base: rgb(245, 245, 245);
+    --base-dark: rgb(17, 17, 17);
+  }
+  :global(main a) {
+    position: relative;
+    text-decoration: none;
+    color: var(--base-dark);
+  }
+  :global(main a:after) {
+    content: "";
+    position: absolute;
+    bottom: -10px;
+    left: 0;
+    height: 7px;
+    width: 100%;
+    border: solid 2px var(--primary);
+    border-color: var(--primary) transparent transparent transparent;
+    border-radius: 50%;
   }
 </style>
 `),
 	"/layout/global/nav.svelte": []byte(`<nav>
   <div class="container">
-    <span id="brand"><a href="/">Home</a></span>
+    <span id="brand"><a href="/"><img alt="planarian" src="/assets/planarian.svg" />Home</a></span>
     <a href="/about">About</a>&nbsp;
     <a href="/contact">Contact</a>
   </div>
 </nav>
 
 <style>
+  nav, .container, #brand, #brand a {
+    display: flex;
+  }
   nav {
     min-height: 60px;
-    display: flex;
-    align-items: center;
     box-shadow: 0px 2px 3px var(--base);
-  }
-  .container {
-    display: flex;
   }
   #brand {
     flex: 1;
+  }
+  a {
+    align-self: center;
+    align-items: center;
   }
 </style>
 `),

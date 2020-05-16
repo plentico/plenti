@@ -38,8 +38,26 @@
     padding: 0 20px;
   }
   :global(:root) {
-    --primary: (50, 50, 50);
-    --accent: rgb(1, 1, 1);
+    --primary: rgb(34, 166, 237);
+    --primary-dark: rgb(16, 92, 133);
+    --accent: gold;
     --base: rgb(245, 245, 245);
+    --base-dark: rgb(17, 17, 17);
+  }
+  :global(main a) {
+    position: relative;
+    text-decoration: none;
+    color: var(--base-dark);
+  }
+  :global(main a:after) {
+    content: "";
+    position: absolute;
+    bottom: -10px;
+    left: 0;
+    height: 7px;
+    width: 100%;
+    border: solid 2px var(--primary);
+    border-color: var(--primary) transparent transparent transparent;
+    border-radius: 50%;
   }
 </style>

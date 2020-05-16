@@ -39,7 +39,7 @@
       padding: 5px 10px;
   }
   code.copied {
-      color: crimson;
+      color: var(--primary);
   }
   button {
     border: 1px solid rgba(0,0,0,.1);
