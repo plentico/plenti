@@ -107,9 +107,16 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 				// Reduce extra whitespace to a single space.
 				reS := regexp.MustCompile(`\s+`)
 				encodedNodeDetails = reS.ReplaceAllString(encodedNodeDetails, " ")
+
+				// Add node info for being referenced in allNodes object.
+				allNodesStr = allNodesStr + encodedNodeDetails + ","
+				// Do not add a content source without a corresponding template to the build string.
+				if _, noEndpointErr := os.Stat(componentPath); os.IsNotExist(noEndpointErr) {
+					// The componentPath does not exist, go to the next content source.
+					return nil
+				}
 				// Add to list of data_source files for creating static HTML.
 				staticBuildStr = staticBuildStr + "{ \"node\": " + encodedNodeDetails + ", \"componentPath\": \"" + componentPath + "\", \"destPath\": \"" + destPath + "\"},"
-				allNodesStr = allNodesStr + encodedNodeDetails + ","
 
 				// Create new nodes.js file if it doesn't already exist, or add to it if it does.
 				nodesJSFile, openNodesJSErr := os.OpenFile(nodesJSPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)

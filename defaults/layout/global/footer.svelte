@@ -2,6 +2,7 @@
   export let allNodes;
   import { makeTitle } from '../scripts/make_title.svelte';
 </script>
+
 <footer>
   <div class="container">
     <span>All nodes:</span>
