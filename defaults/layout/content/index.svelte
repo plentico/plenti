@@ -25,7 +25,7 @@
 {#if components}
 	{#each components as { component, fields }}
 		{#await loadComponent(component)}
-			{console.log("loading component...")}
+			loading component...
 		{:then compClass}
 			<svelte:component this="{compClass}" {...fields} />
 		{:catch error}
