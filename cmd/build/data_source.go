@@ -93,10 +93,18 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 					"\"filename\": \"" + fileName + "\",\n" +
 					"\"fields\": " + fileContentStr + "\n}"
 
-				// Create path for source .svelte template.
-				componentPath := "layout/content/" + contentType + ".svelte"
+				// Create new nodes.js file if it doesn't already exist, or add to it if it does.
+				nodesJSFile, openNodesJSErr := os.OpenFile(nodesJSPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+				if openNodesJSErr != nil {
+					fmt.Printf("Could not open nodes.js for writing: %s", openNodesJSErr)
+				}
+				// Write to the file with info from current file in "/content" folder.
+				defer nodesJSFile.Close()
+				if _, err := nodesJSFile.WriteString(nodeDetailsStr + ","); err != nil {
+					log.Println(err)
+				}
 
-				//encodedNodeDetails := html.EscapeString(nodeDetailsStr)
+				// Need to encode html so it can be send as string to NodeJS in exec.Command.
 				encodedNodeDetails := nodeDetailsStr
 				// Remove newlines.
 				reN := regexp.MustCompile(`\r?\n`)
@@ -110,6 +118,9 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 
 				// Add node info for being referenced in allNodes object.
 				allNodesStr = allNodesStr + encodedNodeDetails + ","
+
+				// Create path for source .svelte template.
+				componentPath := "layout/content/" + contentType + ".svelte"
 				// Do not add a content source without a corresponding template to the build string.
 				if _, noEndpointErr := os.Stat(componentPath); os.IsNotExist(noEndpointErr) {
 					// The componentPath does not exist, go to the next content source.
@@ -117,17 +128,6 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 				}
 				// Add to list of data_source files for creating static HTML.
 				staticBuildStr = staticBuildStr + "{ \"node\": " + encodedNodeDetails + ", \"componentPath\": \"" + componentPath + "\", \"destPath\": \"" + destPath + "\"},"
-
-				// Create new nodes.js file if it doesn't already exist, or add to it if it does.
-				nodesJSFile, openNodesJSErr := os.OpenFile(nodesJSPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-				if openNodesJSErr != nil {
-					fmt.Printf("Could not open nodes.js for writing: %s", openNodesJSErr)
-				}
-				// Write to the file with info from current file in "/content" folder.
-				defer nodesJSFile.Close()
-				if _, err := nodesJSFile.WriteString(nodeDetailsStr + ","); err != nil {
-					log.Println(err)
-				}
 
 				// Increment counter for logging purposes.
 				contentFileCounter++
