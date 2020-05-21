@@ -8,6 +8,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// EndpointFlag disables the route for a content source by omitting the corresponding svelte template.
+var EndpointFlag bool
+
 // typeCmd represents the type command
 var typeCmd = &cobra.Command{
 	Use:   "type [name]",
@@ -60,15 +63,17 @@ Optionally add a _blueprint.json file to define the default field structure for 
 		} else {
 			fmt.Printf("A Type content source with the same name located at \"%s/\" already exists\n", typeContentPath)
 		}
-		typeLayoutPath := "layout/content/" + typeName + ".svelte"
-		if _, typeLayoutFileExistsErr := os.Stat(typeLayoutPath); os.IsNotExist(typeLayoutFileExistsErr) {
-			fmt.Printf("Creating new Type layout: %s\n", typeLayoutPath)
-			_, createTypeLayoutErr := os.OpenFile(typeLayoutPath, os.O_RDONLY|os.O_CREATE, os.ModePerm)
-			if createTypeLayoutErr != nil {
-				fmt.Printf("Can't create layout for type \"%s\": %s", typeName, createTypeLayoutErr)
+		if EndpointFlag {
+			typeLayoutPath := "layout/content/" + typeName + ".svelte"
+			if _, typeLayoutFileExistsErr := os.Stat(typeLayoutPath); os.IsNotExist(typeLayoutFileExistsErr) {
+				fmt.Printf("Creating new Type layout: %s\n", typeLayoutPath)
+				_, createTypeLayoutErr := os.OpenFile(typeLayoutPath, os.O_RDONLY|os.O_CREATE, os.ModePerm)
+				if createTypeLayoutErr != nil {
+					fmt.Printf("Can't create layout for type \"%s\": %s", typeName, createTypeLayoutErr)
+				}
+			} else {
+				fmt.Printf("A Type layout with the same name located at \"%s\" already exists\n", typeLayoutPath)
 			}
-		} else {
-			fmt.Printf("A Type layout with the same name located at \"%s\" already exists\n", typeLayoutPath)
 		}
 
 	},
@@ -86,4 +91,5 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// typeCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	typeCmd.Flags().BoolVarP(&EndpointFlag, "endpoint", "e", true, "set 'false' to disable route.")
 }
