@@ -23,6 +23,8 @@ func AssetsCopy(buildPath string) {
 		if assetFileInfo.IsDir() {
 			// Make directory if it doesn't exist.
 			os.MkdirAll(destPath, os.ModePerm)
+			// Move on to next path.
+			return nil
 		}
 		from, err := os.Open(assetPath)
 		if err != nil {
