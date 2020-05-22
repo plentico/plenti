@@ -45,15 +45,17 @@
   addEventListener('pushstate', track);
   addEventListener('popstate', track);
 
-  const router = Navaid('/', () => {
+  const handle404 = () => {
     import('../content/404.js')
       .then(draw)
       .catch(err => {
         console.log("Add a '/layout/content/404.svelte' file to handle Page Not Found errors.");
         console.log("If you want to pass data to your 404 component, you can also add a '/content/404.json' file.");
-        console.log(err);                                                                                           
+        console.log(err);
       });
-  });
+  }
+
+  const router = Navaid('/', handle404);
 
   allNodes.forEach(node => {
     router.on(node.path, () => {
@@ -62,7 +64,7 @@
         // Redirect to the same path without the trailing slash.
         router.route(node.path, false);
       } else {
-        import('../content/' + node.type + '.js').then(draw);
+        import('../content/' + node.type + '.js').then(draw).catch(handle404);
       }
     });
 
