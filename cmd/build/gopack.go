@@ -73,21 +73,8 @@ func Gopack(buildPath string) {
 			for _, dynamicImportPath := range dynamicImportPaths {
 				// Inside the dynamic import change any svelte file extensions to reference regular javascript files.
 				fixedImportPath := bytes.Replace(dynamicImportPath, []byte(".svelte"), []byte(".js"), 1)
-				//fixedImportPath := bytes.ReplaceAll(dynamicImportPath, []byte(".svelte"), []byte(".js"))
 				// Add the updated import back into the file contents for writing later.
-				//contentBytes = reDynamicImport.ReplaceAll(contentBytes, fixedImportPath)
 				contentBytes = bytes.Replace(contentBytes, dynamicImportPath, fixedImportPath, 1)
-				/*
-					currentImportPath := string(dynamicImportPath[:])
-					fmt.Printf("\nCurrent is %s\n", currentImportPath)
-					fmt.Printf("\nFixed is %s\n", fixedImportPath)
-					reCurrentDynamicImport := regexp.MustCompile(currentImportPath)
-					//contentBytes = reCurrentDynamicImport.ReplaceAll(contentBytes, fixedImportPath)
-					contentBytes = reCurrentDynamicImport.ReplaceAll(contentBytes, []byte("test"))
-					//contentBytes = reDynamicImport.ReplaceAll(contentBytes, reCurrentDynamicImport.ReplaceAll(dynamicImportPath, fixedImportPath))
-					//contentBytes = reDynamicImport.ReplaceAll(contentBytes, fixedImportPath)
-					fmt.Printf("content bytes: %s", string(contentBytes))
-				*/
 			}
 
 			// Find any import statement in the file (including multiline imports).
