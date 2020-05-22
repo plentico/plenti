@@ -66,11 +66,28 @@ func Gopack(buildPath string) {
 			}
 			//fmt.Printf("The file to convert to esm is: %s\n", convertPath)
 
+			// Match dynamic import statments, e.g. import("") or import('').
 			reDynamicImport := regexp.MustCompile(`import\((?:'|").*(?:'|")\)`)
+			// Created byte array of all dynamic imports in the current file.
 			dynamicImportPaths := reDynamicImport.FindAll(contentBytes, -1)
 			for _, dynamicImportPath := range dynamicImportPaths {
-				fixedImportPath := bytes.ReplaceAll(dynamicImportPath, []byte(".svelte"), []byte(".js"))
-				contentBytes = reDynamicImport.ReplaceAll(contentBytes, fixedImportPath)
+				// Inside the dynamic import change any svelte file extensions to reference regular javascript files.
+				fixedImportPath := bytes.Replace(dynamicImportPath, []byte(".svelte"), []byte(".js"), 1)
+				//fixedImportPath := bytes.ReplaceAll(dynamicImportPath, []byte(".svelte"), []byte(".js"))
+				// Add the updated import back into the file contents for writing later.
+				//contentBytes = reDynamicImport.ReplaceAll(contentBytes, fixedImportPath)
+				contentBytes = bytes.Replace(contentBytes, dynamicImportPath, fixedImportPath, 1)
+				/*
+					currentImportPath := string(dynamicImportPath[:])
+					fmt.Printf("\nCurrent is %s\n", currentImportPath)
+					fmt.Printf("\nFixed is %s\n", fixedImportPath)
+					reCurrentDynamicImport := regexp.MustCompile(currentImportPath)
+					//contentBytes = reCurrentDynamicImport.ReplaceAll(contentBytes, fixedImportPath)
+					contentBytes = reCurrentDynamicImport.ReplaceAll(contentBytes, []byte("test"))
+					//contentBytes = reDynamicImport.ReplaceAll(contentBytes, reCurrentDynamicImport.ReplaceAll(dynamicImportPath, fixedImportPath))
+					//contentBytes = reDynamicImport.ReplaceAll(contentBytes, fixedImportPath)
+					fmt.Printf("content bytes: %s", string(contentBytes))
+				*/
 			}
 
 			// Find any import statement in the file (including multiline imports).
