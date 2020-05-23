@@ -32,13 +32,22 @@ func (t *TypeFields) UnmarshalJSON(data []byte) error {
 func GetTypeFields(typeFileContents []byte) TypeFields {
 
 	var typeFields TypeFields
-	typeFields.UnmarshalJSON(typeFileContents)
-	/*
-		err := json.Unmarshal(typeFileContents, &typeFields.Fields)
-		if err != nil {
-			fmt.Printf("Unable to read content type source file: %s\n", err)
+	//typeFields.UnmarshalJSON(typeFileContents)
+
+	var unknownValues map[string]interface{}
+	err := json.Unmarshal(typeFileContents, &unknownValues)
+	//err := json.Unmarshal(typeFileContents, &typeFields.Fields)
+	if err != nil {
+		fmt.Printf("Unable to read content type source file: %s\n", err)
+	}
+	typeFields.Fields = map[string]string{}
+	for field, unknownValue := range unknownValues {
+		_, isString := unknownValue.(string)
+		if isString {
+			typeFields.Fields[field] = fmt.Sprintf("%v", unknownValue)
+			fmt.Printf("Its a string: %s", field)
 		}
-	*/
+	}
 
 	return typeFields
 }
