@@ -48,11 +48,11 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 			if fileName[:1] != "_" {
 
 				// Get the contents of the file.
-				fileContentByte, readFileErr := ioutil.ReadFile(path)
+				fileContentBytes, readFileErr := ioutil.ReadFile(path)
 				if readFileErr != nil {
 					fmt.Printf("Could not read content file: %s\n", readFileErr)
 				}
-				fileContentStr := string(fileContentByte)
+				fileContentStr := string(fileContentBytes)
 
 				// Check for index file at any level.
 				if fileName == "index.json" {
@@ -65,13 +65,40 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 				// Remove the "content" folder from path.
 				path = strings.TrimPrefix(path, "content")
 
+				// Get field key/values from content source.
+				typeFields := readers.GetTypeFields(fileContentBytes)
+				// Setup regex to find field name.
+				reField := regexp.MustCompile(`:field\((.*)\)`)
+
 				// Check for path overrides from plenti.json config file.
 				for configContentType, slug := range siteConfig.Types {
 					if configContentType == contentType {
-						slug = strings.Replace(slug, ":filename", fileName, -1)
+						// Replace :filename.
+						slug = strings.Replace(slug, ":filename", strings.TrimSuffix(fileName, filepath.Ext(fileName)), -1)
+						//slug = strings.TrimSuffix(slug, filepath.Ext(file))
+						fmt.Printf("slug is: %s", slug)
+
+						// Replace :field().
+						//fieldReplacements := reField.FindAll([]byte(slug), -1)
+						//fieldReplacements := reField.FindStringSubmatch(slug)
+						fieldReplacements := reField.FindAllStringSubmatch(slug, -1)
+						for _, replacement := range fieldReplacements {
+							fmt.Printf("Replacement: %s", replacement[1])
+							for field, fieldValue := range typeFields.Fields {
+								if replacement[1] == field {
+									slug = reField.ReplaceAllString(slug, fieldValue)
+									//fmt.Printf(fieldValue)
+									//fmt.Printf(field)
+								}
+							}
+
+						}
+
+						// Slugify output.
 						slug = strings.Replace(slug, "_", "-", -1)
+						slug = strings.Replace(slug, " ", "-", -1)
+						slug = strings.Replace(slug, ".", "", -1)
 						slug = strings.ToLower(slug)
-						slug = strings.TrimSuffix(slug, filepath.Ext(slug))
 						path = slug
 					}
 				}
