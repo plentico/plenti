@@ -68,7 +68,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 				// Get field key/values from content source.
 				typeFields := readers.GetTypeFields(fileContentBytes)
 				// Setup regex to find field name.
-				reField := regexp.MustCompile(`:field\((.*)\)`)
+				reField := regexp.MustCompile(`:field\((.*?)\)`)
 				// Create regex for allowed characters when slugifying path.
 				reSlugify := regexp.MustCompile("[^a-z0-9/]+")
 
