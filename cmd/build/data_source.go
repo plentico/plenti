@@ -69,36 +69,32 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 				typeFields := readers.GetTypeFields(fileContentBytes)
 				// Setup regex to find field name.
 				reField := regexp.MustCompile(`:field\((.*)\)`)
+				// Create regex for allowed characters when slugifying path.
+				reSlugify := regexp.MustCompile("[^a-z0-9/]+")
 
 				// Check for path overrides from plenti.json config file.
 				for configContentType, slug := range siteConfig.Types {
 					if configContentType == contentType {
 						// Replace :filename.
 						slug = strings.Replace(slug, ":filename", strings.TrimSuffix(fileName, filepath.Ext(fileName)), -1)
-						//slug = strings.TrimSuffix(slug, filepath.Ext(file))
-						fmt.Printf("slug is: %s", slug)
 
 						// Replace :field().
-						//fieldReplacements := reField.FindAll([]byte(slug), -1)
-						//fieldReplacements := reField.FindStringSubmatch(slug)
 						fieldReplacements := reField.FindAllStringSubmatch(slug, -1)
+						// Loop through all :field() replacements found in config file.
 						for _, replacement := range fieldReplacements {
-							fmt.Printf("Replacement: %s", replacement[1])
+							// Loop through all top level keys found in content source file.
 							for field, fieldValue := range typeFields.Fields {
+								// Check if field name in the replacement pattern is found in data source.
 								if replacement[1] == field {
+									// Use the field value in the path.
 									slug = reField.ReplaceAllString(slug, fieldValue)
-									//fmt.Printf(fieldValue)
-									//fmt.Printf(field)
 								}
 							}
 
 						}
 
-						// Slugify output.
-						slug = strings.Replace(slug, "_", "-", -1)
-						slug = strings.Replace(slug, " ", "-", -1)
-						slug = strings.Replace(slug, ".", "", -1)
-						slug = strings.ToLower(slug)
+						// Slugify output using reSlugify regex defined above.
+						slug = strings.Trim(reSlugify.ReplaceAllString(strings.ToLower(slug), "-"), "-")
 						path = slug
 					}
 				}
