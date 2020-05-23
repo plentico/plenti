@@ -7,7 +7,7 @@ import (
 
 // TypeFields maps to field key/values for content types.
 type TypeFields struct {
-	Fields map[string]string `json:"fields"`
+	Fields map[string]string `json:",string"`
 }
 
 // GetTypeFields reads the key/values for an individual content type JSON file.

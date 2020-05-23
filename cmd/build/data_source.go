@@ -80,24 +80,13 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 
 						// Replace :field().
 						fieldReplacements := reField.FindAllStringSubmatch(slug, -1)
-						//fullFieldReplacement := reField.FindString(slug)
-						//fmt.Printf("full field replacement: %s\n", fullFieldReplacement)
-						//reCurrentField := regexp.MustCompile(fullFieldReplacement)
 						// Loop through all :field() replacements found in config file.
 						for _, replacement := range fieldReplacements {
 							// Loop through all top level keys found in content source file.
 							for field, fieldValue := range typeFields.Fields {
 								// Check if field name in the replacement pattern is found in data source.
 								if replacement[1] == field {
-									fmt.Printf("\nfield val: %s\n", fieldValue)
-									fmt.Printf("field key: %s\n", field)
-									fmt.Printf("replace val: %s\n", replacement[1])
-									fmt.Printf("Replacements: %s ||| %s\n\n", replacement[0], replacement[1])
-									// Get the full :field(<field_name>) string.
-									//reCurrentField := regexp.MustCompile(replacement[0])
 									// Use the field value in the path.
-									//slug = reField.ReplaceAllString(slug, fieldValue)
-									//slug = reCurrentField.ReplaceAllString(slug, fieldValue)
 									slug = strings.ReplaceAll(slug, replacement[0], fieldValue)
 								}
 							}
