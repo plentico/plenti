@@ -5,49 +5,32 @@ import (
 	"fmt"
 )
 
-// TypeFields maps to field key/values for content types.
-type TypeFields struct {
-	Fields map[string]string `json:",string"`
-}
-
-// UnmarshalJSON method filters out non-string values from content source.
-func (t *TypeFields) UnmarshalJSON(data []byte) error {
-	var unknownValues map[string]interface{}
-	if err := json.Unmarshal(data, &unknownValues); err != nil {
-		return err
-	}
-	t.Fields = map[string]string{}
-	for field, unknownValue := range unknownValues {
-		_, isString := unknownValue.(string)
-		if isString {
-			t.Fields[field] = fmt.Sprintf("%v", unknownValue)
-			fmt.Printf("Its a string: %s", field)
-		}
-	}
-	fmt.Printf("I HAVE RUN!!!!")
-	return nil
+// ContentType maps to field key/values for content types.
+type ContentType struct {
+	Fields map[string]string `json:"-"`
 }
 
 // GetTypeFields reads the key/values for an individual content type JSON file.
-func GetTypeFields(typeFileContents []byte) TypeFields {
+func GetTypeFields(typeFileContents []byte) ContentType {
 
-	var typeFields TypeFields
-	//typeFields.UnmarshalJSON(typeFileContents)
+	var contentType ContentType
+	contentType.Fields = map[string]string{}
 
+	// Use empty interface to store JSON field values of unknown primitive type.
 	var unknownValues map[string]interface{}
+	// Put JSON key/values into the map of unknown primitives.
 	err := json.Unmarshal(typeFileContents, &unknownValues)
-	//err := json.Unmarshal(typeFileContents, &typeFields.Fields)
 	if err != nil {
 		fmt.Printf("Unable to read content type source file: %s\n", err)
 	}
-	typeFields.Fields = map[string]string{}
 	for field, unknownValue := range unknownValues {
+		// isString will be set to true if the value is a string (vs array, obj, etc).
 		_, isString := unknownValue.(string)
 		if isString {
-			typeFields.Fields[field] = fmt.Sprintf("%v", unknownValue)
-			fmt.Printf("Its a string: %s", field)
+			// Convert the empty interface into a string that can be stored in ContentType struct.
+			contentType.Fields[field] = fmt.Sprintf("%v", unknownValue)
 		}
 	}
 
-	return typeFields
+	return contentType
 }
