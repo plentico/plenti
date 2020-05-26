@@ -45,6 +45,7 @@ snapcrafts:
     publish: true # publish the snap to the snapcraft store.
     summary: A simple static site generator for the JAMstack. 
     description: Dead simple SSG with Svelte frontend and Go CLI.
+    grade: stable
     license: Apache-2.0
 scoop:
   bucket:
