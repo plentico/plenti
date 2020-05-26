@@ -42,7 +42,7 @@ snapcrafts:
   -
     id: plenti
     name: plenti
-    publish: true # publish the snap to the snapcraft store.
+    #publish: true # publish the snap to the snapcraft store.
     summary: A simple static site generator for the JAMstack. 
     description: Dead simple SSG with Svelte frontend and Go CLI.
     grade: devel
