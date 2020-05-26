@@ -15,11 +15,11 @@ builds:
   - windows
 archives:
 - replacements:
-    darwin: Darwin
+    darwin: Mac
     linux: Linux
     windows: Windows
-    386: i386
-    amd64: x86_64
+    386: 32-bit
+    amd64: 64-bit
 checksum:
   name_template: 'checksums.txt'
 snapshot:
@@ -30,3 +30,27 @@ changelog:
     exclude:
     - '^docs:'
     - '^test:'
+brews:
+  -
+    name: plenti
+    github:
+      owner: plentico
+      name: homebrew-plenti
+    homepage: "https://plenti.co/"
+    description: "Dead simple SSG with Svelte frontend and Go CLI."
+snapcrafts:
+  -
+    id: plenti
+    name: plenti
+    publish: true # publish the snap to the snapcraft store.
+    summary: A simple static site generator for the JAMstack. 
+    description: Dead simple SSG with Svelte frontend and Go CLI.
+    license: Apache-2.0
+scoop:
+  -
+    bucket:
+      owner: plentico
+      name: scoop-plenti
+    description: "Dead simple SSG with Svelte frontend and Go CLI."
+    license: Apache-2.0
+
