@@ -47,10 +47,9 @@ snapcrafts:
     description: Dead simple SSG with Svelte frontend and Go CLI.
     license: Apache-2.0
 scoop:
-  -
-    bucket:
-      owner: plentico
-      name: scoop-plenti
-    description: "Dead simple SSG with Svelte frontend and Go CLI."
-    license: Apache-2.0
+  bucket:
+    owner: plentico
+    name: scoop-plenti
+  description: "Dead simple SSG with Svelte frontend and Go CLI."
+  license: Apache-2.0
 
