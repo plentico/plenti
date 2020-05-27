@@ -32,6 +32,11 @@ jobs:
         run: |
           snapcraft login --with <(echo "$SNAPCRAFT_LOGIN")
       -
+        name: Allow pushing to different repos
+        run: |
+          chmod +x ./.github/repo_access.sh
+          ./.github/repo_access.sh
+      -
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v1
         with:

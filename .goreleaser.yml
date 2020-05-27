@@ -13,6 +13,9 @@ builds:
   - linux
   - darwin
   - windows
+  ignore:
+  - goos: darwin
+    goarch: 386
 archives:
 - replacements:
     darwin: Mac
@@ -30,6 +33,10 @@ changelog:
     exclude:
     - '^docs:'
     - '^test:'
+#dockers:
+#  -
+#    extra_files:
+#    - .github/repo_access.sh
 brews:
   -
     name: plenti
