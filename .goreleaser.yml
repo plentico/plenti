@@ -33,11 +33,6 @@ changelog:
     exclude:
     - '^docs:'
     - '^test:'
-#dockers:
-#  -
-#    dockerfile: Dockerfile
-#    extra_files:
-#    - .github/repo_access.sh
 brews:
   -
     name: plenti
@@ -54,6 +49,7 @@ snapcrafts:
     summary: A simple static site generator for the JAMstack. 
     description: Dead simple SSG with Svelte frontend and Go CLI.
     grade: stable
+    confinement: classic
     license: Apache-2.0
 scoop:
   bucket:

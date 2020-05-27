@@ -9,18 +9,18 @@ You must have [NodeJS](https://nodejs.org/) version 13 or newer
 
 ### Installation :floppy_disk:
 
-**Homebrew:**
+Homebrew:
 1. Add the tap: `brew tap plentico/homebrew-plenti`
 2. Install: `brew install plenti`
 
-**Snap:**
+Snap:
 1. Install: `snap install plenti`
 
-**Scoop:**
+Scoop:
 1. Add the bucket: `scoop bucket add org https://github.com/plentico/scoop-plenti.git`
 2. Install: `scoop install plentico/scoop-plenti`
 
-**Manual:**
+Manual:
 1. Download the latest [release](https://github.com/plentico/plenti/releases)
 2. Move it somewhere in your `PATH` (most likely `/usr/local/bin`)
 
