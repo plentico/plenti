@@ -31,11 +31,6 @@ jobs:
           SNAPCRAFT_LOGIN: ${{ secrets.snapcraft_token }}
         run: |
           snapcraft login --with <(echo "$SNAPCRAFT_LOGIN")
-      #-
-      #  name: Allow pushing to different repos
-      #  run: |
-      #    chmod +x ./.github/repo_access.sh
-      #    ./.github/repo_access.sh
       -
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v1
@@ -45,4 +40,3 @@ jobs:
           key: ${{ secrets.YOUR_PRIVATE_KEY }}
         env:
           GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-          #GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
