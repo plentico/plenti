@@ -31,11 +31,6 @@ jobs:
           SNAPCRAFT_LOGIN: ${{ secrets.snapcraft_token }}
         run: |
           snapcraft login --with <(echo "$SNAPCRAFT_LOGIN")
-      #-
-      #  name: Install Snapcraft and Login
-      #  uses: samuelmeuli/action-snapcraft@v1
-      #  with:
-      #    snapcraft_token: ${{ secrets.snapcraft_token }}
       -
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v1
