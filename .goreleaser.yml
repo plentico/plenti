@@ -33,10 +33,10 @@ changelog:
     exclude:
     - '^docs:'
     - '^test:'
-#dockers:
-#  -
-#    extra_files:
-#    - .github/repo_access.sh
+dockers:
+  -
+    extra_files:
+    - .github/repo_access.sh
 brews:
   -
     name: plenti
