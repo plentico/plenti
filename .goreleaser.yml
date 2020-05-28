@@ -49,8 +49,14 @@ snapcrafts:
     summary: A simple static site generator for the JAMstack. 
     description: Dead simple SSG with Svelte frontend and Go CLI.
     grade: stable
-    confinement: classic
+    confinement: strict
     license: Apache-2.0
+    plugs: # allow read/write to user's filesystem.
+      personal-files:
+        read:
+        - $HOME
+        write:
+        - $HOME
 scoop:
   bucket:
     owner: plentico
