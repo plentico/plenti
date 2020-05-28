@@ -54,13 +54,7 @@ snapcrafts:
     # allow read/write to user's filesystem.
     apps:
       plenti:
-        plugs: ["home"]
-    #plugs:
-    #  personal-files:
-    #    read:
-    #    - $HOME
-    #    write:
-    #    - $HOME
+        plugs: ["home", "network"]
 scoop:
   bucket:
     owner: plentico
