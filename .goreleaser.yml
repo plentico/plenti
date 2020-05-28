@@ -51,15 +51,16 @@ snapcrafts:
     grade: stable
     confinement: strict
     license: Apache-2.0
+    # allow read/write to user's filesystem.
     apps:
       plenti:
         plugs: ["home"]
-    plugs:
-      personal-files:
-        read:
-        - $HOME
-        write:
-        - $HOME
+    #plugs:
+    #  personal-files:
+    #    read:
+    #    - $HOME
+    #    write:
+    #    - $HOME
 scoop:
   bucket:
     owner: plentico
