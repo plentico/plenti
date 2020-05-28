@@ -54,7 +54,7 @@ snapcrafts:
     # allow read/write to user's filesystem.
     apps:
       plenti:
-        plugs: ["home", "network"]
+        plugs: ["home", "network-bind", "removable-media"]
 scoop:
   bucket:
     owner: plentico
