@@ -14,7 +14,7 @@ Homebrew:
 2. Install: `brew install plenti`
 
 Snap:
-1. Install: `snap install plenti`
+1. Install: `snap install plenti` (TODO: need to fix https://github.com/plentico/plenti/issues/31 before this will work properly)
 
 Scoop:
 1. Add the bucket: `scoop bucket add org https://github.com/plentico/scoop-plenti.git`
@@ -59,7 +59,16 @@ You can overide the default path structure in the site's configuration file (`pl
   "pages": "/:filename"
 }
 ```
-This would allow a content file located at `content/pages/page1.json` to appear in the following format: `https://example.com/page1`. **TODO**: The `:filename` is the only supported replacement pattern at the moment, this will be extended in the future to support any custom key that you define in your content source, e.g. `:title`, `:date`, etc (see https://github.com/plentico/plenti/issues/13 and https://github.com/plentico/plenti/issues/14).
+This would allow a content file located at `content/pages/page1.json` to appear in the following format: `https://example.com/page1`. 
+
+You can use any custom key that you define in your content source, e.g. `:title`, `:date`, etc in your path, for example:
+```json
+"types": {
+  "blog": "/blog/:field(author)/:field(title)"
+}
+```
+
+If you want to have a content source without a path (no node endpoint that site visitors can access), simply delete the corresponding svelte template in `layout/content/`. You can do this automatically use the "endpoint" flag when creating a new type, for example: `plenti new type YOUR_TYPE --endpoint=false`
 
 ### Layout
 All the templating is done in "disappearing" JS component framework called [Svelte](https://svelte.dev/). Svelte offers a simplified syntax and creates a welcoming developer experience for folks coming directly from an HTML/CSS background. It also offers some performance benefits over similar frameworks since it doesn't require a virtual dom and its runtime is rather small.
