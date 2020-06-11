@@ -54,16 +54,21 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 				}
 				fileContentStr := string(fileContentBytes)
 
+				// Remove the "content" folder from path.
+				path = strings.TrimPrefix(path, "content")
+
 				// Check for index file at any level.
 				if fileName == "index.json" {
 					// Remove entire filename from path.
 					path = strings.TrimSuffix(path, fileName)
+					// Remove trailing slash, unless it's the homepage.
+					if path != "/" && path[len(path)-1:] == "/" {
+						path = strings.TrimSuffix(path, "/")
+					}
 				} else {
 					// Remove file extension only from path for files other than index.json.
 					path = strings.TrimSuffix(path, filepath.Ext(path))
 				}
-				// Remove the "content" folder from path.
-				path = strings.TrimPrefix(path, "content")
 
 				// Get field key/values from content source.
 				typeFields := readers.GetTypeFields(fileContentBytes)
