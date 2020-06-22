@@ -55,11 +55,6 @@ snapcrafts:
     apps:
       plenti:
         plugs: ["home", "network-bind", "removable-media"]
-    parts:
-      plenti:
-        source: .
-        plugin: nodejs
-        node-engine: 13.14.0
 scoop:
   bucket:
     owner: plentico
