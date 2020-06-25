@@ -1,6 +1,9 @@
 <div align="center"><img src="https://plenti.co/assets/perry.png" width="200" /></div>
-<h1>Plenti</h1>
-Static Site Generator with Go backend and Svelte frontend
+<h1>
+  Plenti
+</h1>
+<div align="center">Static Site Generator with Go backend and Svelte frontend</div>
+<br />
 
 ### Requirements:exclamation:
 You must have [NodeJS](https://nodejs.org/) version 13 or newer
