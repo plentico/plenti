@@ -1,8 +1,6 @@
-<h1 align="center">
-  Plenti
-</h1>
-<div align="center">Static Site Generator with Go backend and Svelte frontend</div>
-<br />
+<div align="center"><img src="https://plenti.co/assets/perry.png" width="200" /></div>
+<h1>Plenti</h1>
+Static Site Generator with Go backend and Svelte frontend
 
 ### Requirements:exclamation:
 You must have [NodeJS](https://nodejs.org/) version 13 or newer
@@ -30,14 +28,12 @@ Manual:
 3. Start up the development server: `plenti serve`
 4. Navigate to the site in your browser: [localhost:3000](http://localhost:3000)
 
-### Contributing :purple_heart:
-Plenti is brand new and needs to be test driven a bit to work out the kinks. If you find bugs or have any questions, please open a new [issue](https://github.com/plentico/plenti/issues) to let us know! Thank you for being patient while Plenti grows :seedling:
 
-<br />
+### Learning the Basics 🎓
+1. Documentation: https://plenti.co/docs
 
-<h2 align="center">
-  Learning the basics 🎓
-</h2>
+<details>
+<summary>I can't wait, show me something now</summary>
 
 ### Types
 The `content/` folder in a project is where all your data lives (in JSON format). This is typically divided into multiple subfolders that define your _types_. Types are just a way to group content of a similar structure. Individual files inside a type are very flexible, in fact you can define any field schema you'd like and there are no required keys. Even though files may be grouped together as a type, they can actually have variability between them in terms of their field structure - just make sure you account for this in your corresponding `layout/content/` files!
@@ -78,3 +74,9 @@ All the templating is done in "disappearing" JS component framework called [Svel
 **layout/content/**: Files that live in this folder correspond directly to the Types defined in your content source. For example if you have blog Type (`content/blog/post-whatever.json`) you would create a corresponding template at `layout/content/blog.svelte`. One template should be used per Type and it will feed many content files to create individual nodes (endpoints).
 
 The rest of the structure is really up to you. We try to create logical default folders, such as `layout/components/`for reusable widgets and `layout/scripts/` for helper functions, but feel free to completely change these and make the structure your own.
+
+
+</details>
+
+### Contributing :purple_heart:
+Plenti is brand new and needs to be test driven a bit to work out the kinks. If you find bugs or have any questions, please open a new [issue](https://github.com/plentico/plenti/issues) to let us know! Thank you for being patient while Plenti grows :seedling:
