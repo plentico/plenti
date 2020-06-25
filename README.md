@@ -1,5 +1,5 @@
 <div align="center"><img src="https://plenti.co/assets/perry.png" width="200" /></div>
-<h1>
+<h1 align="center">
   Plenti
 </h1>
 <div align="center">Static Site Generator with Go backend and Svelte frontend</div>
