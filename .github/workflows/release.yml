@@ -32,6 +32,10 @@ jobs:
         run: |
           snapcraft login --with <(echo "$SNAPCRAFT_LOGIN")
       -
+        name: Dockerhub Login
+        run: |
+          echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+      -
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v1
         with:

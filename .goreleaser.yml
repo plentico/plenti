@@ -70,5 +70,3 @@ dockers:
     image_templates:
     - "plentico/plenti:latest"
     - "plentico/plenti:{{ .Tag }}"
-    extra_files:
-    - scripts/entrypoint.sh
