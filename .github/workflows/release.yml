@@ -34,7 +34,7 @@ jobs:
       -
         name: Dockerhub Login
         run: |
-          echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+          echo '${{ secrets.DOCKER_PASSWORD }}' | docker login --username '${{ secrets.DOCKER_USERNAME }}' --password-stdin
       -
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v1
