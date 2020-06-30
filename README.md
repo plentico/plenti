@@ -3,6 +3,7 @@
   Plenti
 </h1>
 <div align="center">Static Site Generator with Go backend and Svelte frontend</div>
+<div align="center">Website: <a href="https://plenti.co">https://plenti.co</a></div>
 <br />
 
 ### Requirements:exclamation:
@@ -36,7 +37,7 @@ Manual:
 1. Documentation: https://plenti.co/docs
 
 <details>
-<summary>I can't wait, show me something now</summary>
+<summary>Types</summary>
 
 ### Types
 The `content/` folder in a project is where all your data lives (in JSON format). This is typically divided into multiple subfolders that define your _types_. Types are just a way to group content of a similar structure. Individual files inside a type are very flexible, in fact you can define any field schema you'd like and there are no required keys. Even though files may be grouped together as a type, they can actually have variability between them in terms of their field structure - just make sure you account for this in your corresponding `layout/content/` files!
@@ -68,6 +69,11 @@ You can use any custom key that you define in your content source, e.g. `:title`
 ```
 
 If you want to have a content source without a path (no node endpoint that site visitors can access), simply delete the corresponding svelte template in `layout/content/`. You can do this automatically use the "endpoint" flag when creating a new type, for example: `plenti new type YOUR_TYPE --endpoint=false`
+
+</details>
+
+<details>
+<summary>Layout</summary>
 
 ### Layout
 All the templating is done in "disappearing" JS component framework called [Svelte](https://svelte.dev/). Svelte offers a simplified syntax and creates a welcoming developer experience for folks coming directly from an HTML/CSS background. It also offers some performance benefits over similar frameworks since it doesn't require a virtual dom and its runtime is rather small.
