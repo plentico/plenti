@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"time"
 
+	"github.com/evanw/esbuild/pkg/api"
 	"rogchap.com/v8go"
 )
 
@@ -19,6 +20,13 @@ func ExecNode(clientBuildStr string, staticBuildStr string, allNodesStr string) 
 		svelteBuild.Stderr = os.Stderr
 		svelteBuild.Run()
 	*/
+
+	result := api.Build(api.BuildOptions{
+		EntryPoints: []string{"./ejected/build.js"},
+		Outfile:     "./ejected/bundle.js",
+		Bundle:      true,
+	})
+	fmt.Println(result)
 
 	ctx, _ := v8go.NewContext(nil)
 	content, err := ioutil.ReadFile("ejected/bundle.js")
