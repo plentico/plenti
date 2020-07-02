@@ -7,8 +7,8 @@
     "require-relative": "^0.8.7"
   },
   "dependencies": {
-    "navaid": "^1.0.5",
+    "navaid": "^1.1.1",
     "regexparam": "^1.3.0",
-    "svelte": "^3.21.0"
+    "svelte": "^3.23.2"
   }
 }

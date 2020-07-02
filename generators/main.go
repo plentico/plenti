@@ -1,7 +1,7 @@
 package main
 
 import (
-	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -28,10 +28,13 @@ func generate(name string) {
 			if err != nil {
 				return err
 			}
-			if !info.IsDir() {
+			if !info.IsDir() && filepath.Ext(path) != ".md" {
 				out.Write([]byte("\t\"" + strings.TrimPrefix(path, name) + "\": []byte(`"))
-				f, _ := os.Open(path)
-				io.Copy(out, f)
+				read, _ := ioutil.ReadFile(path)
+				newContents := strings.Replace(string(read), "`", "`+\"`\"+`", -1)
+				out.Write([]byte(newContents))
+				//f, _ := os.Open(path)
+				//io.Copy(out, f)
 				out.Write([]byte("`),\n"))
 			}
 			return nil
