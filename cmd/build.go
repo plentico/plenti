@@ -79,6 +79,9 @@ func Build() {
 		build.Log("Creating '" + buildDir + "' build directory")
 	}
 
+	// Add core NPM dependencies if node_module folder doesn't already exist.
+	build.NpmDefaults()
+
 	// Write ejectable core files to filesystem before building.
 	tempFiles := build.EjectTemp()
 
