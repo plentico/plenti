@@ -28,13 +28,12 @@ func generate(name string) {
 			if err != nil {
 				return err
 			}
-			if !info.IsDir() && filepath.Ext(path) != ".md" {
+			if !info.IsDir() {
 				out.Write([]byte("\t\"" + strings.TrimPrefix(path, name) + "\": []byte(`"))
-				read, _ := ioutil.ReadFile(path)
-				newContents := strings.Replace(string(read), "`", "`+\"`\"+`", -1)
-				out.Write([]byte(newContents))
-				//f, _ := os.Open(path)
-				//io.Copy(out, f)
+				content, _ := ioutil.ReadFile(path)
+				// Escape the backticks that would break string literals
+				escapedContent := strings.Replace(string(content), "`", "`+\"`\"+`", -1)
+				out.Write([]byte(escapedContent))
 				out.Write([]byte("`),\n"))
 			}
 			return nil
