@@ -22,11 +22,16 @@ func ExecNode(clientBuildStr string, staticBuildStr string, allNodesStr string) 
 	*/
 
 	result := api.Build(api.BuildOptions{
-		EntryPoints: []string{"./ejected/build.js"},
-		Outfile:     "./ejected/bundle.js",
+		EntryPoints: []string{"ejected/build.js"},
+		Outfile:     "ejected/bundle.js",
 		Bundle:      true,
 	})
-	fmt.Println(result)
+	if result.Errors != nil {
+		fmt.Printf("Error bundling dependencies for build script: %v", result.Errors)
+	}
+	for _, out := range result.OutputFiles {
+		ioutil.WriteFile(out.Path, out.Contents, 0644)
+	}
 
 	ctx, _ := v8go.NewContext(nil)
 	content, err := ioutil.ReadFile("ejected/bundle.js")
