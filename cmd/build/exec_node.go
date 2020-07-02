@@ -24,10 +24,11 @@ func ExecNode(clientBuildStr string, staticBuildStr string, allNodesStr string) 
 	result := api.Build(api.BuildOptions{
 		EntryPoints: []string{"ejected/build.js"},
 		Outfile:     "ejected/bundle.js",
+		Externals:   []string{"module", "fs", "path"},
 		Bundle:      true,
 	})
 	if result.Errors != nil {
-		fmt.Printf("Error bundling dependencies for build script: %v", result.Errors)
+		fmt.Printf("Error bundling dependencies for build script: %v\n", result.Errors)
 	}
 	for _, out := range result.OutputFiles {
 		ioutil.WriteFile(out.Path, out.Contents, 0644)
@@ -36,11 +37,11 @@ func ExecNode(clientBuildStr string, staticBuildStr string, allNodesStr string) 
 	ctx, _ := v8go.NewContext(nil)
 	content, err := ioutil.ReadFile("ejected/bundle.js")
 	if err != nil {
-		fmt.Printf("Could not read ejected/bundle.js file: %v", err)
+		fmt.Printf("Could not read ejected/bundle.js file: %v\n", err)
 	}
 	val, err := ctx.RunScript(string(content), "ejected/bundle.js")
 	if err != nil {
-		fmt.Printf("Could not execute ejected/bundle.js file: %v", err)
+		fmt.Printf("Could not execute ejected/bundle.js file: %v\n", err)
 	}
 	fmt.Println(val)
 }
