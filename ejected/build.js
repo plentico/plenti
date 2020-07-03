@@ -1,6 +1,6 @@
 import svelte from 'svelte/compiler.js';
 import 'svelte/register.js';
-import relative from 'require-relative';
+import Module from 'module';
 import path from 'path';
 import fs from 'fs';
 
@@ -66,7 +66,8 @@ let allNodes = JSON.parse(args[2]);
 
 // Create the component that wraps all nodes.
 let htmlWrapper = path.join(path.resolve(), 'layout/global/html.svelte')
-const component = relative(htmlWrapper, process.cwd()).default;
+let root = new Module();
+let component = root.require(htmlWrapper).default;
 
 staticBuildStr.forEach(arg => {
 
@@ -74,7 +75,7 @@ staticBuildStr.forEach(arg => {
 	let destPath = path.join(path.resolve(), arg.destPath);
 
 	// Set route used in svelte:component as "this" value.
-	const route = relative(componentPath, process.cwd()).default;
+	const route = root.require(componentPath).default;
 
 	// Set props so component can access field values, etc.
 	let props = {

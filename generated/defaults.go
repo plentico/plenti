@@ -39935,9 +39935,6 @@ export {};
   "version": "1.0.0",
   "type": "module",
   "private": true,
-  "devDependencies": {
-    "require-relative": "^0.8.7"
-  },
   "dependencies": {
     "navaid": "^1.1.1",
     "regexparam": "^1.3.0",
