@@ -108,8 +108,8 @@ staticBuildStr.forEach(arg => {
 	fs.promises.writeFile(destPath, html);
 	  
 });`),
-	"/build_client.js": []byte(`//import svelte from 'svelte/compiler.js';
-const svelte = require('svelte/compiler.js');
+	"/build_client.js": []byte(`import svelte from 'svelte/compiler.js';
+//const svelte = require('svelte/compiler.js');
 
 // The "component" variable gets injected by client.go.
 //let component;

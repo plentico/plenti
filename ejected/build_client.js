@@ -1,5 +1,5 @@
-//import svelte from 'svelte/compiler.js';
-const svelte = require('svelte/compiler.js');
+import svelte from 'svelte/compiler.js';
+//const svelte = require('svelte/compiler.js');
 
 // The "component" variable gets injected by client.go.
 //let component;

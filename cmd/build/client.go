@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"rogchap.com/v8go"
+	"github.com/robertkrimen/otto"
 )
 
 // Client builds the SPA.
@@ -27,13 +27,12 @@ func Client(buildPath string) string {
 	// Start the string that will be sent to nodejs for compiling.
 	clientBuildStr := "["
 
-	ctx, _ := v8go.NewContext(nil)
+	vm := otto.New()
 	content, err := ioutil.ReadFile("ejected/bundle.js")
 	if err != nil {
 		fmt.Printf("Could not read ejected/bundle.js file: %v\n", err)
 	}
-	//contentStr := "let component='';" + string(content)
-	contentStr := "var component='layout/content/pages.svelte';" + string(content)
+	contentStr := string(content)
 
 	// Go through all file paths in the "/layout" folder.
 	layoutFilesErr := filepath.Walk("layout", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
@@ -50,17 +49,12 @@ func Client(buildPath string) string {
 				// Replace .svelte file extension with .js.
 				destFile = strings.TrimSuffix(destFile, filepath.Ext(destFile)) + ".js"
 
-				//componentStr := "component='" + layoutPath + "';"
-				//contentStr = componentStr + contentStr
-				//contentStr = contentStr + componentStr
-				val, err := ctx.RunScript(contentStr, "ejected/bundle.js")
+				vm.Set("component", layoutPath)
+				val, err := vm.Run(contentStr)
 				if err != nil {
-					fmt.Printf("Could not execute ejected/bundle.js file with v8go: %v\n", err)
+					fmt.Printf("vm didn't work: %v", err)
 				}
 				fmt.Println(val)
-
-				// Remove the previous component value.
-				//strings.TrimPrefix(contentStr, componentStr)
 
 				// Create string representing array of objects to be passed to nodejs.
 				//clientBuildStr = clientBuildStr + "{ \"layoutPath\": \"" + layoutPath + "\", \"destPath\": \"" + destFile + "\", \"stylePath\": \"" + stylePath + "\"},"

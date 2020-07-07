@@ -11,7 +11,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.2.2 // indirect
 	github.com/pelletier/go-toml v1.7.0 // indirect
-	github.com/robertkrimen/otto v0.0.0-20191219234010-c382bd3c16ff // indirect
+	github.com/robertkrimen/otto v0.0.0-20191219234010-c382bd3c16ff
 	github.com/spf13/afero v1.2.2 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/cobra v0.0.7
