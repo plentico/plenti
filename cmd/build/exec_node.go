@@ -17,19 +17,6 @@ func ExecNode(clientBuildStr string, staticBuildStr string, allNodesStr string) 
 	svelteBuild.Run()
 
 	/*
-		result := api.Build(api.BuildOptions{
-			EntryPoints: []string{"ejected/build.js"},
-			Outfile:     "ejected/bundle.js",
-			Externals:   []string{"module", "fs", "path"},
-			Bundle:      true,
-		})
-		if result.Errors != nil {
-			fmt.Printf("Error bundling dependencies for build script: %v\n", result.Errors)
-		}
-		for _, out := range result.OutputFiles {
-			ioutil.WriteFile(out.Path, out.Contents, 0644)
-		}
-
 		ctx, _ := v8go.NewContext(nil)
 		content, err := ioutil.ReadFile("ejected/bundle.js")
 		if err != nil {

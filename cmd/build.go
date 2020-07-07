@@ -88,6 +88,9 @@ func Build() {
 	// Directly copy .js that don't need compiling to the build dir.
 	build.EjectCopy(buildPath)
 
+	// Bundle the JavaScript dependencies needed for the build.
+	build.Bundle()
+
 	// Directly copy static assets to the build dir.
 	build.AssetsCopy(buildPath)
 
