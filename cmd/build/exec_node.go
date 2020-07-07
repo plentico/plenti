@@ -16,16 +16,4 @@ func ExecNode(clientBuildStr string, staticBuildStr string, allNodesStr string) 
 	svelteBuild.Stderr = os.Stderr
 	svelteBuild.Run()
 
-	/*
-		ctx, _ := v8go.NewContext(nil)
-		content, err := ioutil.ReadFile("ejected/bundle.js")
-		if err != nil {
-			fmt.Printf("Could not read ejected/bundle.js file: %v\n", err)
-		}
-		val, err := ctx.RunScript(string(content), "ejected/bundle.js")
-		if err != nil {
-			fmt.Printf("Could not execute ejected/bundle.js file: %v\n", err)
-		}
-		fmt.Println(val)
-	*/
 }
