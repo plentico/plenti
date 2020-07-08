@@ -3,7 +3,6 @@ package build
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -28,15 +27,15 @@ func Client(buildPath string) string {
 	// Start the string that will be sent to nodejs for compiling.
 	clientBuildStr := "["
 
-	content, err := ioutil.ReadFile("node_modules/svelte/compiler.js")
+	// Get svelte compiler code from node_modules.
+	compiler, err := ioutil.ReadFile("node_modules/svelte/compiler.js")
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Can't read node_modules/svelte/compiler.js: %v", err)
 	}
 	// Remove reference to 'self' that breaks v8go.
-	contentStr := strings.Replace(string(content), "self.performance.now();", "'';", 1)
+	compilerStr := strings.Replace(string(compiler), "self.performance.now();", "'';", 1)
 	ctx, _ := v8go.NewContext(nil)
-	ctx.RunScript(contentStr, "ejected/bundle.js")
-	//ctx.RunScript("var js = '';", "ejected/bundle.js")
+	ctx.RunScript(compilerStr, "ejected/bundle.js")
 
 	// Go through all file paths in the "/layout" folder.
 	layoutFilesErr := filepath.Walk("layout", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
@@ -53,15 +52,17 @@ func Client(buildPath string) string {
 				// Replace .svelte file extension with .js.
 				destFile = strings.TrimSuffix(destFile, filepath.Ext(destFile)) + ".js"
 
-				//val, err := ctx.RunScript("component='"+layoutPath+"'", "ejected/bundle.js")
-				//val, err := ctx.RunScript("svelte.compile('"+layoutPath+"', {css: false});", "ejected/bundle.js")
-				ctx.RunScript("var obj = svelte.compile('"+layoutPath+"', {css: false});", "ejected/bundle.js")
-				val, err := ctx.RunScript("obj.js.code;", "ejected/bundle.js")
+				ctx.RunScript("var { js, css } = svelte.compile('"+layoutPath+"', {css: false});", "ejected/bundle.js")
+				jsCode, err := ctx.RunScript("js.code;", "ejected/bundle.js")
 				if err != nil {
-					fmt.Printf("V8go could not execute: %v", err)
+					fmt.Printf("V8go could not execute js.code: %v", err)
 				}
-				fmt.Println(val)
-				//fmt.Println(string(bundledContent))
+				fmt.Printf("js code: %v", jsCode)
+				cssCode, err := ctx.RunScript("css.code;", "ejected/bundle.js")
+				if err != nil {
+					fmt.Printf("V8go could not execute css.code: %v", err)
+				}
+				fmt.Printf("css code: %v", cssCode)
 
 				// Create string representing array of objects to be passed to nodejs.
 				//clientBuildStr = clientBuildStr + "{ \"layoutPath\": \"" + layoutPath + "\", \"destPath\": \"" + destFile + "\", \"stylePath\": \"" + stylePath + "\"},"
