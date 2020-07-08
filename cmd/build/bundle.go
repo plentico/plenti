@@ -2,14 +2,13 @@ package build
 
 import (
 	"fmt"
-	"io/ioutil"
 	"time"
 
 	"github.com/evanw/esbuild/pkg/api"
 )
 
 // Bundle compiles JavaScript dependencies into a single file that can be run by v8go.
-func Bundle() {
+func Bundle() []byte {
 
 	defer Benchmark(time.Now(), "Bundling JavaScript build dependencies")
 
@@ -22,7 +21,10 @@ func Bundle() {
 	if result.Errors != nil {
 		fmt.Printf("Error bundling dependencies for build script: %v\n", result.Errors)
 	}
+	var bundledContent []byte
 	for _, out := range result.OutputFiles {
-		ioutil.WriteFile(out.Path, out.Contents, 0644)
+		//ioutil.WriteFile(out.Path, out.Contents, 0644)
+		bundledContent = out.Contents
 	}
+	return bundledContent
 }

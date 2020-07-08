@@ -1,19 +1,19 @@
 package build
 
 import (
+	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/robertkrimen/otto"
+	"rogchap.com/v8go"
 )
 
 // Client builds the SPA.
-func Client(buildPath string) string {
+func Client(buildPath string, bundledContent []byte) string {
 
 	defer Benchmark(time.Now(), "Prepping client SPA data")
 
@@ -27,12 +27,22 @@ func Client(buildPath string) string {
 	// Start the string that will be sent to nodejs for compiling.
 	clientBuildStr := "["
 
-	vm := otto.New()
-	content, err := ioutil.ReadFile("ejected/bundle.js")
+	/*
+		content, err := ioutil.ReadFile("ejected/bundle.js")
+		if err != nil {
+			fmt.Printf("Could not read ejected/bundle.js file: %v\n", err)
+		}
+		contentStr := "var self = this;" + string(content)
+	*/
+	bundledContent = bytes.Replace(bundledContent, []byte("(() => {"), []byte(""), 1)
+	bundledContent = bytes.Replace(bundledContent, []byte("})();"), []byte(""), 1) // TODO: Only replace the last instance of this string.
+	fmt.Println(string(bundledContent))
+	ctx, _ := v8go.NewContext(nil)
+	val, err := ctx.RunScript(string(bundledContent), "ejected/bundle.js")
 	if err != nil {
-		fmt.Printf("Could not read ejected/bundle.js file: %v\n", err)
+		fmt.Printf("V8go could not execute: %v", err)
 	}
-	contentStr := string(content)
+	fmt.Println(val)
 
 	// Go through all file paths in the "/layout" folder.
 	layoutFilesErr := filepath.Walk("layout", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
@@ -49,12 +59,13 @@ func Client(buildPath string) string {
 				// Replace .svelte file extension with .js.
 				destFile = strings.TrimSuffix(destFile, filepath.Ext(destFile)) + ".js"
 
-				vm.Set("component", layoutPath)
-				val, err := vm.Run(contentStr)
-				if err != nil {
-					fmt.Printf("vm didn't work: %v", err)
-				}
-				fmt.Println(val)
+				/*
+					val, err := ctx.RunScript("require_build_client()", "ejected/bundle.js")
+					if err != nil {
+						fmt.Printf("V8go could not execute: %v", err)
+					}
+					fmt.Println(val)
+				*/
 
 				// Create string representing array of objects to be passed to nodejs.
 				//clientBuildStr = clientBuildStr + "{ \"layoutPath\": \"" + layoutPath + "\", \"destPath\": \"" + destFile + "\", \"stylePath\": \"" + stylePath + "\"},"
