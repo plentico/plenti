@@ -36,6 +36,7 @@ func Client(buildPath string) string {
 	contentStr := strings.Replace(string(content), "self.performance.now();", "'';", 1)
 	ctx, _ := v8go.NewContext(nil)
 	ctx.RunScript(contentStr, "ejected/bundle.js")
+	//ctx.RunScript("var js = '';", "ejected/bundle.js")
 
 	// Go through all file paths in the "/layout" folder.
 	layoutFilesErr := filepath.Walk("layout", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
@@ -53,7 +54,9 @@ func Client(buildPath string) string {
 				destFile = strings.TrimSuffix(destFile, filepath.Ext(destFile)) + ".js"
 
 				//val, err := ctx.RunScript("component='"+layoutPath+"'", "ejected/bundle.js")
-				val, err := ctx.RunScript("svelte.compile('"+layoutPath+"', {css: false});", "ejected/bundle.js")
+				//val, err := ctx.RunScript("svelte.compile('"+layoutPath+"', {css: false});", "ejected/bundle.js")
+				ctx.RunScript("var obj = svelte.compile('"+layoutPath+"', {css: false});", "ejected/bundle.js")
+				val, err := ctx.RunScript("obj.js.code;", "ejected/bundle.js")
 				if err != nil {
 					fmt.Printf("V8go could not execute: %v", err)
 				}
