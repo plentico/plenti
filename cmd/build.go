@@ -98,10 +98,10 @@ func Build() {
 	staticBuildStr, allNodesStr := build.DataSource(buildPath, siteConfig)
 
 	// Prep the client SPA.
-	clientBuildStr := build.Client(buildPath)
+	build.Client(buildPath)
 
 	// Run the build.js script using user local NodeJS.
-	build.ExecNode(clientBuildStr, staticBuildStr, allNodesStr)
+	build.ExecNode(staticBuildStr, allNodesStr)
 
 	// Run Gopack (custom Snowpack alternative) for ESM support.
 	build.Gopack(buildPath)

@@ -4,14 +4,10 @@ package generated
 
 // Ejected: scaffolding used in 'build' command
 var Ejected = map[string][]byte{
-	"/build.js": []byte(`import svelte from 'svelte/compiler.js';
-import 'svelte/register.js';
+	"/build.js": []byte(`import 'svelte/register.js';
 import Module from 'module';
 import path from 'path';
 import fs from 'fs';
-
-// Get the arguments from Go command execution.
-const args = process.argv.slice(2)
 
 // -----------------
 // Helper Functions:
@@ -36,39 +32,15 @@ const injectString = (order, content, element, html) => {
 	}
 };
 
-// -----------------------
-// Start client SPA build:
-// -----------------------
-
-let clientBuildStr = JSON.parse(args[0]);
-
-clientBuildStr.forEach(arg => {
-
-	let layoutPath = path.join(path.resolve(), arg.layoutPath)
-	let component = fs.readFileSync(layoutPath, 'utf8');
-
-	// Create component JS that can run in the browser.
-	let { js, css } = svelte.compile(component, {
-		css: false
-	});
-	  
-	// Write JS to build directory.
-	ensureDirExists(arg.destPath);
-	fs.promises.writeFile(arg.destPath, js.code);
-
-	// Write CSS to build directory.
-	ensureDirExists(arg.stylePath);
-	if (css.code && css.code != 'null') {
-		fs.appendFileSync(arg.stylePath, css.code);
-	}
-});
-
 // ------------------------
 // Start static HTML build:
 // ------------------------
 
-let staticBuildStr = JSON.parse(args[1]);
-let allNodes = JSON.parse(args[2]);
+// Get the arguments from Go command execution.
+const args = process.argv.slice(2)
+
+let staticBuildStr = JSON.parse(args[0]);
+let allNodes = JSON.parse(args[1]);
 
 // Create the component that wraps all nodes.
 let htmlWrapper = path.join(path.resolve(), 'layout/global/html.svelte')

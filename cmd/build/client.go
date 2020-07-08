@@ -14,7 +14,7 @@ import (
 )
 
 // Client builds the SPA.
-func Client(buildPath string) string {
+func Client(buildPath string) {
 
 	defer Benchmark(time.Now(), "Prepping client SPA data")
 
@@ -25,9 +25,6 @@ func Client(buildPath string) string {
 	// Set up counter for logging output.
 	compiledComponentCounter := 0
 
-	// Start the string that will be sent to nodejs for compiling.
-	clientBuildStr := "["
-
 	// Get svelte compiler code from node_modules.
 	compiler, err := ioutil.ReadFile("node_modules/svelte/compiler.js")
 	if err != nil {
@@ -36,7 +33,7 @@ func Client(buildPath string) string {
 	// Remove reference to 'self' that breaks v8go.
 	compilerStr := strings.Replace(string(compiler), "self.performance.now();", "'';", 1)
 	ctx, _ := v8go.NewContext(nil)
-	ctx.RunScript(compilerStr, "ejected/bundle.js")
+	ctx.RunScript(compilerStr, "compile_svelte")
 
 	// Go through all file paths in the "/layout" folder.
 	layoutFilesErr := filepath.Walk("layout", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
@@ -58,13 +55,12 @@ func Client(buildPath string) string {
 					fmt.Printf("Can't read component: %v", err)
 				}
 				componentStr := string(component)
-				fmt.Println(componentStr)
 
 				// Compile component with Svelte.
-				ctx.RunScript("var { js, css } = svelte.compile(`"+componentStr+"`, {css: false});", "ejected/bundle.js")
+				ctx.RunScript("var { js, css } = svelte.compile(`"+componentStr+"`, {css: false});", "compile_svelte")
 
 				// Get the JS code from the compiled result.
-				jsCode, err := ctx.RunScript("js.code;", "ejected/bundle.js")
+				jsCode, err := ctx.RunScript("js.code;", "compile_svelte")
 				if err != nil {
 					fmt.Printf("V8go could not execute js.code: %v", err)
 				}
@@ -75,7 +71,7 @@ func Client(buildPath string) string {
 				}
 
 				// Get the CSS code from the compiled result.
-				cssCode, err := ctx.RunScript("css.code;", "ejected/bundle.js")
+				cssCode, err := ctx.RunScript("css.code;", "compile_svelte")
 				if err != nil {
 					fmt.Printf("V8go could not execute css.code: %v", err)
 				}
@@ -92,9 +88,6 @@ func Client(buildPath string) string {
 					}
 				}
 
-				// Create string representing array of objects to be passed to nodejs.
-				//clientBuildStr = clientBuildStr + "{ \"layoutPath\": \"" + layoutPath + "\", \"destPath\": \"" + destFile + "\", \"stylePath\": \"" + stylePath + "\"},"
-
 				compiledComponentCounter++
 
 			}
@@ -105,15 +98,6 @@ func Client(buildPath string) string {
 		fmt.Printf("Could not get layout file: %s", layoutFilesErr)
 	}
 
-	// Get router from ejected core. NOTE if you remove this, trim the trailing comma below.
-	clientBuildStr = clientBuildStr + "{ \"layoutPath\": \"ejected/router.svelte\", \"destPath\": \"" + buildPath + "/spa/ejected/router.js\", \"stylePath\": \"" + stylePath + "\"}"
-
-	// End the string that will be sent to nodejs for compiling.
-	//clientBuildStr = strings.TrimSuffix(clientBuildStr, ",") + "]"
-	clientBuildStr = clientBuildStr + "]"
-
 	Log("Number of components to be compiled: " + strconv.Itoa(compiledComponentCounter))
-
-	return clientBuildStr
 
 }
