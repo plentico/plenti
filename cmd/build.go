@@ -89,7 +89,7 @@ func Build() {
 	build.EjectCopy(buildPath)
 
 	// Bundle the JavaScript dependencies needed for the build.
-	bundledContent := build.Bundle()
+	//bundledContent := build.Bundle()
 
 	// Directly copy static assets to the build dir.
 	build.AssetsCopy(buildPath)
@@ -98,7 +98,7 @@ func Build() {
 	staticBuildStr, allNodesStr := build.DataSource(buildPath, siteConfig)
 
 	// Prep the client SPA.
-	clientBuildStr := build.Client(buildPath, bundledContent)
+	clientBuildStr := build.Client(buildPath)
 
 	// Run the build.js script using user local NodeJS.
 	build.ExecNode(clientBuildStr, staticBuildStr, allNodesStr)
