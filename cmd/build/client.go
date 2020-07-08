@@ -1,8 +1,9 @@
 package build
 
 import (
-	"bytes"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -34,13 +35,18 @@ func Client(buildPath string, bundledContent []byte) string {
 		}
 		contentStr := "var self = this;" + string(content)
 	*/
-	bundledContent = bytes.Replace(bundledContent, []byte("(() => {"), []byte(""), 1)
-	bundledContent = bytes.Replace(bundledContent, []byte("})();"), []byte(""), 1) // TODO: Only replace the last instance of this string.
+	//bundledContent = bytes.Replace(bundledContent, []byte("(() => {"), []byte(""), 1)
+	//bundledContent = bytes.Replace(bundledContent, []byte("})();"), []byte(""), 1) // TODO: Only replace the last instance of this string.
 	fmt.Println(string(bundledContent))
+	//val, _ := ctx.RunScript("var {js,css}='';", "ejected/bundle.js")
+	//fmt.Println(val)
+	//ctx.RunScript(string(bundledContent), "ejected/bundle.js")
+	content, err := ioutil.ReadFile("node_modules/svelte/compiler.js")
+	if err != nil {
+		log.Fatal(err)
+	}
 	ctx, _ := v8go.NewContext(nil)
-	ctx.RunScript(string(bundledContent), "ejected/bundle.js")
-	val, _ := ctx.RunScript("var component='';", "ejected/bundle.js")
-	fmt.Println(val)
+	ctx.RunScript(string(content), "ejected/bundle.js")
 
 	// Go through all file paths in the "/layout" folder.
 	layoutFilesErr := filepath.Walk("layout", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
@@ -57,7 +63,8 @@ func Client(buildPath string, bundledContent []byte) string {
 				// Replace .svelte file extension with .js.
 				destFile = strings.TrimSuffix(destFile, filepath.Ext(destFile)) + ".js"
 
-				val, err := ctx.RunScript("component='"+layoutPath+"'", "ejected/bundle.js")
+				//val, err := ctx.RunScript("component='"+layoutPath+"'", "ejected/bundle.js")
+				val, err := ctx.RunScript("svelte.compile('"+layoutPath+"', {css: false});", "ejected/bundle.js")
 				if err != nil {
 					fmt.Printf("V8go could not execute: %v", err)
 				}
