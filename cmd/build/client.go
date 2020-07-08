@@ -34,6 +34,7 @@ func Client(buildPath string) {
 	compilerStr := strings.Replace(string(compiler), "self.performance.now();", "'';", 1)
 	ctx, _ := v8go.NewContext(nil)
 	ctx.RunScript(compilerStr, "compile_svelte")
+	compileSvelte(ctx, "ejected/router.svelte", buildPath+"/spa/ejected/router.js", stylePath)
 
 	// Go through all file paths in the "/layout" folder.
 	layoutFilesErr := filepath.Walk("layout", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
@@ -50,43 +51,7 @@ func Client(buildPath string) {
 				// Replace .svelte file extension with .js.
 				destFile = strings.TrimSuffix(destFile, filepath.Ext(destFile)) + ".js"
 
-				component, err := ioutil.ReadFile(layoutPath)
-				if err != nil {
-					fmt.Printf("Can't read component: %v", err)
-				}
-				componentStr := string(component)
-
-				// Compile component with Svelte.
-				ctx.RunScript("var { js, css } = svelte.compile(`"+componentStr+"`, {css: false});", "compile_svelte")
-
-				// Get the JS code from the compiled result.
-				jsCode, err := ctx.RunScript("js.code;", "compile_svelte")
-				if err != nil {
-					fmt.Printf("V8go could not execute js.code: %v", err)
-				}
-				jsBytes := []byte(jsCode.String())
-				jsWriteErr := ioutil.WriteFile(destFile, jsBytes, 0755)
-				if jsWriteErr != nil {
-					fmt.Printf("Unable to write file: %v", jsWriteErr)
-				}
-
-				// Get the CSS code from the compiled result.
-				cssCode, err := ctx.RunScript("css.code;", "compile_svelte")
-				if err != nil {
-					fmt.Printf("V8go could not execute css.code: %v", err)
-				}
-				cssStr := strings.TrimSpace(cssCode.String())
-				// If there is CSS, write it into the bundle.css file.
-				if cssStr != "null" {
-					cssFile, WriteStyleErr := os.OpenFile(stylePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-					if WriteStyleErr != nil {
-						fmt.Printf("Could not open bundle.css for writing: %s", WriteStyleErr)
-					}
-					defer cssFile.Close()
-					if _, err := cssFile.WriteString(cssStr); err != nil {
-						log.Println(err)
-					}
-				}
+				compileSvelte(ctx, layoutPath, destFile, stylePath)
 
 				compiledComponentCounter++
 
@@ -99,5 +64,47 @@ func Client(buildPath string) {
 	}
 
 	Log("Number of components to be compiled: " + strconv.Itoa(compiledComponentCounter))
+
+}
+
+func compileSvelte(ctx *v8go.Context, layoutPath string, destFile string, stylePath string) {
+
+	component, err := ioutil.ReadFile(layoutPath)
+	if err != nil {
+		fmt.Printf("Can't read component: %v", err)
+	}
+	componentStr := string(component)
+
+	// Compile component with Svelte.
+	ctx.RunScript("var { js, css } = svelte.compile(`"+componentStr+"`, {css: false});", "compile_svelte")
+
+	// Get the JS code from the compiled result.
+	jsCode, err := ctx.RunScript("js.code;", "compile_svelte")
+	if err != nil {
+		fmt.Printf("V8go could not execute js.code: %v", err)
+	}
+	jsBytes := []byte(jsCode.String())
+	jsWriteErr := ioutil.WriteFile(destFile, jsBytes, 0755)
+	if jsWriteErr != nil {
+		fmt.Printf("Unable to write file: %v", jsWriteErr)
+	}
+
+	// Get the CSS code from the compiled result.
+	cssCode, err := ctx.RunScript("css.code;", "compile_svelte")
+	if err != nil {
+		fmt.Printf("V8go could not execute css.code: %v", err)
+	}
+	cssStr := strings.TrimSpace(cssCode.String())
+	// If there is CSS, write it into the bundle.css file.
+	if cssStr != "null" {
+		cssFile, WriteStyleErr := os.OpenFile(stylePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if WriteStyleErr != nil {
+			fmt.Printf("Could not open bundle.css for writing: %s", WriteStyleErr)
+		}
+		defer cssFile.Close()
+		if _, err := cssFile.WriteString(cssStr); err != nil {
+			log.Println(err)
+		}
+	}
 
 }
