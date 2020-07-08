@@ -53,8 +53,15 @@ func Client(buildPath string) string {
 				// Replace .svelte file extension with .js.
 				destFile = strings.TrimSuffix(destFile, filepath.Ext(destFile)) + ".js"
 
+				component, err := ioutil.ReadFile(layoutPath)
+				if err != nil {
+					fmt.Printf("Can't read component: %v", err)
+				}
+				componentStr := string(component)
+				fmt.Println(componentStr)
+
 				// Compile component with Svelte.
-				ctx.RunScript("var { js, css } = svelte.compile('"+layoutPath+"', {css: false});", "ejected/bundle.js")
+				ctx.RunScript("var { js, css } = svelte.compile(`"+componentStr+"`, {css: false});", "ejected/bundle.js")
 
 				// Get the JS code from the compiled result.
 				jsCode, err := ctx.RunScript("js.code;", "ejected/bundle.js")
