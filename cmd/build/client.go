@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"rogchap.com/v8go"
@@ -19,6 +20,8 @@ func Client(buildPath string) {
 	defer Benchmark(time.Now(), "Prepping client SPA data")
 
 	Log("\nPrepping client SPA for svelte compiler")
+
+	var wg sync.WaitGroup
 
 	stylePath := buildPath + "/spa/bundle.css"
 
@@ -34,7 +37,8 @@ func Client(buildPath string) {
 	compilerStr := strings.Replace(string(compiler), "self.performance.now();", "'';", 1)
 	ctx, _ := v8go.NewContext(nil)
 	ctx.RunScript(compilerStr, "compile_svelte")
-	compileSvelte(ctx, "ejected/router.svelte", buildPath+"/spa/ejected/router.js", stylePath)
+	wg.Add(1)
+	go compileSvelte(ctx, "ejected/router.svelte", buildPath+"/spa/ejected/router.js", stylePath, &wg)
 
 	// Go through all file paths in the "/layout" folder.
 	layoutFilesErr := filepath.Walk("layout", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
@@ -51,7 +55,8 @@ func Client(buildPath string) {
 				// Replace .svelte file extension with .js.
 				destFile = strings.TrimSuffix(destFile, filepath.Ext(destFile)) + ".js"
 
-				compileSvelte(ctx, layoutPath, destFile, stylePath)
+				wg.Add(1)
+				go compileSvelte(ctx, layoutPath, destFile, stylePath, &wg)
 
 				compiledComponentCounter++
 
@@ -67,7 +72,7 @@ func Client(buildPath string) {
 
 }
 
-func compileSvelte(ctx *v8go.Context, layoutPath string, destFile string, stylePath string) {
+func compileSvelte(ctx *v8go.Context, layoutPath string, destFile string, stylePath string, wg *sync.WaitGroup) {
 
 	component, err := ioutil.ReadFile(layoutPath)
 	if err != nil {
@@ -106,5 +111,7 @@ func compileSvelte(ctx *v8go.Context, layoutPath string, destFile string, styleP
 			log.Println(err)
 		}
 	}
+
+	wg.Done()
 
 }
