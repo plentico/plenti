@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"rogchap.com/v8go"
@@ -20,8 +19,6 @@ func Client(buildPath string) {
 	defer Benchmark(time.Now(), "Compiling client SPA with Svelte")
 
 	Log("\nCompiling client SPA with svelte")
-
-	var wg sync.WaitGroup
 
 	stylePath := buildPath + "/spa/bundle.css"
 
@@ -35,12 +32,9 @@ func Client(buildPath string) {
 	}
 	// Remove reference to 'self' that breaks v8go.
 	compilerStr := strings.Replace(string(compiler), "self.performance.now();", "'';", 1)
-	//ctx, _ := v8go.NewContext(nil)
-	//ctx.RunScript(compilerStr, "compile_svelte")
-	wg.Add(1)
-	go compileSvelte(compilerStr, "ejected/router.svelte", buildPath+"/spa/ejected/router.js", stylePath, &wg, 1)
-	//go compileSvelte(ctx, "ejected/router.svelte", buildPath+"/spa/ejected/router.js", stylePath, &wg, 1)
-	//compileSvelte(ctx, "ejected/router.svelte", buildPath+"/spa/ejected/router.js", stylePath, &wg)
+	ctx, _ := v8go.NewContext(nil)
+	ctx.RunScript(compilerStr, "compile_svelte")
+	compileSvelte(ctx, "ejected/router.svelte", buildPath+"/spa/ejected/router.js", stylePath)
 
 	// Go through all file paths in the "/layout" folder.
 	layoutFilesErr := filepath.Walk("layout", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
@@ -57,13 +51,9 @@ func Client(buildPath string) {
 				// Replace .svelte file extension with .js.
 				destFile = strings.TrimSuffix(destFile, filepath.Ext(destFile)) + ".js"
 
-				//compileSvelte(ctx, layoutPath, destFile, stylePath, &wg)
+				compileSvelte(ctx, layoutPath, destFile, stylePath)
 
 				compiledComponentCounter++
-
-				wg.Add(1)
-				go compileSvelte(compilerStr, layoutPath, destFile, stylePath, &wg, compiledComponentCounter+1)
-				//go compileSvelte(ctx, layoutPath, destFile, stylePath, &wg, compiledComponentCounter+1)
 
 			}
 		}
@@ -73,23 +63,11 @@ func Client(buildPath string) {
 		fmt.Printf("Could not get layout file: %s", layoutFilesErr)
 	}
 
-	fmt.Println("Not done..")
-	wg.Wait()
-	fmt.Println("Done!")
-
 	Log("Number of components compiled: " + strconv.Itoa(compiledComponentCounter))
 
 }
 
-//func compileSvelte(ctx *v8go.Context, layoutPath string, destFile string, stylePath string, wg *sync.WaitGroup, count int) {
-func compileSvelte(compileStr string, layoutPath string, destFile string, stylePath string, wg *sync.WaitGroup, count int) {
-
-	fmt.Println(count)
-
-	defer wg.Done()
-
-	ctx, _ := v8go.NewContext(nil)
-	ctx.RunScript(compileStr, "compile_svelte")
+func compileSvelte(ctx *v8go.Context, layoutPath string, destFile string, stylePath string) {
 
 	component, err := ioutil.ReadFile(layoutPath)
 	if err != nil {
@@ -117,7 +95,6 @@ func compileSvelte(compileStr string, layoutPath string, destFile string, styleP
 		fmt.Printf("V8go could not execute css.code: %v", err)
 	}
 	cssStr := strings.TrimSpace(cssCode.String())
-	fmt.Println(cssStr)
 	// If there is CSS, write it into the bundle.css file.
 	if cssStr != "null" {
 		cssFile, WriteStyleErr := os.OpenFile(stylePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
