@@ -96,41 +96,32 @@ func compileSvelte(ctx *v8go.Context, layoutPath string, destFile string, styleP
 	if err != nil {
 		fmt.Printf("V8go could not execute ssrJs.code: %v", err)
 	}
-	//fmt.Println(ssrJsCode.String())
+	reStaticImport := regexp.MustCompile(`import(\s)(.*from(.*);|((.*\n){0,})\}(\s)from(.*);)`)
+	reStaticExport := regexp.MustCompile(`export(\s)(.*);`)
+	ssrStr := reStaticImport.ReplaceAllString(ssrJsCode.String(), "")
+	ssrStr = reStaticExport.ReplaceAllString(ssrStr, "")
 
 	// Get static import statement.
 	createSsrComponent, err := ioutil.ReadFile("node_modules/svelte/internal/index.js")
 	if err != nil {
 		fmt.Printf("Can't read node_modules/svelte/internal/index.js: %v", err)
 	}
-	reStaticImport := regexp.MustCompile(`import(\s)(.*from(.*);|((.*\n){0,})\}(\s)from(.*);)`)
-	reStaticExport := regexp.MustCompile(`export(\s)(.*);`)
-	//reStaticExport := regexp.MustCompile(`exports(.*);`)
-	//createStr := reStaticImport.ReplaceAllString(string(createSsrComponent), "")
-	//createStr = reStaticExport.ReplaceAllString(createStr, "")
 	createStr := string(createSsrComponent)
-	//createStr = strings.ReplaceAll(createStr, "const", "var")
-	//createStr = strings.ReplaceAll(createStr, "let", "var")
 	ctx1, _ := v8go.NewContext(nil)
 	ctx1.RunScript(createStr, "create_ssr")
 	ctx1.RunScript("var exports = {};", "create_ssr")
-
-	ssrStr := reStaticImport.ReplaceAllString(ssrJsCode.String(), "")
-	ssrStr = reStaticExport.ReplaceAllString(ssrStr, "")
-	ssrStr = strings.ReplaceAll(ssrStr, "const", "var")
-	//fmt.Println(ssrStr)
 	ctx1.RunScript(ssrStr, "create_ssr")
-	//jsDefault, err := ctx1.RunScript("JSON.stringify(Component);", "create_ssr")
-	jsDefault, err := ctx1.RunScript("JSON.stringify(Component.render());", "create_ssr")
-	//jsDefault, err := ctx1.RunScript("Component;", "create_ssr")
+	ctx1.RunScript("var { html, css: staticCss} = Component.render();", "create_ssr")
+	staticHTML, err := ctx1.RunScript("html;", "create_ssr")
 	if err != nil {
 		fmt.Printf("V8go could not execute js default: %v\n", err)
 	}
-	fmt.Println(jsDefault)
-	/*
-		html, err := ctx.RunScript(jsDefault.String()+".render();", "compile_svelte")
-		fmt.Println(html)
-	*/
+	fmt.Println(staticHTML)
+	staticCSS, err := ctx1.RunScript("staticCss.code;", "create_ssr")
+	if err != nil {
+		fmt.Printf("V8go could not execute js default: %v\n", err)
+	}
+	fmt.Println(staticCSS)
 	ssrJsBytes := []byte(ssrJsCode.String())
 	ssrJsWriteErr := ioutil.WriteFile(destFile, ssrJsBytes, 0755)
 	if ssrJsWriteErr != nil {
