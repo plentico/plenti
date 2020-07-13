@@ -14,6 +14,8 @@ import (
 	"rogchap.com/v8go"
 )
 
+var SSRComponents map[string]string
+
 // Client builds the SPA.
 func Client(buildPath string) {
 
@@ -90,15 +92,37 @@ func compileSvelte(ctx *v8go.Context, layoutPath string, destFile string, styleP
 		fmt.Printf("Unable to write file: %v", jsWriteErr)
 	}
 
-	// Get SSR JS
+	// Get the CSS code from the compiled result.
+	cssCode, err := ctx.RunScript("css.code;", "compile_svelte")
+	if err != nil {
+		fmt.Printf("V8go could not execute css.code: %v", err)
+	}
+	cssStr := strings.TrimSpace(cssCode.String())
+	// If there is CSS, write it into the bundle.css file.
+	if cssStr != "null" {
+		cssFile, WriteStyleErr := os.OpenFile(stylePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if WriteStyleErr != nil {
+			fmt.Printf("Could not open bundle.css for writing: %s", WriteStyleErr)
+		}
+		defer cssFile.Close()
+		if _, err := cssFile.WriteString(cssStr); err != nil {
+			log.Println(err)
+		}
+	}
+
+	// Get Server Side Rendered (SSR) JS.
 	ctx.RunScript("var { js: ssrJs, css: ssrCss } = svelte.compile(`"+componentStr+"`, {generate: 'ssr'});", "compile_svelte")
 	ssrJsCode, err := ctx.RunScript("ssrJs.code;", "compile_svelte")
 	if err != nil {
 		fmt.Printf("V8go could not execute ssrJs.code: %v", err)
 	}
+	// Regex match static import statements.
 	reStaticImport := regexp.MustCompile(`import(\s)(.*from(.*);|((.*\n){0,})\}(\s)from(.*);)`)
+	// Regex match static export statements.
 	reStaticExport := regexp.MustCompile(`export(\s)(.*);`)
+	// Remove static import statements.
 	ssrStr := reStaticImport.ReplaceAllString(ssrJsCode.String(), "")
+	// Remove static export statements.
 	ssrStr = reStaticExport.ReplaceAllString(ssrStr, "")
 
 	// Get static import statement.
@@ -126,23 +150,5 @@ func compileSvelte(ctx *v8go.Context, layoutPath string, destFile string, styleP
 	ssrJsWriteErr := ioutil.WriteFile(destFile, ssrJsBytes, 0755)
 	if ssrJsWriteErr != nil {
 		fmt.Printf("Unable to write SSR file: %v", ssrJsWriteErr)
-	}
-
-	// Get the CSS code from the compiled result.
-	cssCode, err := ctx.RunScript("css.code;", "compile_svelte")
-	if err != nil {
-		fmt.Printf("V8go could not execute css.code: %v", err)
-	}
-	cssStr := strings.TrimSpace(cssCode.String())
-	// If there is CSS, write it into the bundle.css file.
-	if cssStr != "null" {
-		cssFile, WriteStyleErr := os.OpenFile(stylePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if WriteStyleErr != nil {
-			fmt.Printf("Could not open bundle.css for writing: %s", WriteStyleErr)
-		}
-		defer cssFile.Close()
-		if _, err := cssFile.WriteString(cssStr); err != nil {
-			log.Println(err)
-		}
 	}
 }
