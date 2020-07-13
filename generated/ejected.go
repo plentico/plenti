@@ -45,7 +45,9 @@ let allNodes = JSON.parse(args[1]);
 // Create the component that wraps all nodes.
 let htmlWrapper = path.join(path.resolve(), 'layout/global/html.svelte')
 let root = new Module();
+//console.log(root);
 let component = root.require(htmlWrapper).default;
+//console.log(component);
 
 staticBuildStr.forEach(arg => {
 
@@ -61,6 +63,7 @@ staticBuildStr.forEach(arg => {
 		node: arg.node,
 		allNodes: allNodes
 	};
+	//console.log(props);
 
 	// Create the static HTML and CSS.
 	let { html, css } = component.render(props);
