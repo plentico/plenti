@@ -128,7 +128,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 					contentType = strings.TrimSuffix(contentType, filepath.Ext(contentType))
 				}
 
-				destPath := buildPath + "/" + path + "/index.html"
+				destPath := buildPath + path + "/index.html"
 
 				nodeDetailsStr := "{\n" +
 					"\"path\": \"" + path + "\",\n" +
@@ -204,8 +204,11 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 				if err != nil {
 					fmt.Printf("V8go could not execute js default: %v\n", err)
 				}
-				fmt.Println(renderedHTML.String())
+				//fmt.Println(renderedHTML.String())
+				//fmt.Println(destPath)
 				htmlBytes := []byte(renderedHTML.String())
+				// Create any folders need to write file.
+				os.MkdirAll(buildPath+path, os.ModePerm)
 				htmlWriteErr := ioutil.WriteFile(destPath, htmlBytes, 0755)
 				if htmlWriteErr != nil {
 					fmt.Printf("Unable to write SSR file: %v\n", htmlWriteErr)
