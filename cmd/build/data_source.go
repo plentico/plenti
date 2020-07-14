@@ -165,6 +165,29 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 				if createPropsErr != nil {
 					fmt.Printf("Could not create props: %v\n", createPropsErr)
 				}
+				headComponent := strings.ReplaceAll(SSRComponents["layout/global/head.svelte"], "Component", "Head")
+				ctx1.RunScript(headComponent, "create_ssr")
+				makeTitle := strings.ReplaceAll(SSRComponents["layout/scripts/make_title.svelte"], "Component", "makeTitleComponent")
+				makeTitle = strings.ReplaceAll(makeTitle, "const", "var")
+				_, mterr := ctx1.RunScript(makeTitle, "create_ssr")
+				if mterr != nil {
+					fmt.Println(mterr)
+				}
+				navComp := strings.ReplaceAll(SSRComponents["layout/global/nav.svelte"], "Component", "Nav")
+				navComp = strings.ReplaceAll(navComp, "const", "var")
+				_, nerr := ctx1.RunScript(navComp, "create_ssr")
+				if nerr != nil {
+					fmt.Println(nerr)
+				}
+				usesComp := strings.ReplaceAll(SSRComponents["layout/components/template.svelte"], "Component", "Uses")
+				usesComp = strings.ReplaceAll(usesComp, "const", "var")
+				_, uerr := ctx1.RunScript(usesComp, "create_ssr")
+				if uerr != nil {
+					fmt.Println(uerr)
+				}
+				footerComp := strings.ReplaceAll(SSRComponents["layout/global/footer.svelte"], "Component", "Footer")
+				footerComp = strings.ReplaceAll(footerComp, "const", "var")
+				ctx1.RunScript(footerComp, "create_ssr")
 				// Fix "Component" variable naming collision.
 				htmlComponent := strings.ReplaceAll(SSRComponents["layout/global/html.svelte"], "Component", "htmlComponent")
 				// Allow "css" variable to be redeclared.
