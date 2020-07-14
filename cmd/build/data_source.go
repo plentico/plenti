@@ -149,22 +149,6 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 
 				// START
 				ctx1.RunScript(SSRComponents["layout/content/"+contentType+".svelte"], "create_ssr")
-				// TODO: Need to get full allNodes obj (don't reuse nodeDetailsStr) for props.
-				//fmt.Println(SSRComponents["layout/content/"+contentType+".svelte"])
-				//ctx1.RunScript("var props = {route: '"+SSRComponents["layout/content/"+contentType+".svelte"]+"', node: '"+nodeDetailsStr+"', allNodes: '"+nodeDetailsStr+"'};", "create_ssr")
-				//renderComponent, compErr := ctx1.RunScript("Component;", "create_ssr")
-				/*
-					renderComponent, compErr := ctx1.RunScript("JSON.stringify(Component);", "create_ssr")
-					if compErr != nil {
-						fmt.Printf("Could not get component for props: %v\n", compErr)
-					}
-					fmt.Println(renderComponent.String())
-				*/
-				//test, terr := ctx1.RunScript("var props = {route: 'thing'};", "create_ssr")
-				//test, terr := ctx1.RunScript("var props = {route: '"+SSRComponents["layout/content/"+contentType+".svelte"]+"', node: '"+nodeDetailsStr+"', allNodes: '"+nodeDetailsStr+"'};", "create_ssr")
-				//test, terr := ctx1.RunScript("var props = {route: "+renderComponent.String()+", node: '"+nodeDetailsStr+"', allNodes: '"+nodeDetailsStr+"'};", "create_ssr")
-				//test, terr := ctx1.RunScript("var props = {route: '"+renderComponent.String()+"'};", "create_ssr")
-				//test, terr := ctx1.RunScript("var props = {route: Component};", "create_ssr")
 				// Need to encode html so it can be send as string to NodeJS in exec.Command.
 				encodedNodeDetails := nodeDetailsStr
 				// Remove newlines.
@@ -176,48 +160,29 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 				// Reduce extra whitespace to a single space.
 				reS := regexp.MustCompile(`\s+`)
 				encodedNodeDetails = reS.ReplaceAllString(encodedNodeDetails, " ")
-				//fmt.Println(encodedNodeDetails)
-				test, terr := ctx1.RunScript("var props = {route: Component, node: "+encodedNodeDetails+", allNodes: "+encodedNodeDetails+"};", "create_ssr")
-				if terr != nil {
-					fmt.Printf("Could not create props: %v\n", terr)
+				// TODO: Need to get full allNodes obj (don't reuse nodeDetailsStr) for props.
+				_, createPropsErr := ctx1.RunScript("var props = {route: Component, node: "+encodedNodeDetails+", allNodes: "+encodedNodeDetails+"};", "create_ssr")
+				if createPropsErr != nil {
+					fmt.Printf("Could not create props: %v\n", createPropsErr)
 				}
-				fmt.Println(test)
-				/*
-					props, perr := ctx1.RunScript("JSON.stringify(props);", "create_ssr")
-					if perr != nil {
-						fmt.Printf("Bad props: %v\n", perr)
-					}
-					fmt.Println(props)
-				*/
-				/*
-					test, terr := ctx1.RunScript("props;", "create_ssr")
-					if terr != nil {
-						fmt.Printf("props: %v\n", terr)
-					}
-					fmt.Println(test)
-				*/
-				//fmt.Println(SSRComponents["layout/global/html.svelte"])
-				//ctx1.RunScript(SSRComponents["layout/global/html.svelte"], "create_ssr")
+				// Fix "Component" variable naming collision.
 				htmlComponent := strings.ReplaceAll(SSRComponents["layout/global/html.svelte"], "Component", "htmlComponent")
-				//htmlComponent = strings.ReplaceAll(htmlComponent, "css", "htmlCSS")
+				// Allow "css" variable to be redeclared.
 				htmlComponent = strings.ReplaceAll(htmlComponent, "const", "var")
-				htmlL, herr := ctx1.RunScript(htmlComponent, "create_ssr")
-				if herr != nil {
-					fmt.Printf("Can't add html Component: %v\n", herr)
+				_, addHTMLComponentErr := ctx1.RunScript(htmlComponent, "create_ssr")
+				if addHTMLComponentErr != nil {
+					fmt.Printf("Can't add htmlComponent: %v\n", addHTMLComponentErr)
 				}
-				fmt.Println(htmlL)
-				//ctx1.RunScript("var { html, css: staticCss} = Component.render(props);", "create_ssr")
-				render, rerr := ctx1.RunScript("var { html, css: staticCss} = htmlComponent.render(props);", "create_ssr")
-				if rerr != nil {
-					fmt.Printf("Can't render htmlComponent: %v\n", rerr)
+				_, renderHTMLErr := ctx1.RunScript("var { html, css: staticCss} = htmlComponent.render(props);", "create_ssr")
+				if renderHTMLErr != nil {
+					fmt.Printf("Can't render htmlComponent: %v\n", renderHTMLErr)
 				}
-				fmt.Println(render)
-				staticHTML, err := ctx1.RunScript("html;", "create_ssr")
+				renderedHTML, err := ctx1.RunScript("html;", "create_ssr")
 				if err != nil {
 					fmt.Printf("V8go could not execute js default: %v\n", err)
 				}
-				fmt.Println(staticHTML.String())
-				htmlBytes := []byte(staticHTML.String())
+				fmt.Println(renderedHTML.String())
+				htmlBytes := []byte(renderedHTML.String())
 				htmlWriteErr := ioutil.WriteFile(destPath, htmlBytes, 0755)
 				if htmlWriteErr != nil {
 					fmt.Printf("Unable to write SSR file: %v\n", htmlWriteErr)
