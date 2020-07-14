@@ -14,6 +14,7 @@ import (
 	"rogchap.com/v8go"
 )
 
+// SSRComponents holds the server side rendered code for all svelte files in the layouts/ dir.
 var SSRComponents map[string]string
 
 // Client builds the SPA.
@@ -27,6 +28,9 @@ func Client(buildPath string) {
 
 	// Set up counter for logging output.
 	compiledComponentCounter := 0
+
+	// Initialize map to hold SSR code used in data_source.go.
+	SSRComponents = make(map[string]string)
 
 	// Get svelte compiler code from node_modules.
 	compiler, err := ioutil.ReadFile("node_modules/svelte/compiler.js")
@@ -125,30 +129,8 @@ func compileSvelte(ctx *v8go.Context, layoutPath string, destFile string, styleP
 	// Remove static export statements.
 	ssrStr = reStaticExport.ReplaceAllString(ssrStr, "")
 
-	// Get static import statement.
-	createSsrComponent, err := ioutil.ReadFile("node_modules/svelte/internal/index.js")
-	if err != nil {
-		fmt.Printf("Can't read node_modules/svelte/internal/index.js: %v", err)
-	}
-	createStr := string(createSsrComponent)
-	ctx1, _ := v8go.NewContext(nil)
-	ctx1.RunScript(createStr, "create_ssr")
-	ctx1.RunScript("var exports = {};", "create_ssr")
-	ctx1.RunScript(ssrStr, "create_ssr")
-	ctx1.RunScript("var { html, css: staticCss} = Component.render();", "create_ssr")
-	staticHTML, err := ctx1.RunScript("html;", "create_ssr")
-	if err != nil {
-		fmt.Printf("V8go could not execute js default: %v\n", err)
-	}
-	fmt.Println(staticHTML)
-	staticCSS, err := ctx1.RunScript("staticCss.code;", "create_ssr")
-	if err != nil {
-		fmt.Printf("V8go could not execute js default: %v\n", err)
-	}
-	fmt.Println(staticCSS)
-	ssrJsBytes := []byte(ssrJsCode.String())
-	ssrJsWriteErr := ioutil.WriteFile(destFile, ssrJsBytes, 0755)
-	if ssrJsWriteErr != nil {
-		fmt.Printf("Unable to write SSR file: %v", ssrJsWriteErr)
-	}
+	SSRComponents[layoutPath] = ssrStr
+	//fmt.Println(layoutPath)
+	//fmt.Println(SSRComponents["layout/global/html.svelte"])
+
 }

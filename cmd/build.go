@@ -94,11 +94,11 @@ func Build() {
 	// Directly copy static assets to the build dir.
 	build.AssetsCopy(buildPath)
 
-	// Build JSON from "content/" directory.
-	staticBuildStr, allNodesStr := build.DataSource(buildPath, siteConfig)
-
 	// Prep the client SPA.
 	build.Client(buildPath)
+
+	// Build JSON from "content/" directory.
+	staticBuildStr, allNodesStr := build.DataSource(buildPath, siteConfig)
 
 	// Run the build.js script using user local NodeJS.
 	build.ExecNode(staticBuildStr, allNodesStr)
