@@ -150,6 +150,13 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 	parts := strings.Split(layoutPath, "/")
 	fileName := parts[len(parts)-1]
 	componentName := strings.Title(strings.TrimSuffix(fileName, filepath.Ext(fileName)))
+	// Regex to check if string is alphabetic.
+	isStringAlphabetic := regexp.MustCompile(`^[a-zA-Z]+$`).MatchString
+	// Check that component variable name starts with a letter.
+	if !isStringAlphabetic(componentName[:1]) {
+		// Add an arbitrary letter to make var name valid.
+		componentName = "a" + componentName
+	}
 
 	SSRComponents[layoutPath] = ssrStr
 
