@@ -132,7 +132,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 					log.Println(err)
 				}
 
-				// START
+				// Add Component for the current content node.
 				_, addSSRCompErr := SSRctx.RunScript(SSRComponents["layout/content/"+contentType+".svelte"], "create_ssr")
 				if addSSRCompErr != nil {
 					fmt.Printf("Could not add SSR Component: %v\n", addSSRCompErr)
@@ -157,23 +157,25 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 				htmlComponent := strings.ReplaceAll(SSRComponents["layout/global/html.svelte"], "Component", "htmlComponent")
 				// Allow "css" variable to be redeclared.
 				htmlComponent = strings.ReplaceAll(htmlComponent, "const", "var")
+				// Add the HTML Wrapper Component to the context.
 				_, addHTMLComponentErr := SSRctx.RunScript(htmlComponent, "create_ssr")
 				if addHTMLComponentErr != nil {
 					fmt.Printf("Can't add htmlComponent: %v\n", addHTMLComponentErr)
 				}
+				// Render the HTML with props needed for the current content node.
 				_, renderHTMLErr := SSRctx.RunScript("var { html, css: staticCss} = htmlComponent.render(props);", "create_ssr")
 				if renderHTMLErr != nil {
 					fmt.Printf("Can't render htmlComponent: %v\n", renderHTMLErr)
 				}
+				// Get the rendered HTML from v8go.
 				renderedHTML, err := SSRctx.RunScript("html;", "create_ssr")
 				if err != nil {
 					fmt.Printf("V8go could not execute js default: %v\n", err)
 				}
-				//fmt.Println(renderedHTML.String())
-				//fmt.Println(destPath)
 				htmlBytes := []byte(renderedHTML.String())
 				// Create any folders need to write file.
 				os.MkdirAll(buildPath+path, os.ModePerm)
+				// Write static HTML to the filesystem.
 				htmlWriteErr := ioutil.WriteFile(destPath, htmlBytes, 0755)
 				if htmlWriteErr != nil {
 					fmt.Printf("Unable to write SSR file: %v\n", htmlWriteErr)
