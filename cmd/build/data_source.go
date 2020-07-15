@@ -11,8 +11,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"rogchap.com/v8go"
 )
 
 // DataSource builds json list from "content/" directory.
@@ -31,19 +29,6 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 	// Start the string that will be sent to nodejs for compiling.
 	staticBuildStr := "["
 	allNodesStr := "["
-
-	// Use v8go and add create_ssr_component() function.
-	// TODO: Need to update node_modules/svelte/internal/index.js
-	// - line 1320: let on_destroy;
-	// - line 1337: let on_destroy = [];
-	createSsrComponent, npmReadErr := ioutil.ReadFile("node_modules/svelte/internal/index.js")
-	if npmReadErr != nil {
-		fmt.Printf("Can't read node_modules/svelte/internal/index.js: %v", npmReadErr)
-	}
-	createStr := string(createSsrComponent)
-	ctx1, _ := v8go.NewContext(nil)
-	ctx1.RunScript(createStr, "create_ssr")
-	ctx1.RunScript("var exports = {};", "create_ssr")
 
 	// Start the new nodes.js file.
 	err := ioutil.WriteFile(nodesJSPath, []byte(`const nodes = [`), 0755)
@@ -148,7 +133,10 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 				}
 
 				// START
-				ctx1.RunScript(SSRComponents["layout/content/"+contentType+".svelte"], "create_ssr")
+				_, addSSRCompErr := SSRctx.RunScript(SSRComponents["layout/content/"+contentType+".svelte"], "create_ssr")
+				if addSSRCompErr != nil {
+					fmt.Printf("Could not add SSR Component: %v\n", addSSRCompErr)
+				}
 				// Need to encode html so it can be send as string to NodeJS in exec.Command.
 				encodedNodeDetails := nodeDetailsStr
 				// Remove newlines.
@@ -161,46 +149,23 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 				reS := regexp.MustCompile(`\s+`)
 				encodedNodeDetails = reS.ReplaceAllString(encodedNodeDetails, " ")
 				// TODO: Need to get full allNodes obj (don't reuse nodeDetailsStr) for props.
-				_, createPropsErr := ctx1.RunScript("var props = {route: Component, node: "+encodedNodeDetails+", allNodes: "+encodedNodeDetails+"};", "create_ssr")
+				_, createPropsErr := SSRctx.RunScript("var props = {route: Component, node: "+encodedNodeDetails+", allNodes: "+encodedNodeDetails+"};", "create_ssr")
 				if createPropsErr != nil {
 					fmt.Printf("Could not create props: %v\n", createPropsErr)
 				}
-				headComponent := strings.ReplaceAll(SSRComponents["layout/global/head.svelte"], "Component", "Head")
-				ctx1.RunScript(headComponent, "create_ssr")
-				makeTitle := strings.ReplaceAll(SSRComponents["layout/scripts/make_title.svelte"], "Component", "makeTitleComponent")
-				makeTitle = strings.ReplaceAll(makeTitle, "const", "var")
-				_, mterr := ctx1.RunScript(makeTitle, "create_ssr")
-				if mterr != nil {
-					fmt.Println(mterr)
-				}
-				navComp := strings.ReplaceAll(SSRComponents["layout/global/nav.svelte"], "Component", "Nav")
-				navComp = strings.ReplaceAll(navComp, "const", "var")
-				_, nerr := ctx1.RunScript(navComp, "create_ssr")
-				if nerr != nil {
-					fmt.Println(nerr)
-				}
-				usesComp := strings.ReplaceAll(SSRComponents["layout/components/template.svelte"], "Component", "Uses")
-				usesComp = strings.ReplaceAll(usesComp, "const", "var")
-				_, uerr := ctx1.RunScript(usesComp, "create_ssr")
-				if uerr != nil {
-					fmt.Println(uerr)
-				}
-				footerComp := strings.ReplaceAll(SSRComponents["layout/global/footer.svelte"], "Component", "Footer")
-				footerComp = strings.ReplaceAll(footerComp, "const", "var")
-				ctx1.RunScript(footerComp, "create_ssr")
 				// Fix "Component" variable naming collision.
 				htmlComponent := strings.ReplaceAll(SSRComponents["layout/global/html.svelte"], "Component", "htmlComponent")
 				// Allow "css" variable to be redeclared.
 				htmlComponent = strings.ReplaceAll(htmlComponent, "const", "var")
-				_, addHTMLComponentErr := ctx1.RunScript(htmlComponent, "create_ssr")
+				_, addHTMLComponentErr := SSRctx.RunScript(htmlComponent, "create_ssr")
 				if addHTMLComponentErr != nil {
 					fmt.Printf("Can't add htmlComponent: %v\n", addHTMLComponentErr)
 				}
-				_, renderHTMLErr := ctx1.RunScript("var { html, css: staticCss} = htmlComponent.render(props);", "create_ssr")
+				_, renderHTMLErr := SSRctx.RunScript("var { html, css: staticCss} = htmlComponent.render(props);", "create_ssr")
 				if renderHTMLErr != nil {
 					fmt.Printf("Can't render htmlComponent: %v\n", renderHTMLErr)
 				}
-				renderedHTML, err := ctx1.RunScript("html;", "create_ssr")
+				renderedHTML, err := SSRctx.RunScript("html;", "create_ssr")
 				if err != nil {
 					fmt.Printf("V8go could not execute js default: %v\n", err)
 				}

@@ -17,6 +17,9 @@ import (
 // SSRComponents holds the server side rendered code for all svelte files in the layouts/ dir.
 var SSRComponents map[string]string
 
+// SSRctx is a v8go context for loaded with components needed to render HTML.
+var SSRctx *v8go.Context
+
 // Client builds the SPA.
 func Client(buildPath string) {
 
@@ -41,7 +44,20 @@ func Client(buildPath string) {
 	compilerStr := strings.Replace(string(compiler), "self.performance.now();", "'';", 1)
 	ctx, _ := v8go.NewContext(nil)
 	ctx.RunScript(compilerStr, "compile_svelte")
-	compileSvelte(ctx, "ejected/router.svelte", buildPath+"/spa/ejected/router.js", stylePath)
+
+	// Use v8go and add create_ssr_component() function.
+	// TODO: Need to update node_modules/svelte/internal/index.js
+	// - line 1320: let on_destroy;
+	// - line 1337: let on_destroy = [];
+	createSsrComponent, npmReadErr := ioutil.ReadFile("node_modules/svelte/internal/index.js")
+	if npmReadErr != nil {
+		fmt.Printf("Can't read node_modules/svelte/internal/index.js: %v", npmReadErr)
+	}
+	SSRctx, _ = v8go.NewContext(nil)
+	SSRctx.RunScript(string(createSsrComponent), "create_ssr")
+	SSRctx.RunScript("var exports = {};", "create_ssr")
+
+	compileSvelte(ctx, SSRctx, "ejected/router.svelte", buildPath+"/spa/ejected/router.js", stylePath)
 
 	// Go through all file paths in the "/layout" folder.
 	layoutFilesErr := filepath.Walk("layout", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
@@ -58,7 +74,7 @@ func Client(buildPath string) {
 				// Replace .svelte file extension with .js.
 				destFile = strings.TrimSuffix(destFile, filepath.Ext(destFile)) + ".js"
 
-				compileSvelte(ctx, layoutPath, destFile, stylePath)
+				compileSvelte(ctx, SSRctx, layoutPath, destFile, stylePath)
 
 				compiledComponentCounter++
 
@@ -74,7 +90,7 @@ func Client(buildPath string) {
 
 }
 
-func compileSvelte(ctx *v8go.Context, layoutPath string, destFile string, stylePath string) {
+func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, destFile string, stylePath string) {
 
 	component, err := ioutil.ReadFile(layoutPath)
 	if err != nil {
@@ -128,9 +144,50 @@ func compileSvelte(ctx *v8go.Context, layoutPath string, destFile string, styleP
 	ssrStr := reStaticImport.ReplaceAllString(ssrJsCode.String(), "")
 	// Remove static export statements.
 	ssrStr = reStaticExport.ReplaceAllString(ssrStr, "")
+	// Use var instead of const so it can be redeclared multiple times.
+	ssrStr = strings.ReplaceAll(ssrStr, "const", "var")
+	// Use actual component name instead of the generic "Component" variable.
+	parts := strings.Split(layoutPath, "/")
+	fileName := parts[len(parts)-1]
+	componentName := strings.Title(strings.TrimSuffix(fileName, filepath.Ext(fileName)))
+	//fmt.Println(componentName)
 
 	SSRComponents[layoutPath] = ssrStr
-	//fmt.Println(layoutPath)
-	//fmt.Println(SSRComponents["layout/global/html.svelte"])
+
+	// TODO: Need to account for imports using name not based on layout filename,
+	// e.g. "Uses" instead of "Template" - for now must manually change in project.
+	ssrStr = strings.ReplaceAll(ssrStr, "Component", componentName)
+	//fmt.Println(ssrStr)
+	// Add component to context so it can be used to render HTML in data_source.go.
+	_, addSSRCompErr := SSRctx.RunScript(ssrStr, "create_ssr")
+	if addSSRCompErr != nil {
+		fmt.Printf("Could not add SSR Component: %v\n", addSSRCompErr)
+	}
+
+	/*
+		headComponent := strings.ReplaceAll(SSRComponents["layout/global/head.svelte"], "Component", "Head")
+		SSRctx.RunScript(headComponent, "create_ssr")
+		makeTitle := strings.ReplaceAll(SSRComponents["layout/scripts/make_title.svelte"], "Component", "makeTitleComponent")
+		makeTitle = strings.ReplaceAll(makeTitle, "const", "var")
+		_, mterr := ctx1.RunScript(makeTitle, "create_ssr")
+		if mterr != nil {
+			fmt.Println(mterr)
+		}
+		navComp := strings.ReplaceAll(SSRComponents["layout/global/nav.svelte"], "Component", "Nav")
+		navComp = strings.ReplaceAll(navComp, "const", "var")
+		_, nerr := ctx1.RunScript(navComp, "create_ssr")
+		if nerr != nil {
+			fmt.Println(nerr)
+		}
+		usesComp := strings.ReplaceAll(SSRComponents["layout/components/template.svelte"], "Component", "Uses")
+		usesComp = strings.ReplaceAll(usesComp, "const", "var")
+		_, uerr := ctx1.RunScript(usesComp, "create_ssr")
+		if uerr != nil {
+			fmt.Println(uerr)
+		}
+		footerComp := strings.ReplaceAll(SSRComponents["layout/global/footer.svelte"], "Component", "Footer")
+		footerComp = strings.ReplaceAll(footerComp, "const", "var")
+		ctx1.RunScript(footerComp, "create_ssr")
+	*/
 
 }
