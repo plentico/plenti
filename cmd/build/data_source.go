@@ -158,6 +158,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 				// Allow "css" variable to be redeclared.
 				htmlComponent = strings.ReplaceAll(htmlComponent, "const", "var")
 				// Add the HTML Wrapper Component to the context.
+				fmt.Println(contentType)
 				_, addHTMLComponentErr := SSRctx.RunScript(htmlComponent, "create_ssr")
 				if addHTMLComponentErr != nil {
 					fmt.Printf("Can't add htmlComponent: %v\n", addHTMLComponentErr)

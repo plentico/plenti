@@ -40,21 +40,26 @@ func Client(buildPath string) {
 	if err != nil {
 		fmt.Printf("Can't read node_modules/svelte/compiler.js: %v", err)
 	}
-	// Remove reference to 'self' that breaks v8go.
+	// Remove reference to 'self' that breaks v8go on line 19 of node_modules/svelte/compiler.js.
 	compilerStr := strings.Replace(string(compiler), "self.performance.now();", "'';", 1)
 	ctx, _ := v8go.NewContext(nil)
-	ctx.RunScript(compilerStr, "compile_svelte")
+	_, addCompilerErr := ctx.RunScript(compilerStr, "compile_svelte")
+	if addCompilerErr != nil {
+		fmt.Printf("Could not add svelte compiler: %v\n", addCompilerErr)
+	}
 
 	// Use v8go and add create_ssr_component() function.
-	// TODO: Need to update node_modules/svelte/internal/index.js
-	// - line 1320: let on_destroy;
-	// - line 1337: let on_destroy = [];
 	createSsrComponent, npmReadErr := ioutil.ReadFile("node_modules/svelte/internal/index.js")
 	if npmReadErr != nil {
 		fmt.Printf("Can't read node_modules/svelte/internal/index.js: %v", npmReadErr)
 	}
+	// Fix "Cannot access 'on_destroy' before initialization" errors on line 1320 & line 1337 of node_modules/svelte/internal/index.js.
+	createSsrStr := strings.ReplaceAll(string(createSsrComponent), "function create_ssr_component(fn) {", "function create_ssr_component(fn) {var on_destroy= {};")
 	SSRctx, _ = v8go.NewContext(nil)
-	SSRctx.RunScript(string(createSsrComponent), "create_ssr")
+	_, createFuncErr := SSRctx.RunScript(createSsrStr, "create_ssr")
+	if err != nil {
+		fmt.Printf("Could not add create_ssr_component() func from svelte/internal: %v", createFuncErr)
+	}
 	SSRctx.RunScript("var exports = {};", "create_ssr")
 
 	compileSvelte(ctx, SSRctx, "ejected/router.svelte", buildPath+"/spa/ejected/router.js", stylePath)
