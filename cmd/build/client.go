@@ -60,6 +60,7 @@ func Client(buildPath string) {
 	if err != nil {
 		fmt.Printf("Could not add create_ssr_component() func from svelte/internal: %v", createFuncErr)
 	}
+	// Fix "ReferenceError: exports is not defined" errors on line 1319 (exports.current_component;).
 	SSRctx.RunScript("var exports = {};", "create_ssr")
 
 	compileSvelte(ctx, SSRctx, "ejected/router.svelte", buildPath+"/spa/ejected/router.js", stylePath)
@@ -146,11 +147,12 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 	// Regex match static export statements.
 	reStaticExport := regexp.MustCompile(`export(\s)(.*);`)
 	// Remove static import statements.
-	ssrStr := reStaticImport.ReplaceAllString(ssrJsCode.String(), "")
+	ssrStr := reStaticImport.ReplaceAllString(ssrJsCode.String(), `/*$0*/`)
 	// Remove static export statements.
-	ssrStr = reStaticExport.ReplaceAllString(ssrStr, "")
+	ssrStr = reStaticExport.ReplaceAllString(ssrStr, `/*$0*/`)
 	// Use var instead of const so it can be redeclared multiple times.
 	ssrStr = strings.ReplaceAll(ssrStr, "const", "var")
+	fmt.Println(ssrStr)
 	// Use actual component name instead of the generic "Component" variable.
 	parts := strings.Split(layoutPath, "/")
 	fileName := parts[len(parts)-1]

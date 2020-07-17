@@ -134,6 +134,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 
 				// Add Component for the current content node.
 				_, addSSRCompErr := SSRctx.RunScript(SSRComponents["layout/content/"+contentType+".svelte"], "create_ssr")
+				//fmt.Println(SSRComponents["layout/content/"+contentType+".svelte"])
 				if addSSRCompErr != nil {
 					fmt.Printf("Could not add SSR Component: %v\n", addSSRCompErr)
 				}
@@ -159,6 +160,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 				htmlComponent = strings.ReplaceAll(htmlComponent, "const", "var")
 				// Add the HTML Wrapper Component to the context.
 				fmt.Println(contentType)
+				//fmt.Println(htmlComponent)
 				_, addHTMLComponentErr := SSRctx.RunScript(htmlComponent, "create_ssr")
 				if addHTMLComponentErr != nil {
 					fmt.Printf("Can't add htmlComponent: %v\n", addHTMLComponentErr)
