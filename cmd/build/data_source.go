@@ -132,12 +132,6 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 					log.Println(err)
 				}
 
-				// Add Component for the current content node.
-				_, addSSRCompErr := SSRctx.RunScript(SSRComponents["layout/content/"+contentType+".svelte"], "create_ssr")
-				//fmt.Println(SSRComponents["layout/content/"+contentType+".svelte"])
-				if addSSRCompErr != nil {
-					fmt.Printf("Could not add SSR Component: %v\n", addSSRCompErr)
-				}
 				// Need to encode html so it can be send as string to NodeJS in exec.Command.
 				encodedNodeDetails := nodeDetailsStr
 				// Remove newlines.
@@ -150,23 +144,13 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 				reS := regexp.MustCompile(`\s+`)
 				encodedNodeDetails = reS.ReplaceAllString(encodedNodeDetails, " ")
 				// TODO: Need to get full allNodes obj (don't reuse nodeDetailsStr) for props.
-				_, createPropsErr := SSRctx.RunScript("var props = {route: Component, node: "+encodedNodeDetails+", allNodes: "+encodedNodeDetails+"};", "create_ssr")
+				fmt.Println(contentType)
+				_, createPropsErr := SSRctx.RunScript("var props = {route: layout_content_"+contentType+"_svelte, node: "+encodedNodeDetails+", allNodes: "+encodedNodeDetails+"};", "create_ssr")
 				if createPropsErr != nil {
 					fmt.Printf("Could not create props: %v\n", createPropsErr)
 				}
-				// Fix "Component" variable naming collision.
-				htmlComponent := strings.ReplaceAll(SSRComponents["layout/global/html.svelte"], "Component", "htmlComponent")
-				// Allow "css" variable to be redeclared.
-				htmlComponent = strings.ReplaceAll(htmlComponent, "const", "var")
-				// Add the HTML Wrapper Component to the context.
-				fmt.Println(contentType)
-				//fmt.Println(htmlComponent)
-				_, addHTMLComponentErr := SSRctx.RunScript(htmlComponent, "create_ssr")
-				if addHTMLComponentErr != nil {
-					fmt.Printf("Can't add htmlComponent: %v\n", addHTMLComponentErr)
-				}
 				// Render the HTML with props needed for the current content node.
-				_, renderHTMLErr := SSRctx.RunScript("var { html, css: staticCss} = htmlComponent.render(props);", "create_ssr")
+				_, renderHTMLErr := SSRctx.RunScript("var { html, css: staticCss} = layout_global_html_svelte.render(props);", "create_ssr")
 				if renderHTMLErr != nil {
 					fmt.Printf("Can't render htmlComponent: %v\n", renderHTMLErr)
 				}

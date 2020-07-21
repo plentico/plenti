@@ -14,9 +14,6 @@ import (
 	"rogchap.com/v8go"
 )
 
-// SSRComponents holds the server side rendered code for all svelte files in the layouts/ dir.
-var SSRComponents map[string]string
-
 // SSRctx is a v8go context for loaded with components needed to render HTML.
 var SSRctx *v8go.Context
 
@@ -31,9 +28,6 @@ func Client(buildPath string) {
 
 	// Set up counter for logging output.
 	compiledComponentCounter := 0
-
-	// Initialize map to hold SSR code used in data_source.go.
-	SSRComponents = make(map[string]string)
 
 	// Get svelte compiler code from node_modules.
 	compiler, err := ioutil.ReadFile("node_modules/svelte/compiler.js")
@@ -152,24 +146,12 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 	ssrStr = reStaticExport.ReplaceAllString(ssrStr, `/*$0*/`)
 	// Use var instead of const so it can be redeclared multiple times.
 	ssrStr = strings.ReplaceAll(ssrStr, "const", "var")
-	fmt.Println(ssrStr)
-	// Use actual component name instead of the generic "Component" variable.
-	parts := strings.Split(layoutPath, "/")
-	fileName := parts[len(parts)-1]
-	componentName := strings.Title(strings.TrimSuffix(fileName, filepath.Ext(fileName)))
-	// Regex to check if string is alphabetic.
-	isStringAlphabetic := regexp.MustCompile(`^[a-zA-Z]+$`).MatchString
-	// Check that component variable name starts with a letter.
-	if !isStringAlphabetic(componentName[:1]) {
-		// Add an arbitrary letter to make var name valid.
-		componentName = "a" + componentName
-	}
-
-	SSRComponents[layoutPath] = ssrStr
+	// Create custom variable name for component based on the file path for the layout.
+	componentSignature := strings.ReplaceAll(strings.ReplaceAll(layoutPath, "/", "_"), ".", "_")
 
 	// TODO: Need to account for imports using name not based on layout filename,
 	// e.g. "Uses" instead of "Template" - for now must manually change in project.
-	ssrStr = strings.ReplaceAll(ssrStr, "Component", componentName)
+	ssrStr = strings.ReplaceAll(ssrStr, "Component", componentSignature)
 	// Add component to context so it can be used to render HTML in data_source.go.
 	_, addSSRCompErr := SSRctx.RunScript(ssrStr, "create_ssr")
 	if addSSRCompErr != nil {
