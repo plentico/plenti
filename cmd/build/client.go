@@ -142,6 +142,17 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 	reStaticExport := regexp.MustCompile(`export\s(.*);`)
 	// Remove static import statements.
 	ssrStr := reStaticImport.ReplaceAllString(ssrJsCode.String(), `/*$0*/`)
+	// Remove static export statements.
+	ssrStr = reStaticExport.ReplaceAllString(ssrStr, `/*$0*/`)
+	// Use var instead of const so it can be redeclared multiple times.
+	ssrStr = strings.ReplaceAll(ssrStr, "const", "var")
+	// Create custom variable name for component based on the file path for the layout.
+	componentSignature := strings.ReplaceAll(strings.ReplaceAll(layoutPath, "/", "_"), ".", "_")
+	fmt.Printf("COMPONENT SIG: %v", componentSignature)
+	// Use signature for file instead of generic "Component".
+	ssrStr = strings.ReplaceAll(ssrStr, "Component", componentSignature)
+
+	// Replace import references with variable signatures.
 	reStaticImportPath := regexp.MustCompile(`(?:'|").*(?:'|")`)
 	reStaticImportName := regexp.MustCompile(`import\s(.*)\sfrom`)
 	namedImports := reStaticImport.FindAllString(ssrStr, -1)
@@ -153,7 +164,6 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 		if len(importNameSlice) > 0 {
 			importNameStr = strings.Trim(importNameSlice[1], "{ }")
 		}
-		fmt.Println(importNameStr)
 		// Remove quotes around path.
 		importPath = strings.Trim(importPath, `'"`)
 		// Get individual path arguments.
@@ -184,23 +194,16 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 			}
 			// Create the variable name from the full path.
 			importSignature = strings.ReplaceAll(strings.ReplaceAll((layoutRootPath+importPath), "/", "_"), ".", "_")
-		} else {
-			// No file ext was found, e.g. "svelte/internal".
-			importSignature = strings.ReplaceAll(strings.ReplaceAll(importPath, "/", "_"), ".", "_")
+		} //else {
+		// No file ext was found, e.g. "svelte/internal".
+		//importSignature = strings.ReplaceAll(strings.ReplaceAll(importPath, "/", "_"), ".", "_")
+		//}
+		if importNameStr != "" && importSignature != "" {
+			ssrStr = strings.ReplaceAll(ssrStr, importNameStr, importSignature)
 		}
 	}
-	// Remove static export statements.
-	ssrStr = reStaticExport.ReplaceAllString(ssrStr, `/*$0*/`)
-	// Use var instead of const so it can be redeclared multiple times.
-	ssrStr = strings.ReplaceAll(ssrStr, "const", "var")
-	// Create custom variable name for component based on the file path for the layout.
-	componentSignature := strings.ReplaceAll(strings.ReplaceAll(layoutPath, "/", "_"), ".", "_")
-	fmt.Printf("COMPONENT SIG: %v", componentSignature)
+	fmt.Println(ssrStr)
 
-	// TODO: Need to account for imports using name not based on layout filename,
-	// e.g. "Uses" instead of "Template" - for now must manually change in project.
-	ssrStr = strings.ReplaceAll(ssrStr, "Component", componentSignature)
-	//ssrStr = strings.ReplaceAll(ssrStr, importNameStr, componentSignature)
 	// Add component to context so it can be used to render HTML in data_source.go.
 	_, addSSRCompErr := SSRctx.RunScript(ssrStr, "create_ssr")
 	if addSSRCompErr != nil {
