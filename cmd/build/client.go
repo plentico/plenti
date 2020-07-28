@@ -146,10 +146,12 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 	ssrStr = reStaticExport.ReplaceAllString(ssrStr, `/*$0*/`)
 	// Use var instead of const so it can be redeclared multiple times.
 	ssrStr = strings.ReplaceAll(ssrStr, "const", "var")
+	// TODO: Use regex ^ string replacement is dangerous, e.g. It will replace "Component" but also part of "loadComponent".
 	// Create custom variable name for component based on the file path for the layout.
 	componentSignature := strings.ReplaceAll(strings.ReplaceAll(layoutPath, "/", "_"), ".", "_")
 	// Use signature for file instead of generic "Component".
 	ssrStr = strings.ReplaceAll(ssrStr, "Component", componentSignature)
+	// TODO: Use regex ^ string replacement is dangerous, e.g. It will replace "Component" but also part of "loadComponent".
 
 	// Replace import references with variable signatures.
 	reStaticImportPath := regexp.MustCompile(`(?:'|").*(?:'|")`)
@@ -192,12 +194,17 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 			}
 			// Create the variable name from the full path.
 			importSignature = strings.ReplaceAll(strings.ReplaceAll((layoutRootPath+importPath), "/", "_"), ".", "_")
+			// TODO: Use regex ^ string replacement is dangerous, e.g. It will replace "Component" but also part of "loadComponent".
 		}
+		// TODO: Add an else ^ to account for NPM dependencies?
+
+		// Check that there is a valid import to replace.
 		if importNameStr != "" && importSignature != "" {
+			// Use the signature everywhere the imported name is referenced.
 			ssrStr = strings.ReplaceAll(ssrStr, importNameStr, importSignature)
 		}
 	}
-	//fmt.Println(ssrStr)
+	fmt.Println(ssrStr)
 
 	// Add component to context so it can be used to render HTML in data_source.go.
 	_, addSSRCompErr := SSRctx.RunScript(ssrStr, "create_ssr")
