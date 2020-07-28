@@ -170,21 +170,24 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 			for _, importPart := range importParts {
 				// Check if path starts relative to current folder.
 				if importPart == "." {
+					// Remove the proceeding dot so the file can be combined with the root.
 					importPath = strings.TrimPrefix(importPath, "./")
 				}
 				// Check if path goes up a folder.
 				if importPart == ".." {
-					layoutParts = strings.Split(layoutRootPath, "/")
+					// Remove the proceeding double dots so it can be combined with root.
 					importPath = strings.TrimPrefix(importPath, importPart+"/")
+					// Split the layout root path so we can remove the last segment since the double dots indicates going back a folder.
+					layoutParts = strings.Split(layoutRootPath, "/")
 					layoutRootPath = strings.TrimSuffix(layoutRootPath, layoutParts[len(layoutParts)-2]+"/")
 				}
 			}
+			// Create the variable name from the full path.
 			importSignature = strings.ReplaceAll(strings.ReplaceAll((layoutRootPath+importPath), "/", "_"), ".", "_")
 		} else {
 			// No file ext was found, e.g. "svelte/internal".
 			importSignature = strings.ReplaceAll(strings.ReplaceAll(importPath, "/", "_"), ".", "_")
 		}
-		//fmt.Println(importSignature)
 	}
 	// Remove static export statements.
 	ssrStr = reStaticExport.ReplaceAllString(ssrStr, `/*$0*/`)
@@ -192,10 +195,12 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 	ssrStr = strings.ReplaceAll(ssrStr, "const", "var")
 	// Create custom variable name for component based on the file path for the layout.
 	componentSignature := strings.ReplaceAll(strings.ReplaceAll(layoutPath, "/", "_"), ".", "_")
+	fmt.Printf("COMPONENT SIG: %v", componentSignature)
 
 	// TODO: Need to account for imports using name not based on layout filename,
 	// e.g. "Uses" instead of "Template" - for now must manually change in project.
 	ssrStr = strings.ReplaceAll(ssrStr, "Component", componentSignature)
+	//ssrStr = strings.ReplaceAll(ssrStr, importNameStr, componentSignature)
 	// Add component to context so it can be used to render HTML in data_source.go.
 	_, addSSRCompErr := SSRctx.RunScript(ssrStr, "create_ssr")
 	if addSSRCompErr != nil {
