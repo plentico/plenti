@@ -143,10 +143,17 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 	// Remove static import statements.
 	ssrStr := reStaticImport.ReplaceAllString(ssrJsCode.String(), `/*$0*/`)
 	reStaticImportPath := regexp.MustCompile(`(?:'|").*(?:'|")`)
+	reStaticImportName := regexp.MustCompile(`import\s(.*)\sfrom`)
 	namedImports := reStaticImport.FindAllString(ssrStr, -1)
 	for _, namedImport := range namedImports {
 		// Get path only from static import statement.
 		importPath := reStaticImportPath.FindString(namedImport)
+		importNameSlice := reStaticImportName.FindStringSubmatch(namedImport)
+		importNameStr := ""
+		if len(importNameSlice) > 0 {
+			importNameStr = strings.Trim(importNameSlice[1], "{ }")
+		}
+		fmt.Println(importNameStr)
 		// Remove quotes around path.
 		importPath = strings.Trim(importPath, `'"`)
 		// Get individual path arguments.
@@ -155,13 +162,17 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 		layoutRootPath := strings.TrimSuffix(layoutPath, layoutFileName)
 
 		importParts := strings.Split(importPath, "/")
+		// Initialize the import signature that will be used for unique variable names.
 		importSignature := ""
+		fmt.Println(importSignature)
 		// Check if the path ends with a file extension, e.g. ".svelte".
 		if len(filepath.Ext(importParts[len(importParts)-1])) > 1 {
 			for _, importPart := range importParts {
+				// Check if path starts relative to current folder.
 				if importPart == "." {
 					importPath = strings.TrimPrefix(importPath, "./")
 				}
+				// Check if path goes up a folder.
 				if importPart == ".." {
 					layoutParts = strings.Split(layoutRootPath, "/")
 					importPath = strings.TrimPrefix(importPath, importPart+"/")
@@ -173,9 +184,7 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 			// No file ext was found, e.g. "svelte/internal".
 			importSignature = strings.ReplaceAll(strings.ReplaceAll(importPath, "/", "_"), ".", "_")
 		}
-		fmt.Println(importSignature)
-		//fmt.Println(layoutPath)
-		//fmt.Println(importPath)
+		//fmt.Println(importSignature)
 	}
 	// Remove static export statements.
 	ssrStr = reStaticExport.ReplaceAllString(ssrStr, `/*$0*/`)
