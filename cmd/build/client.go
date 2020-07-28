@@ -148,7 +148,6 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 	ssrStr = strings.ReplaceAll(ssrStr, "const", "var")
 	// Create custom variable name for component based on the file path for the layout.
 	componentSignature := strings.ReplaceAll(strings.ReplaceAll(layoutPath, "/", "_"), ".", "_")
-	fmt.Printf("COMPONENT SIG: %v", componentSignature)
 	// Use signature for file instead of generic "Component".
 	ssrStr = strings.ReplaceAll(ssrStr, "Component", componentSignature)
 
@@ -174,7 +173,6 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 		importParts := strings.Split(importPath, "/")
 		// Initialize the import signature that will be used for unique variable names.
 		importSignature := ""
-		fmt.Println(importSignature)
 		// Check if the path ends with a file extension, e.g. ".svelte".
 		if len(filepath.Ext(importParts[len(importParts)-1])) > 1 {
 			for _, importPart := range importParts {
@@ -194,15 +192,12 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 			}
 			// Create the variable name from the full path.
 			importSignature = strings.ReplaceAll(strings.ReplaceAll((layoutRootPath+importPath), "/", "_"), ".", "_")
-		} //else {
-		// No file ext was found, e.g. "svelte/internal".
-		//importSignature = strings.ReplaceAll(strings.ReplaceAll(importPath, "/", "_"), ".", "_")
-		//}
+		}
 		if importNameStr != "" && importSignature != "" {
 			ssrStr = strings.ReplaceAll(ssrStr, importNameStr, importSignature)
 		}
 	}
-	fmt.Println(ssrStr)
+	//fmt.Println(ssrStr)
 
 	// Add component to context so it can be used to render HTML in data_source.go.
 	_, addSSRCompErr := SSRctx.RunScript(ssrStr, "create_ssr")
