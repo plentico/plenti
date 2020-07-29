@@ -153,6 +153,22 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 	ssrStr = strings.ReplaceAll(ssrStr, "Component", componentSignature)
 	// TODO: Use regex ^ string replacement is dangerous, e.g. It will replace "Component" but also part of "loadComponent".
 
+	namedExports := reStaticExport.FindAllStringSubmatch(ssrStr, -1)
+	// Loop through all export statements.
+	for _, namedExport := range namedExports {
+		// Get exported functions that aren't default.
+		if !strings.HasPrefix(namedExport[1], "default ") {
+			exportName := strings.Trim(namedExport[1], "{ }")
+			if exportName != "" && componentSignature != "" {
+				fmt.Printf("EXPORT NAME: %v\n", exportName)
+				if strings.Contains(ssrStr, "return ``;") {
+					ssrStr = strings.ReplaceAll(ssrStr, componentSignature, componentSignature+"_NOT_USED")
+				}
+				ssrStr = strings.ReplaceAll(ssrStr, exportName, componentSignature)
+			}
+		}
+	}
+
 	// Replace import references with variable signatures.
 	reStaticImportPath := regexp.MustCompile(`(?:'|").*(?:'|")`)
 	reStaticImportName := regexp.MustCompile(`import\s(.*)\sfrom`)
@@ -204,7 +220,7 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 			ssrStr = strings.ReplaceAll(ssrStr, importNameStr, importSignature)
 		}
 	}
-	fmt.Println(ssrStr)
+	fmt.Println(ssrStr + "\n\n\n")
 
 	// Add component to context so it can be used to render HTML in data_source.go.
 	_, addSSRCompErr := SSRctx.RunScript(ssrStr, "create_ssr")
