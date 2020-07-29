@@ -133,9 +133,10 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 				}
 
 				// Encode html so it can be sent as string to NodeJS in exec.Command.
+				encodedNodeDetails := nodeDetailsStr
 				// Remove newlines.
 				reN := regexp.MustCompile(`\r?\n`)
-				encodedNodeDetails := reN.ReplaceAllString(nodeDetailsStr, " ")
+				encodedNodeDetails = reN.ReplaceAllString(encodedNodeDetails, " ")
 				// Remove tabs.
 				reT := regexp.MustCompile(`\t`)
 				encodedNodeDetails = reT.ReplaceAllString(encodedNodeDetails, " ")
@@ -157,9 +158,13 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 				if err != nil {
 					fmt.Printf("V8go could not execute js default: %v\n", err)
 				}
+				// Get the string value of the static HTML.
 				renderedHTMLStr := renderedHTML.String()
+				// Inject ID needed for hydrating the SPA.
 				renderedHTMLStr = strings.Replace(renderedHTMLStr, "<html ", "<html id='hydrate-plenti' ", 1)
+				// Inject the main.js script the starts the client-side app.
 				renderedHTMLStr = strings.Replace(renderedHTMLStr, "</head>", "<script type='module' src='https://unpkg.com/dimport?module' data-main='/spa/ejected/main.js'></script><script nomodule src='https://unpkg.com/dimport/nomodule' data-main='/spa/ejected/main.js'></script></head>", 1)
+				// Convert the string to byte array that can be written to file system.
 				htmlBytes := []byte(renderedHTMLStr)
 				// Create any folders need to write file.
 				os.MkdirAll(buildPath+path, os.ModePerm)
