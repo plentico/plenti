@@ -13,6 +13,13 @@ import (
 	"time"
 )
 
+type content struct {
+	contentType    string
+	contentPath    string
+	contentDest    string
+	contentDetails string
+}
+
 // DataSource builds json list from "content/" directory.
 func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string) {
 
@@ -29,6 +36,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 	// Start the string that will be sent to nodejs for compiling.
 	staticBuildStr := "["
 	allNodesStr := "["
+	allContent := []content{}
 
 	// Start the new nodes.js file.
 	err := ioutil.WriteFile(nodesJSPath, []byte(`const nodes = [`), 0755)
@@ -143,39 +151,19 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 				// Reduce extra whitespace to a single space.
 				reS := regexp.MustCompile(`\s+`)
 				encodedNodeDetails = reS.ReplaceAllString(encodedNodeDetails, " ")
-				// TODO: Need to get full allNodes obj (don't reuse nodeDetailsStr) for props.
-				_, createPropsErr := SSRctx.RunScript("var props = {route: layout_content_"+contentType+"_svelte, node: "+encodedNodeDetails+", allNodes: "+encodedNodeDetails+"};", "create_ssr")
-				if createPropsErr != nil {
-					fmt.Printf("Could not create props: %v\n", createPropsErr)
-				}
-				// Render the HTML with props needed for the current content node.
-				_, renderHTMLErr := SSRctx.RunScript("var { html, css: staticCss} = layout_global_html_svelte.render(props);", "create_ssr")
-				if renderHTMLErr != nil {
-					fmt.Printf("Can't render htmlComponent: %v\n", renderHTMLErr)
-				}
-				// Get the rendered HTML from v8go.
-				renderedHTML, err := SSRctx.RunScript("html;", "create_ssr")
-				if err != nil {
-					fmt.Printf("V8go could not execute js default: %v\n", err)
-				}
-				// Get the string value of the static HTML.
-				renderedHTMLStr := renderedHTML.String()
-				// Inject ID needed for hydrating the SPA.
-				renderedHTMLStr = strings.Replace(renderedHTMLStr, "<html ", "<html id='hydrate-plenti' ", 1)
-				// Inject the main.js script the starts the client-side app.
-				renderedHTMLStr = strings.Replace(renderedHTMLStr, "</head>", "<script type='module' src='https://unpkg.com/dimport?module' data-main='/spa/ejected/main.js'></script><script nomodule src='https://unpkg.com/dimport/nomodule' data-main='/spa/ejected/main.js'></script></head>", 1)
-				// Convert the string to byte array that can be written to file system.
-				htmlBytes := []byte(renderedHTMLStr)
-				// Create any folders need to write file.
-				os.MkdirAll(buildPath+path, os.ModePerm)
-				// Write static HTML to the filesystem.
-				htmlWriteErr := ioutil.WriteFile(destPath, htmlBytes, 0755)
-				if htmlWriteErr != nil {
-					fmt.Printf("Unable to write SSR file: %v\n", htmlWriteErr)
-				}
 
 				// Add node info for being referenced in allNodes object.
 				allNodesStr = allNodesStr + encodedNodeDetails + ","
+
+				content := content{
+					contentType:    contentType,
+					contentPath:    path,
+					contentDest:    destPath,
+					contentDetails: encodedNodeDetails,
+				}
+				allContent = append(allContent, content)
+				//allNodes = append(allNodes, encodedNodeDetails)
+				//allNodes[contentType] = encodedNodeDetails
 
 				// Create path for source .svelte template.
 				componentPath := "layout/content/" + contentType + ".svelte"
@@ -198,6 +186,44 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 		fmt.Printf("Could not get layout file: %s", contentFilesErr)
 	}
 
+	// End the string that will be sent to nodejs for compiling.
+	staticBuildStr = strings.TrimSuffix(staticBuildStr, ",") + "]"
+	allNodesStr = strings.TrimSuffix(allNodesStr, ",") + "]"
+
+	//for currentType, currentNode := range allNodes {
+	for _, currentContent := range allContent {
+		_, createPropsErr := SSRctx.RunScript("var props = {route: layout_content_"+currentContent.contentType+"_svelte, node: "+currentContent.contentDetails+", allNodes: "+allNodesStr+"};", "create_ssr")
+		if createPropsErr != nil {
+			fmt.Printf("Could not create props: %v\n", createPropsErr)
+		}
+		// Render the HTML with props needed for the current content node.
+		_, renderHTMLErr := SSRctx.RunScript("var { html, css: staticCss} = layout_global_html_svelte.render(props);", "create_ssr")
+		if renderHTMLErr != nil {
+			fmt.Printf("Can't render htmlComponent: %v\n", renderHTMLErr)
+		}
+		// Get the rendered HTML from v8go.
+		renderedHTML, err := SSRctx.RunScript("html;", "create_ssr")
+		if err != nil {
+			fmt.Printf("V8go could not execute js default: %v\n", err)
+		}
+		// Get the string value of the static HTML.
+		renderedHTMLStr := renderedHTML.String()
+		// Inject ID needed for hydrating the SPA.
+		renderedHTMLStr = strings.Replace(renderedHTMLStr, "<html ", "<html id='hydrate-plenti' ", 1)
+		// Inject the main.js script the starts the client-side app.
+		renderedHTMLStr = strings.Replace(renderedHTMLStr, "</head>", "<script type='module' src='https://unpkg.com/dimport?module' data-main='/spa/ejected/main.js'></script><script nomodule src='https://unpkg.com/dimport/nomodule' data-main='/spa/ejected/main.js'></script></head>", 1)
+		// Convert the string to byte array that can be written to file system.
+		htmlBytes := []byte(renderedHTMLStr)
+		// Create any folders need to write file.
+		os.MkdirAll(buildPath+currentContent.contentPath, os.ModePerm)
+		// Write static HTML to the filesystem.
+		htmlWriteErr := ioutil.WriteFile(currentContent.contentDest, htmlBytes, 0755)
+		if htmlWriteErr != nil {
+			fmt.Printf("Unable to write SSR file: %v\n", htmlWriteErr)
+		}
+
+	}
+
 	// Complete the nodes.js file.
 	nodesJSFile, openNodesJSErr := os.OpenFile(nodesJSPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if openNodesJSErr != nil {
@@ -208,10 +234,6 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 	if _, err := nodesJSFile.WriteString(nodesJSStr); err != nil {
 		log.Println(err)
 	}
-
-	// End the string that will be sent to nodejs for compiling.
-	staticBuildStr = strings.TrimSuffix(staticBuildStr, ",") + "]"
-	allNodesStr = strings.TrimSuffix(allNodesStr, ",") + "]"
 
 	Log("Number of content files used: " + strconv.Itoa(contentFileCounter))
 
