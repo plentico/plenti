@@ -132,11 +132,10 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 					log.Println(err)
 				}
 
-				// Need to encode html so it can be send as string to NodeJS in exec.Command.
-				encodedNodeDetails := nodeDetailsStr
+				// Encode html so it can be sent as string to NodeJS in exec.Command.
 				// Remove newlines.
 				reN := regexp.MustCompile(`\r?\n`)
-				encodedNodeDetails = reN.ReplaceAllString(encodedNodeDetails, " ")
+				encodedNodeDetails := reN.ReplaceAllString(nodeDetailsStr, " ")
 				// Remove tabs.
 				reT := regexp.MustCompile(`\t`)
 				encodedNodeDetails = reT.ReplaceAllString(encodedNodeDetails, " ")
@@ -158,7 +157,10 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 				if err != nil {
 					fmt.Printf("V8go could not execute js default: %v\n", err)
 				}
-				htmlBytes := []byte(renderedHTML.String())
+				renderedHTMLStr := renderedHTML.String()
+				renderedHTMLStr = strings.Replace(renderedHTMLStr, "<html ", "<html id='hydrate-plenti' ", 1)
+				renderedHTMLStr = strings.Replace(renderedHTMLStr, "</head>", "<script type='module' src='https://unpkg.com/dimport?module' data-main='/spa/ejected/main.js'></script><script nomodule src='https://unpkg.com/dimport/nomodule' data-main='/spa/ejected/main.js'></script></head>", 1)
+				htmlBytes := []byte(renderedHTMLStr)
 				// Create any folders need to write file.
 				os.MkdirAll(buildPath+path, os.ModePerm)
 				// Write static HTML to the filesystem.
@@ -166,33 +168,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 				if htmlWriteErr != nil {
 					fmt.Printf("Unable to write SSR file: %v\n", htmlWriteErr)
 				}
-				/*
-					staticCSS, err := ctx1.RunScript("staticCss.code;", "create_ssr")
-					if err != nil {
-						fmt.Printf("V8go could not execute js default: %v\n", err)
-					}
-					fmt.Println(staticCSS)
-						ssrJsBytes := []byte(ssrJsCode.String())
-						ssrJsWriteErr := ioutil.WriteFile(destFile, ssrJsBytes, 0755)
-						if ssrJsWriteErr != nil {
-							fmt.Printf("Unable to write SSR file: %v", ssrJsWriteErr)
-						}
-				*/
-				// END
 
-				/*
-					// Need to encode html so it can be send as string to NodeJS in exec.Command.
-					encodedNodeDetails := nodeDetailsStr
-					// Remove newlines.
-					reN := regexp.MustCompile(`\r?\n`)
-					encodedNodeDetails = reN.ReplaceAllString(encodedNodeDetails, " ")
-					// Remove tabs.
-					reT := regexp.MustCompile(`\t`)
-					encodedNodeDetails = reT.ReplaceAllString(encodedNodeDetails, " ")
-					// Reduce extra whitespace to a single space.
-					reS := regexp.MustCompile(`\s+`)
-					encodedNodeDetails = reS.ReplaceAllString(encodedNodeDetails, " ")
-				*/
 				// Add node info for being referenced in allNodes object.
 				allNodesStr = allNodesStr + encodedNodeDetails + ","
 
