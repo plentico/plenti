@@ -145,13 +145,12 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 	// Remove static export statements.
 	ssrStr = reStaticExport.ReplaceAllString(ssrStr, `/*$0*/`)
 	// Use var instead of const so it can be redeclared multiple times.
-	ssrStr = strings.ReplaceAll(ssrStr, "const", "var")
-	// TODO: Use regex ^ string replacement is dangerous, e.g. It will replace "Component" but also part of "loadComponent".
+	reConst := regexp.MustCompile(`(?m)^const\s`)
+	ssrStr = reConst.ReplaceAllString(ssrStr, "var ")
 	// Create custom variable name for component based on the file path for the layout.
 	componentSignature := strings.ReplaceAll(strings.ReplaceAll(layoutPath, "/", "_"), ".", "_")
-	// Use signature for file instead of generic "Component".
-	ssrStr = strings.ReplaceAll(ssrStr, "Component", componentSignature)
-	// TODO: Use regex ^ string replacement is dangerous, e.g. It will replace "Component" but also part of "loadComponent".
+	// Use signature instead of generic "Component". Add space to avoid also replacing part of "loadComponent".
+	ssrStr = strings.ReplaceAll(ssrStr, " Component ", " "+componentSignature+" ")
 
 	namedExports := reStaticExport.FindAllStringSubmatch(ssrStr, -1)
 	// Loop through all export statements.
@@ -160,7 +159,6 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 		if !strings.HasPrefix(namedExport[1], "default ") {
 			exportName := strings.Trim(namedExport[1], "{ }")
 			if exportName != "" && componentSignature != "" {
-				fmt.Printf("EXPORT NAME: %v\n", exportName)
 				if strings.Contains(ssrStr, "return ``;") {
 					ssrStr = strings.ReplaceAll(ssrStr, componentSignature, componentSignature+"_NOT_USED")
 				}
@@ -220,7 +218,7 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 			ssrStr = strings.ReplaceAll(ssrStr, importNameStr, importSignature)
 		}
 	}
-	fmt.Println(ssrStr + "\n\n\n")
+	//fmt.Println(ssrStr + "\n\n\n")
 
 	// Add component to context so it can be used to render HTML in data_source.go.
 	_, addSSRCompErr := SSRctx.RunScript(ssrStr, "create_ssr")

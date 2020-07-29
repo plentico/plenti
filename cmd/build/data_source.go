@@ -144,7 +144,6 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) (string, string
 				reS := regexp.MustCompile(`\s+`)
 				encodedNodeDetails = reS.ReplaceAllString(encodedNodeDetails, " ")
 				// TODO: Need to get full allNodes obj (don't reuse nodeDetailsStr) for props.
-				fmt.Println(contentType)
 				_, createPropsErr := SSRctx.RunScript("var props = {route: layout_content_"+contentType+"_svelte, node: "+encodedNodeDetails+", allNodes: "+encodedNodeDetails+"};", "create_ssr")
 				if createPropsErr != nil {
 					fmt.Printf("Could not create props: %v\n", createPropsErr)
