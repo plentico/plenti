@@ -7,7 +7,7 @@
 <br />
 
 ### Requirements:exclamation:
-You must have [NodeJS](https://nodejs.org/) version 13 or newer
+~~You must have [NodeJS](https://nodejs.org/) version 13 or newer~~ As of `v0.2.0` you no longer need NodeJS, Go, or any dependency other than Plenti itself.
 
 ### Installation :floppy_disk:
 
@@ -16,11 +16,11 @@ Homebrew:
 2. Install: `brew install plenti`
 
 Snap:
-1. Install: `snap install plenti` (TODO: need to fix https://github.com/plentico/plenti/issues/31 before this will work properly)
+1. Install: `snap install plenti`
 
 Scoop:
-1. Add the bucket: `scoop bucket add org https://github.com/plentico/scoop-plenti.git`
-2. Install: `scoop install plentico/scoop-plenti`
+1. Add the bucket: `scoop bucket add plenti https://github.com/plentico/scoop-plenti`
+2. Install: `scoop install plenti`
 
 Manual:
 1. Download the latest [release](https://github.com/plentico/plenti/releases)
