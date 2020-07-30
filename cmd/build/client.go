@@ -87,7 +87,6 @@ func Client(buildPath string) {
 	}
 
 	Log("Number of components compiled: " + strconv.Itoa(compiledComponentCounter))
-
 }
 
 func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, destFile string, stylePath string) {
@@ -218,7 +217,6 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 			ssrStr = strings.ReplaceAll(ssrStr, importNameStr, importSignature)
 		}
 	}
-	//fmt.Println(ssrStr + "\n\n\n")
 
 	// Add component to context so it can be used to render HTML in data_source.go.
 	_, addSSRCompErr := SSRctx.RunScript(ssrStr, "create_ssr")

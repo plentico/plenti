@@ -20,6 +20,9 @@ var VerboseFlag bool
 // BenchmarkFlag provides users with build speed statistics to help identify bottlenecks.
 var BenchmarkFlag bool
 
+// NodeJSFlag let you use your systems NodeJS to build the site instead of core build.
+var NodeJSFlag bool
+
 func setBuildDir(siteConfig readers.SiteConfig) string {
 	var buildDir string
 	// Check if directory is overridden by flag.
@@ -69,7 +72,6 @@ func Build() {
 			return
 		}
 	}
-	// TODO: Should this automatically happen after stopping local server?
 
 	// Create the buildPath directory.
 	err := os.MkdirAll(buildPath, os.ModePerm)
@@ -94,14 +96,20 @@ func Build() {
 	// Directly copy static assets to the build dir.
 	build.AssetsCopy(buildPath)
 
-	// Prep the client SPA.
-	build.Client(buildPath)
-
-	// Build JSON from "content/" directory.
-	staticBuildStr, allNodesStr := build.DataSource(buildPath, siteConfig)
-
 	// Run the build.js script using user local NodeJS.
-	build.ExecNode(staticBuildStr, allNodesStr)
+	if NodeJSFlag {
+		clientBuildStr := build.NodeClient(buildPath)
+		staticBuildStr, allNodesStr := build.NodeDataSource(buildPath, siteConfig)
+		build.NodeExec(clientBuildStr, staticBuildStr, allNodesStr)
+	} else {
+
+		// Prep the client SPA.
+		build.Client(buildPath)
+
+		// Build JSON from "content/" directory.
+		build.DataSource(buildPath, siteConfig)
+
+	}
 
 	// Run Gopack (custom Snowpack alternative) for ESM support.
 	build.Gopack(buildPath)
@@ -126,4 +134,5 @@ func init() {
 	buildCmd.Flags().StringVarP(&BuildDirFlag, "dir", "d", "", "change name of the build directory")
 	buildCmd.Flags().BoolVarP(&VerboseFlag, "verbose", "v", false, "show log messages")
 	buildCmd.Flags().BoolVarP(&BenchmarkFlag, "benchmark", "b", false, "display build time statistics")
+	buildCmd.Flags().BoolVarP(&NodeJSFlag, "nodejs", "n", false, "use system nodejs for build with ejectable build.js script")
 }

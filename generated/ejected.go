@@ -4,7 +4,8 @@ package generated
 
 // Ejected: scaffolding used in 'build' command
 var Ejected = map[string][]byte{
-	"/build.js": []byte(`import 'svelte/register.js';
+	"/build.js": []byte(`import svelte from 'svelte/compiler.js';
+import 'svelte/register.js';
 import Module from 'module';
 import path from 'path';
 import fs from 'fs';

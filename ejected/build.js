@@ -1,3 +1,4 @@
+import svelte from 'svelte/compiler.js';
 import 'svelte/register.js';
 import Module from 'module';
 import path from 'path';
