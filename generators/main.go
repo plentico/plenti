@@ -29,6 +29,9 @@ func generate(name string) {
 				return err
 			}
 			if !info.IsDir() {
+				if strings.HasSuffix(path, "_") {
+					path = strings.TrimSuffix(path, "_")
+				}
 				out.Write([]byte("\t\"" + strings.TrimPrefix(path, name) + "\": []byte(`"))
 				content, _ := ioutil.ReadFile(path)
 				// Escape the backticks that would break string literals
