@@ -2,7 +2,8 @@
 # Make sure to check the documentation at http://goreleaser.com
 before:
   hooks:
-    - go mod download
+    #- go mod download
+    - go get ./...
     - go generate ./...
     - git diff
 builds:
