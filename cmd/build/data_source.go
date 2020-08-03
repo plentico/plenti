@@ -27,20 +27,21 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) {
 
 	Log("\nGathering data source from 'content/' folder")
 
-	nodesJSPath := buildPath + "/spa/ejected/nodes.js"
+	contentJSPath := buildPath + "/spa/ejected/content.js"
 	os.MkdirAll(buildPath+"/spa/ejected", os.ModePerm)
 
 	// Set up counter for logging output.
 	contentFileCounter := 0
 
-	// Start the string that will be sent to nodejs for compiling.
-	allNodesStr := "["
+	// Start the string that will be used for allContent object.
+	allContentStr := "["
+	// Store each content file in array we can iterate over for creating static html.
 	allContent := []content{}
 
-	// Start the new nodes.js file.
-	err := ioutil.WriteFile(nodesJSPath, []byte(`const nodes = [`), 0755)
+	// Start the new content.js file.
+	err := ioutil.WriteFile(contentJSPath, []byte(`const contentSource = [`), 0755)
 	if err != nil {
-		fmt.Printf("Unable to write nodes.js file: %v", err)
+		fmt.Printf("Unable to write content.js file: %v", err)
 	}
 
 	// Go through all sub directories in "content/" folder.
@@ -119,43 +120,43 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) {
 
 				destPath := buildPath + path + "/index.html"
 
-				nodeDetailsStr := "{\n" +
+				contentDetailsStr := "{\n" +
 					"\"path\": \"" + path + "\",\n" +
 					"\"type\": \"" + contentType + "\",\n" +
 					"\"filename\": \"" + fileName + "\",\n" +
 					"\"fields\": " + fileContentStr + "\n}"
 
-				// Create new nodes.js file if it doesn't already exist, or add to it if it does.
-				nodesJSFile, openNodesJSErr := os.OpenFile(nodesJSPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-				if openNodesJSErr != nil {
-					fmt.Printf("Could not open nodes.js for writing: %s", openNodesJSErr)
+				// Create new content.js file if it doesn't already exist, or add to it if it does.
+				contentJSFile, openContentJSErr := os.OpenFile(contentJSPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+				if openContentJSErr != nil {
+					fmt.Printf("Could not open content.js for writing: %s", openContentJSErr)
 				}
 				// Write to the file with info from current file in "/content" folder.
-				defer nodesJSFile.Close()
-				if _, err := nodesJSFile.WriteString(nodeDetailsStr + ","); err != nil {
+				defer contentJSFile.Close()
+				if _, err := contentJSFile.WriteString(contentDetailsStr + ","); err != nil {
 					log.Println(err)
 				}
 
-				// Encode html so it can be sent as string to NodeJS in exec.Command.
-				encodedNodeDetails := nodeDetailsStr
+				// Encode html so it can be used as props.
+				encodedContentDetails := contentDetailsStr
 				// Remove newlines.
 				reN := regexp.MustCompile(`\r?\n`)
-				encodedNodeDetails = reN.ReplaceAllString(encodedNodeDetails, " ")
+				encodedContentDetails = reN.ReplaceAllString(encodedContentDetails, " ")
 				// Remove tabs.
 				reT := regexp.MustCompile(`\t`)
-				encodedNodeDetails = reT.ReplaceAllString(encodedNodeDetails, " ")
+				encodedContentDetails = reT.ReplaceAllString(encodedContentDetails, " ")
 				// Reduce extra whitespace to a single space.
 				reS := regexp.MustCompile(`\s+`)
-				encodedNodeDetails = reS.ReplaceAllString(encodedNodeDetails, " ")
+				encodedContentDetails = reS.ReplaceAllString(encodedContentDetails, " ")
 
-				// Add node info for being referenced in allNodes object.
-				allNodesStr = allNodesStr + encodedNodeDetails + ","
+				// Add info for being referenced in allContent object.
+				allContentStr = allContentStr + encodedContentDetails + ","
 
 				content := content{
 					contentType:    contentType,
 					contentPath:    path,
 					contentDest:    destPath,
-					contentDetails: encodedNodeDetails,
+					contentDetails: encodedContentDetails,
 				}
 				allContent = append(allContent, content)
 
@@ -170,16 +171,15 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) {
 		fmt.Printf("Could not get layout file: %s", contentFilesErr)
 	}
 
-	// End the string that will be sent to nodejs for compiling.
-	allNodesStr = strings.TrimSuffix(allNodesStr, ",") + "]"
+	// End the string that will be used in allContent object.
+	allContentStr = strings.TrimSuffix(allContentStr, ",") + "]"
 
-	//for currentType, currentNode := range allNodes {
 	for _, currentContent := range allContent {
-		_, createPropsErr := SSRctx.RunScript("var props = {route: layout_content_"+currentContent.contentType+"_svelte, node: "+currentContent.contentDetails+", allNodes: "+allNodesStr+"};", "create_ssr")
+		_, createPropsErr := SSRctx.RunScript("var props = {route: layout_content_"+currentContent.contentType+"_svelte, content: "+currentContent.contentDetails+", allContent: "+allContentStr+"};", "create_ssr")
 		if createPropsErr != nil {
 			fmt.Printf("Could not create props: %v\n", createPropsErr)
 		}
-		// Render the HTML with props needed for the current content node.
+		// Render the HTML with props needed for the current content.
 		_, renderHTMLErr := SSRctx.RunScript("var { html, css: staticCss} = layout_global_html_svelte.render(props);", "create_ssr")
 		if renderHTMLErr != nil {
 			fmt.Printf("Can't render htmlComponent: %v\n", renderHTMLErr)
@@ -207,14 +207,13 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) {
 
 	}
 
-	// Complete the nodes.js file.
-	nodesJSFile, openNodesJSErr := os.OpenFile(nodesJSPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if openNodesJSErr != nil {
-		fmt.Printf("Could not open nodes.js for writing: %s", openNodesJSErr)
+	// Complete the content.js file.
+	contentJSFile, openContentJSErr := os.OpenFile(contentJSPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if openContentJSErr != nil {
+		fmt.Printf("Could not open content.js for writing: %s", openContentJSErr)
 	}
-	defer nodesJSFile.Close()
-	nodesJSStr := "];\n\nexport default nodes;"
-	if _, err := nodesJSFile.WriteString(nodesJSStr); err != nil {
+	defer contentJSFile.Close()
+	if _, err := contentJSFile.WriteString("];\n\nexport default contentSource;"); err != nil {
 		log.Println(err)
 	}
 

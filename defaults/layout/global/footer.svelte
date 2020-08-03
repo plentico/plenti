@@ -1,13 +1,13 @@
 <script>
-  export let allNodes;
+  export let allContent;
   import { makeTitle } from '../scripts/make_title.svelte';
 </script>
 
 <footer>
   <div class="container">
-    <span>All nodes:</span>
-    {#each allNodes as node}
-      <a href="{node.path}">{makeTitle(node.filename)}</a>
+    <span>All content:</span>
+    {#each allContent as content}
+      <a href="{content.path}">{makeTitle(content.filename)}</a>
     {/each}
   </div>
 </footer>
