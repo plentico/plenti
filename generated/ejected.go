@@ -68,9 +68,9 @@ clientBuildStr.forEach(arg => {
 // ------------------------
 
 let staticBuildStr = JSON.parse(args[1]);
-let allNodes = JSON.parse(args[2]);
+let allContent = JSON.parse(args[2]);
 
-// Create the component that wraps all nodes.
+// Create the component that wraps all content.
 let htmlWrapper = path.join(path.resolve(), 'layout/global/html.svelte')
 let root = new Module();
 let component = root.require(htmlWrapper).default;
@@ -86,8 +86,8 @@ staticBuildStr.forEach(arg => {
 	// Set props so component can access field values, etc.
 	let props = {
 		route: route,
-		node: arg.node,
-		allNodes: allNodes
+		content: arg.content,
+		allContent: allContent
 	};
 
 	// Create the static HTML and CSS.
