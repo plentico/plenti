@@ -1,5 +1,5 @@
 <script>
-	export let title, intro, components, allNodes;
+	export let title, intro, components, allContent;
 	import Grid from '../components/grid.svelte';
 	import { loadComponent } from '../scripts/load_component.svelte';
 </script>
@@ -18,7 +18,7 @@
 
 <div>
 	<h3>Recent blog posts:</h3>
-	<Grid items={allNodes} filter="blog" />
+	<Grid items={allContent} filter="blog" />
 	<br />
 </div>
 

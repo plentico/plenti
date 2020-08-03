@@ -68,9 +68,9 @@ clientBuildStr.forEach(arg => {
 // ------------------------
 
 let staticBuildStr = JSON.parse(args[1]);
-let allNodes = JSON.parse(args[2]);
+let allContent = JSON.parse(args[2]);
 
-// Create the component that wraps all nodes.
+// Create the component that wraps all content.
 let htmlWrapper = path.join(path.resolve(), 'layout/global/html.svelte')
 let root = new Module();
 let component = root.require(htmlWrapper).default;
@@ -86,8 +86,8 @@ staticBuildStr.forEach(arg => {
 	// Set props so component can access field values, etc.
 	let props = {
 		route: route,
-		node: arg.node,
-		allNodes: allNodes
+		content: arg.content,
+		allContent: allContent
 	};
 
 	// Create the static HTML and CSS.
@@ -139,34 +139,34 @@ const app = replaceContainer( Router, {
 
 export default app;
 `),
-	"/router.svelte": []byte(`<Html {route} {node} {allNodes} />
+	"/router.svelte": []byte(`<Html {route} {content} {allContent} />
 
 <script>
   import Navaid from 'navaid';
-  import nodes from './nodes.js';
+  import contentSource from './content.js';
   import Html from '../global/html.svelte';
 
-  let route, node, allNodes;
+  let route, content, allContent;
 
-  const getNode = (uri, trailingSlash = "") => {
-    return nodes.find(node => node.path + trailingSlash == uri);
+  const getContent = (uri, trailingSlash = "") => {
+    return contentSource.find(content => content.path + trailingSlash == uri);
   }
 
   let uri = location.pathname;
-  node = getNode(uri);
-  if (node === undefined) {
-    node = getNode(uri, "/");
+  content = getContent(uri);
+  if (content === undefined) {
+    content = getContent(uri, "/");
   }
-  allNodes = nodes;
+  allContent = contentSource;
 
   function draw(m) {
-    node = getNode(uri);
-    if (node === undefined) {
+    content = getContent(uri);
+    if (content === undefined) {
       // Check if there is a 404 data source.
-      node = getNode("/404");
-      if (node === undefined) {
+      content = getContent("/404");
+      if (content === undefined) {
         // If no 404.json data source exists, pass placeholder values.
-        node = {
+        content = {
           "path": "/404",
           "type": "404",
           "filename": "404.json",
@@ -198,14 +198,14 @@ export default app;
 
   const router = Navaid('/', handle404);
 
-  allNodes.forEach(node => {
-    router.on(node.path, () => {
+  allContent.forEach(content => {
+    router.on(content.path, () => {
       // Check if the url visited ends in a trailing slash (besides the homepage).
       if (uri.length > 1 && uri.slice(-1) == "/") {
         // Redirect to the same path without the trailing slash.
-        router.route(node.path, false);
+        router.route(content.path, false);
       } else {
-        import('../content/' + node.type + '.js').then(draw).catch(handle404);
+        import('../content/' + content.type + '.js').then(draw).catch(handle404);
       }
     });
 

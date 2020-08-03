@@ -246,7 +246,7 @@ var Defaults = map[string][]byte{
 <p><a href="/">Back home</a></p>
 `),
 	"/layout/content/index.svelte": []byte(`<script>
-	export let title, intro, components, allNodes;
+	export let title, intro, components, allContent;
 	import Grid from '../components/grid.svelte';
 	import { loadComponent } from '../scripts/load_component.svelte';
 </script>
@@ -265,7 +265,7 @@ var Defaults = map[string][]byte{
 
 <div>
 	<h3>Recent blog posts:</h3>
-	<Grid items={allNodes} filter="blog" />
+	<Grid items={allContent} filter="blog" />
 	<br />
 </div>
 
@@ -297,15 +297,15 @@ var Defaults = map[string][]byte{
 
 <p><a href="/">Back home</a></p>`),
 	"/layout/global/footer.svelte": []byte(`<script>
-  export let allNodes;
+  export let allContent;
   import { makeTitle } from '../scripts/make_title.svelte';
 </script>
 
 <footer>
   <div class="container">
-    <span>All nodes:</span>
-    {#each allNodes as node}
-      <a href="{node.path}">{makeTitle(node.filename)}</a>
+    <span>All content:</span>
+    {#each allContent as content}
+      <a href="{content.path}">{makeTitle(content.filename)}</a>
     {/each}
   </div>
 </footer>
@@ -350,20 +350,20 @@ var Defaults = map[string][]byte{
   import Footer from './footer.svelte';
   import { makeTitle } from '../scripts/make_title.svelte';
 
-  export let route, node, allNodes;
+  export let route, content, allContent;
 </script>
 
 <html lang="en">
-<Head title={makeTitle(node.filename)} />
+<Head title={makeTitle(content.filename)} />
 <body>
   <Nav />
   <main>
     <div class="container">
-      <svelte:component this={route} {...node.fields} {allNodes} />
+      <svelte:component this={route} {...content.fields} {allContent} />
       <br />
     </div>
   </main>
-  <Footer {allNodes} />
+  <Footer {allContent} />
 </body>
 </html>
 
