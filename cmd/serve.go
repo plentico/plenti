@@ -98,9 +98,10 @@ func init() {
 	// serveCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	serveCmd.Flags().IntVarP(&PortFlag, "port", "p", 0, "change port for local server")
 	serveCmd.Flags().StringVarP(&BuildDirFlag, "dir", "d", "", "change name of the build directory")
-	serveCmd.Flags().BoolVarP(&BuildFlag, "build", "b", true, "set \"false\" to disable build step")
+	serveCmd.Flags().BoolVarP(&BuildFlag, "build", "B", true, "set \"false\" to disable build step")
 	serveCmd.Flags().BoolVarP(&NodeJSFlag, "nodejs", "n", false, "use system nodejs for build with ejectable build.js script")
 	serveCmd.Flags().BoolVarP(&VerboseFlag, "verbose", "v", false, "show log messages")
+	serveCmd.Flags().BoolVarP(&BenchmarkFlag, "benchmark", "b", false, "display build time statistics")
 }
 
 var watcher *fsnotify.Watcher
