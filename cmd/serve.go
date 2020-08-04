@@ -152,20 +152,7 @@ func Watch(buildPath string) {
 						if event.Op&fsnotify.Create == fsnotify.Create {
 							build.Log("File create detected: " + event.String())
 							watcher.Add(event.Name)
-							/*
-								// Get info about path that was created.
-								fi, _ := os.Stat(event.Name)
-								mode := fi.Mode()
-								// Check if a folder was added.
-								if mode.IsDir() {
-										// Attempt to watch the newly added folder for changes.
-										if err := filepath.Walk(event.Name, watchDir(buildPath)); err != nil {
-											fmt.Println("Error watching '"+event.Name+"/' folder for changes: ", err)
-										} else {
-											build.Log("Now watching " + event.Name)
-										}
-								}
-							*/
+							build.Log("Now watching " + event.Name)
 						}
 						if event.Op&fsnotify.Write == fsnotify.Write {
 							build.Log("File write detected: " + event.String())
