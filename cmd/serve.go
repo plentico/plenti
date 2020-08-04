@@ -146,6 +146,9 @@ func Watch(buildPath string) {
 				if len(events) > 0 {
 					// Display messages for each events in batch.
 					for _, event := range events {
+						if event.Op&fsnotify.Create == fsnotify.Create {
+							fmt.Printf("\nFile create detected: %#v\n", event)
+						}
 						if event.Op&fsnotify.Write == fsnotify.Write {
 							fmt.Printf("\nFile write detected: %#v\n", event)
 						}
