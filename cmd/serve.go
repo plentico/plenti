@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"plenti/cmd/build"
 	"plenti/readers"
 
 	"github.com/fsnotify/fsnotify"
@@ -149,16 +150,16 @@ func Watch(buildPath string) {
 					// Display messages for each events in batch.
 					for _, event := range events {
 						if event.Op&fsnotify.Create == fsnotify.Create {
-							fmt.Printf("\nFile create detected: %#v\n", event)
+							build.Log("\nFile create detected: " + event.String() + "\n")
 						}
 						if event.Op&fsnotify.Write == fsnotify.Write {
-							fmt.Printf("\nFile write detected: %#v\n", event)
+							build.Log("\nFile write detected: " + event.String() + "\n")
 						}
 						if event.Op&fsnotify.Remove == fsnotify.Remove {
-							fmt.Printf("\nFile delete detected: %#v\n", event)
+							build.Log("\nFile delete detected: " + event.String() + "\n")
 						}
 						if event.Op&fsnotify.Rename == fsnotify.Rename {
-							fmt.Printf("\nFile rename detected: %#v\n", event)
+							build.Log("\nFile rename detected: " + event.String() + "\n")
 						}
 					}
 					// Rebuild only one time for all batched events.
