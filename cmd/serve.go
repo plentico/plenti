@@ -100,6 +100,7 @@ func init() {
 	serveCmd.Flags().StringVarP(&BuildDirFlag, "dir", "d", "", "change name of the build directory")
 	serveCmd.Flags().BoolVarP(&BuildFlag, "build", "b", true, "set \"false\" to disable build step")
 	serveCmd.Flags().BoolVarP(&NodeJSFlag, "nodejs", "n", false, "use system nodejs for build with ejectable build.js script")
+	serveCmd.Flags().BoolVarP(&VerboseFlag, "verbose", "v", false, "show log messages")
 }
 
 var watcher *fsnotify.Watcher
