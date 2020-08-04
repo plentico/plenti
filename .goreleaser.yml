@@ -7,11 +7,11 @@ before:
     - git diff
 builds:
 - env:
-  - CGO_ENABLED=0
+  - CGO_ENABLED=1
   goos:
   - linux
   - darwin
-  - windows
+  #- windows
   ignore:
   - goos: darwin
     goarch: 386
@@ -19,7 +19,7 @@ archives:
 - replacements:
     darwin: Mac
     linux: Linux
-    windows: Windows
+    #windows: Windows
     386: 32-bit
     amd64: 64-bit
 checksum:
