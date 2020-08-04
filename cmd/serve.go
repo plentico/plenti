@@ -150,16 +150,31 @@ func Watch(buildPath string) {
 					// Display messages for each events in batch.
 					for _, event := range events {
 						if event.Op&fsnotify.Create == fsnotify.Create {
-							build.Log("\nFile create detected: " + event.String() + "\n")
+							build.Log("File create detected: " + event.String())
+							watcher.Add(event.Name)
+							/*
+								// Get info about path that was created.
+								fi, _ := os.Stat(event.Name)
+								mode := fi.Mode()
+								// Check if a folder was added.
+								if mode.IsDir() {
+										// Attempt to watch the newly added folder for changes.
+										if err := filepath.Walk(event.Name, watchDir(buildPath)); err != nil {
+											fmt.Println("Error watching '"+event.Name+"/' folder for changes: ", err)
+										} else {
+											build.Log("Now watching " + event.Name)
+										}
+								}
+							*/
 						}
 						if event.Op&fsnotify.Write == fsnotify.Write {
-							build.Log("\nFile write detected: " + event.String() + "\n")
+							build.Log("File write detected: " + event.String())
 						}
 						if event.Op&fsnotify.Remove == fsnotify.Remove {
-							build.Log("\nFile delete detected: " + event.String() + "\n")
+							build.Log("File delete detected: " + event.String())
 						}
 						if event.Op&fsnotify.Rename == fsnotify.Rename {
-							build.Log("\nFile rename detected: " + event.String() + "\n")
+							build.Log("File rename detected: " + event.String())
 						}
 					}
 					// Rebuild only one time for all batched events.
