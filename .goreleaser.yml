@@ -16,8 +16,8 @@ builds:
   - -s
   env:
   - CGO_ENABLED=1
-  - CC=/github/plenti-osxcross/bin/o64-clang
-  - CXX=/github/plenti-osxcross/bin/o64-clang++
+  - CC=/home/plenti-osxcross/bin/o64-clang
+  - CXX=/home/plenti-osxcross/bin/o64-clang++
   goos:
   - darwin
   ignore:
