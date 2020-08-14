@@ -6,12 +6,20 @@ before:
     - go generate ./...
     - git diff
 builds:
-- env:
+- main: main.go
+  env:
   - CGO_ENABLED=1
   goos:
   - linux
+- main: main.go
+  ldflags:
+  - -s
+  env:
+  - CGO_ENABLED=1
+  - CC=/github/workspace/plenti-osxcross/bin/o64-clang
+  - CXX=/github/workspace/plenti-osxcross/bin/o64-clang++
+  goos:
   - darwin
-  #- windows
   ignore:
   - goos: darwin
     goarch: 386
