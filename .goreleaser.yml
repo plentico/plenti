@@ -6,12 +6,12 @@ before:
     - go generate ./...
     - git diff
 builds:
-- main: main.go
+- id: linux
   env:
   - CGO_ENABLED=1
   goos:
   - linux
-- main: main.go
+- id: darwin
   ldflags:
   - -s
   env:
