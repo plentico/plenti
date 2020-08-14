@@ -35,14 +35,10 @@ jobs:
         name: Dockerhub Login
         run: |
           echo '${{ secrets.DOCKER_PASSWORD }}' | docker login --username '${{ secrets.DOCKER_USERNAME }}' --password-stdin
-      #- 
-      #  name: Mailchain XCGO container
-      #  uses: docker://mailchain/goreleaser-xcgo:latest
       -
         name: OSXCross for CGO Support
         run: |
-          sudo apt install clang make libssl-devel lzma-devel libxml2-devel git
-          git clone git@github.com:plentico/plenti-osxcross.git
+          git clone https://github.com/plentico/plenti-osxcross.git
       -
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v1
