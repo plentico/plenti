@@ -15,8 +15,8 @@ builds:
   - goos: linux
     goarch: 386
 - id: darwin-build
-  flags:
-  - -ldflags -s
+  ldflags:
+  - -s
   env:
   - CGO_ENABLED=1
   - CC=/home/runner/work/plenti/plenti-osxcross/target/bin/o64-clang
