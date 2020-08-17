@@ -36,11 +36,6 @@ jobs:
         run: |
           echo '${{ secrets.DOCKER_PASSWORD }}' | docker login --username '${{ secrets.DOCKER_USERNAME }}' --password-stdin
       -
-        name: GCC multilib
-        run: |
-          sudo apt-get update
-          sudo apt-get install gcc-multilib g++-multilib -y
-      -
         name: OSXCross for CGO Support
         run: |
           sudo apt update
