@@ -38,11 +38,13 @@ jobs:
       -
         name: GCC multilib
         run: |
-          sudo apt-get install gcc-multilib g++-multilib
+          sudo apt-get update
+          sudo apt-get install gcc-multilib g++-multilib -y
       -
         name: OSXCross for CGO Support
         run: |
-          sudo apt install clang llvm-dev uuid-dev libssl-dev libbz2-dev
+          sudo apt update
+          sudo apt install clang llvm-dev uuid-dev libssl-dev libbz2-dev -y
           mkdir ../plenti-osxcross
           git clone https://github.com/plentico/plenti-osxcross.git ../plenti-osxcross/target
       -
