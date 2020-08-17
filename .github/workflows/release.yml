@@ -42,7 +42,7 @@ jobs:
       -
         name: OSXCross for CGO Support
         run: |
-          pwd
+          sudo apt install clang llvm-dev uuid-dev libssl-dev libbz2-dev
           mkdir ../plenti-osxcross
           git clone https://github.com/plentico/plenti-osxcross.git ../plenti-osxcross/target
       -
