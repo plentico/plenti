@@ -11,9 +11,9 @@ builds:
   - CGO_ENABLED=1
   goos:
   - linux
-  ignore:
-  - goos: linux
-    goarch: 386
+  #ignore:
+  #- goos: linux
+  #  goarch: 386
 - id: darwin-build
   ldflags:
   - -s
