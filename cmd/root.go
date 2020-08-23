@@ -12,6 +12,11 @@ import (
 
 var cfgFile string
 
+var versionFlag bool
+
+// Version gets replaced by git tag referenced in -ldflags on build.
+var Version = "undefined"
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "plenti",
@@ -24,7 +29,13 @@ Svelte frontend = snappy displays
 Learn more at https://plenti.co`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
-	//	Run: func(cmd *cobra.Command, args []string) { },
+	Run: func(cmd *cobra.Command, args []string) {
+		if versionFlag {
+			fmt.Println(Version)
+		} else {
+			cmd.Help()
+		}
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -47,7 +58,8 @@ func init() {
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	//rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.Flags().BoolVarP(&versionFlag, "version", "v", false, "Display the release number of the build you're using.")
 }
 
 // initConfig reads in config file and ENV variables if set.

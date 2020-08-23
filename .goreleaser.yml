@@ -6,6 +6,8 @@ before:
     - git diff
 builds:
 - id: linux-build
+  ldflags:
+  - -X main.version=$(git describe --tags)
   env:
   - CGO_ENABLED=1
   goos:
@@ -16,6 +18,7 @@ builds:
 - id: darwin-build
   ldflags:
   - -s
+  - -X main.version=$(git describe --tags)
   env:
   - CGO_ENABLED=1
   - CC=/home/runner/work/osxcross/target/bin/o64-clang
