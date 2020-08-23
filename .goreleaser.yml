@@ -7,7 +7,7 @@ before:
 builds:
 - id: linux-build
   ldflags:
-  - -X 'plenti/cmd.Version=$(git describe --tags)'
+  - -X plenti/cmd.Version=$(git describe --tags)
   env:
   - CGO_ENABLED=1
   goos:
@@ -18,7 +18,7 @@ builds:
 - id: darwin-build
   ldflags:
   - -s
-  - -X 'plenti/cmd.Version=$(git describe --tags)'
+  - -X plenti/cmd.Version=$(git describe --tags)
   env:
   - CGO_ENABLED=1
   - CC=/home/runner/work/osxcross/target/bin/o64-clang
