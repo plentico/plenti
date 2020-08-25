@@ -86,8 +86,10 @@ func Gopack(buildPath string) {
 			// {0,} = repeat any number of times
 			// \{ = just a closing curly bracket (escaped)
 			reStaticImport := regexp.MustCompile(`import(\s)(.*from(.*);|((.*\n){0,})\}(\s)from(.*);)`)
+			reStaticExport := regexp.MustCompile(`export(\s)(.*from(.*);|((.*\n){0,})\}(\s)from(.*);)`)
 			// Get all the import statements.
 			staticImportStatements := reStaticImport.FindAll(contentBytes, -1)
+			staticImportStatements = append(staticImportStatements, reStaticExport.FindAll(contentBytes, -1)...)
 			for _, importStatement := range staticImportStatements {
 				//fmt.Printf("the import statement is: %s\n", importStatement)
 				// Find the path specifically (part between single or double quotes).
