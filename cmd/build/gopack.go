@@ -89,71 +89,73 @@ func Gopack(buildPath string) {
 			reStaticExport := regexp.MustCompile(`export(\s)(.*from(.*);|((.*\n){0,})\}(\s)from(.*);)`)
 			// Get all the import statements.
 			staticImportStatements := reStaticImport.FindAll(contentBytes, -1)
-			staticImportStatements = append(staticImportStatements, reStaticExport.FindAll(contentBytes, -1)...)
-			for _, importStatement := range staticImportStatements {
-				//fmt.Printf("the import statement is: %s\n", importStatement)
+			// Get all the export statements.
+			staticExportStatements := reStaticExport.FindAll(contentBytes, -1)
+			// Get all import and export statements.
+			allStaticStatements := append(staticImportStatements, staticExportStatements...)
+			for _, staticStatement := range allStaticStatements {
 				// Find the path specifically (part between single or double quotes).
 				rePath := regexp.MustCompile(`(?:'|").*(?:'|")`)
-				// Get path from the full import statement.
-				importPath := rePath.Find(importStatement)
+				// Get path from the full import/export statement.
+				pathBytes := rePath.Find(staticStatement)
 				// Convert path to a string.
-				importPathStr := string(importPath)
+				pathStr := string(pathBytes)
 				// Remove single or double quotes around path.
-				importPathStr = strings.Trim(importPathStr, `'"`)
-				//fmt.Printf("the path is: %s\n", importPathStr)
-				// Make the path relative to the file that is specifying it as an import.
-				fullImportPath := filepath.Dir(convertPath) + "/" + importPathStr
-				//fmt.Printf("Full import path is: %s\n", fullImportPath)
-				var foundImportPath string
-				if filepath.Ext(fullImportPath) == ".svelte" {
-					fullImportPath = strings.Replace(fullImportPath, ".svelte", ".js", 1)
-					foundImportPath = fullImportPath
+				pathStr = strings.Trim(pathStr, `'"`)
+				// Make the path relative to the file that is specifying it as an import/export.
+				fullPath := filepath.Dir(convertPath) + "/" + pathStr
+				// Intialize the path that we are replacing.
+				var foundPath string
+				// Convert .svelte file extensions to .js so the browser can read them.
+				if filepath.Ext(fullPath) == ".svelte" {
+					fullPath = strings.Replace(fullPath, ".svelte", ".js", 1)
+					foundPath = fullPath
 				}
-				// If the import points to a path that exists and it is a .js file (imports must reference the file specifically) then we don't need to convert anything.
-				if _, importExistsErr := os.Stat(fullImportPath); !os.IsNotExist(importExistsErr) && filepath.Ext(fullImportPath) == ".js" {
-					//fmt.Printf("Skipping converting import in %s because import is valid: %s\n", convertPath, importStatement)
-				} else if importPathStr[:1] == "." {
-					// If the import starts with a dot (.) or double dot (..) look for the file it's trying to import from this relative path.
-					findRelativeImportErr := filepath.Walk(fullImportPath, func(relativeImportPath string, relativeImportFileInfo os.FileInfo, err error) error {
+				// If the import/export points to a path that exists and it is a .js file (imports must reference the file specifically) then we don't need to convert anything.
+				if _, pathExistsErr := os.Stat(fullPath); !os.IsNotExist(pathExistsErr) && filepath.Ext(fullPath) == ".js" {
+					Log("Skipping converting import/export in " + convertPath + " because import/export is valid: " + string(staticStatement))
+				} else if pathStr[:1] == "." {
+					// If the import/export path starts with a dot (.) or double dot (..) look for the file it's trying to import from this relative path.
+					findRelativePathErr := filepath.Walk(fullPath, func(relativePath string, relativePathFileInfo os.FileInfo, err error) error {
 						// Only use .js files in imports (folders aren't specific enough).
-						if filepath.Ext(relativeImportPath) == ".js" {
-							foundImportPath = relativeImportPath
+						if filepath.Ext(relativePath) == ".js" {
+							foundPath = relativePath
 						}
 						return nil
 					})
-					if findRelativeImportErr != nil {
-						fmt.Printf("Could not find related .mjs file: %s", findRelativeImportErr)
+					if findRelativePathErr != nil {
+						fmt.Printf("Could not find related .mjs file: %s", findRelativePathErr)
 					}
 				} else {
-					// A named import is being used, look for this in "web_modules/" dir.
-					findNamedImportErr := filepath.Walk(buildPath+"/spa/web_modules/"+importPathStr, func(namedImportPath string, namedImportFileInfo os.FileInfo, err error) error {
-						if filepath.Ext(namedImportPath) == ".js" {
-							foundImportPath = namedImportPath
-							//fmt.Printf("The found import path to use is: %s\n", foundImportPath)
+					// A named import/export is being used, look for this in "web_modules/" dir.
+					findNamedPathErr := filepath.Walk(buildPath+"/spa/web_modules/"+pathStr, func(namedPath string, namedPathFileInfo os.FileInfo, err error) error {
+						if filepath.Ext(namedPath) == ".js" {
+							foundPath = namedPath
+							Log("The found import path to use is: " + foundPath)
 						}
 						return nil
 					})
-					if findNamedImportErr != nil {
-						fmt.Printf("Could not find related .js file from named import: %s", findNamedImportErr)
+					if findNamedPathErr != nil {
+						fmt.Printf("Could not find related .js file from named import: %s", findNamedPathErr)
 					}
 				}
-				if foundImportPath != "" {
+				if foundPath != "" {
 					// Remove "public" build dir from path.
-					replacePath := strings.Replace(foundImportPath, buildPath, "", 1)
+					replacePath := strings.Replace(foundPath, buildPath, "", 1)
 					// Wrap path in quotes.
 					replacePath = "'" + replacePath + "'"
 					// Convert string path to bytes.
 					replacePathBytes := []byte(replacePath)
 					// Find the specific import statement we're replacing.
-					reFoundImport := regexp.MustCompile(string(importStatement))
+					reFoundImport := regexp.MustCompile(string(staticStatement))
 					// Actually replace the path to the dependency in the source content.
-					contentBytes = reFoundImport.ReplaceAll(contentBytes, rePath.ReplaceAll(importStatement, rePath.ReplaceAll(importPath, replacePathBytes)))
+					contentBytes = reFoundImport.ReplaceAll(contentBytes, rePath.ReplaceAll(staticStatement, rePath.ReplaceAll(pathBytes, replacePathBytes)))
 				}
 			}
 			// Overwrite the old file with the new content that contains the updated import path.
-			overwriteImportErr := ioutil.WriteFile(convertPath, contentBytes, 0644)
-			if overwriteImportErr != nil {
-				fmt.Printf("Could not overwite %s with new import: %s", convertPath, overwriteImportErr)
+			overwritePathErr := ioutil.WriteFile(convertPath, contentBytes, 0644)
+			if overwritePathErr != nil {
+				fmt.Printf("Could not overwite %s with new import: %s", convertPath, overwritePathErr)
 			}
 		}
 		return nil
