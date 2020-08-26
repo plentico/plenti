@@ -42,21 +42,38 @@ func Client(buildPath string) {
 		fmt.Printf("Could not add svelte compiler: %v\n", addCompilerErr)
 	}
 
-	// Use v8go and add create_ssr_component() function.
-	createSsrComponent, npmReadErr := ioutil.ReadFile("node_modules/svelte/internal/index.js")
-	if npmReadErr != nil {
-		fmt.Printf("Can't read node_modules/svelte/internal/index.js: %v", npmReadErr)
-	}
-	// Fix "Cannot access 'on_destroy' before initialization" errors on line 1320 & line 1337 of node_modules/svelte/internal/index.js.
-	createSsrStr := strings.ReplaceAll(string(createSsrComponent), "function create_ssr_component(fn) {", "function create_ssr_component(fn) {var on_destroy= {};")
 	SSRctx, _ = v8go.NewContext(nil)
-	_, createFuncErr := SSRctx.RunScript(createSsrStr, "create_ssr")
-	if err != nil {
-		fmt.Printf("Could not add create_ssr_component() func from svelte/internal: %v", createFuncErr)
-	}
 	// Fix "ReferenceError: exports is not defined" errors on line 1319 (exports.current_component;).
 	SSRctx.RunScript("var exports = {};", "create_ssr")
+	// Fix "TypeError: Cannot read property 'noop' of undefined" from node_modules/svelte/store/index.js.
+	SSRctx.RunScript("function noop(){}", "create_ssr")
 
+	var svelteLibs = [6]string{
+		"node_modules/svelte/animate/index.js",
+		"node_modules/svelte/easing/index.js",
+		"node_modules/svelte/internal/index.js",
+		"node_modules/svelte/motion/index.js",
+		"node_modules/svelte/store/index.js",
+		"node_modules/svelte/transition/index.js",
+	}
+
+	for _, svelteLib := range svelteLibs {
+		// Use v8go and add create_ssr_component() function.
+		createSsrComponent, npmReadErr := ioutil.ReadFile(svelteLib)
+		if npmReadErr != nil {
+			fmt.Printf("Can't read %v: %v", svelteLib, npmReadErr)
+		}
+		// Fix "Cannot access 'on_destroy' before initialization" errors on line 1320 & line 1337 of node_modules/svelte/internal/index.js.
+		createSsrStr := strings.ReplaceAll(string(createSsrComponent), "function create_ssr_component(fn) {", "function create_ssr_component(fn) {var on_destroy= {};")
+		// Use empty noop() function created above instead of missing method.
+		createSsrStr = strings.ReplaceAll(createSsrStr, "internal.noop", "noop")
+		_, createFuncErr := SSRctx.RunScript(createSsrStr, "create_ssr")
+		if err != nil {
+			fmt.Printf("Could not add create_ssr_component() func from svelte/internal: %v", createFuncErr)
+		}
+	}
+
+	// Compile router separately since it's ejected from core.
 	compileSvelte(ctx, SSRctx, "ejected/router.svelte", buildPath+"/spa/ejected/router.js", stylePath)
 
 	// Go through all file paths in the "/layout" folder.

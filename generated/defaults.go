@@ -87,12 +87,13 @@ var Defaults = map[string][]byte{
     "date": "1/24/2020"
 }`),
 	"/content/blog/post2.json": []byte(`{
-    "title": "Post 2",
+    "title": "Svelte writable stores example",
     "body": [
-        "This is the second post."
+        "Here's a basic counter implementation using Svelte Writable Stores"
     ],
+    "store": true,
     "author": "Jim Fisk",
-    "date": "1/25/2020"
+    "date": "8/25/2020"
 }`),
 	"/content/index.json": []byte(`{
 	"title": "My Plenti Site",
@@ -136,6 +137,17 @@ var Defaults = map[string][]byte{
 	],
 	"author": "Jim Fisk"
 }`),
+	"/layout/components/decrementer.svelte": []byte(`<script>
+  import { count } from '../scripts/stores.svelte';
+
+  function decrement() {
+    count.update(n => n - 1);
+  }
+</script>
+
+<button on:click={decrement}>
+  -
+</button>`),
 	"/layout/components/grid.svelte": []byte(`<script>
   import { sortByDate } from '../scripts/sort_by_date.svelte';
   export let items, filter;
@@ -172,6 +184,17 @@ var Defaults = map[string][]byte{
   }
 </style>
 `),
+	"/layout/components/incrementer.svelte": []byte(`<script>
+  import { count } from '../scripts/stores.svelte';
+
+  function increment() {
+    count.update(n => n + 1);
+  }
+</script>
+
+<button on:click={increment}>
+  +
+</button>`),
 	"/layout/components/template.svelte": []byte(`<script>
   export let type;
 
@@ -227,8 +250,17 @@ var Defaults = map[string][]byte{
 	"/layout/content/404.svelte": []byte(`<h1>Oops... 404 not found</h1>
 <a href="/">Go home?</a>`),
 	"/layout/content/blog.svelte": []byte(`<script>
-	export let title, body, author, date;
+	export let title, body, author, date, store;
   import Uses from "../components/template.svelte";
+
+  // Svelte store example:
+  import { count } from '../scripts/stores.svelte';
+  import Incrementer from '../components/incrementer.svelte';
+  import Decrementer from '../components/decrementer.svelte';
+  let count_value;
+  const unsubscribe = count.subscribe(value => {
+    count_value = value;
+  });
 </script>
 
 <h1>{title}</h1>
@@ -240,6 +272,12 @@ var Defaults = map[string][]byte{
     <p>{@html paragraph}</p>
   {/each}
 </div>
+
+{#if store}
+  <h1>The count is {count_value}</h1>
+  <Incrementer/>
+  <Decrementer/>  
+{/if}
 
 <Uses type="blog" />
 
@@ -488,6 +526,10 @@ var Defaults = map[string][]byte{
     });
     return items;
   };
+</script>`),
+	"/layout/scripts/stores.svelte": []byte(`<script context="module">
+  import { writable } from 'svelte/store';
+  export const count = writable(0);
 </script>`),
 	"/node_modules/navaid/dist/navaid.js": []byte(`function convert (str, loose) {
 	var c, o, tmp, ext, keys=[], pattern='', arr=str.split('/');

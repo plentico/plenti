@@ -1,8 +1,9 @@
 {
-    "title": "Post 2",
+    "title": "Svelte writable stores example",
     "body": [
-        "This is the second post."
+        "Here's a basic counter implementation using Svelte Writable Stores"
     ],
+    "store": true,
     "author": "Jim Fisk",
-    "date": "1/25/2020"
+    "date": "8/25/2020"
 }
