@@ -147,10 +147,13 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 	}
 
 	// Get Server Side Rendered (SSR) JS.
-	ctx.RunScript("var { js: ssrJs, css: ssrCss } = svelte.compile(`"+componentStr+"`, {generate: 'ssr'});", "compile_svelte")
+	_, ssrCompileErr := ctx.RunScript("var { js: ssrJs, css: ssrCss } = svelte.compile(`"+componentStr+"`, {generate: 'ssr'});", "compile_svelte")
+	if ssrCompileErr != nil {
+		fmt.Printf("V8go could not compile ssrJs.code: %v\n", ssrCompileErr)
+	}
 	ssrJsCode, err := ctx.RunScript("ssrJs.code;", "compile_svelte")
 	if err != nil {
-		fmt.Printf("V8go could not execute ssrJs.code: %v", err)
+		fmt.Printf("V8go could not get ssrJs.code value: %v\n", err)
 	}
 	// Regex match static import statements.
 	reStaticImport := regexp.MustCompile(`import\s((.*)\sfrom(.*);|(((.*)\n){0,})\}\sfrom(.*);)`)
