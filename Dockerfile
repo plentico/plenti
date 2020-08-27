@@ -1,3 +1,3 @@
 FROM alpine
-ADD plenti /usr/bin/plenti
+COPY plenti /
 ENTRYPOINT tail -f /dev/null
