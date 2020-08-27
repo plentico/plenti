@@ -1,3 +1,3 @@
-FROM scratch
-COPY plenti /
-ENTRYPOINT ["/plenti"]
+FROM alpine
+ADD plenti /usr/bin/plenti
+ENTRYPOINT tail -f /dev/null
