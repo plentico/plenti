@@ -1,3 +1,3 @@
-FROM alpine
+FROM ubuntu:18.04
 COPY plenti /
-ENTRYPOINT tail -f /dev/null
+ENTRYPOINT ["/plenti"]
