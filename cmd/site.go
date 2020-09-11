@@ -71,6 +71,18 @@ var siteCmd = &cobra.Command{
 			}
 		}
 
+		// Loop through generated node_modules npm pacakges to include in scaffolding
+		for file, content := range generated.Defaults_node_modules {
+			// Create the directories needed for the current file
+			os.MkdirAll(newpath+"/node_modules"+filepath.Dir(file), os.ModePerm)
+
+			// Create the current default file
+			err := ioutil.WriteFile(newpath+"/node_modules"+file, content, 0755)
+			if err != nil {
+				fmt.Printf("Unable to write file: %v", err)
+			}
+		}
+
 		fmt.Printf("Created plenti site scaffolding in \"%v\" folder\n", newpath)
 
 	},

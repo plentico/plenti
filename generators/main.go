@@ -15,6 +15,9 @@ func main() {
 	// Reads all files in "defaults_bare" folder and
 	// encodes them as string literals in generated/defaults_bare.go
 	generate("defaults_bare")
+	// Reads all files in "defaults_node_modules" folder and
+	// encodes them as string literals in generated/defaults_node_modules.go
+	generate("defaults_node_modules")
 	// Reads all files in "ejected" folder and
 	// encodes them as string literals in generated/ejected.go
 	generate("ejected")
