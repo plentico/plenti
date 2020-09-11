@@ -1,5 +1,4 @@
 {
-	"title": "My New Plenti Site",
 	"build": "public",
 	"local": {
 		"port": 3000

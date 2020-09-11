@@ -8,5 +8,6 @@
 
   <title>{ title }</title>
 
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
   <link rel='stylesheet' href='/spa/bundle.css'>
 </head>
