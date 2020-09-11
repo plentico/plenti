@@ -18,6 +18,11 @@ func AssetsCopy(buildPath string) {
 
 	copiedSourceCounter := 0
 
+	// Exit function if "assets/" directory does not exist.
+	if _, err := os.Stat("assets"); os.IsNotExist(err) {
+		return
+	}
+
 	assetFilesErr := filepath.Walk("assets", func(assetPath string, assetFileInfo os.FileInfo, err error) error {
 		destPath := buildPath + "/" + assetPath
 		if assetFileInfo.IsDir() {

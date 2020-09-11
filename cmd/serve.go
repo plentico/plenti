@@ -114,15 +114,21 @@ func Watch(buildPath string) {
 	watcher, _ = fsnotify.NewWatcher()
 	defer watcher.Close()
 
-	// Watch specific directories for changes.
-	if err := filepath.Walk("content", watchDir(buildPath)); err != nil {
-		fmt.Println("Error watching 'content/' folder for changes: ", err)
+	// Watch specific directories for changes (only if they exist).
+	if _, err := os.Stat("content"); !os.IsNotExist(err) {
+		if err := filepath.Walk("content", watchDir(buildPath)); err != nil {
+			fmt.Println("Error watching 'content/' folder for changes: ", err)
+		}
 	}
-	if err := filepath.Walk("layout", watchDir(buildPath)); err != nil {
-		fmt.Println("Error watching 'layout/' folder for changes: ", err)
+	if _, err := os.Stat("layout"); !os.IsNotExist(err) {
+		if err := filepath.Walk("layout", watchDir(buildPath)); err != nil {
+			fmt.Println("Error watching 'layout/' folder for changes: ", err)
+		}
 	}
-	if err := filepath.Walk("assets", watchDir(buildPath)); err != nil {
-		fmt.Println("Error watching 'assets/' folder for changes: ", err)
+	if _, err := os.Stat("assets"); !os.IsNotExist(err) {
+		if err := filepath.Walk("assets", watchDir(buildPath)); err != nil {
+			fmt.Println("Error watching 'assets/' folder for changes: ", err)
+		}
 	}
 	watcher.Add("plenti.json")
 	watcher.Add("package.json")

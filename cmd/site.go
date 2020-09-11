@@ -49,10 +49,21 @@ var siteCmd = &cobra.Command{
 		newpath := filepath.Join(".", args[0])
 		os.MkdirAll(newpath, os.ModePerm)
 
+		// Check for --bare flag.
+		bareFlag, _ := cmd.Flags().GetBool("bare")
+		var scaffolding = make(map[string][]byte)
+		// Choose which scaffolding to use for new site.
+		if bareFlag {
+			scaffolding = generated.Defaults_bare
+		} else {
+			scaffolding = generated.Defaults
+		}
+
 		// Loop through generated file defaults to create site scaffolding
-		for file, content := range generated.Defaults {
+		for file, content := range scaffolding {
 			// Create the directories needed for the current file
 			os.MkdirAll(newpath+filepath.Dir(file), os.ModePerm)
+
 			// Create the current default file
 			err := ioutil.WriteFile(newpath+file, content, 0755)
 			if err != nil {
@@ -77,4 +88,5 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// siteCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	siteCmd.Flags().BoolP("bare", "b", false, "Omit default content from site scaffolding")
 }

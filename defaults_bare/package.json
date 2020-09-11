@@ -1,0 +1,11 @@
+{
+  "name": "my-plenti-app",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "navaid": "^1.1.1",
+    "regexparam": "^1.3.0",
+    "svelte": "^3.23.2"
+  }
+}
