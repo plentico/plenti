@@ -191,8 +191,6 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) {
 		}
 		// Get the string value of the static HTML.
 		renderedHTMLStr := renderedHTML.String()
-		// Inject ID needed for hydrating the SPA.
-		renderedHTMLStr = strings.Replace(renderedHTMLStr, "<html ", "<html id='hydrate-plenti' ", 1)
 		// Inject the main.js script the starts the client-side app.
 		renderedHTMLStr = strings.Replace(renderedHTMLStr, "</head>", "<script type='module' src='https://unpkg.com/dimport?module' data-main='/spa/ejected/main.js'></script><script nomodule src='https://unpkg.com/dimport/nomodule' data-main='/spa/ejected/main.js'></script></head>", 1)
 		// Convert the string to byte array that can be written to file system.

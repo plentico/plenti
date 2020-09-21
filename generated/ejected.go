@@ -110,7 +110,7 @@ staticBuildStr.forEach(arg => {
 });`),
 	"/main.js": []byte(`import Router from './router.svelte';
 
-let target = document.querySelector('#hydrate-plenti').parentNode;
+let target = document.querySelector('html').parentNode;
 
 new Router({
   target: target,
