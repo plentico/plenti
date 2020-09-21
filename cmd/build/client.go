@@ -115,7 +115,7 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 	componentStr := string(component)
 
 	// Compile component with Svelte.
-	ctx.RunScript("var { js, css } = svelte.compile(`"+componentStr+"`, {css: false});", "compile_svelte")
+	ctx.RunScript("var { js, css } = svelte.compile(`"+componentStr+"`, {css: false, hydratable: true});", "compile_svelte")
 
 	// Get the JS code from the compiled result.
 	jsCode, err := ctx.RunScript("js.code;", "compile_svelte")
