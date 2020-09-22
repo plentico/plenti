@@ -110,10 +110,8 @@ staticBuildStr.forEach(arg => {
 });`),
 	"/main.js": []byte(`import Router from './router.svelte';
 
-let target = document.querySelector('html').parentNode;
-
 new Router({
-  target: target,
+  target: document,
   hydrate: true
 });`),
 	"/router.svelte": []byte(`<Html {route} {content} {allContent} />
