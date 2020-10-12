@@ -4,7 +4,8 @@ package generated
 
 // Defaults: scaffolding used in 'build' command
 var Defaults = map[string][]byte{
-	"/.gitignore": []byte(``),
+	"/.gitignore": []byte(`public
+node_modules`),
 	"/assets/favicon.svg": []byte(`<?xml version="1.0" encoding="UTF-8"?>
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 <svg width="47.596mm" height="47.596mm" version="1.1" viewBox="0 0 47.596 47.596" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">

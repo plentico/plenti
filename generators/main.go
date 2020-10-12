@@ -35,14 +35,19 @@ func generate(name string) {
 				return err
 			}
 			if !info.IsDir() {
+				// Get the contents of the current file.
+				content, _ := ioutil.ReadFile(path)
+				// Correct filename of the .gitignore file.
 				if strings.HasSuffix(path, "_plenti_replace") {
 					path = strings.TrimSuffix(path, "_plenti_replace")
 				}
+				// Add a key for the filename to the map.
 				out.Write([]byte("\t\"" + strings.TrimPrefix(path, name) + "\": []byte(`"))
-				content, _ := ioutil.ReadFile(path)
 				// Escape the backticks that would break string literals
 				escapedContent := strings.Replace(string(content), "`", "`+\"`\"+`", -1)
+				// Add the content as the value of the map.
 				out.Write([]byte(escapedContent))
+				// End the specific file entry in the map.
 				out.Write([]byte("`),\n"))
 			}
 			return nil
