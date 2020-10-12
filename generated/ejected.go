@@ -49,7 +49,8 @@ clientBuildStr.forEach(arg => {
 
 	// Create component JS that can run in the browser.
 	let { js, css } = svelte.compile(component, {
-		css: false
+		css: false,
+		hydratable: true
 	});
 	  
 	// Write JS to build directory.
@@ -99,9 +100,6 @@ staticBuildStr.forEach(arg => {
 	// Inject SPA entry point.
 	let entryPoint = '<script type="module" src="https://unpkg.com/dimport?module" data-main="/spa/ejected/main.js"></script><script nomodule src="https://unpkg.com/dimport/nomodule" data-main="/spa/ejected/main.js"></script>';
 	html = injectString('prepend', entryPoint, '</head>', html);
-	// Inject ID used to hydrate SPA.
-	let hydrator = ' id="hydrate-plenti"';
-	html = injectString('append', hydrator, '<html', html);
 
 	// Write .html file to filesystem.
   	ensureDirExists(destPath);
