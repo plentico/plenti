@@ -54,6 +54,15 @@ func Build() {
 	build.CheckBenchmarkFlag(BenchmarkFlag)
 	defer build.Benchmark(time.Now(), "Total build", true)
 
+	// Handle panic when someone tries building outside of a valid Plenti site.
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("\nIt doesn't look like you're inside a valid Plenti project.")
+			fmt.Println("Please create a valid project or fix your app structure before trying to run this command again.")
+			fmt.Printf("Error: %v \n\n", r)
+		}
+	}()
+
 	// Get settings from config file.
 	siteConfig := readers.GetSiteConfig()
 
