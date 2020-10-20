@@ -5,18 +5,11 @@
   import contentSource from './content.js';
   import Html from '../global/html.svelte';
 
-  let route, content, allContent;
+  export let uri, route, content, allContent;
 
   const getContent = (uri, trailingSlash = "") => {
     return contentSource.find(content => content.path + trailingSlash == uri);
   }
-
-  let uri = location.pathname;
-  content = getContent(uri);
-  if (content === undefined) {
-    content = getContent(uri, "/");
-  }
-  allContent = contentSource;
 
   function draw(m) {
     content = getContent(uri);
