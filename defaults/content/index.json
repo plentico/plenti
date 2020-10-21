@@ -1,14 +1,10 @@
 {
-	"title": "My Plenti Site",
-	"intro": {
-		"slogan": "Welcome to <a href='https://plenti.co' target='blank' rel='noopener noreferrer'>Plenti</a>! <em>A quicker way to build websites.</em>",
-		"help": [
-			"Take a look around to see how things work.",
-			"The bottom of each page will tell you where to find the corresponding template in your project.",
-			"If you get stuck or need extra help, just <a href=\"/contact\">let us know</a>",
-			"We hope you enjoy :)"
-		]
-	},
+	"title": "Welcome to Plenti!",
+	"intro": [
+		"Take a look around to see how things work.",
+		"The bottom of each page will tell you where to find the corresponding template in your project.",
+		"If you get stuck, check out our <a href='https://plenti.co/docs' target='blank' rel='noopener noreferrer'>docs</a>. If you need extra help, <a href='https://github.com/plentico/plenti/issues/new' target='blank' rel='noopener noreferrer'>let us know</a>! Enjoy :)"
+	],
 	"components": [
 		{
 			"component": "template",

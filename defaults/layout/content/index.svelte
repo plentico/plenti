@@ -7,11 +7,7 @@
 <h1>{title}</h1>
 
 <section id="intro">
-	<p>{@html intro.slogan}</p>
-</section>
-
-<section id="intro">
-	{#each intro.help as paragraph}
+	{#each intro as paragraph}
 		<p>{@html paragraph}</p>
 	{/each}
 </section>
