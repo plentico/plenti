@@ -23,7 +23,7 @@
 </div>
 
 {#if store}
-  <h1>The count is {count_value}</h1>
+  <h3>The count is {count_value}</h3>
   <Incrementer/>
   <Decrementer/>  
 {/if}

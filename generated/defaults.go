@@ -30,15 +30,6 @@ node_modules`),
     "author": "text",
     "date": "date"
 }`),
-	"/content/blog/adding-pletiform.json": []byte(`{
-    "title": "Build sites with good form",
-    "body": [
-        "Need an easy webform solution?",
-        "Try adding a <a href='https://plentiform.com' target='blank' rel='noopener noreferrer'>plentiform</a>! (Coming soon)"
-    ],
-    "author": "Jim Fisk",
-    "date": "1/26/2020"
-}`),
 	"/content/blog/perry.json": []byte(`{
     "title": "Customize your Planarian",
     "body": [
@@ -49,7 +40,16 @@ node_modules`),
     "author": "Jim Fisk",
     "date": "10/1/2020"
 }`),
-	"/content/blog/writable-stores.json": []byte(`{
+	"/content/blog/pletiform.json": []byte(`{
+    "title": "Build sites with good form",
+    "body": [
+        "Need an easy webform solution?",
+        "Try adding a <a href='https://plentiform.com' target='blank' rel='noopener noreferrer'>plentiform</a>! (Coming soon)"
+    ],
+    "author": "Jim Fisk",
+    "date": "1/26/2020"
+}`),
+	"/content/blog/stores.json": []byte(`{
     "title": "Svelte writable stores example",
     "body": [
         "Here's a basic counter implementation using Svelte Writable Stores"
@@ -232,7 +232,7 @@ node_modules`),
 </div>
 
 {#if store}
-  <h1>The count is {count_value}</h1>
+  <h3>The count is {count_value}</h3>
   <Incrementer/>
   <Decrementer/>  
 {/if}
