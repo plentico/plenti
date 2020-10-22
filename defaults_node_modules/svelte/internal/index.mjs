@@ -176,7 +176,9 @@ function append(target, node) {
     target.appendChild(node);
 }
 function insert(target, node, anchor) {
-    target.insertBefore(node, anchor || null);
+    if (target != document) {
+        target.insertBefore(node, anchor || null);
+    }
 }
 function detach(node) {
     node.parentNode.removeChild(node);
