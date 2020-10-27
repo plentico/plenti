@@ -57,8 +57,7 @@ func Build() {
 	// Handle panic when someone tries building outside of a valid Plenti site.
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("\nIt doesn't look like you're inside a valid Plenti project.")
-			fmt.Println("Please create a valid project or fix your app structure before trying to run this command again.")
+			fmt.Println("Please create a valid Plenti project or fix your app structure before trying to run this command again.")
 			fmt.Printf("Error: %v \n\n", r)
 		}
 	}()
@@ -105,16 +104,16 @@ func Build() {
 	build.NpmDefaults(tempBuildDir)
 
 	// Write ejectable core files to filesystem before building.
-	tempFiles := build.EjectTemp(tempBuildDir)
+	tempFiles, ejectedPath := build.EjectTemp(tempBuildDir)
 
 	// Directly copy .js that don't need compiling to the build dir.
-	build.EjectCopy(buildPath)
+	build.EjectCopy(buildPath, tempBuildDir, ejectedPath)
 
 	// Bundle the JavaScript dependencies needed for the build.
 	//bundledContent := build.Bundle()
 
 	// Directly copy static assets to the build dir.
-	build.AssetsCopy(buildPath)
+	build.AssetsCopy(buildPath, tempBuildDir)
 
 	// Run the build.js script using user local NodeJS.
 	if NodeJSFlag {
@@ -124,10 +123,10 @@ func Build() {
 	} else {
 
 		// Prep the client SPA.
-		build.Client(buildPath)
+		build.Client(buildPath, tempBuildDir, ejectedPath)
 
 		// Build JSON from "content/" directory.
-		build.DataSource(buildPath, siteConfig)
+		build.DataSource(buildPath, siteConfig, tempBuildDir)
 
 	}
 

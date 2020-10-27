@@ -6,11 +6,12 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 )
 
 // EjectCopy does a direct copy of any ejectable js files needed in spa build dir.
-func EjectCopy(buildPath string) {
+func EjectCopy(buildPath string, tempBuildDir string, ejectedDir string) {
 
 	defer Benchmark(time.Now(), "Copying ejectable core files for build")
 
@@ -18,10 +19,10 @@ func EjectCopy(buildPath string) {
 
 	copiedSourceCounter := 0
 
-	ejectedFilesErr := filepath.Walk("ejected", func(ejectPath string, ejectFileInfo os.FileInfo, err error) error {
+	ejectedFilesErr := filepath.Walk(ejectedDir, func(ejectPath string, ejectFileInfo os.FileInfo, err error) error {
 		// Make list of files not to copy to build.
 		excludedFiles := []string{
-			"ejected/build.js",
+			ejectedDir + "/build.js",
 		}
 		// Check if the current file is in the excluded list.
 		excluded := false
@@ -34,7 +35,7 @@ func EjectCopy(buildPath string) {
 		if filepath.Ext(ejectPath) == ".js" && !excluded {
 
 			destPath := buildPath + "/spa/"
-			os.MkdirAll(destPath+"ejected", os.ModePerm)
+			os.MkdirAll(destPath+strings.TrimPrefix(ejectedDir, tempBuildDir), os.ModePerm)
 
 			from, err := os.Open(ejectPath)
 			if err != nil {
@@ -42,7 +43,7 @@ func EjectCopy(buildPath string) {
 			}
 			defer from.Close()
 
-			to, err := os.Create(destPath + ejectPath)
+			to, err := os.Create(destPath + strings.TrimPrefix(ejectPath, tempBuildDir))
 			if err != nil {
 				fmt.Printf("Could not create destination .js file for copying: %s\n", err)
 			}

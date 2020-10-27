@@ -35,7 +35,7 @@ func ThemesCopy(theme string) string {
 		defer from.Close()
 
 		// Create path for the file to be written to.
-		destPath := tempBuildDir + strings.TrimLeft(themeFilePath, themeDir)
+		destPath := tempBuildDir + strings.TrimPrefix(themeFilePath, themeDir)
 
 		// Create the folders needed to write files to tempDir.
 		if themeFileInfo.IsDir() {

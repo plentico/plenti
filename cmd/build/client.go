@@ -18,7 +18,7 @@ import (
 var SSRctx *v8go.Context
 
 // Client builds the SPA.
-func Client(buildPath string) {
+func Client(buildPath string, tempBuildDir string, ejectedPath string) {
 
 	defer Benchmark(time.Now(), "Compiling client SPA with Svelte")
 
@@ -30,9 +30,9 @@ func Client(buildPath string) {
 	compiledComponentCounter := 0
 
 	// Get svelte compiler code from node_modules.
-	compiler, err := ioutil.ReadFile("node_modules/svelte/compiler.js")
+	compiler, err := ioutil.ReadFile(tempBuildDir + "node_modules/svelte/compiler.js")
 	if err != nil {
-		fmt.Printf("Can't read node_modules/svelte/compiler.js: %v", err)
+		fmt.Printf("Can't read %vnode_modules/svelte/compiler.js: %v", tempBuildDir, err)
 	}
 	// Remove reference to 'self' that breaks v8go on line 19 of node_modules/svelte/compiler.js.
 	compilerStr := strings.Replace(string(compiler), "self.performance.now();", "'';", 1)
@@ -49,12 +49,12 @@ func Client(buildPath string) {
 	SSRctx.RunScript("function noop(){}", "create_ssr")
 
 	var svelteLibs = [6]string{
-		"node_modules/svelte/animate/index.js",
-		"node_modules/svelte/easing/index.js",
-		"node_modules/svelte/internal/index.js",
-		"node_modules/svelte/motion/index.js",
-		"node_modules/svelte/store/index.js",
-		"node_modules/svelte/transition/index.js",
+		tempBuildDir + "node_modules/svelte/animate/index.js",
+		tempBuildDir + "node_modules/svelte/easing/index.js",
+		tempBuildDir + "node_modules/svelte/internal/index.js",
+		tempBuildDir + "node_modules/svelte/motion/index.js",
+		tempBuildDir + "node_modules/svelte/store/index.js",
+		tempBuildDir + "node_modules/svelte/transition/index.js",
 	}
 
 	for _, svelteLib := range svelteLibs {
@@ -74,12 +74,12 @@ func Client(buildPath string) {
 	}
 
 	// Compile router separately since it's ejected from core.
-	compileSvelte(ctx, SSRctx, "ejected/router.svelte", buildPath+"/spa/ejected/router.js", stylePath)
+	compileSvelte(ctx, SSRctx, ejectedPath+"/router.svelte", buildPath+"/spa/ejected/router.js", stylePath)
 
 	// Go through all file paths in the "/layout" folder.
-	layoutFilesErr := filepath.Walk("layout", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
+	layoutFilesErr := filepath.Walk(tempBuildDir+"layout", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
 		// Create destination path.
-		destFile := buildPath + strings.Replace(layoutPath, "layout", "/spa", 1)
+		destFile := buildPath + "/spa" + strings.TrimPrefix(layoutPath, tempBuildDir+"layout")
 		// Make sure path is a directory
 		if layoutFileInfo.IsDir() {
 			// Create any sub directories need for filepath.
@@ -110,7 +110,7 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 
 	component, err := ioutil.ReadFile(layoutPath)
 	if err != nil {
-		fmt.Printf("Can't read component: %v", err)
+		fmt.Printf("Can't read component: %v\n", err)
 	}
 	componentStr := string(component)
 
@@ -125,7 +125,7 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 	jsBytes := []byte(jsCode.String())
 	jsWriteErr := ioutil.WriteFile(destFile, jsBytes, 0755)
 	if jsWriteErr != nil {
-		fmt.Printf("Unable to write file: %v", jsWriteErr)
+		fmt.Printf("Unable to write compiled client file: %v\n", jsWriteErr)
 	}
 
 	// Get the CSS code from the compiled result.

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -16,15 +17,16 @@ func ThemesMerge(tempBuildDir string) {
 
 	copiedProjectFileCounter := 0
 
+	// Make list of files not to copy to build.
+	excludedFiles := []string{
+		".git",
+		"themes",
+		strings.TrimSuffix(tempBuildDir, "/"),
+	}
+
 	themeFilesErr := filepath.Walk(".", func(projectFilePath string, projectFileInfo os.FileInfo, err error) error {
 
-		// Make list of files not to copy to build.
-		excludedFiles := []string{
-			".git",
-			"themes",
-			tempBuildDir,
-		}
-		// Check if the current file is in the excluded list.
+		// Check if the current directory is in the excluded list.
 		for _, excludedFile := range excludedFiles {
 			if projectFileInfo.IsDir() && projectFileInfo.Name() == excludedFile {
 				return filepath.SkipDir

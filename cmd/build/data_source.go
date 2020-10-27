@@ -21,7 +21,7 @@ type content struct {
 }
 
 // DataSource builds json list from "content/" directory.
-func DataSource(buildPath string, siteConfig readers.SiteConfig) {
+func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir string) {
 
 	defer Benchmark(time.Now(), "Creating data_source")
 
@@ -45,11 +45,14 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) {
 	}
 
 	// Go through all sub directories in "content/" folder.
-	contentFilesErr := filepath.Walk("content", func(path string, info os.FileInfo, err error) error {
+	contentFilesErr := filepath.Walk(tempBuildDir+"content", func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
 			// Get individual path arguments.
 			parts := strings.Split(path, "/")
 			contentType := parts[1]
+			if tempBuildDir != "" {
+				contentType = parts[2]
+			}
 			fileName := parts[len(parts)-1]
 
 			// Don't add _blueprint.json or other special named files starting with underscores.
@@ -63,7 +66,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) {
 				fileContentStr := string(fileContentBytes)
 
 				// Remove the "content" folder from path.
-				path = strings.TrimPrefix(path, "content")
+				path = strings.TrimPrefix(path, tempBuildDir+"content")
 
 				// Check for index file at any level.
 				if fileName == "index.json" {
@@ -112,11 +115,8 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) {
 					}
 				}
 
-				// Check for files outside of a type declaration.
-				if len(parts) == 2 {
-					// Remove the extension since the filename = the type name.
-					contentType = strings.TrimSuffix(contentType, filepath.Ext(contentType))
-				}
+				// Remove the extension (if it exists) from single types since the filename = the type name.
+				contentType = strings.TrimSuffix(contentType, filepath.Ext(contentType))
 
 				destPath := buildPath + path + "/index.html"
 
@@ -174,13 +174,15 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) {
 	// End the string that will be used in allContent object.
 	allContentStr = strings.TrimSuffix(allContentStr, ",") + "]"
 
+	tempBuildDirSignature := strings.ReplaceAll(strings.ReplaceAll(tempBuildDir, "/", "_"), ".", "_")
 	for _, currentContent := range allContent {
-		_, createPropsErr := SSRctx.RunScript("var props = {route: layout_content_"+currentContent.contentType+"_svelte, content: "+currentContent.contentDetails+", allContent: "+allContentStr+"};", "create_ssr")
+		routeSignature := tempBuildDirSignature + "layout_content_" + currentContent.contentType + "_svelte"
+		_, createPropsErr := SSRctx.RunScript("var props = {route: "+routeSignature+", content: "+currentContent.contentDetails+", allContent: "+allContentStr+"};", "create_ssr")
 		if createPropsErr != nil {
 			fmt.Printf("Could not create props: %v\n", createPropsErr)
 		}
 		// Render the HTML with props needed for the current content.
-		_, renderHTMLErr := SSRctx.RunScript("var { html, css: staticCss} = layout_global_html_svelte.render(props);", "create_ssr")
+		_, renderHTMLErr := SSRctx.RunScript("var { html, css: staticCss} = "+tempBuildDirSignature+"layout_global_html_svelte.render(props);", "create_ssr")
 		if renderHTMLErr != nil {
 			fmt.Printf("Can't render htmlComponent: %v\n", renderHTMLErr)
 		}

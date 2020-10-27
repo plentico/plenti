@@ -10,7 +10,7 @@ import (
 )
 
 // EjectTemp temporarily writes ejectable core files to project filesystem.
-func EjectTemp(tempBuildDir string) []string {
+func EjectTemp(tempBuildDir string) ([]string, string) {
 
 	defer Benchmark(time.Now(), "Creating non-ejected core files for build")
 
@@ -30,7 +30,7 @@ func EjectTemp(tempBuildDir string) []string {
 			// Create the current default file
 			writeCoreFileErr := ioutil.WriteFile(filePath, content, os.ModePerm)
 			if writeCoreFileErr != nil {
-				fmt.Printf("Unable to write file: %v\n", writeCoreFileErr)
+				fmt.Printf("Unable to write ejected core file: %v\n", writeCoreFileErr)
 			} else {
 				tempFiles = append(tempFiles, filePath)
 			}
@@ -39,6 +39,6 @@ func EjectTemp(tempBuildDir string) []string {
 		}
 	}
 
-	return tempFiles
+	return tempFiles, ejectedPath
 
 }
