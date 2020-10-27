@@ -20,6 +20,7 @@ func ThemesMerge(tempBuildDir string, buildDir string) {
 	// Make list of files not to copy to build.
 	excludedFiles := []string{
 		".git",
+		".gitignore",
 		"themes",
 		strings.TrimSuffix(tempBuildDir, "/"),
 		buildDir,
@@ -31,6 +32,9 @@ func ThemesMerge(tempBuildDir string, buildDir string) {
 		for _, excludedFile := range excludedFiles {
 			if projectFileInfo.IsDir() && projectFileInfo.Name() == excludedFile {
 				return filepath.SkipDir
+			}
+			if !projectFileInfo.IsDir() && projectFileInfo.Name() == excludedFile {
+				return nil
 			}
 		}
 

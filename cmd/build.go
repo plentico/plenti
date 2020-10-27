@@ -133,8 +133,13 @@ func Build() {
 	// Run Gopack (custom Snowpack alternative) for ESM support.
 	build.Gopack(buildPath)
 
-	// Delete any ejectable files that the user didn't manually eject.
-	build.EjectClean(tempFiles, ejectedPath)
+	if tempBuildDir != "" {
+		// If using themes, just delete the whole build folder.
+		build.ThemesClean(tempBuildDir)
+	} else {
+		// If no theme, just delete any ejectable files that the user didn't manually eject.
+		build.EjectClean(tempFiles, ejectedPath)
+	}
 
 }
 

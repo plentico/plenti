@@ -26,17 +26,21 @@ func ThemesCopy(theme string) string {
 	copiedThemeFileCounter := 0
 
 	// Make list of files not to copy to build.
-	excludedFolders := []string{
+	excludedFiles := []string{
 		".git",
+		".gitignore",
 		"themes",
 	}
 
 	themeFilesErr := filepath.Walk(themeDir, func(themeFilePath string, themeFileInfo os.FileInfo, err error) error {
 
 		// Check if the current directory is in the excluded list.
-		for _, excludedFolder := range excludedFolders {
-			if themeFileInfo.IsDir() && themeFileInfo.Name() == excludedFolder {
+		for _, excluded := range excludedFiles {
+			if themeFileInfo.IsDir() && themeFileInfo.Name() == excluded {
 				return filepath.SkipDir
+			}
+			if !themeFileInfo.IsDir() && themeFileInfo.Name() == excluded {
+				return nil
 			}
 		}
 
