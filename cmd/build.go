@@ -69,11 +69,15 @@ func Build() {
 	// Check flags and config for directory to build to.
 	buildDir := setBuildDir(siteConfig)
 
+	tempBuildDir := ""
 	// Get theme from plenti.json.
 	theme := siteConfig.Theme
 	// If a theme is set, run the nested build.
 	if theme != "" {
-		build.ThemesCopy(theme)
+		// Recursively copy all nested themes to a temp folder for building.
+		tempBuildDir = build.ThemesCopy(theme)
+		// Merge the current project files with the theme.
+		build.ThemesMerge(tempBuildDir)
 	}
 
 	// Get the full path for the build directory of the site.
@@ -98,10 +102,10 @@ func Build() {
 	}
 
 	// Add core NPM dependencies if node_module folder doesn't already exist.
-	build.NpmDefaults()
+	build.NpmDefaults(tempBuildDir)
 
 	// Write ejectable core files to filesystem before building.
-	tempFiles := build.EjectTemp()
+	tempFiles := build.EjectTemp(tempBuildDir)
 
 	// Directly copy .js that don't need compiling to the build dir.
 	build.EjectCopy(buildPath)

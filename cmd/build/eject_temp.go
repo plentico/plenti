@@ -10,13 +10,13 @@ import (
 )
 
 // EjectTemp temporarily writes ejectable core files to project filesystem.
-func EjectTemp() []string {
+func EjectTemp(tempBuildDir string) []string {
 
 	defer Benchmark(time.Now(), "Creating non-ejected core files for build")
 
 	Log("\nEjecting core files to be used in build:")
 
-	ejectedPath := "ejected"
+	ejectedPath := tempBuildDir + "ejected"
 
 	tempFiles := []string{}
 

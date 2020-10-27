@@ -10,13 +10,15 @@ import (
 	"time"
 )
 
-// ThemesCopy combines any nested themes with the current project.
-func ThemesCopy(theme string) {
+// ThemesCopy copies nested themes into a temporary working directory.
+func ThemesCopy(theme string) string {
 
 	defer Benchmark(time.Now(), "Building themes")
 
+	Log("Found theme named: " + theme)
+
 	// Name of temporary directory to run build inside.
-	tempDir := "temp_build/"
+	tempBuildDir := "temp_build/"
 
 	// Get the directory of the current theme.
 	themeDir := "themes/" + theme
@@ -33,7 +35,7 @@ func ThemesCopy(theme string) {
 		defer from.Close()
 
 		// Create path for the file to be written to.
-		destPath := tempDir + strings.TrimLeft(themeFilePath, themeDir)
+		destPath := tempBuildDir + strings.TrimLeft(themeFilePath, themeDir)
 
 		// Create the folders needed to write files to tempDir.
 		if themeFileInfo.IsDir() {
@@ -63,5 +65,7 @@ func ThemesCopy(theme string) {
 	}
 
 	Log("Number of theme files copied: " + strconv.Itoa(copiedThemeFileCounter))
+
+	return tempBuildDir
 
 }
