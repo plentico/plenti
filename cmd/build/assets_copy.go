@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -26,7 +27,7 @@ func AssetsCopy(buildPath string, tempBuildDir string) {
 	}
 
 	assetFilesErr := filepath.Walk(assetsDir, func(assetPath string, assetFileInfo os.FileInfo, err error) error {
-		destPath := buildPath + "/" + assetPath
+		destPath := buildPath + "/" + strings.TrimPrefix(assetPath, tempBuildDir)
 		if assetFileInfo.IsDir() {
 			// Make directory if it doesn't exist.
 			os.MkdirAll(destPath, os.ModePerm)

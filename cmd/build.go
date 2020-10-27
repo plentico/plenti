@@ -76,7 +76,7 @@ func Build() {
 		// Recursively copy all nested themes to a temp folder for building.
 		tempBuildDir = build.ThemesCopy(theme)
 		// Merge the current project files with the theme.
-		build.ThemesMerge(tempBuildDir)
+		build.ThemesMerge(tempBuildDir, buildDir)
 	}
 
 	// Get the full path for the build directory of the site.
@@ -134,7 +134,7 @@ func Build() {
 	build.Gopack(buildPath)
 
 	// Delete any ejectable files that the user didn't manually eject.
-	build.EjectClean(tempFiles)
+	build.EjectClean(tempFiles, ejectedPath)
 
 }
 

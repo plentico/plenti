@@ -11,7 +11,7 @@ import (
 )
 
 // ThemesMerge combines any nested themes with the current project.
-func ThemesMerge(tempBuildDir string) {
+func ThemesMerge(tempBuildDir string, buildDir string) {
 
 	defer Benchmark(time.Now(), "Merging themes with your project")
 
@@ -22,6 +22,7 @@ func ThemesMerge(tempBuildDir string) {
 		".git",
 		"themes",
 		strings.TrimSuffix(tempBuildDir, "/"),
+		buildDir,
 	}
 
 	themeFilesErr := filepath.Walk(".", func(projectFilePath string, projectFileInfo os.FileInfo, err error) error {
