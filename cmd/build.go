@@ -69,6 +69,13 @@ func Build() {
 	// Check flags and config for directory to build to.
 	buildDir := setBuildDir(siteConfig)
 
+	// Get theme from plenti.json.
+	theme := siteConfig.Theme
+	// If a theme is set, run the nested build.
+	if theme != "" {
+		build.ThemesCopy(theme)
+	}
+
 	// Get the full path for the build directory of the site.
 	buildPath := filepath.Join(".", buildDir)
 
