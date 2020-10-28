@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"plenti/readers"
 	"strconv"
 	"strings"
 	"time"
@@ -17,11 +18,14 @@ func ThemesCopy(theme string) string {
 
 	Log("Found theme named: " + theme)
 
+	siteConfig := readers.GetSiteConfig(theme)
+	nestedTheme := siteConfig.Theme
+	if nestedTheme != "" {
+		ThemesCopy(theme + "/themes/" + nestedTheme)
+	}
+
 	// Name of temporary directory to run build inside.
 	tempBuildDir := "temp_build/"
-
-	// Get the directory of the current theme.
-	themeDir := "themes/" + theme
 
 	copiedThemeFileCounter := 0
 
@@ -32,7 +36,7 @@ func ThemesCopy(theme string) string {
 		"themes",
 	}
 
-	themeFilesErr := filepath.Walk(themeDir, func(themeFilePath string, themeFileInfo os.FileInfo, err error) error {
+	themeFilesErr := filepath.Walk(theme, func(themeFilePath string, themeFileInfo os.FileInfo, err error) error {
 
 		// Check if the current directory is in the excluded list.
 		for _, excluded := range excludedFiles {
@@ -52,7 +56,7 @@ func ThemesCopy(theme string) string {
 		defer from.Close()
 
 		// Create path for the file to be written to.
-		destPath := tempBuildDir + strings.TrimPrefix(themeFilePath, themeDir)
+		destPath := tempBuildDir + strings.TrimPrefix(themeFilePath, theme)
 
 		// Create the folders needed to write files to tempDir.
 		if themeFileInfo.IsDir() {

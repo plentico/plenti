@@ -48,7 +48,7 @@ You can also set a different port in your site config file.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		// Get settings from config file.
-		siteConfig := readers.GetSiteConfig()
+		siteConfig := readers.GetSiteConfig(".")
 
 		// Skip build command if BuildFlag is set to False
 		if BuildFlag {

@@ -63,7 +63,7 @@ func Build() {
 	}()
 
 	// Get settings from config file.
-	siteConfig := readers.GetSiteConfig()
+	siteConfig := readers.GetSiteConfig(".")
 
 	// Check flags and config for directory to build to.
 	buildDir := setBuildDir(siteConfig)
@@ -74,7 +74,7 @@ func Build() {
 	// If a theme is set, run the nested build.
 	if theme != "" {
 		// Recursively copy all nested themes to a temp folder for building.
-		tempBuildDir = build.ThemesCopy(theme)
+		tempBuildDir = build.ThemesCopy("themes/" + theme)
 		// Merge the current project files with the theme.
 		build.ThemesMerge(tempBuildDir, buildDir)
 	}

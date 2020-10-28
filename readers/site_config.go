@@ -17,12 +17,14 @@ type SiteConfig struct {
 }
 
 // GetSiteConfig reads the site's configuration file values.
-func GetSiteConfig() SiteConfig {
+func GetSiteConfig(basePath string) SiteConfig {
 
 	var siteConfig SiteConfig
 
+	configPath := basePath + "/plenti.json"
+
 	// Read site config file from the project
-	configFile, _ := ioutil.ReadFile("plenti.json")
+	configFile, _ := ioutil.ReadFile(configPath)
 	err := json.Unmarshal(configFile, &siteConfig)
 	if err != nil {
 		fmt.Printf("Unable to read site config file: %s\n", err)
