@@ -5,6 +5,7 @@ go 1.14
 require (
 	github.com/evanw/esbuild v0.6.14
 	github.com/fsnotify/fsnotify v1.4.9
+	github.com/go-git/go-git/v5 v5.2.0 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/lunixbochs/vtclean v1.0.0 // indirect
