@@ -11,6 +11,9 @@ import (
 // EndpointFlag disables the route for a content source by omitting the corresponding svelte template.
 var EndpointFlag bool
 
+// SingleTypeFlag create a one time file at the top level of content.
+var SingleTypeFlag bool
+
 // typeCmd represents the type command
 var typeCmd = &cobra.Command{
 	Use:   "type [name]",
@@ -79,6 +82,29 @@ Optionally add a _blueprint.json file to define the default field structure for 
 	},
 }
 
+func singleTypeProcess(typeName string) error {
+	singleTypePath := "content/" + typeName + ".json"
+	_, singleTypeExistsErr := os.Stat(singleTypePath);
+
+	if singleTypeExistsErr == nil {
+		errorMsg := fmt.Sprintf("A Type content source with the same name located at \"%s/\" already exists\n", singleTypePath)
+		fmt.Printf(errorMsg)
+		return errors.New(errorMsg)
+	}
+
+	fmt.Printf("Creating new Type content source: %s/\n", singleTypePath)
+
+	_, createSingleTypeErr := os.OpenFile(singleTypePath, os.O_RDONLY|os.O_CREATE, os.ModePerm)
+
+	if createSingleTypeErr != nil {
+		errorMsg := fmt.Sprintf("Can't create layout for type \"%s\": %s", typeName, createSingleTypeErr)
+		fmt.Printf(errorMsg)
+		return errors.New(errorMsg)
+	}
+
+	return nil
+}
+
 func init() {
 	newCmd.AddCommand(typeCmd)
 
@@ -92,4 +118,5 @@ func init() {
 	// is called directly, e.g.:
 	// typeCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	typeCmd.Flags().BoolVarP(&EndpointFlag, "endpoint", "e", true, "set 'false' to disable route.")
+	typeCmd.Flags().BoolVarP(&SingleTypeFlag, "single", "s", false, "set 'true' to generate single content file.")
 }
