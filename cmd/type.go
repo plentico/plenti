@@ -48,24 +48,30 @@ Optionally add a _blueprint.json file to define the default field structure for 
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		typeName := args[0]
-		typeContentPath := "content/" + typeName
-		if _, typeDirExistsErr := os.Stat(typeContentPath); os.IsNotExist(typeDirExistsErr) {
-			if _, singleTypeFileExistsErr := os.Stat(typeContentPath + ".json"); os.IsNotExist(singleTypeFileExistsErr) {
-				fmt.Printf("Creating new Type content source: %s/\n", typeContentPath)
-				createTypeContentErr := os.MkdirAll(typeContentPath, os.ModePerm)
-				if createTypeContentErr != nil {
-					fmt.Printf("Can't create type named \"%s\": %s", typeName, createTypeContentErr)
-				}
-				_, createBlueprintErr := os.OpenFile(typeContentPath+"/_blueprint.json", os.O_RDONLY|os.O_CREATE, os.ModePerm)
-				if createBlueprintErr != nil {
-					fmt.Printf("Can't create _blueprint.json for type \"%s\": %s", typeName, createTypeContentErr)
+
+		if SingleTypeFlag {
+			singleTypeProcess(typeName)
+		} else {
+			typeContentPath := "content/" + typeName
+			if _, typeDirExistsErr := os.Stat(typeContentPath); os.IsNotExist(typeDirExistsErr) {
+				if _, singleTypeFileExistsErr := os.Stat(typeContentPath + ".json"); os.IsNotExist(singleTypeFileExistsErr) {
+					fmt.Printf("Creating new Type content source: %s/\n", typeContentPath)
+					createTypeContentErr := os.MkdirAll(typeContentPath, os.ModePerm)
+					if createTypeContentErr != nil {
+						fmt.Printf("Can't create type named \"%s\": %s", typeName, createTypeContentErr)
+					}
+					_, createBlueprintErr := os.OpenFile(typeContentPath+"/_blueprint.json", os.O_RDONLY|os.O_CREATE, os.ModePerm)
+					if createBlueprintErr != nil {
+						fmt.Printf("Can't create _blueprint.json for type \"%s\": %s", typeName, createTypeContentErr)
+					}
+				} else {
+					fmt.Printf("A single file Type content source with the same name located at \"%s.json\" already exists\n", typeContentPath)
 				}
 			} else {
-				fmt.Printf("A single file Type content source with the same name located at \"%s.json\" already exists\n", typeContentPath)
+				fmt.Printf("A Type content source with the same name located at \"%s/\" already exists\n", typeContentPath)
 			}
-		} else {
-			fmt.Printf("A Type content source with the same name located at \"%s/\" already exists\n", typeContentPath)
 		}
+
 		if EndpointFlag {
 			typeLayoutPath := "layout/content/" + typeName + ".svelte"
 			if _, typeLayoutFileExistsErr := os.Stat(typeLayoutPath); os.IsNotExist(typeLayoutFileExistsErr) {
@@ -87,17 +93,17 @@ func singleTypeProcess(typeName string) error {
 	_, singleTypeExistsErr := os.Stat(singleTypePath);
 
 	if singleTypeExistsErr == nil {
-		errorMsg := fmt.Sprintf("A Type content source with the same name located at \"%s/\" already exists\n", singleTypePath)
+		errorMsg := fmt.Sprintf("A single type content source with the same name located at \"%s\" already exists\n", singleTypePath)
 		fmt.Printf(errorMsg)
 		return errors.New(errorMsg)
 	}
 
-	fmt.Printf("Creating new Type content source: %s/\n", singleTypePath)
+	fmt.Printf("Creating new single type content source: %s/\n", singleTypePath)
 
 	_, createSingleTypeErr := os.OpenFile(singleTypePath, os.O_RDONLY|os.O_CREATE, os.ModePerm)
 
 	if createSingleTypeErr != nil {
-		errorMsg := fmt.Sprintf("Can't create layout for type \"%s\": %s", typeName, createSingleTypeErr)
+		errorMsg := fmt.Sprintf("Can't create single type named \"%s\": %s", typeName, createSingleTypeErr)
 		fmt.Printf(errorMsg)
 		return errors.New(errorMsg)
 	}
