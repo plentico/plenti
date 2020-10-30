@@ -9,15 +9,19 @@ import (
 // SiteConfig is the site's configuration file values.
 type SiteConfig struct {
 	BuildDir string `json:"build"`
-	Theme    string `json:"theme"`
-	Local    struct {
+	Theme    struct {
+		Name   string `json:"name"`
+		URL    string `json:"url"`
+		Commit string `json:"commit"`
+	} `json:"theme"`
+	Local struct {
 		Port int `json:"port"`
 	} `json:"local"`
 	Types map[string]string `json:"types"`
 }
 
 // GetSiteConfig reads the site's configuration file values.
-func GetSiteConfig(basePath string) SiteConfig {
+func GetSiteConfig(basePath string) (SiteConfig, string) {
 
 	var siteConfig SiteConfig
 
@@ -40,5 +44,5 @@ func GetSiteConfig(basePath string) SiteConfig {
 		siteConfig.Local.Port = 3000
 	}
 
-	return siteConfig
+	return siteConfig, configPath
 }

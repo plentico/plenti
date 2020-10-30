@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"plenti/readers"
+	"plenti/writers"
 	"strings"
 
 	"github.com/go-git/go-git/v5"
@@ -19,7 +21,7 @@ var themeCmd = &cobra.Command{
 	Short: "Downloads parent theme to inherit content, layouts, and assets from",
 	Long: `Themes allow you to leverage an existing Plenti site as a starting point for your own site.
 
-To use https://plenti.co as a theme for example, run: plenti new theme git@github.com:plentico/plenti.co.git
+To use https://plenti.co as a theme for example, run: plenti new theme git@github.com:plentico/plenti.co
 `,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
@@ -55,8 +57,17 @@ To use https://plenti.co as a theme for example, run: plenti new theme git@githu
 		// Get the latest commit hash from the repo.
 		ref, _ := r.Head()
 		commitObj, _ := r.CommitObject(ref.Hash())
-		commitHash := commitObj.Hash
-		fmt.Println(commitHash)
+		commitHash := commitObj.Hash.String()
+
+		siteConfig, configPath := readers.GetSiteConfig(".")
+
+		// Update the sitConfig struct with new values.
+		siteConfig.Theme.Commit = commitHash
+		siteConfig.Theme.URL = url
+		siteConfig.Theme.Name = repoName
+
+		// Update the config file.
+		writers.SetSiteConfig(siteConfig, configPath)
 
 	},
 }

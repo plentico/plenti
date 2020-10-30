@@ -63,14 +63,14 @@ func Build() {
 	}()
 
 	// Get settings from config file.
-	siteConfig := readers.GetSiteConfig(".")
+	siteConfig, _ := readers.GetSiteConfig(".")
 
 	// Check flags and config for directory to build to.
 	buildDir := setBuildDir(siteConfig)
 
 	tempBuildDir := ""
 	// Get theme from plenti.json.
-	theme := siteConfig.Theme
+	theme := siteConfig.Theme.Name
 	// If a theme is set, run the nested build.
 	if theme != "" {
 		// Recursively copy all nested themes to a temp folder for building.
