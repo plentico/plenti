@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/spf13/cobra"
 )
 
@@ -59,14 +60,31 @@ To use https://plenti.co as a theme for example, run: plenti new theme git@githu
 		commitObj, _ := r.CommitObject(ref.Hash())
 		commitHash := commitObj.Hash.String()
 
-		siteConfig, configPath := readers.GetSiteConfig(".")
+		// Check if a --commit flag was used.
+		if CommitFlag != "" {
+			w, worktreeErr := r.Worktree()
+			if worktreeErr != nil {
+				fmt.Printf("Can't get worktree: %v\n", worktreeErr)
+			}
+			// Git checkout the commit hash that was sent via the flag.
+			checkoutErr := w.Checkout(&git.CheckoutOptions{
+				Hash: plumbing.NewHash(CommitFlag),
+			})
+			if checkoutErr != nil {
+				fmt.Printf("Can't get commit: %v\n", checkoutErr)
+			} else {
+				// The --commit flag could be checkout out, so the hash is valid.
+				commitHash = CommitFlag
+			}
+		}
 
+		// Get the current site configuration file values.
+		siteConfig, configPath := readers.GetSiteConfig(".")
 		// Update the sitConfig struct with new values.
 		siteConfig.Theme.Commit = commitHash
 		siteConfig.Theme.URL = url
 		siteConfig.Theme.Name = repoName
-
-		// Update the config file.
+		// Update the config file on the filesystem.
 		writers.SetSiteConfig(siteConfig, configPath)
 
 	},
