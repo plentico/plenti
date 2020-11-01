@@ -47,7 +47,7 @@ To use https://plenti.co as a theme for example, run: plenti new theme git@githu
 		themeDir := "themes/" + repoName
 
 		// Run the "git clone" operation.
-		r, err := git.PlainClone(themeDir, false, &git.CloneOptions{
+		repo, err := git.PlainClone(themeDir, false, &git.CloneOptions{
 			URL:      url,
 			Progress: os.Stdout,
 		})
@@ -56,19 +56,24 @@ To use https://plenti.co as a theme for example, run: plenti new theme git@githu
 		}
 
 		// Get the latest commit hash from the repo.
-		ref, _ := r.Head()
-		commitObj, _ := r.CommitObject(ref.Hash())
+		ref, _ := repo.Head()
+		commitObj, _ := repo.CommitObject(ref.Hash())
 		commitHash := commitObj.Hash.String()
 
 		// Check if a --commit flag was used.
 		if CommitFlag != "" {
-			w, worktreeErr := r.Worktree()
+			worktree, worktreeErr := repo.Worktree()
 			if worktreeErr != nil {
 				fmt.Printf("Can't get worktree: %v\n", worktreeErr)
 			}
+			// Resolve commit in case short hash is used instead of full hash.
+			resolvedCommitHash, resolveErr := repo.ResolveRevision(plumbing.Revision(CommitFlag))
+			if resolveErr != nil {
+				fmt.Printf("Can't resolve commit hash: %v\n", resolveErr)
+			}
 			// Git checkout the commit hash that was sent via the flag.
-			checkoutErr := w.Checkout(&git.CheckoutOptions{
-				Hash: plumbing.NewHash(CommitFlag),
+			checkoutErr := worktree.Checkout(&git.CheckoutOptions{
+				Hash: *resolvedCommitHash,
 			})
 			if checkoutErr != nil {
 				fmt.Printf("Can't get commit: %v\n", checkoutErr)
