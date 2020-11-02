@@ -11,14 +11,21 @@ type SiteConfig struct {
 	BuildDir    string `json:"build"`
 	Theme       string `json:"theme"`
 	ThemeConfig struct {
-		Name   string `json:"name"`
-		URL    string `json:"url"`
-		Commit string `json:"commit"`
+		ThemeName map[string]ThemeOptions `json:""`
 	} `json:"theme_config"`
 	Local struct {
 		Port int `json:"port"`
 	} `json:"local"`
 	Types map[string]string `json:"types"`
+}
+
+// ThemeOptions is the theme configuration information.
+type ThemeOptions struct {
+	URL     string `json:"url"`
+	Commit  string `json:"commit"`
+	Assets  bool   `json:"assets"`
+	Content bool   `json:"content"`
+	Layout  bool   `json:"layout"`
 }
 
 // GetSiteConfig reads the site's configuration file values.
