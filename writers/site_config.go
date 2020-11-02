@@ -11,7 +11,6 @@ import (
 // SetSiteConfig writes values to the site's configuration file.
 func SetSiteConfig(siteConfig readers.SiteConfig, configPath string) {
 
-	//result, err := json.Marshal(siteConfig)
 	result, err := json.MarshalIndent(siteConfig, "", "\t")
 	if err != nil {
 		fmt.Printf("Unable to marshal JSON: %s\n", err)

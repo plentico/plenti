@@ -70,7 +70,7 @@ func Build() {
 
 	tempBuildDir := ""
 	// Get theme from plenti.json.
-	theme := siteConfig.Theme.Name
+	theme := siteConfig.Theme
 	// If a theme is set, run the nested build.
 	if theme != "" {
 		// Recursively copy all nested themes to a temp folder for building.

@@ -86,9 +86,9 @@ To use https://plenti.co as a theme for example, run: plenti new theme git@githu
 		// Get the current site configuration file values.
 		siteConfig, configPath := readers.GetSiteConfig(".")
 		// Update the sitConfig struct with new values.
-		siteConfig.Theme.Commit = commitHash
-		siteConfig.Theme.URL = url
-		siteConfig.Theme.Name = repoName
+		siteConfig.ThemeConfig.Commit = commitHash
+		siteConfig.ThemeConfig.URL = url
+		siteConfig.ThemeConfig.Name = repoName
 		// Update the config file on the filesystem.
 		writers.SetSiteConfig(siteConfig, configPath)
 

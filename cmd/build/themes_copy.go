@@ -19,7 +19,7 @@ func ThemesCopy(theme string) string {
 	Log("Found theme named: " + theme)
 
 	siteConfig, _ := readers.GetSiteConfig(theme)
-	nestedTheme := siteConfig.Theme.Name
+	nestedTheme := siteConfig.Theme
 	if nestedTheme != "" {
 		ThemesCopy(theme + "/themes/" + nestedTheme)
 	}
