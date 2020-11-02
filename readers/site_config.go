@@ -8,12 +8,10 @@ import (
 
 // SiteConfig is the site's configuration file values.
 type SiteConfig struct {
-	BuildDir    string `json:"build"`
-	Theme       string `json:"theme"`
-	ThemeConfig struct {
-		ThemeName map[string]ThemeOptions `json:""`
-	} `json:"theme_config"`
-	Local struct {
+	BuildDir    string                  `json:"build"`
+	Theme       string                  `json:"theme"`
+	ThemeConfig map[string]ThemeOptions `json:"theme_config"`
+	Local       struct {
 		Port int `json:"port"`
 	} `json:"local"`
 	Types map[string]string `json:"types"`
