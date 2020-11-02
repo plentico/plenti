@@ -21,9 +21,9 @@ type SiteConfig struct {
 type ThemeOptions struct {
 	URL     string `json:"url"`
 	Commit  string `json:"commit"`
-	Assets  bool   `json:"assets"`
-	Content bool   `json:"content"`
-	Layout  bool   `json:"layout"`
+	Assets  bool   `json:"assets,omitempty"`
+	Content bool   `json:"content,omitempty"`
+	Layout  bool   `json:"layout,omitempty"`
 }
 
 // GetSiteConfig reads the site's configuration file values.
