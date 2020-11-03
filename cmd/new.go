@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
@@ -12,9 +10,6 @@ var newCmd = &cobra.Command{
 	Short: "Create new sites and types",
 	Long: `Generates scaffolding for creating
 new sites or types of content`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("new called")
-	},
 }
 
 func init() {
