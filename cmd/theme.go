@@ -89,7 +89,9 @@ To use https://plenti.co as a theme for example, run: plenti new theme git@githu
 		themeOptions := new(readers.ThemeOptions)
 		themeOptions.URL = url
 		themeOptions.Commit = commitHash
-		siteConfig.ThemeConfig = make(map[string]readers.ThemeOptions)
+		if siteConfig.ThemeConfig == nil {
+			siteConfig.ThemeConfig = make(map[string]readers.ThemeOptions)
+		}
 		siteConfig.ThemeConfig[repoName] = *themeOptions
 
 		// Update the config file on the filesystem.
