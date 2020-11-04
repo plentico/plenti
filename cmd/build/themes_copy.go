@@ -12,7 +12,7 @@ import (
 )
 
 // ThemesCopy copies nested themes into a temporary working directory.
-func ThemesCopy(theme string, themeOptions ...readers.ThemeOptions) string {
+func ThemesCopy(theme string, themeOptions readers.ThemeOptions) string {
 
 	defer Benchmark(time.Now(), "Building themes")
 
@@ -21,7 +21,10 @@ func ThemesCopy(theme string, themeOptions ...readers.ThemeOptions) string {
 	siteConfig, _ := readers.GetSiteConfig(theme)
 	nestedTheme := siteConfig.Theme
 	if nestedTheme != "" {
-		ThemesCopy(theme + "/themes/" + nestedTheme)
+		// Look for options (like excluded folders) in theme.
+		nestedThemeOptions := siteConfig.ThemeConfig[nestedTheme]
+		// Recursively run merge on nested theme.
+		ThemesCopy(theme+"/themes/"+nestedTheme, nestedThemeOptions)
 	}
 
 	// Name of temporary directory to run build inside.
@@ -36,12 +39,8 @@ func ThemesCopy(theme string, themeOptions ...readers.ThemeOptions) string {
 		"themes",
 	}
 
-	var userExcluded []string
-	if len(themeOptions) == 1 {
-		userExcluded = themeOptions[0].Exclude
-	}
 	// Merge any user specified exclusions.
-	excludedFiles = append(excludedFiles, userExcluded...)
+	excludedFiles = append(excludedFiles, themeOptions.Exclude...)
 
 	themeFilesErr := filepath.Walk(theme, func(themeFilePath string, themeFileInfo os.FileInfo, err error) error {
 
