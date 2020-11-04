@@ -6,11 +6,12 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 )
 
 // AssetsCopy does a direct copy of any static assets.
-func AssetsCopy(buildPath string) {
+func AssetsCopy(buildPath string, tempBuildDir string) {
 
 	defer Benchmark(time.Now(), "Copying static assets into build dir")
 
@@ -18,13 +19,15 @@ func AssetsCopy(buildPath string) {
 
 	copiedSourceCounter := 0
 
+	assetsDir := tempBuildDir + "assets"
+
 	// Exit function if "assets/" directory does not exist.
-	if _, err := os.Stat("assets"); os.IsNotExist(err) {
+	if _, err := os.Stat(assetsDir); os.IsNotExist(err) {
 		return
 	}
 
-	assetFilesErr := filepath.Walk("assets", func(assetPath string, assetFileInfo os.FileInfo, err error) error {
-		destPath := buildPath + "/" + assetPath
+	assetFilesErr := filepath.Walk(assetsDir, func(assetPath string, assetFileInfo os.FileInfo, err error) error {
+		destPath := buildPath + "/" + strings.TrimPrefix(assetPath, tempBuildDir)
 		if assetFileInfo.IsDir() {
 			// Make directory if it doesn't exist.
 			os.MkdirAll(destPath, os.ModePerm)

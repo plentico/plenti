@@ -498,8 +498,6 @@ node_modules`),
 }
 `),
 	"/plenti.json": []byte(`{
-	"baseurl": "http://example.org/",
-	"title": "My New Plenti Site",
 	"types": {
 		"pages": "/:filename"
 	},
