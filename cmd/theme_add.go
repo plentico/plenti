@@ -83,6 +83,12 @@ To use https://plenti.co as a theme for example, run: plenti new theme git@githu
 			}
 		}
 
+		// Remove the theme's .git/ folder to avoid submodule issues.
+		deleteGitErr := os.RemoveAll(themeDir + "/.git")
+		if deleteGitErr != nil {
+			fmt.Printf("Could not delete .git folder for theme: %v", deleteGitErr)
+		}
+
 		// Get the current site configuration file values.
 		siteConfig, configPath := readers.GetSiteConfig(".")
 		// Update the sitConfig struct with new values.
@@ -112,5 +118,5 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// typeCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	themeCmd.Flags().StringVarP(&CommitFlag, "commit", "c", "", "pull a specific commit hash for the theme")
+	themeAddCmd.Flags().StringVarP(&CommitFlag, "commit", "c", "", "pull a specific commit hash for the theme")
 }
