@@ -73,8 +73,9 @@ func Build() {
 	theme := siteConfig.Theme
 	// If a theme is set, run the nested build.
 	if theme != "" {
+		themeOptions := siteConfig.ThemeConfig[theme]
 		// Recursively copy all nested themes to a temp folder for building.
-		tempBuildDir = build.ThemesCopy("themes/" + theme)
+		tempBuildDir = build.ThemesCopy("themes/"+theme, themeOptions)
 		// Merge the current project files with the theme.
 		build.ThemesMerge(tempBuildDir, buildDir)
 	}

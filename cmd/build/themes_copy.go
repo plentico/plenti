@@ -12,7 +12,7 @@ import (
 )
 
 // ThemesCopy copies nested themes into a temporary working directory.
-func ThemesCopy(theme string) string {
+func ThemesCopy(theme string, themeOptions ...readers.ThemeOptions) string {
 
 	defer Benchmark(time.Now(), "Building themes")
 
@@ -35,6 +35,13 @@ func ThemesCopy(theme string) string {
 		".gitignore",
 		"themes",
 	}
+
+	var userExcluded []string
+	if len(themeOptions) == 1 {
+		userExcluded = themeOptions[0].Exclude
+	}
+	// Merge any user specified exclusions.
+	excludedFiles = append(excludedFiles, userExcluded...)
 
 	themeFilesErr := filepath.Walk(theme, func(themeFilePath string, themeFileInfo os.FileInfo, err error) error {
 
