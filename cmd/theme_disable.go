@@ -3,7 +3,6 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"os"
 	"plenti/readers"
 	"plenti/writers"
 
@@ -11,12 +10,11 @@ import (
 )
 
 // themeEnableCmd represents the theme command
-var themeEnableCmd = &cobra.Command{
-	Use:   "enable [theme]",
-	Short: "Use a specific theme as a starting point for your project",
-	Long: `Enabling a theme adds a "theme" entry to plenti.json. Once
-this has been added, builds will inherit assets, content,
-and layout from the theme you enabled.
+var themeDisableCmd = &cobra.Command{
+	Use:   "disable [theme]",
+	Short: "Stop actively using a specific theme in your project",
+	Long: `Disabling a theme removes the "theme" entry in plenti.json. Your
+will no longer inherit assets, content, and layout from this theme.
 `,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
@@ -38,20 +36,23 @@ and layout from the theme you enabled.
 		// Get the current site configuration file values.
 		siteConfig, configPath := readers.GetSiteConfig(".")
 
-		if _, err := os.Stat("themes/" + repoName); !os.IsNotExist(err) {
-			siteConfig.Theme = repoName
-
-			// Update the config file on the filesystem.
-			writers.SetSiteConfig(siteConfig, configPath)
+		if siteConfig.Theme == "" {
+			fmt.Println("No theme is currently enabled.")
 		} else {
-			fmt.Printf("Could not locate '%v' theme: %v\n", repoName, err)
+			if siteConfig.Theme == repoName {
+				siteConfig.Theme = ""
+				// Update the config file on the filesystem.
+				writers.SetSiteConfig(siteConfig, configPath)
+			} else {
+				fmt.Printf("Theme '%v' is not currently enabled. The enabled theme is: %v\n", repoName, siteConfig.Theme)
+			}
 		}
 
 	},
 }
 
 func init() {
-	themeCmd.AddCommand(themeEnableCmd)
+	themeCmd.AddCommand(themeDisableCmd)
 
 	// Here you will define your flags and configuration settings.
 
