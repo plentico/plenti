@@ -11,6 +11,9 @@ import (
 // EndpointFlag disables the route for a content source by omitting the corresponding svelte template.
 var EndpointFlag bool
 
+// SingleTypeFlag create a one time file at the top level of content.
+var SingleTypeFlag bool
+
 // typeCmd represents the type command
 var typeCmd = &cobra.Command{
 	Use:   "type [name]",
@@ -45,24 +48,30 @@ Optionally add a _blueprint.json file to define the default field structure for 
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		typeName := args[0]
-		typeContentPath := "content/" + typeName
-		if _, typeDirExistsErr := os.Stat(typeContentPath); os.IsNotExist(typeDirExistsErr) {
-			if _, singleTypeFileExistsErr := os.Stat(typeContentPath + ".json"); os.IsNotExist(singleTypeFileExistsErr) {
-				fmt.Printf("Creating new Type content source: %s/\n", typeContentPath)
-				createTypeContentErr := os.MkdirAll(typeContentPath, os.ModePerm)
-				if createTypeContentErr != nil {
-					fmt.Printf("Can't create type named \"%s\": %s", typeName, createTypeContentErr)
-				}
-				_, createBlueprintErr := os.OpenFile(typeContentPath+"/_blueprint.json", os.O_RDONLY|os.O_CREATE, os.ModePerm)
-				if createBlueprintErr != nil {
-					fmt.Printf("Can't create _blueprint.json for type \"%s\": %s", typeName, createTypeContentErr)
+
+		if SingleTypeFlag {
+			singleTypeProcess(typeName)
+		} else {
+			typeContentPath := "content/" + typeName
+			if _, typeDirExistsErr := os.Stat(typeContentPath); os.IsNotExist(typeDirExistsErr) {
+				if _, singleTypeFileExistsErr := os.Stat(typeContentPath + ".json"); os.IsNotExist(singleTypeFileExistsErr) {
+					fmt.Printf("Creating new Type content source: %s/\n", typeContentPath)
+					createTypeContentErr := os.MkdirAll(typeContentPath, os.ModePerm)
+					if createTypeContentErr != nil {
+						fmt.Printf("Can't create type named \"%s\": %s", typeName, createTypeContentErr)
+					}
+					_, createBlueprintErr := os.OpenFile(typeContentPath+"/_blueprint.json", os.O_RDONLY|os.O_CREATE, os.ModePerm)
+					if createBlueprintErr != nil {
+						fmt.Printf("Can't create _blueprint.json for type \"%s\": %s", typeName, createTypeContentErr)
+					}
+				} else {
+					fmt.Printf("A single file Type content source with the same name located at \"%s.json\" already exists\n", typeContentPath)
 				}
 			} else {
-				fmt.Printf("A single file Type content source with the same name located at \"%s.json\" already exists\n", typeContentPath)
+				fmt.Printf("A Type content source with the same name located at \"%s/\" already exists\n", typeContentPath)
 			}
-		} else {
-			fmt.Printf("A Type content source with the same name located at \"%s/\" already exists\n", typeContentPath)
 		}
+
 		if EndpointFlag {
 			typeLayoutPath := "layout/content/" + typeName + ".svelte"
 			if _, typeLayoutFileExistsErr := os.Stat(typeLayoutPath); os.IsNotExist(typeLayoutFileExistsErr) {
@@ -79,6 +88,29 @@ Optionally add a _blueprint.json file to define the default field structure for 
 	},
 }
 
+func singleTypeProcess(typeName string) error {
+	singleTypePath := "content/" + typeName + ".json"
+	_, singleTypeExistsErr := os.Stat(singleTypePath);
+
+	if singleTypeExistsErr == nil {
+		errorMsg := fmt.Sprintf("A single type content source with the same name located at \"%s\" already exists\n", singleTypePath)
+		fmt.Printf(errorMsg)
+		return errors.New(errorMsg)
+	}
+
+	fmt.Printf("Creating new single type content source: %s/\n", singleTypePath)
+
+	_, createSingleTypeErr := os.OpenFile(singleTypePath, os.O_RDONLY|os.O_CREATE, os.ModePerm)
+
+	if createSingleTypeErr != nil {
+		errorMsg := fmt.Sprintf("Can't create single type named \"%s\": %s", typeName, createSingleTypeErr)
+		fmt.Printf(errorMsg)
+		return errors.New(errorMsg)
+	}
+
+	return nil
+}
+
 func init() {
 	newCmd.AddCommand(typeCmd)
 
@@ -92,4 +124,5 @@ func init() {
 	// is called directly, e.g.:
 	// typeCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	typeCmd.Flags().BoolVarP(&EndpointFlag, "endpoint", "e", true, "set 'false' to disable route.")
+	typeCmd.Flags().BoolVarP(&SingleTypeFlag, "single", "s", false, "set 'true' to generate single content file.")
 }
