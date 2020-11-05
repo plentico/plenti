@@ -19,6 +19,7 @@
     align-items: center;
     background-color: var(--base-dark);
     margin-top: 100px;
+    flex-shrink: 0;
   }
   span {
     color: var(--primary);

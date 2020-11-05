@@ -22,6 +22,10 @@
 </html>
 
 <style>
+  html, body {
+    height: 100%;
+  }
+
   body {
     font-family: 'Rubik', sans-serif;
     display: flex;
@@ -29,7 +33,7 @@
     margin: 0;
   }
   main {
-    flex-grow: 1;
+    flex: 1 0 auto;
   }
   :global(.container) {
     max-width: 1024px;
