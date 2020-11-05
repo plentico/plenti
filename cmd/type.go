@@ -90,7 +90,7 @@ Optionally add a _blueprint.json file to define the default field structure for 
 
 func singleTypeProcess(typeName string) error {
 	singleTypePath := "content/" + typeName + ".json"
-	_, singleTypeExistsErr := os.Stat(singleTypePath);
+	_, singleTypeExistsErr := os.Stat(singleTypePath)
 
 	if singleTypeExistsErr == nil {
 		errorMsg := fmt.Sprintf("A single type content source with the same name located at \"%s\" already exists\n", singleTypePath)
@@ -98,7 +98,7 @@ func singleTypeProcess(typeName string) error {
 		return errors.New(errorMsg)
 	}
 
-	fmt.Printf("Creating new single type content source: %s/\n", singleTypePath)
+	fmt.Printf("Creating new single type content source: %s\n", singleTypePath)
 
 	_, createSingleTypeErr := os.OpenFile(singleTypePath, os.O_RDONLY|os.O_CREATE, os.ModePerm)
 

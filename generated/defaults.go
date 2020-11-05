@@ -309,6 +309,7 @@ node_modules`),
     align-items: center;
     background-color: var(--base-dark);
     margin-top: 100px;
+    flex-shrink: 0;
   }
   span {
     color: var(--primary);
@@ -360,6 +361,10 @@ node_modules`),
 </html>
 
 <style>
+  html, body {
+    height: 100%;
+  }
+
   body {
     font-family: 'Rubik', sans-serif;
     display: flex;
@@ -367,7 +372,7 @@ node_modules`),
     margin: 0;
   }
   main {
-    flex-grow: 1;
+    flex: 1 0 auto;
   }
   :global(.container) {
     max-width: 1024px;
