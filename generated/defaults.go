@@ -496,9 +496,9 @@ node_modules`),
   "type": "module",
   "private": true,
   "dependencies": {
-    "navaid": "^1.1.1",
+    "navaid": "^1.2.0",
     "regexparam": "^1.3.0",
-    "svelte": "^3.23.2"
+    "svelte": "^3.29.4"
   }
 }
 `),

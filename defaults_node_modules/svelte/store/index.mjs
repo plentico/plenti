@@ -9,7 +9,7 @@ const subscriber_queue = [];
  */
 function readable(value, start) {
     return {
-        subscribe: writable(value, start).subscribe,
+        subscribe: writable(value, start).subscribe
     };
 }
 /**

@@ -32,6 +32,9 @@ function safe_not_equal(a, b) {
 function not_equal(a, b) {
     return a != a ? b == b : a !== b;
 }
+function is_empty(obj) {
+    return Object.keys(obj).length === 0;
+}
 function validate_store(store, name) {
     if (store != null && typeof store.subscribe !== 'function') {
         throw new Error(`'${name}' is not a store with a 'subscribe' method`);
@@ -102,6 +105,13 @@ function compute_rest_props(props, keys) {
         if (!keys.has(k) && k[0] !== '$')
             rest[k] = props[k];
     return rest;
+}
+function compute_slots(slots) {
+    const result = {};
+    for (const key in slots) {
+        result[key] = true;
+    }
+    return result;
 }
 function once(fn) {
     let ran = false;
@@ -299,7 +309,7 @@ function get_binding_group_value(group, __value, checked) {
     return Array.from(value);
 }
 function to_number(value) {
-    return value === '' ? undefined : +value;
+    return value === '' ? null : +value;
 }
 function time_ranges_to_array(ranges) {
     const array = [];
@@ -346,7 +356,7 @@ function claim_space(nodes) {
 }
 function set_data(text, data) {
     data = '' + data;
-    if (text.data !== data)
+    if (text.wholeText !== data)
         text.data = data;
 }
 function set_input_value(input, value) {
@@ -409,14 +419,14 @@ function add_resize_listener(node, fn) {
         node.style.position = 'relative';
     }
     const iframe = element('iframe');
-    iframe.setAttribute('style', `display: block; position: absolute; top: 0; left: 0; width: 100%; height: 100%; ` +
+    iframe.setAttribute('style', 'display: block; position: absolute; top: 0; left: 0; width: 100%; height: 100%; ' +
         `overflow: hidden; border: 0; opacity: 0; pointer-events: none; z-index: ${z_index};`);
     iframe.setAttribute('aria-hidden', 'true');
     iframe.tabIndex = -1;
     const crossorigin = is_crossorigin();
     let unsubscribe;
     if (crossorigin) {
-        iframe.src = `data:text/html,<script>onresize=function(){parent.postMessage(0,'*')}</script>`;
+        iframe.src = "data:text/html,<script>onresize=function(){parent.postMessage(0,'*')}</script>";
         unsubscribe = listen(window, 'message', (event) => {
             if (event.source === iframe.contentWindow)
                 fn();
@@ -510,7 +520,7 @@ function create_rule(node, a, b, duration, delay, ease, fn, uid = 0) {
         stylesheet.insertRule(`@keyframes ${name} ${rule}`, stylesheet.cssRules.length);
     }
     const animation = node.style.animation || '';
-    node.style.animation = `${animation ? `${animation}, ` : ``}${name} ${duration}ms linear ${delay}ms 1 both`;
+    node.style.animation = `${animation ? `${animation}, ` : ''}${name} ${duration}ms linear ${delay}ms 1 both`;
     active += 1;
     return name;
 }
@@ -618,7 +628,7 @@ function set_current_component(component) {
 }
 function get_current_component() {
     if (!current_component)
-        throw new Error(`Function called outside component initialization`);
+        throw new Error('Function called outside component initialization');
     return current_component;
 }
 function beforeUpdate(fn) {
@@ -700,6 +710,7 @@ function flush() {
             set_current_component(component);
             update(component.$$);
         }
+        set_current_component(null);
         dirty_components.length = 0;
         while (binding_callbacks.length)
             binding_callbacks.pop()();
@@ -937,7 +948,7 @@ function create_bidirectional_transition(node, fn, params, intro) {
             program.group = outros;
             outros.r += 1;
         }
-        if (running_program) {
+        if (running_program || pending_program) {
             pending_program = program;
         }
         else {
@@ -1059,6 +1070,9 @@ function handle_promise(promise, info) {
             set_current_component(current_component);
             update(info.catch, 2, info.error, error);
             set_current_component(null);
+            if (!info.hasCatch) {
+                throw error;
+            }
         });
         // if we previously had a then/catch block, destroy it
         if (info.current !== info.pending) {
@@ -1178,7 +1192,7 @@ function validate_each_keys(ctx, list, get_context, get_key) {
     for (let i = 0; i < list.length; i++) {
         const key = get_key(get_context(ctx, list, i));
         if (keys.has(key)) {
-            throw new Error(`Cannot have duplicate keys in a keyed each`);
+            throw new Error('Cannot have duplicate keys in a keyed each');
         }
         keys.add(key);
     }
@@ -1268,10 +1282,10 @@ function spread(args, classes_to_add) {
             return;
         const value = attributes[name];
         if (value === true)
-            str += " " + name;
+            str += ' ' + name;
         else if (boolean_attributes.has(name.toLowerCase())) {
             if (value)
-                str += " " + name;
+                str += ' ' + name;
         }
         else if (value != null) {
             str += ` ${name}="${String(value).replace(/"/g, '&#34;').replace(/'/g, '&#39;')}"`;
@@ -1354,7 +1368,7 @@ function add_attribute(name, value, boolean) {
     return ` ${name}${value === true ? '' : `=${typeof value === 'string' ? JSON.stringify(escape(value)) : `"${value}"`}`}`;
 }
 function add_classes(classes) {
-    return classes ? ` class="${classes}"` : ``;
+    return classes ? ` class="${classes}"` : '';
 }
 
 function bind(component, name, callback) {
@@ -1427,14 +1441,15 @@ function init(component, options, instance, create_fragment, not_equal, props, d
         context: new Map(parent_component ? parent_component.$$.context : []),
         // everything else
         callbacks: blank_object(),
-        dirty
+        dirty,
+        skip_bound: false
     };
     let ready = false;
     $$.ctx = instance
         ? instance(component, prop_values, (i, ret, ...rest) => {
             const value = rest.length ? rest[0] : ret;
             if ($$.ctx && not_equal($$.ctx[i], $$.ctx[i] = value)) {
-                if ($$.bound[i])
+                if (!$$.skip_bound && $$.bound[i])
                     $$.bound[i](value);
                 if (ready)
                     make_dirty(component, i);
@@ -1496,8 +1511,12 @@ if (typeof HTMLElement === 'function') {
                     callbacks.splice(index, 1);
             };
         }
-        $set() {
-            // overridden by instance, if it has props
+        $set($$props) {
+            if (this.$$set && !is_empty($$props)) {
+                this.$$.skip_bound = true;
+                this.$$set($$props);
+                this.$$.skip_bound = false;
+            }
         }
     };
 }
@@ -1515,24 +1534,28 @@ class SvelteComponent {
                 callbacks.splice(index, 1);
         };
     }
-    $set() {
-        // overridden by instance, if it has props
+    $set($$props) {
+        if (this.$$set && !is_empty($$props)) {
+            this.$$.skip_bound = true;
+            this.$$set($$props);
+            this.$$.skip_bound = false;
+        }
     }
 }
 
 function dispatch_dev(type, detail) {
-    document.dispatchEvent(custom_event(type, Object.assign({ version: '3.23.2' }, detail)));
+    document.dispatchEvent(custom_event(type, Object.assign({ version: '3.29.4' }, detail)));
 }
 function append_dev(target, node) {
-    dispatch_dev("SvelteDOMInsert", { target, node });
+    dispatch_dev('SvelteDOMInsert', { target, node });
     append(target, node);
 }
 function insert_dev(target, node, anchor) {
-    dispatch_dev("SvelteDOMInsert", { target, node, anchor });
+    dispatch_dev('SvelteDOMInsert', { target, node, anchor });
     insert(target, node, anchor);
 }
 function detach_dev(node) {
-    dispatch_dev("SvelteDOMRemove", { node });
+    dispatch_dev('SvelteDOMRemove', { node });
     detach(node);
 }
 function detach_between_dev(before, after) {
@@ -1551,38 +1574,38 @@ function detach_after_dev(before) {
     }
 }
 function listen_dev(node, event, handler, options, has_prevent_default, has_stop_propagation) {
-    const modifiers = options === true ? ["capture"] : options ? Array.from(Object.keys(options)) : [];
+    const modifiers = options === true ? ['capture'] : options ? Array.from(Object.keys(options)) : [];
     if (has_prevent_default)
         modifiers.push('preventDefault');
     if (has_stop_propagation)
         modifiers.push('stopPropagation');
-    dispatch_dev("SvelteDOMAddEventListener", { node, event, handler, modifiers });
+    dispatch_dev('SvelteDOMAddEventListener', { node, event, handler, modifiers });
     const dispose = listen(node, event, handler, options);
     return () => {
-        dispatch_dev("SvelteDOMRemoveEventListener", { node, event, handler, modifiers });
+        dispatch_dev('SvelteDOMRemoveEventListener', { node, event, handler, modifiers });
         dispose();
     };
 }
 function attr_dev(node, attribute, value) {
     attr(node, attribute, value);
     if (value == null)
-        dispatch_dev("SvelteDOMRemoveAttribute", { node, attribute });
+        dispatch_dev('SvelteDOMRemoveAttribute', { node, attribute });
     else
-        dispatch_dev("SvelteDOMSetAttribute", { node, attribute, value });
+        dispatch_dev('SvelteDOMSetAttribute', { node, attribute, value });
 }
 function prop_dev(node, property, value) {
     node[property] = value;
-    dispatch_dev("SvelteDOMSetProperty", { node, property, value });
+    dispatch_dev('SvelteDOMSetProperty', { node, property, value });
 }
 function dataset_dev(node, property, value) {
     node.dataset[property] = value;
-    dispatch_dev("SvelteDOMSetDataset", { node, property, value });
+    dispatch_dev('SvelteDOMSetDataset', { node, property, value });
 }
 function set_data_dev(text, data) {
     data = '' + data;
-    if (text.data === data)
+    if (text.wholeText === data)
         return;
-    dispatch_dev("SvelteDOMSetData", { node: text, data });
+    dispatch_dev('SvelteDOMSetData', { node: text, data });
     text.data = data;
 }
 function validate_each_argument(arg) {
@@ -1604,14 +1627,14 @@ function validate_slots(name, slot, keys) {
 class SvelteComponentDev extends SvelteComponent {
     constructor(options) {
         if (!options || (!options.target && !options.$$inline)) {
-            throw new Error(`'target' is a required option`);
+            throw new Error("'target' is a required option");
         }
         super();
     }
     $destroy() {
         super.$destroy();
         this.$destroy = () => {
-            console.warn(`Component was already destroyed`); // eslint-disable-line no-console
+            console.warn('Component was already destroyed'); // eslint-disable-line no-console
         };
     }
     $capture_state() { }
@@ -1621,9 +1644,9 @@ function loop_guard(timeout) {
     const start = Date.now();
     return () => {
         if (Date.now() - start > timeout) {
-            throw new Error(`Infinite loop detected`);
+            throw new Error('Infinite loop detected');
         }
     };
 }
 
-export { HtmlTag, SvelteComponent, SvelteComponentDev, SvelteElement, action_destroyer, add_attribute, add_classes, add_flush_callback, add_location, add_render_callback, add_resize_listener, add_transform, afterUpdate, append, append_dev, assign, attr, attr_dev, beforeUpdate, bind, binding_callbacks, blank_object, bubble, check_outros, children, claim_component, claim_element, claim_space, claim_text, clear_loops, component_subscribe, compute_rest_props, createEventDispatcher, create_animation, create_bidirectional_transition, create_component, create_in_transition, create_out_transition, create_slot, create_ssr_component, current_component, custom_event, dataset_dev, debug, destroy_block, destroy_component, destroy_each, detach, detach_after_dev, detach_before_dev, detach_between_dev, detach_dev, dirty_components, dispatch_dev, each, element, element_is, empty, escape, escaped, exclude_internal_props, fix_and_destroy_block, fix_and_outro_and_destroy_block, fix_position, flush, getContext, get_binding_group_value, get_current_component, get_slot_changes, get_slot_context, get_spread_object, get_spread_update, get_store_value, globals, group_outros, handle_promise, has_prop, identity, init, insert, insert_dev, intros, invalid_attribute_name_character, is_client, is_crossorigin, is_function, is_promise, listen, listen_dev, loop, loop_guard, missing_component, mount_component, noop, not_equal, now, null_to_empty, object_without_properties, onDestroy, onMount, once, outro_and_destroy_block, prevent_default, prop_dev, query_selector_all, raf, run, run_all, safe_not_equal, schedule_update, select_multiple_value, select_option, select_options, select_value, self, setContext, set_attributes, set_current_component, set_custom_element_data, set_data, set_data_dev, set_input_type, set_input_value, set_now, set_raf, set_store_value, set_style, set_svg_attributes, space, spread, stop_propagation, subscribe, svg_element, text, tick, time_ranges_to_array, to_number, toggle_class, transition_in, transition_out, update_keyed_each, update_slot, validate_component, validate_each_argument, validate_each_keys, validate_slots, validate_store, xlink_attr };
+export { HtmlTag, SvelteComponent, SvelteComponentDev, SvelteElement, action_destroyer, add_attribute, add_classes, add_flush_callback, add_location, add_render_callback, add_resize_listener, add_transform, afterUpdate, append, append_dev, assign, attr, attr_dev, beforeUpdate, bind, binding_callbacks, blank_object, bubble, check_outros, children, claim_component, claim_element, claim_space, claim_text, clear_loops, component_subscribe, compute_rest_props, compute_slots, createEventDispatcher, create_animation, create_bidirectional_transition, create_component, create_in_transition, create_out_transition, create_slot, create_ssr_component, current_component, custom_event, dataset_dev, debug, destroy_block, destroy_component, destroy_each, detach, detach_after_dev, detach_before_dev, detach_between_dev, detach_dev, dirty_components, dispatch_dev, each, element, element_is, empty, escape, escaped, exclude_internal_props, fix_and_destroy_block, fix_and_outro_and_destroy_block, fix_position, flush, getContext, get_binding_group_value, get_current_component, get_slot_changes, get_slot_context, get_spread_object, get_spread_update, get_store_value, globals, group_outros, handle_promise, has_prop, identity, init, insert, insert_dev, intros, invalid_attribute_name_character, is_client, is_crossorigin, is_empty, is_function, is_promise, listen, listen_dev, loop, loop_guard, missing_component, mount_component, noop, not_equal, now, null_to_empty, object_without_properties, onDestroy, onMount, once, outro_and_destroy_block, prevent_default, prop_dev, query_selector_all, raf, run, run_all, safe_not_equal, schedule_update, select_multiple_value, select_option, select_options, select_value, self, setContext, set_attributes, set_current_component, set_custom_element_data, set_data, set_data_dev, set_input_type, set_input_value, set_now, set_raf, set_store_value, set_style, set_svg_attributes, space, spread, stop_propagation, subscribe, svg_element, text, tick, time_ranges_to_array, to_number, toggle_class, transition_in, transition_out, update_keyed_each, update_slot, validate_component, validate_each_argument, validate_each_keys, validate_slots, validate_store, xlink_attr };

@@ -77,7 +77,7 @@ function slide(node, { delay = 0, duration = 400, easing = cubicOut }) {
         delay,
         duration,
         easing,
-        css: t => `overflow: hidden;` +
+        css: t => 'overflow: hidden;' +
             `opacity: ${Math.min(t * 20, 1) * opacity};` +
             `height: ${t * height}px;` +
             `padding-top: ${t * padding_top}px;` +
