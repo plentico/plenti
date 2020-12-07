@@ -1,5 +1,6 @@
 import Router from './router.svelte';
 import contentSource from './content.js';
+import * as allComponents from './layout.js';
 
 let uri = location.pathname;
 let route, content, allContent;
@@ -20,7 +21,8 @@ import('../content/' + content.type + '.js').then(r => {
       uri: uri,
       route: route,
       content: content,
-      allContent: allContent
+      allContent: allContent,
+      allComponents: allComponents
     }
   });
 }).catch(e => console.log(e));

@@ -26,6 +26,9 @@ func Client(buildPath string, tempBuildDir string, ejectedPath string) {
 
 	stylePath := buildPath + "/spa/bundle.css"
 
+	// Initialize string for layout.js component list.
+	var allComponentsStr string
+
 	// Set up counter for logging output.
 	compiledComponentCounter := 0
 
@@ -93,6 +96,11 @@ func Client(buildPath string, tempBuildDir string, ejectedPath string) {
 
 				compileSvelte(ctx, SSRctx, layoutPath, destFile, stylePath)
 
+				// Create entry for layout.js.
+				layoutSignature := strings.ReplaceAll(strings.ReplaceAll((layoutPath), "/", "_"), ".", "_")
+				destLayoutPath := strings.TrimPrefix(layoutPath, "layout/")
+				allComponentsStr = allComponentsStr + "export {default as " + layoutSignature + "} from '../" + destLayoutPath + "';\n"
+
 				compiledComponentCounter++
 
 			}
@@ -101,6 +109,12 @@ func Client(buildPath string, tempBuildDir string, ejectedPath string) {
 	})
 	if layoutFilesErr != nil {
 		fmt.Printf("Could not get layout file: %s", layoutFilesErr)
+	}
+
+	// Write layout.js to filesystem.
+	compWriteErr := ioutil.WriteFile(buildPath+"/spa/ejected/layout.js", []byte(allComponentsStr), os.ModePerm)
+	if compWriteErr != nil {
+		fmt.Printf("Unable to write layout.js file: %v\n", compWriteErr)
 	}
 
 	Log("Number of components compiled: " + strconv.Itoa(compiledComponentCounter))
@@ -237,6 +251,12 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 			ssrStr = strings.ReplaceAll(ssrStr, importNameStr, importSignature)
 		}
 	}
+
+	// Remove allComponents object (leaving just componentSignature) for SSR.
+	reAllComponentsDot := regexp.MustCompile(`allComponents\.`)
+	ssrStr = reAllComponentsDot.ReplaceAllString(ssrStr, "")
+	reAllComponentsBracket := regexp.MustCompile(`allComponents\[\"(.*)\"\]`)
+	ssrStr = reAllComponentsBracket.ReplaceAllString(ssrStr, "${1}")
 
 	// Add component to context so it can be used to render HTML in data_source.go.
 	_, addSSRCompErr := SSRctx.RunScript(ssrStr, "create_ssr")

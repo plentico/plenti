@@ -1,11 +1,11 @@
-<Html {route} {content} {allContent} />
+<Html {route} {content} {allContent} {allComponents} />
 
 <script>
   import Navaid from 'navaid';
   import contentSource from './content.js';
   import Html from '../global/html.svelte';
 
-  export let uri, route, content, allContent;
+  export let uri, route, content, allContent, allComponents;
 
   const getContent = (uri, trailingSlash = "") => {
     return contentSource.find(content => content.path + trailingSlash == uri);

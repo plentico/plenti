@@ -108,6 +108,7 @@ staticBuildStr.forEach(arg => {
 });`),
 	"/main.js": []byte(`import Router from './router.svelte';
 import contentSource from './content.js';
+import * as allComponents from './layout.js';
 
 let uri = location.pathname;
 let route, content, allContent;
@@ -128,18 +129,19 @@ import('../content/' + content.type + '.js').then(r => {
       uri: uri,
       route: route,
       content: content,
-      allContent: allContent
+      allContent: allContent,
+      allComponents: allComponents
     }
   });
 }).catch(e => console.log(e));`),
-	"/router.svelte": []byte(`<Html {route} {content} {allContent} />
+	"/router.svelte": []byte(`<Html {route} {content} {allContent} {allComponents} />
 
 <script>
   import Navaid from 'navaid';
   import contentSource from './content.js';
   import Html from '../global/html.svelte';
 
-  export let uri, route, content, allContent;
+  export let uri, route, content, allContent, allComponents;
 
   const getContent = (uri, trailingSlash = "") => {
     return contentSource.find(content => content.path + trailingSlash == uri);
