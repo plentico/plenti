@@ -10,6 +10,9 @@
   const unsubscribe = count.subscribe(value => {
     count_value = value;
   });
+
+  // Content driven dynamic components example:
+  export let components, allComponents;
 </script>
 
 <h1>{title}</h1>
@@ -29,5 +32,12 @@
 {/if}
 
 <Uses type="blog" />
+
+{#if components}
+	{#each components as { title, component, fields }}
+    {title}
+		<svelte:component this="{allComponents[component]}" {...fields} />
+	{/each}
+{/if}
 
 <p><a href="/">Back home</a></p>

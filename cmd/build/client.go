@@ -255,8 +255,9 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 	// Remove allComponents object (leaving just componentSignature) for SSR.
 	reAllComponentsDot := regexp.MustCompile(`allComponents\.`)
 	ssrStr = reAllComponentsDot.ReplaceAllString(ssrStr, "")
-	reAllComponentsBracket := regexp.MustCompile(`allComponents\[\"(.*)\"\]`)
-	ssrStr = reAllComponentsBracket.ReplaceAllString(ssrStr, "${1}")
+	reAllComponentsBracket := regexp.MustCompile(`allComponents\[\"?(.*)\"?\]`)
+	//ssrStr = reAllComponentsBracket.ReplaceAllString(ssrStr, "eval(${1})")
+	ssrStr = reAllComponentsBracket.ReplaceAllString(ssrStr, "globalThis[${1}]")
 
 	// Add component to context so it can be used to render HTML in data_source.go.
 	_, addSSRCompErr := SSRctx.RunScript(ssrStr, "create_ssr")

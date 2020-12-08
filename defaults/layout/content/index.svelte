@@ -1,7 +1,7 @@
 <script>
 	export let title, intro, components, allContent;
 	import Grid from '../components/grid.svelte';
-	import { loadComponent } from '../scripts/load_component.svelte';
+  	import Uses from "../components/template.svelte";
 </script>
 
 <h1>{title}</h1>
@@ -18,14 +18,4 @@
 	<br />
 </div>
 
-{#if components}
-	{#each components as { component, fields }}
-		{#await loadComponent(component)}
-			loading component...
-		{:then compClass}
-			<svelte:component this="{compClass}" {...fields} />
-		{:catch error}
-			{console.log(error.message)}
-		{/await}
-	{/each}
-{/if}
+<Uses type="index" />

@@ -1,0 +1,26 @@
+{
+    "title": "Dynamic components example",
+    "body": [
+        "You can load components from your JSON data source without explicitly",
+        "importing each template using the <b>allComponents</b> helper. This is an",
+        "object that holds a reference to each '.svelte' file in your project. To pull a",
+        "template out of allComponents, you need to use a <em>component signature</em>.",
+        "Luckily they are easy to figure out, just convert '/' and '.' characters to '_'",
+        "in your layout path, so for example layout/components/template.svelte becomes",
+        "layout_components_template_svelte."
+    ],
+	"components": [
+		{
+            "title": "For example we could grab the 'template' component again:",
+			"component": "layout_components_template_svelte",
+			"fields": {"type": "index"}
+		},
+		{
+            "title": "Or we could grab the 'incrementer':",
+			"component": "layout_components_incrementer_svelte",
+			"fields": {}
+		}
+	],
+    "author": "Jim Fisk",
+    "date": "8/25/2020"
+}

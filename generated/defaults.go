@@ -30,6 +30,32 @@ node_modules`),
     "author": "text",
     "date": "date"
 }`),
+	"/content/blog/components.json": []byte(`{
+    "title": "Dynamic components example",
+    "body": [
+        "You can load components from your JSON data source without explicitly",
+        "importing each template using the <b>allComponents</b> helper. This is an",
+        "object that holds a reference to each '.svelte' file in your project. To pull a",
+        "template out of allComponents, you need to use a <em>component signature</em>.",
+        "Luckily they are easy to figure out, just convert '/' and '.' characters to '_'",
+        "in your layout path, so for example layout/components/template.svelte becomes",
+        "layout_components_template_svelte."
+    ],
+	"components": [
+		{
+            "title": "For example we could grab the 'template' component again:",
+			"component": "layout_components_template_svelte",
+			"fields": {"type": "index"}
+		},
+		{
+            "title": "Or we could grab the 'incrementer':",
+			"component": "layout_components_incrementer_svelte",
+			"fields": {}
+		}
+	],
+    "author": "Jim Fisk",
+    "date": "8/25/2020"
+}`),
 	"/content/blog/perry.json": []byte(`{
     "title": "Customize your Planarian",
     "body": [
@@ -64,12 +90,6 @@ node_modules`),
 		"Take a look around to see how things work.",
 		"The bottom of each page will tell you where to find the corresponding template in your project.",
 		"If you get stuck, check out our <a href='https://plenti.co/docs' target='blank' rel='noopener noreferrer'>docs</a>. If you need extra help, <a href='https://github.com/plentico/plenti/issues/new' target='blank' rel='noopener noreferrer'>let us know</a>! Enjoy :)"
-	],
-	"components": [
-		{
-			"component": "template",
-			"fields": {"type": "index"}
-		}
 	]
 }`),
 	"/content/pages/_blueprint.json": []byte(`{
@@ -219,6 +239,9 @@ node_modules`),
   const unsubscribe = count.subscribe(value => {
     count_value = value;
   });
+
+  // Content driven dynamic components example:
+  export let components, allComponents;
 </script>
 
 <h1>{title}</h1>
@@ -239,12 +262,19 @@ node_modules`),
 
 <Uses type="blog" />
 
+{#if components}
+	{#each components as { title, component, fields }}
+    {title}
+		<svelte:component this="{allComponents[component]}" {...fields} />
+	{/each}
+{/if}
+
 <p><a href="/">Back home</a></p>
 `),
 	"/layout/content/index.svelte": []byte(`<script>
 	export let title, intro, components, allContent;
 	import Grid from '../components/grid.svelte';
-	import { loadComponent } from '../scripts/load_component.svelte';
+  	import Uses from "../components/template.svelte";
 </script>
 
 <h1>{title}</h1>
@@ -261,17 +291,7 @@ node_modules`),
 	<br />
 </div>
 
-{#if components}
-	{#each components as { component, fields }}
-		{#await loadComponent(component)}
-			loading component...
-		{:then compClass}
-			<svelte:component this="{compClass}" {...fields} />
-		{:catch error}
-			{console.log(error.message)}
-		{/await}
-	{/each}
-{/if}`),
+<Uses type="index" />`),
 	"/layout/content/pages.svelte": []byte(`<script>
   export let title, description;
   import Uses from "../components/template.svelte";
@@ -442,16 +462,6 @@ node_modules`),
     margin-right: 10px;
   }
 </style>
-`),
-	"/layout/scripts/load_component.svelte": []byte(`<script context="module">
-  export const loadComponent = component => {
-    let compClassPromise = import("../components/" + component + ".svelte").then(res => res.default);
-    // Fix "Unhandled promise rejection" error.
-    // See: https://github.com/sveltejs/sapper/issues/487#issuecomment-529145749
-    compClassPromise.catch(err => null)
-    return compClassPromise;
-  }
-</script>
 `),
 	"/layout/scripts/make_title.svelte": []byte(`<script context="module">
   export const makeTitle = filename => {
