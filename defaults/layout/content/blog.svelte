@@ -31,13 +31,13 @@
   <Decrementer/>  
 {/if}
 
-<Uses type="blog" />
-
 {#if components}
 	{#each components as { title, component, fields }}
-    {title}
-		<svelte:component this="{allComponents[component]}" {...fields} />
+    <p>{title}</p>
+		<svelte:component this="{allComponents["layout_components_" + component + "_svelte"]}" {...fields} />
 	{/each}
 {/if}
+
+<Uses type="blog" />
 
 <p><a href="/">Back home</a></p>

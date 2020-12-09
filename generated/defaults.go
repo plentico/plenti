@@ -33,28 +33,29 @@ node_modules`),
 	"/content/blog/components.json": []byte(`{
     "title": "Dynamic components example",
     "body": [
-        "You can load components from your JSON data source without explicitly",
-        "importing each template using the <b>allComponents</b> helper. This is an",
-        "object that holds a reference to each '.svelte' file in your project. To pull a",
-        "template out of allComponents, you need to use a <em>component signature</em>.",
-        "Luckily they are easy to figure out, just convert '/' and '.' characters to '_'",
-        "in your layout path, so for example layout/components/template.svelte becomes",
-        "layout_components_template_svelte."
+        "The <a href=\"https://plenti.co/docs/allComponents\">allComponents</a> helper object holds references to all svelte templates on your site.",
+        "This allows you to load components from your JSON data source without explicitly importing them.",
+        "Just remember to use a <em>component signature</em> (e.g. layout/components/template.svelte becomes layout_components_template_svelte)."
     ],
 	"components": [
 		{
-            "title": "For example we could grab the 'template' component again:",
-			"component": "layout_components_template_svelte",
-			"fields": {"type": "index"}
+            "title": "For example we could grab the 'incrementer':",
+			"component": "incrementer",
+			"fields": {}
 		},
 		{
-            "title": "Or we could grab the 'incrementer':",
-			"component": "layout_components_incrementer_svelte",
+            "title": "The 'decrementer':",
+			"component": "decrementer",
 			"fields": {}
+		},
+		{
+            "title": "Or even the 'grid':",
+			"component": "grid",
+			"fields": {"items": [1, 2, 3]}
 		}
 	],
     "author": "Jim Fisk",
-    "date": "8/25/2020"
+    "date": "12/9/2020"
 }`),
 	"/content/blog/perry.json": []byte(`{
     "title": "Customize your Planarian",
@@ -128,14 +129,16 @@ node_modules`),
 </button>`),
 	"/layout/components/grid.svelte": []byte(`<script>
   import { sortByDate } from '../scripts/sort_by_date.svelte';
-  export let items, filter;
+  export let items;
 </script>
 
 <div class="grid">
   {#each sortByDate(items) as item}
-		{#if item.type == filter}
+    {#if typeof item === 'object' && item !== null}
       <a class="grid-item" href="{item.path}">{item.fields.title}</a>
-		{/if}
+    {:else}
+      <div class="grid-item">{item}</div>
+    {/if}
   {/each}
 </div>
 
@@ -260,14 +263,14 @@ node_modules`),
   <Decrementer/>  
 {/if}
 
-<Uses type="blog" />
-
 {#if components}
 	{#each components as { title, component, fields }}
-    {title}
-		<svelte:component this="{allComponents[component]}" {...fields} />
+    <p>{title}</p>
+		<svelte:component this="{allComponents["layout_components_" + component + "_svelte"]}" {...fields} />
 	{/each}
 {/if}
+
+<Uses type="blog" />
 
 <p><a href="/">Back home</a></p>
 `),
@@ -287,7 +290,7 @@ node_modules`),
 
 <div>
 	<h3>Recent blog posts:</h3>
-	<Grid items={allContent} filter="blog" />
+	<Grid items={allContent.filter(content => content.type == "blog")} />
 	<br />
 </div>
 
@@ -484,13 +487,15 @@ node_modules`),
     items.sort((a, b) => { 
       // Must have a field specifically named "date" to work.
       // Feel free to extend to other custom named date fields.
-      if (a.fields.hasOwnProperty("date") && b.fields.hasOwnProperty("date")) {
-        let aDate = new Date(a.fields.date);
-        let bDate = new Date(b.fields.date);
-        if (order == "oldest") {
-            return aDate - bDate;
+      if (a.hasOwnProperty("fields") && b.hasOwnProperty("fields")) {
+        if (a.fields.hasOwnProperty("date") && b.fields.hasOwnProperty("date")) {
+          let aDate = new Date(a.fields.date);
+          let bDate = new Date(b.fields.date);
+          if (order == "oldest") {
+              return aDate - bDate;
+          }
+          return bDate - aDate;
         }
-        return bDate - aDate;
       }
     });
     return items;

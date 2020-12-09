@@ -14,7 +14,7 @@
 
 <div>
 	<h3>Recent blog posts:</h3>
-	<Grid items={allContent} filter="blog" />
+	<Grid items={allContent.filter(content => content.type == "blog")} />
 	<br />
 </div>
 

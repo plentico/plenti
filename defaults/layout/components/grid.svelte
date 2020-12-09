@@ -1,13 +1,15 @@
 <script>
   import { sortByDate } from '../scripts/sort_by_date.svelte';
-  export let items, filter;
+  export let items;
 </script>
 
 <div class="grid">
   {#each sortByDate(items) as item}
-		{#if item.type == filter}
+    {#if typeof item === 'object' && item !== null}
       <a class="grid-item" href="{item.path}">{item.fields.title}</a>
-		{/if}
+    {:else}
+      <div class="grid-item">{item}</div>
+    {/if}
   {/each}
 </div>
 
