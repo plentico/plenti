@@ -23,6 +23,7 @@ jobs:
       -
         name: Set up Snapcraft
         run: |
+          sudo apt-get update
           sudo apt-get -yq --no-install-suggests --no-install-recommends install snapcraft
       -
         name: Snapcraft Login
