@@ -247,8 +247,12 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 
 		// Check that there is a valid import to replace.
 		if importNameStr != "" && importSignature != "" {
+			// Only replace variables, which must be proceeded/followed by: space, (), {}, [], +, =, period or a comma.
+			//reImportNameUse := regexp.MustCompile(`(\s|\(|\)|\{|\}|\[|\]|\+|=|\.|,)` + importNameStr + `(\s|\(|\)|\{|\}|\[|\]|\+|=|\.|,)`)
+			// Only replace this specific variable, so not anything that has letters, underscores, or numbers attached to it.
+			reImportNameUse := regexp.MustCompile(`([^a-zA-Z_0-9])` + importNameStr + `([^a-zA-Z_0-9])`)
 			// Use the signature everywhere the imported name is referenced.
-			ssrStr = strings.ReplaceAll(ssrStr, importNameStr, importSignature)
+			ssrStr = reImportNameUse.ReplaceAllString(ssrStr, "${1}"+importSignature+"${2}")
 		}
 	}
 
