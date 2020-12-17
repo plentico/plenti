@@ -241,18 +241,22 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 			}
 			// Create the variable name from the full path.
 			importSignature = strings.ReplaceAll(strings.ReplaceAll((layoutRootPath+importPath), "/", "_"), ".", "_")
-			// TODO: Use regex ^ string replacement is dangerous, e.g. It will replace "Component" but also part of "loadComponent".
 		}
 		// TODO: Add an else ^ to account for NPM dependencies?
 
 		// Check that there is a valid import to replace.
 		if importNameStr != "" && importSignature != "" {
-			// Only replace variables, which must be proceeded/followed by: space, (), {}, [], +, =, period or a comma.
-			//reImportNameUse := regexp.MustCompile(`(\s|\(|\)|\{|\}|\[|\]|\+|=|\.|,)` + importNameStr + `(\s|\(|\)|\{|\}|\[|\]|\+|=|\.|,)`)
+			// Only use comp signatures inside JS template literal placeholders.
+			reTemplatePlaceholder := regexp.MustCompile(`(?s)\$\{.*\}`) // The (?s) is for line breaks
 			// Only replace this specific variable, so not anything that has letters, underscores, or numbers attached to it.
 			reImportNameUse := regexp.MustCompile(`([^a-zA-Z_0-9])` + importNameStr + `([^a-zA-Z_0-9])`)
-			// Use the signature everywhere the imported name is referenced.
-			ssrStr = reImportNameUse.ReplaceAllString(ssrStr, "${1}"+importSignature+"${2}")
+			// Find the template placeholders.
+			ssrStr = reTemplatePlaceholder.ReplaceAllStringFunc(ssrStr,
+				func(placeholder string) string {
+					// Use the signature instead of variable name.
+					return reImportNameUse.ReplaceAllString(placeholder, "${1}"+importSignature+"${2}")
+				},
+			)
 		}
 	}
 
