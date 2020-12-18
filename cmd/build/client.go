@@ -190,12 +190,12 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 	for _, namedExport := range namedExports {
 		// Get exported functions that aren't default.
 		if !strings.HasPrefix(namedExport[1], "default ") {
+			// Get just the name inside the curly brackets
 			exportName := strings.Trim(namedExport[1], "{ }")
+			// TODO: This ^ will only work for a single export.
 			if exportName != "" && componentSignature != "" {
-				if strings.Contains(ssrStr, "return ``;") {
-					ssrStr = strings.ReplaceAll(ssrStr, componentSignature, componentSignature+"_NOT_USED")
-				}
-				ssrStr = strings.ReplaceAll(ssrStr, exportName, componentSignature)
+				// Create new component signature with variable name appended to the end.
+				ssrStr = strings.ReplaceAll(ssrStr, exportName, componentSignature+"_"+exportName)
 			}
 		}
 	}
@@ -247,7 +247,7 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 		// Check that there is a valid import to replace.
 		if importNameStr != "" && importSignature != "" {
 			// Only use comp signatures inside JS template literal placeholders.
-			reTemplatePlaceholder := regexp.MustCompile(`(?s)\$\{.*\}`) // The (?s) is for line breaks
+			reTemplatePlaceholder := regexp.MustCompile(`(?s)\$\{validate_component\(.*\)\}`)
 			// Only replace this specific variable, so not anything that has letters, underscores, or numbers attached to it.
 			reImportNameUse := regexp.MustCompile(`([^a-zA-Z_0-9])` + importNameStr + `([^a-zA-Z_0-9])`)
 			// Find the template placeholders.
@@ -259,6 +259,7 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 			)
 		}
 	}
+	//fmt.Println(ssrStr + "\n\n\n")
 
 	// Remove allComponents object (leaving just componentSignature) for SSR.
 	// Match: allComponents.layout_components_grid_svelte
