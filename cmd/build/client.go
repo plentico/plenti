@@ -189,13 +189,15 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 	// Loop through all export statements.
 	for _, namedExport := range namedExports {
 		// Get exported functions that aren't default.
-		if !strings.HasPrefix(namedExport[1], "default ") {
-			// Get just the name inside the curly brackets
-			exportName := strings.Trim(namedExport[1], "{ }")
-			// TODO: This ^ will only work for a single export.
-			if exportName != "" && componentSignature != "" {
-				// Create new component signature with variable name appended to the end.
-				ssrStr = strings.ReplaceAll(ssrStr, exportName, componentSignature+"_"+exportName)
+		// Ignore names that contain semicolons to try to avoid pulling in CSS map code: https://github.com/sveltejs/svelte/issues/3604
+		if !strings.HasPrefix(namedExport[1], "default ") && !strings.Contains(namedExport[1], ";") {
+			// Get just the name(s) inside the curly brackets
+			exportNames := makeNameList(namedExport)
+			for _, exportName := range exportNames {
+				if exportName != "" && componentSignature != "" {
+					// Create new component signature with variable name appended to the end.
+					ssrStr = strings.ReplaceAll(ssrStr, exportName, componentSignature+"_"+exportName)
+				}
 			}
 		}
 	}
@@ -215,13 +217,7 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 			// Check if it's a named import (starts w curly bracket)
 			// and import path should not have spaces (ignores CSS mapping: https://github.com/sveltejs/svelte/issues/3604).
 			if strings.Contains(importNameSlice[1], "{") && !strings.Contains(importPath, " ") {
-				// Get just the name(s) of the variable(s) that's imported explicitly by name.
-				namedImportNameStr := strings.Trim(importNameSlice[1], "{ }")
-				if strings.Contains(namedImportNameStr, ",") {
-					namedImportNameStrs = append(namedImportNameStrs, strings.Split(namedImportNameStr, ",")...)
-				} else {
-					namedImportNameStrs = append(namedImportNameStrs, namedImportNameStr)
-				}
+				namedImportNameStrs = makeNameList(importNameSlice)
 			}
 		}
 		// Remove quotes around path.
@@ -302,4 +298,23 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 		fmt.Printf("Could not add SSR Component: %v\n", addSSRCompErr)
 	}
 
+}
+
+func makeNameList(importNameSlice []string) []string {
+	var namedImportNameStrs []string
+	// Get just the name(s) of the variable(s).
+	namedImportNameStr := strings.Trim(importNameSlice[1], "{ }")
+	// Chech if there are multiple names separated by a comma.
+	if strings.Contains(namedImportNameStr, ",") {
+		// Break apart by comma and add to individual items to array.
+		namedImportNameStrs = append(namedImportNameStrs, strings.Split(namedImportNameStr, ",")...)
+		for i := range namedImportNameStrs {
+			// Remove surrounding whitespace (this will be present if there was space after the comma).
+			namedImportNameStrs[i] = strings.TrimSpace(namedImportNameStrs[i])
+		}
+	} else {
+		// Only one name was used, so add it directly to the array.
+		namedImportNameStrs = append(namedImportNameStrs, namedImportNameStr)
+	}
+	return namedImportNameStrs
 }
