@@ -209,8 +209,16 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 		importPath := reStaticImportPath.FindString(namedImport)
 		importNameSlice := reStaticImportName.FindStringSubmatch(namedImport)
 		importNameStr := ""
+		namedImportNameStr := ""
 		if len(importNameSlice) > 0 {
-			importNameStr = strings.Trim(importNameSlice[1], "{ }")
+			importNameStr = importNameSlice[1]
+			// Check if it's a named import (starts w curly bracket)
+			// and import path should not have spaces (ignores CSS mapping: https://github.com/sveltejs/svelte/issues/3604).
+			if strings.Contains(importNameSlice[1], "{") && !strings.Contains(importPath, " ") {
+				// Get just the name of the variable that's imported.
+				namedImportNameStr = strings.Trim(importNameSlice[1], "{ }")
+				// TODO: This ^ will only work for a single named import.
+			}
 		}
 		// Remove quotes around path.
 		importPath = strings.Trim(importPath, `'"`)
@@ -258,8 +266,14 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 				},
 			)
 		}
+		// Check that there is a valid named import.
+		if namedImportNameStr != "" && importSignature != "" {
+			// Only add named imports to create_ssr_component().
+			createFunc := "create_ssr_component(($$result, $$props, $$bindings, slots) => {"
+			// Add entry to assign variable to named comp signature, like: count = layout_scripts_stores_svelte_count;
+			ssrStr = strings.Replace(ssrStr, createFunc, createFunc+"\n let "+namedImportNameStr+" = "+importSignature+"_"+namedImportNameStr+";", 1)
+		}
 	}
-	//fmt.Println(ssrStr + "\n\n\n")
 
 	// Remove allComponents object (leaving just componentSignature) for SSR.
 	// Match: allComponents.layout_components_grid_svelte
