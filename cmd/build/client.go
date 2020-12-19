@@ -209,15 +209,19 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 		importPath := reStaticImportPath.FindString(namedImport)
 		importNameSlice := reStaticImportName.FindStringSubmatch(namedImport)
 		importNameStr := ""
-		namedImportNameStr := ""
+		var namedImportNameStrs []string
 		if len(importNameSlice) > 0 {
 			importNameStr = importNameSlice[1]
 			// Check if it's a named import (starts w curly bracket)
 			// and import path should not have spaces (ignores CSS mapping: https://github.com/sveltejs/svelte/issues/3604).
 			if strings.Contains(importNameSlice[1], "{") && !strings.Contains(importPath, " ") {
-				// Get just the name of the variable that's imported.
-				namedImportNameStr = strings.Trim(importNameSlice[1], "{ }")
-				// TODO: This ^ will only work for a single named import.
+				// Get just the name(s) of the variable(s) that's imported explicitly by name.
+				namedImportNameStr := strings.Trim(importNameSlice[1], "{ }")
+				if strings.Contains(namedImportNameStr, ",") {
+					namedImportNameStrs = append(namedImportNameStrs, strings.Split(namedImportNameStr, ",")...)
+				} else {
+					namedImportNameStrs = append(namedImportNameStrs, namedImportNameStr)
+				}
 			}
 		}
 		// Remove quotes around path.
@@ -266,12 +270,18 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 				},
 			)
 		}
-		// Check that there is a valid named import.
-		if namedImportNameStr != "" && importSignature != "" {
-			// Only add named imports to create_ssr_component().
-			createFunc := "create_ssr_component(($$result, $$props, $$bindings, slots) => {"
-			// Add entry to assign variable to named comp signature, like: count = layout_scripts_stores_svelte_count;
-			ssrStr = strings.Replace(ssrStr, createFunc, createFunc+"\n let "+namedImportNameStr+" = "+importSignature+"_"+namedImportNameStr+";", 1)
+
+		// Handle each named import, e.g. import { first, second } from "./whatever.svelte".
+		for _, currentNamedImport := range namedImportNameStrs {
+			// Remove whitespace on sides that might occur when splitting into array by comma.
+			currentNamedImport = strings.TrimSpace(currentNamedImport)
+			// Check that there is a valid named import.
+			if currentNamedImport != "" && importSignature != "" {
+				// Only add named imports to create_ssr_component().
+				createFunc := "create_ssr_component(($$result, $$props, $$bindings, slots) => {"
+				// Add entry to assign variable to named comp signature, like: count = layout_scripts_stores_svelte_count;
+				ssrStr = strings.Replace(ssrStr, createFunc, createFunc+"\n let "+currentNamedImport+" = "+importSignature+"_"+currentNamedImport+";", 1)
+			}
 		}
 	}
 
