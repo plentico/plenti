@@ -274,9 +274,11 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 			// Check that there is a valid named import.
 			if currentNamedImport != "" && importSignature != "" {
 				// Only add named imports to create_ssr_component().
-				createFunc := "create_ssr_component(($$result, $$props, $$bindings, slots) => {"
-				// Add entry to assign variable to named comp signature, like: count = layout_scripts_stores_svelte_count;
-				ssrStr = strings.Replace(ssrStr, createFunc, createFunc+"\n let "+currentNamedImport+" = "+importSignature+"_"+currentNamedImport+";", 1)
+				reCreateFunc := regexp.MustCompile(`(create_ssr_component\(\(.*\)\s=>\s\{)`)
+				// Entry should be block scoped, like: let count = layout_scripts_stores_svelte_count;
+				blockScopedVar := "\n let " + currentNamedImport + " = " + importSignature + "_" + currentNamedImport + ";"
+				// Add block scoped var inside create_ssr_component.
+				ssrStr = reCreateFunc.ReplaceAllString(ssrStr, "${1}"+blockScopedVar)
 			}
 		}
 	}
