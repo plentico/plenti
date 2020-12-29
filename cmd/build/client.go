@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"plenti/readers"
 	"regexp"
 	"strconv"
 	"strings"
@@ -294,6 +295,25 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 	reAllComponentsBracketStr := regexp.MustCompile(`allComponents\[\"(.*)\"\]`)
 	ssrStr = reAllComponentsBracketStr.ReplaceAllString(ssrStr, "${1}")
 
+	paginatedContent := getPagination()
+	for contentType, paginationVars := range paginatedContent {
+		if "layout_content_"+contentType+"_svelte" == componentSignature {
+			for _, paginationVar := range paginationVars {
+				// Prefix var so it doesn't conflict with other variables.
+				globalVar := "plenti_global_pager_" + paginationVar
+				// Initialize var outside of function to set it as global.
+				ssrStr = "var " + globalVar + ";\n" + ssrStr
+				// Match where the pager var is set, like: let totalPages = Math.ceil(totalPosts / postsPerPage);
+				reLocalVar := regexp.MustCompile(`((let\s|const\s|var\s)` + paginationVar + `.*;)`)
+				// Create statement to assign local var to global var.
+				makeGlobalVar := globalVar + " = " + paginationVar + ";"
+				// Assign value to global var inside create_ssr_component() func, like: plenti_global_pager_totalPages = totalPages;
+				ssrStr = reLocalVar.ReplaceAllString(ssrStr, "${1}\n"+makeGlobalVar)
+				//fmt.Println(ssrStr)
+			}
+		}
+	}
+
 	// Add component to context so it can be used to render HTML in data_source.go.
 	_, addSSRCompErr := SSRctx.RunScript(ssrStr, "create_ssr")
 	if addSSRCompErr != nil {
@@ -319,4 +339,27 @@ func makeNameList(importNameSlice []string) []string {
 		namedImportNameStrs = append(namedImportNameStrs, namedImportNameStr)
 	}
 	return namedImportNameStrs
+}
+
+func getPagination() map[string][]string {
+	// Get settings from config file.
+	siteConfig, _ := readers.GetSiteConfig(".")
+	// Setup regex to find pagination.
+	rePaginate := regexp.MustCompile(`:paginate\((.*?)\)`)
+	// Init map to hold all pagination variable names per content type.
+	paginatedContent := map[string][]string{}
+	// Check for pagination in plenti.json config file.
+	for configContentType, slug := range siteConfig.Types {
+		// Initialize list of all :paginate() vars in a given slug.
+		replacements := []string{}
+		// Find every instance of :paginate() in the slug.
+		paginateReplacements := rePaginate.FindAllStringSubmatch(slug, -1)
+		// Loop through all :paginate() replacements found in config file.
+		for _, replacement := range paginateReplacements {
+			// Add the variable name defined within the brackets to the list.
+			replacements = append(replacements, replacement[1])
+		}
+		paginatedContent[configContentType] = replacements
+	}
+	return paginatedContent
 }
