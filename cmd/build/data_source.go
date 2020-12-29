@@ -87,6 +87,8 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 				typeFields := readers.GetTypeFields(fileContentBytes)
 				// Setup regex to find field name.
 				reField := regexp.MustCompile(`:field\((.*?)\)`)
+				// Setup regex to find pagination.
+				//rePaginate := regexp.MustCompile(`:paginate\((.*?)\)`)
 				// Create regex for allowed characters when slugifying path.
 				reSlugify := regexp.MustCompile("[^a-z0-9/]+")
 
@@ -109,6 +111,18 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 								}
 							}
 						}
+
+						// Replace :paginate().
+						//slug = rePaginate.ReplaceAllString(slug, "")
+						/*
+							// Find :paginate().
+							if rePaginate.MatchString(slug) {
+								// Capture the path before replacing :paginate() pattern
+								paginatedSlug := slug
+								// Remove the :paginate() placeholders
+								slug = rePaginate.ReplaceAllString(slug, "")
+							}
+						*/
 
 						// Slugify output using reSlugify regex defined above.
 						slug = strings.Trim(reSlugify.ReplaceAllString(strings.ToLower(slug), "-"), "-")
@@ -185,52 +199,9 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 			fmt.Printf("Can't render htmlComponent: %v\n", renderHTMLErr)
 		}
 
-		paginatedContent := getPagination()
-		// Loop through all :paginate() replacements found in config file.
-		for contentType, paginationVars := range paginatedContent {
-			if contentType == currentContent.contentType {
-				// Copy the current content so we can increment the pager.
-				newContent := currentContent
-				for _, paginationVar := range paginationVars {
-					totalPages, getLocalVarErr := SSRctx.RunScript("plenti_global_pager_"+paginationVar, "create_ssr")
-					if getLocalVarErr != nil {
-						fmt.Printf("Could not get value of '%v' used in pager: %v\n", paginationVar, getLocalVarErr)
-					}
-					// Convert string total page value to integer.
-					totalPagesInt, strToIntErr := strconv.Atoi(totalPages.String())
-					if strToIntErr != nil {
-						fmt.Printf("Can't convert pager value '%v' to an integer: %v", totalPages.String(), strToIntErr)
-					}
-					// Loop through total number of pages for current pager.
-					for i := 0; i < totalPagesInt; i++ {
-						// Update the path WIP
-						newContent.contentPath = strings.Replace(newContent.contentPath, "-paginate-totalpages", strconv.Itoa(i), 1)
-						allContent = append(allContent, newContent)
-					}
-					fmt.Println(totalPages.String())
-					fmt.Println(currentContent.contentPath)
-				}
-			}
-		}
+		paginate(currentContent)
 
-		// Get the rendered HTML from v8go.
-		renderedHTML, err := SSRctx.RunScript("html;", "create_ssr")
-		if err != nil {
-			fmt.Printf("V8go could not execute js default: %v\n", err)
-		}
-		// Get the string value of the static HTML.
-		renderedHTMLStr := renderedHTML.String()
-		// Inject the main.js script the starts the client-side app.
-		renderedHTMLStr = strings.Replace(renderedHTMLStr, "</head>", "<script type='module' src='https://unpkg.com/dimport?module' data-main='/spa/ejected/main.js'></script><script nomodule src='https://unpkg.com/dimport/nomodule' data-main='/spa/ejected/main.js'></script></head>", 1)
-		// Convert the string to byte array that can be written to file system.
-		htmlBytes := []byte(renderedHTMLStr)
-		// Create any folders need to write file.
-		os.MkdirAll(buildPath+currentContent.contentPath, os.ModePerm)
-		// Write static HTML to the filesystem.
-		htmlWriteErr := ioutil.WriteFile(currentContent.contentDest, htmlBytes, 0755)
-		if htmlWriteErr != nil {
-			fmt.Printf("Unable to write SSR file: %v\n", htmlWriteErr)
-		}
+		createHTML(currentContent)
 
 	}
 
@@ -246,4 +217,60 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 
 	Log("Number of content files used: " + strconv.Itoa(contentFileCounter))
 
+}
+
+func createHTML(currentContent content) {
+	// Get the rendered HTML from v8go.
+	renderedHTML, err := SSRctx.RunScript("html;", "create_ssr")
+	if err != nil {
+		fmt.Printf("V8go could not execute js default: %v\n", err)
+	}
+	// Get the string value of the static HTML.
+	renderedHTMLStr := renderedHTML.String()
+	// Inject the main.js script the starts the client-side app.
+	renderedHTMLStr = strings.Replace(renderedHTMLStr, "</head>", "<script type='module' src='https://unpkg.com/dimport?module' data-main='/spa/ejected/main.js'></script><script nomodule src='https://unpkg.com/dimport/nomodule' data-main='/spa/ejected/main.js'></script></head>", 1)
+	// Convert the string to byte array that can be written to file system.
+	htmlBytes := []byte(renderedHTMLStr)
+	// Create any folders need to write file.
+	os.MkdirAll(strings.TrimSuffix(currentContent.contentDest, "/index.html"), os.ModePerm)
+	// Write static HTML to the filesystem.
+	htmlWriteErr := ioutil.WriteFile(currentContent.contentDest, htmlBytes, 0755)
+	if htmlWriteErr != nil {
+		fmt.Printf("Unable to write SSR file: %v\n", htmlWriteErr)
+	}
+}
+
+func paginate(currentContent content) {
+	paginatedContent := getPagination()
+	// Loop through all :paginate() replacements found in config file.
+	for contentType, paginationVars := range paginatedContent {
+		// Check if the config file specifies pagination for this Type.
+		if contentType == currentContent.contentType {
+			// Copy the current content so we can increment the pager.
+			newContent := currentContent
+			for _, paginationVar := range paginationVars {
+				totalPages, getLocalVarErr := SSRctx.RunScript("plenti_global_pager_"+paginationVar, "create_ssr")
+				if getLocalVarErr != nil {
+					fmt.Printf("Could not get value of '%v' used in pager: %v\n", paginationVar, getLocalVarErr)
+				}
+				// Convert string total page value to integer.
+				totalPagesInt, strToIntErr := strconv.Atoi(totalPages.String())
+				if strToIntErr != nil {
+					fmt.Printf("Can't convert pager value '%v' to an integer: %v", totalPages.String(), strToIntErr)
+				}
+				// Loop through total number of pages for current pager.
+				for i := 0; i < totalPagesInt; i++ {
+					// Update the path WIP
+					currentPageNumber := strconv.Itoa(i + 1)
+					newContent.contentPath = strings.Replace(currentContent.contentPath, "-paginate-totalpages", currentPageNumber, 1)
+					newContent.contentDest = strings.Replace(currentContent.contentDest, "-paginate-totalpages", currentPageNumber, 1)
+					fmt.Println(newContent.contentPath)
+					createHTML(newContent)
+					//allContent = append(allContent, newContent)
+				}
+				//fmt.Println(totalPages.String())
+				//fmt.Println(currentContent.contentPath)
+			}
+		}
+	}
 }

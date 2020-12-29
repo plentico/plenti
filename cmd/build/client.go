@@ -341,6 +341,12 @@ func makeNameList(importNameSlice []string) []string {
 	return namedImportNameStrs
 }
 
+type pager struct {
+	contentType    string
+	contentPath    string
+	paginationVars []string
+}
+
 func getPagination() map[string][]string {
 	// Get settings from config file.
 	siteConfig, _ := readers.GetSiteConfig(".")
