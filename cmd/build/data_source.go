@@ -14,12 +14,13 @@ import (
 )
 
 type content struct {
-	contentType     string
-	contentPath     string
-	contentDest     string
-	contentDetails  string
-	contentFilename string
-	contentFields   string
+	contentType      string
+	contentPath      string
+	contentDest      string
+	contentDetails   string
+	contentFilename  string
+	contentFields    string
+	contentPagerDest string
 }
 
 // DataSource builds json list from "content/" directory.
@@ -110,13 +111,18 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 
 				// Setup regex to find pagination.
 				_, rePaginate := getPagination()
-				// Don't slugify paginated paths.
-				if !rePaginate.MatchString(path) {
-					// Create regex for allowed characters when slugifying path.
-					reSlugify := regexp.MustCompile("[^a-z0-9/]+")
-					// Slugify output using reSlugify regex defined above.
-					path = strings.Trim(reSlugify.ReplaceAllString(strings.ToLower(path), "-"), "-")
+				var pagerDestPath string
+				if rePaginate.MatchString(path) {
+					// Get Destination path before slugifying to preserve pagination.
+					pagerDestPath = buildPath + path + "/index.html"
+					// Remove :pagination()
+					path = rePaginate.ReplaceAllString(path, "")
 				}
+
+				// Create regex for allowed characters when slugifying path.
+				reSlugify := regexp.MustCompile("[^a-z0-9/]+")
+				// Slugify output using reSlugify regex defined above.
+				path = strings.Trim(reSlugify.ReplaceAllString(strings.ToLower(path), "-"), "-")
 
 				// Remove trailing slash, unless it's the homepage.
 				if path != "/" && path[len(path)-1:] == "/" {
@@ -140,12 +146,13 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 				allContentStr = allContentStr + encodedContentDetails + ","
 
 				content := content{
-					contentType:     contentType,
-					contentPath:     path,
-					contentDest:     destPath,
-					contentDetails:  encodedContentDetails,
-					contentFilename: fileName,
-					contentFields:   encodeString(fileContentStr),
+					contentType:      contentType,
+					contentPath:      path,
+					contentDest:      destPath,
+					contentDetails:   encodedContentDetails,
+					contentFilename:  fileName,
+					contentFields:    encodeString(fileContentStr),
+					contentPagerDest: pagerDestPath,
 				}
 				allContent = append(allContent, content)
 
@@ -233,7 +240,7 @@ func paginate(currentContent content, contentJSPath string) {
 					// Update the path WIP
 					currentPageNumber := strconv.Itoa(i + 1)
 					newContent.contentPath = rePaginate.ReplaceAllString(pager.contentPath, currentPageNumber)
-					newContent.contentDest = rePaginate.ReplaceAllString(currentContent.contentDest, currentPageNumber)
+					newContent.contentDest = rePaginate.ReplaceAllString(currentContent.contentPagerDest, currentPageNumber)
 					// Add current page number to the content source so it can be pulled in as the current page.
 					newContent.contentDetails = "{\n" +
 						"\"pager\": \"" + currentPageNumber + "\",\n" +
