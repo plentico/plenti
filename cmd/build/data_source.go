@@ -71,10 +71,6 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 				if fileName == "index.json" {
 					// Remove entire filename from path.
 					path = strings.TrimSuffix(path, fileName)
-					// Remove trailing slash, unless it's the homepage.
-					if path != "/" && path[len(path)-1:] == "/" {
-						path = strings.TrimSuffix(path, "/")
-					}
 				} else {
 					// Remove file extension only from path for files other than index.json.
 					path = strings.TrimSuffix(path, filepath.Ext(path))
@@ -88,7 +84,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 				// Setup regex to find field name.
 				reField := regexp.MustCompile(`:field\((.*?)\)`)
 				// Setup regex to find pagination.
-				//rePaginate := regexp.MustCompile(`:paginate\((.*?)\)`)
+				_, rePaginate := getPagination()
 				// Create regex for allowed characters when slugifying path.
 				reSlugify := regexp.MustCompile("[^a-z0-9/]+")
 
@@ -113,21 +109,17 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 						}
 
 						// Replace :paginate().
-						//slug = rePaginate.ReplaceAllString(slug, "")
-						/*
-							// Find :paginate().
-							if rePaginate.MatchString(slug) {
-								// Capture the path before replacing :paginate() pattern
-								paginatedSlug := slug
-								// Remove the :paginate() placeholders
-								slug = rePaginate.ReplaceAllString(slug, "")
-							}
-						*/
+						slug = rePaginate.ReplaceAllString(slug, "")
 
 						// Slugify output using reSlugify regex defined above.
 						slug = strings.Trim(reSlugify.ReplaceAllString(strings.ToLower(slug), "-"), "-")
 						path = slug
 					}
+				}
+
+				// Remove trailing slash, unless it's the homepage.
+				if path != "/" && path[len(path)-1:] == "/" {
+					path = strings.TrimSuffix(path, "/")
 				}
 
 				destPath := buildPath + path + "/index.html"
@@ -241,14 +233,14 @@ func createHTML(currentContent content) {
 }
 
 func paginate(currentContent content) {
-	paginatedContent := getPagination()
+	paginatedContent, rePaginate := getPagination()
 	// Loop through all :paginate() replacements found in config file.
-	for contentType, paginationVars := range paginatedContent {
+	for _, pager := range paginatedContent {
 		// Check if the config file specifies pagination for this Type.
-		if contentType == currentContent.contentType {
+		if pager.contentType == currentContent.contentType {
 			// Copy the current content so we can increment the pager.
 			newContent := currentContent
-			for _, paginationVar := range paginationVars {
+			for _, paginationVar := range pager.paginationVars {
 				totalPages, getLocalVarErr := SSRctx.RunScript("plenti_global_pager_"+paginationVar, "create_ssr")
 				if getLocalVarErr != nil {
 					fmt.Printf("Could not get value of '%v' used in pager: %v\n", paginationVar, getLocalVarErr)
@@ -262,9 +254,11 @@ func paginate(currentContent content) {
 				for i := 0; i < totalPagesInt; i++ {
 					// Update the path WIP
 					currentPageNumber := strconv.Itoa(i + 1)
-					newContent.contentPath = strings.Replace(currentContent.contentPath, "-paginate-totalpages", currentPageNumber, 1)
-					newContent.contentDest = strings.Replace(currentContent.contentDest, "-paginate-totalpages", currentPageNumber, 1)
-					fmt.Println(newContent.contentPath)
+					newContent.contentPath = rePaginate.ReplaceAllString(pager.contentPath, currentPageNumber)
+					fmt.Println(newContent.contentDest)
+					newContent.contentDest = rePaginate.ReplaceAllString(currentContent.contentDest, currentPageNumber)
+					//newContent.contentPath = strings.Replace(currentContent.contentPath, "-paginate-totalpages", currentPageNumber, 1)
+					//newContent.contentDest = strings.Replace(currentContent.contentDest, "-paginate-totalpages", currentPageNumber, 1)
 					createHTML(newContent)
 					//allContent = append(allContent, newContent)
 				}

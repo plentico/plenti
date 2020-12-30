@@ -295,10 +295,10 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 	reAllComponentsBracketStr := regexp.MustCompile(`allComponents\[\"(.*)\"\]`)
 	ssrStr = reAllComponentsBracketStr.ReplaceAllString(ssrStr, "${1}")
 
-	paginatedContent := getPagination()
-	for contentType, paginationVars := range paginatedContent {
-		if "layout_content_"+contentType+"_svelte" == componentSignature {
-			for _, paginationVar := range paginationVars {
+	paginatedContent, _ := getPagination()
+	for _, pager := range paginatedContent {
+		if "layout_content_"+pager.contentType+"_svelte" == componentSignature {
+			for _, paginationVar := range pager.paginationVars {
 				// Prefix var so it doesn't conflict with other variables.
 				globalVar := "plenti_global_pager_" + paginationVar
 				// Initialize var outside of function to set it as global.
@@ -309,7 +309,6 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 				makeGlobalVar := globalVar + " = " + paginationVar + ";"
 				// Assign value to global var inside create_ssr_component() func, like: plenti_global_pager_totalPages = totalPages;
 				ssrStr = reLocalVar.ReplaceAllString(ssrStr, "${1}\n"+makeGlobalVar)
-				//fmt.Println(ssrStr)
 			}
 		}
 	}
@@ -347,13 +346,13 @@ type pager struct {
 	paginationVars []string
 }
 
-func getPagination() map[string][]string {
+func getPagination() ([]pager, *regexp.Regexp) {
 	// Get settings from config file.
 	siteConfig, _ := readers.GetSiteConfig(".")
 	// Setup regex to find pagination.
 	rePaginate := regexp.MustCompile(`:paginate\((.*?)\)`)
-	// Init map to hold all pagination variable names per content type.
-	paginatedContent := map[string][]string{}
+	// Initialize new pager struct
+	var pagers []pager
 	// Check for pagination in plenti.json config file.
 	for configContentType, slug := range siteConfig.Types {
 		// Initialize list of all :paginate() vars in a given slug.
@@ -365,7 +364,11 @@ func getPagination() map[string][]string {
 			// Add the variable name defined within the brackets to the list.
 			replacements = append(replacements, replacement[1])
 		}
-		paginatedContent[configContentType] = replacements
+		var pager pager
+		pager.contentType = configContentType
+		pager.contentPath = slug
+		pager.paginationVars = replacements
+		pagers = append(pagers, pager)
 	}
-	return paginatedContent
+	return pagers, rePaginate
 }
