@@ -14,10 +14,12 @@ import (
 )
 
 type content struct {
-	contentType    string
-	contentPath    string
-	contentDest    string
-	contentDetails string
+	contentType     string
+	contentPath     string
+	contentDest     string
+	contentDetails  string
+	contentFilename string
+	contentFields   string
 }
 
 // DataSource builds json list from "content/" directory.
@@ -129,37 +131,21 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 					"\"filename\": \"" + fileName + "\",\n" +
 					"\"fields\": " + fileContentStr + "\n}"
 
-				// Create new content.js file if it doesn't already exist, or add to it if it does.
-				contentJSFile, openContentJSErr := os.OpenFile(contentJSPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-				if openContentJSErr != nil {
-					fmt.Printf("Could not open content.js for writing: %s", openContentJSErr)
-				}
-				// Write to the file with info from current file in "/content" folder.
-				defer contentJSFile.Close()
-				if _, err := contentJSFile.WriteString(contentDetailsStr + ","); err != nil {
-					log.Println(err)
-				}
+				// Write to the content.js client data source file.
+				writeContentJS(contentJSPath, contentDetailsStr+",")
 
-				// Encode html so it can be used as props.
-				encodedContentDetails := contentDetailsStr
-				// Remove newlines.
-				reN := regexp.MustCompile(`\r?\n`)
-				encodedContentDetails = reN.ReplaceAllString(encodedContentDetails, " ")
-				// Remove tabs.
-				reT := regexp.MustCompile(`\t`)
-				encodedContentDetails = reT.ReplaceAllString(encodedContentDetails, " ")
-				// Reduce extra whitespace to a single space.
-				reS := regexp.MustCompile(`\s+`)
-				encodedContentDetails = reS.ReplaceAllString(encodedContentDetails, " ")
-
+				// Remove newlines, tabs, and extra space.
+				encodedContentDetails := encodeString(contentDetailsStr)
 				// Add info for being referenced in allContent object.
 				allContentStr = allContentStr + encodedContentDetails + ","
 
 				content := content{
-					contentType:    contentType,
-					contentPath:    path,
-					contentDest:    destPath,
-					contentDetails: encodedContentDetails,
+					contentType:     contentType,
+					contentPath:     path,
+					contentDest:     destPath,
+					contentDetails:  encodedContentDetails,
+					contentFilename: fileName,
+					contentFields:   encodeString(fileContentStr),
 				}
 				allContent = append(allContent, content)
 
@@ -190,21 +176,14 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 			fmt.Printf("Can't render htmlComponent: %v\n", renderHTMLErr)
 		}
 
-		paginate(currentContent)
+		paginate(currentContent, contentJSPath)
 
 		createHTML(currentContent)
 
 	}
 
 	// Complete the content.js file.
-	contentJSFile, openContentJSErr := os.OpenFile(contentJSPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if openContentJSErr != nil {
-		fmt.Printf("Could not open content.js for writing: %s", openContentJSErr)
-	}
-	defer contentJSFile.Close()
-	if _, err := contentJSFile.WriteString("];\n\nexport default contentSource;"); err != nil {
-		log.Println(err)
-	}
+	writeContentJS(contentJSPath, "];\n\nexport default contentSource;")
 
 	Log("Number of content files used: " + strconv.Itoa(contentFileCounter))
 
@@ -231,7 +210,7 @@ func createHTML(currentContent content) {
 	}
 }
 
-func paginate(currentContent content) {
+func paginate(currentContent content, contentJSPath string) {
 	paginatedContent, rePaginate := getPagination()
 	// Loop through all :paginate() replacements found in config file.
 	for _, pager := range paginatedContent {
@@ -255,10 +234,46 @@ func paginate(currentContent content) {
 					currentPageNumber := strconv.Itoa(i + 1)
 					newContent.contentPath = rePaginate.ReplaceAllString(pager.contentPath, currentPageNumber)
 					newContent.contentDest = rePaginate.ReplaceAllString(currentContent.contentDest, currentPageNumber)
-					fmt.Println(newContent.contentDest)
+					// Add current page number to the content source so it can be pulled in as the current page.
+					newContent.contentDetails = "{\n" +
+						"\"pager\": \"" + currentPageNumber + "\",\n" +
+						"\"path\": \"" + newContent.contentPath + "\",\n" +
+						"\"type\": \"" + newContent.contentType + "\",\n" +
+						"\"filename\": \"" + newContent.contentFilename + "\",\n" +
+						"\"fields\": " + newContent.contentFields + "\n}"
+
+					// Add paginated entries to content.js file.
+					writeContentJS(contentJSPath, newContent.contentDetails+",")
+					// Create paginated static HTML fallbacks.
 					createHTML(newContent)
 				}
 			}
 		}
 	}
+}
+
+func writeContentJS(contentJSPath string, contentDetailsStr string) {
+	// Create new content.js file if it doesn't already exist, or add to it if it does.
+	contentJSFile, openContentJSErr := os.OpenFile(contentJSPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if openContentJSErr != nil {
+		fmt.Printf("Could not open content.js for writing: %s", openContentJSErr)
+	}
+	// Write to the file with info from current file in "/content" folder.
+	defer contentJSFile.Close()
+	if _, err := contentJSFile.WriteString(contentDetailsStr); err != nil {
+		log.Println(err)
+	}
+}
+
+func encodeString(encodedStr string) string {
+	// Remove newlines.
+	reN := regexp.MustCompile(`\r?\n`)
+	encodedStr = reN.ReplaceAllString(encodedStr, " ")
+	// Remove tabs.
+	reT := regexp.MustCompile(`\t`)
+	encodedStr = reT.ReplaceAllString(encodedStr, " ")
+	// Reduce extra whitespace to a single space.
+	reS := regexp.MustCompile(`\s+`)
+	encodedStr = reS.ReplaceAllString(encodedStr, " ")
+	return encodedStr
 }
