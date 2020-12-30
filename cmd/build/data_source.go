@@ -132,6 +132,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 				destPath := buildPath + path + "/index.html"
 
 				contentDetailsStr := "{\n" +
+					"\"pager\": 1,\n" +
 					"\"path\": \"" + path + "\",\n" +
 					"\"type\": \"" + contentType + "\",\n" +
 					"\"filename\": \"" + fileName + "\",\n" +
@@ -233,7 +234,7 @@ func paginate(currentContent content, contentJSPath string) {
 				// Convert string total page value to integer.
 				totalPagesInt, strToIntErr := strconv.Atoi(totalPages.String())
 				if strToIntErr != nil {
-					fmt.Printf("Can't convert pager value '%v' to an integer: %v", totalPages.String(), strToIntErr)
+					fmt.Printf("Can't convert pager value '%v' to an integer: %v\n", totalPages.String(), strToIntErr)
 				}
 				// Loop through total number of pages for current pager.
 				for i := 0; i < totalPagesInt; i++ {
