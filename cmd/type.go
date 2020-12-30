@@ -3,7 +3,9 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -52,42 +54,51 @@ Optionally add a _blueprint.json file to define the default field structure for 
 		if SingleTypeFlag {
 			singleTypeProcess(typeName)
 		} else {
-			typeContentPath := "content/" + typeName
-			if _, typeDirExistsErr := os.Stat(typeContentPath); os.IsNotExist(typeDirExistsErr) {
-				if _, singleTypeFileExistsErr := os.Stat(typeContentPath + ".json"); os.IsNotExist(singleTypeFileExistsErr) {
-					fmt.Printf("Creating new Type content source: %s/\n", typeContentPath)
-					createTypeContentErr := os.MkdirAll(typeContentPath, os.ModePerm)
-					if createTypeContentErr != nil {
-						fmt.Printf("Can't create type named \"%s\": %s", typeName, createTypeContentErr)
-					}
-					_, createBlueprintErr := os.OpenFile(typeContentPath+"/_blueprint.json", os.O_RDONLY|os.O_CREATE, os.ModePerm)
-					if createBlueprintErr != nil {
-						fmt.Printf("Can't create _blueprint.json for type \"%s\": %s", typeName, createTypeContentErr)
-					}
-				} else {
-					fmt.Printf("A single file Type content source with the same name located at \"%s.json\" already exists\n", typeContentPath)
-				}
-			} else {
-				fmt.Printf("A Type content source with the same name located at \"%s/\" already exists\n", typeContentPath)
-			}
+			doTypeContentPath(typeName)
+
 		}
 
 		if EndpointFlag {
-			typeLayoutPath := "layout/content/" + typeName + ".svelte"
-			if _, typeLayoutFileExistsErr := os.Stat(typeLayoutPath); os.IsNotExist(typeLayoutFileExistsErr) {
-				fmt.Printf("Creating new Type layout: %s\n", typeLayoutPath)
-				_, createTypeLayoutErr := os.OpenFile(typeLayoutPath, os.O_RDONLY|os.O_CREATE, os.ModePerm)
-				if createTypeLayoutErr != nil {
-					fmt.Printf("Can't create layout for type \"%s\": %s", typeName, createTypeLayoutErr)
-				}
-			} else {
+
+			typeLayoutPath := fmt.Sprintf("layout/content/%s.svelte", strings.Trim(typeName, " /"))
+			if _, err := os.Stat(typeLayoutPath); !os.IsNotExist(err) {
 				fmt.Printf("A Type layout with the same name located at \"%s\" already exists\n", typeLayoutPath)
+				return
+			}
+
+			fmt.Printf("Creating new Type layout: %s\n", typeLayoutPath)
+			if _, err := os.OpenFile(typeLayoutPath, os.O_RDONLY|os.O_CREATE, os.ModePerm); err != nil {
+				log.Fatalf("Can't create layout for type \"%s\": %s", typeName, err)
 			}
 		}
 
 	},
 }
 
+func doTypeContentPath(typeName string) {
+	typeContentPath := fmt.Sprintf("content/%s", strings.Trim(typeName, " /"))
+	//  !os.IsNotExist is true, the path exists. os.IsExist(err) == nil for Stat if file exists
+	if _, err := os.Stat(typeContentPath); !os.IsNotExist(err) {
+		fmt.Printf("A Type content source with the same name located at \"%s/\" already exists\n", typeContentPath)
+		return
+
+	}
+
+	if _, err := os.Stat(typeContentPath + ".json"); !os.IsNotExist(err) {
+		// error or not?
+		fmt.Printf("A single file Type content source with the same name located at \"%s.json\" already exists\n", typeContentPath)
+		return
+	}
+
+	fmt.Printf("Creating new Type content source: %s/\n", typeContentPath)
+	if err := os.MkdirAll(typeContentPath, os.ModePerm); err != nil {
+		log.Fatalf("Can't create type named \"%s\": %s", typeName, err)
+	}
+	if _, err := os.OpenFile(typeContentPath+"/_blueprint.json", os.O_RDONLY|os.O_CREATE, os.ModePerm); err != nil {
+		log.Fatalf("Can't create _blueprint.json for type \"%s\": %s", typeName, err)
+	}
+
+}
 func singleTypeProcess(typeName string) error {
 	singleTypePath := "content/" + typeName + ".json"
 	_, singleTypeExistsErr := os.Stat(singleTypePath)

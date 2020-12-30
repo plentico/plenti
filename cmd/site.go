@@ -4,10 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"plenti/generated"
+	"strings"
 
+	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 )
 
@@ -46,40 +49,70 @@ var siteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 
 		// Create base directory for site
-		newpath := filepath.Join(".", args[0])
-		os.MkdirAll(newpath, os.ModePerm)
+		newpath := strings.Trim(filepath.Join(".", args[0]), " /")
+
+		if _, err := os.Stat(newpath); !os.IsNotExist(err) {
+
+			confirmPrompt := promptui.Select{
+				Label: fmt.Sprintf("%s exists. Overwrite?", newpath),
+				Items: []string{"No", "Yes"},
+			}
+			_, rep, err := (confirmPrompt.Run())
+			if err != nil {
+				log.Fatal(err)
+			}
+			if rep == "No" {
+				fmt.Println("Cancelled.")
+				return
+			}
+
+		}
+
+		if err := os.MkdirAll(newpath, os.ModePerm); err != nil {
+			log.Fatalf("Unable to create directory %s: %v", newpath, err)
+		}
 
 		// Check for --bare flag.
-		bareFlag, _ := cmd.Flags().GetBool("bare")
-		var scaffolding = make(map[string][]byte)
+		bareFlag, err := cmd.Flags().GetBool("bare")
+		if err != nil {
+			log.Fatalf("Unable to get 'bare' flag: %v", err)
+		}
+
+		// set to Defaults and overwrite if bareFlag is set
+		scaffolding := generated.Defaults
 		// Choose which scaffolding to use for new site.
 		if bareFlag {
 			scaffolding = generated.Defaults_bare
-		} else {
-			scaffolding = generated.Defaults
 		}
 
 		// Loop through generated file defaults to create site scaffolding
 		for file, content := range scaffolding {
 			// Create the directories needed for the current file
-			os.MkdirAll(newpath+filepath.Dir(file), os.ModePerm)
+			pth := fmt.Sprintf("%s/%s", newpath, strings.Trim(filepath.Dir(file), "/"))
+			if err := os.MkdirAll(pth, os.ModePerm); err != nil {
+				log.Fatalf("Unable to create path(s) %s: %v", pth, err)
+			}
 
 			// Create the current default file
-			err := ioutil.WriteFile(newpath+file, content, 0755)
-			if err != nil {
-				fmt.Printf("Unable to write file: %v", err)
+			if err := ioutil.WriteFile(fmt.Sprintf("%s/%s", newpath, file), content, 0755); err != nil {
+
+				log.Fatalf("Unable to write file: %v", err)
 			}
 		}
 
 		// Loop through generated node_modules npm pacakges to include in scaffolding
 		for file, content := range generated.Defaults_node_modules {
+
 			// Create the directories needed for the current file
-			os.MkdirAll(newpath+"/node_modules"+filepath.Dir(file), os.ModePerm)
+			pth := fmt.Sprintf("%s/node_modules/%s", newpath, strings.Trim(filepath.Dir(file), "/"))
+			if err := os.MkdirAll(pth, os.ModePerm); err != nil {
+				log.Fatalf("Unable to create path(s) %s: %v", pth, err)
+
+			}
 
 			// Create the current default file
-			err := ioutil.WriteFile(newpath+"/node_modules"+file, content, 0755)
-			if err != nil {
-				fmt.Printf("Unable to write file: %v", err)
+			if err = ioutil.WriteFile(fmt.Sprintf("%s/%s", pth, filepath.Base(file)), content, 0755); err != nil {
+				log.Fatalf("Unable to write file: %v", err)
 			}
 		}
 

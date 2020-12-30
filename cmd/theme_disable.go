@@ -38,15 +38,16 @@ will no longer inherit assets, content, and layout from this theme.
 
 		if siteConfig.Theme == "" {
 			fmt.Println("No theme is currently enabled.")
-		} else {
-			if siteConfig.Theme == repoName {
-				siteConfig.Theme = ""
-				// Update the config file on the filesystem.
-				writers.SetSiteConfig(siteConfig, configPath)
-			} else {
-				fmt.Printf("Theme '%v' is not currently enabled. The enabled theme is: %v\n", repoName, siteConfig.Theme)
-			}
+			return
 		}
+
+		if siteConfig.Theme != repoName {
+			fmt.Printf("Theme '%v' is not currently enabled. The enabled theme is: %v\n", repoName, siteConfig.Theme)
+			return
+		}
+		siteConfig.Theme = ""
+		// Update the config file on the filesystem.
+		writers.SetSiteConfig(siteConfig, configPath)
 
 	},
 }

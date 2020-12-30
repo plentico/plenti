@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"plenti/cmd/build"
@@ -23,14 +22,12 @@ var PortFlag int
 var BuildFlag bool
 
 func setPort(siteConfig readers.SiteConfig) int {
-	var port int
+	// default to  use value from config file
+	port := siteConfig.Local.Port
 	// Check if port is overridden by flag
 	if PortFlag > 0 {
 		// If dir flag exists, use it
 		port = PortFlag
-	} else {
-		// Else use value from config file
-		port = siteConfig.Local.Port
 	}
 	return port
 }
@@ -62,9 +59,9 @@ You can also set a different port in your site config file.`,
 		if _, err := os.Stat(buildDir); os.IsNotExist(err) {
 			fmt.Printf("The \"%v\" build directory does not exist, check your plenti.json file.\n", buildDir)
 			log.Fatal(err)
-		} else {
-			fmt.Printf("\nServing site from your \"%v\" directory.\n", buildDir)
 		}
+		fmt.Printf("\nServing site from your \"%v\" directory.\n", buildDir)
+
 		// Point to folder containing the built site
 		fs := http.FileServer(http.Dir(buildDir))
 		http.Handle("/", fs)
@@ -77,7 +74,7 @@ You can also set a different port in your site config file.`,
 
 		// Start the webserver
 		fmt.Printf("Visit your site at http://localhost:%v/\n", port)
-		err := http.ListenAndServe(":"+strconv.Itoa(port), nil)
+		err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 		if err != nil {
 			log.Fatal(err)
 		}
