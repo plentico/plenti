@@ -83,11 +83,6 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 				typeFields := readers.GetTypeFields(fileContentBytes)
 				// Setup regex to find field name.
 				reField := regexp.MustCompile(`:field\((.*?)\)`)
-				// Setup regex to find pagination.
-				_, rePaginate := getPagination()
-				// Create regex for allowed characters when slugifying path.
-				reSlugify := regexp.MustCompile("[^a-z0-9/]+")
-
 				// Check for path overrides from plenti.json config file.
 				for configContentType, slug := range siteConfig.Types {
 					if configContentType == contentType {
@@ -107,14 +102,18 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 								}
 							}
 						}
-
-						// Replace :paginate().
-						slug = rePaginate.ReplaceAllString(slug, "")
-
-						// Slugify output using reSlugify regex defined above.
-						slug = strings.Trim(reSlugify.ReplaceAllString(strings.ToLower(slug), "-"), "-")
 						path = slug
 					}
+				}
+
+				// Setup regex to find pagination.
+				_, rePaginate := getPagination()
+				// Don't slugify paginated paths.
+				if !rePaginate.MatchString(path) {
+					// Create regex for allowed characters when slugifying path.
+					reSlugify := regexp.MustCompile("[^a-z0-9/]+")
+					// Slugify output using reSlugify regex defined above.
+					path = strings.Trim(reSlugify.ReplaceAllString(strings.ToLower(path), "-"), "-")
 				}
 
 				// Remove trailing slash, unless it's the homepage.
@@ -255,15 +254,10 @@ func paginate(currentContent content) {
 					// Update the path WIP
 					currentPageNumber := strconv.Itoa(i + 1)
 					newContent.contentPath = rePaginate.ReplaceAllString(pager.contentPath, currentPageNumber)
-					fmt.Println(newContent.contentDest)
 					newContent.contentDest = rePaginate.ReplaceAllString(currentContent.contentDest, currentPageNumber)
-					//newContent.contentPath = strings.Replace(currentContent.contentPath, "-paginate-totalpages", currentPageNumber, 1)
-					//newContent.contentDest = strings.Replace(currentContent.contentDest, "-paginate-totalpages", currentPageNumber, 1)
+					fmt.Println(newContent.contentDest)
 					createHTML(newContent)
-					//allContent = append(allContent, newContent)
 				}
-				//fmt.Println(totalPages.String())
-				//fmt.Println(currentContent.contentPath)
 			}
 		}
 	}
