@@ -177,9 +177,13 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 
 		createProps(currentContent, allContentStr, tempBuildDirSignature)
 
-		paginate(currentContent, contentJSPath)
-
 		createHTML(currentContent)
+
+		allPaginatedContent := paginate(currentContent, contentJSPath)
+		for _, paginatedContent := range allPaginatedContent {
+			createProps(paginatedContent, allContentStr, tempBuildDirSignature)
+			createHTML(paginatedContent)
+		}
 
 	}
 
@@ -224,8 +228,9 @@ func createHTML(currentContent content) {
 	}
 }
 
-func paginate(currentContent content, contentJSPath string) {
+func paginate(currentContent content, contentJSPath string) []content {
 	paginatedContent, rePaginate := getPagination()
+	allNewContent := []content{}
 	// Loop through all :paginate() replacements found in config file.
 	for _, pager := range paginatedContent {
 		// Check if the config file specifies pagination for this Type.
@@ -250,7 +255,7 @@ func paginate(currentContent content, contentJSPath string) {
 					newContent.contentDest = rePaginate.ReplaceAllString(currentContent.contentPagerDest, currentPageNumber)
 					// Add current page number to the content source so it can be pulled in as the current page.
 					newContent.contentDetails = "{\n" +
-						"\"pager\": \"" + currentPageNumber + "\",\n" +
+						"\"pager\": " + currentPageNumber + ",\n" +
 						"\"path\": \"" + newContent.contentPath + "\",\n" +
 						"\"type\": \"" + newContent.contentType + "\",\n" +
 						"\"filename\": \"" + newContent.contentFilename + "\",\n" +
@@ -258,12 +263,13 @@ func paginate(currentContent content, contentJSPath string) {
 
 					// Add paginated entries to content.js file.
 					writeContentJS(contentJSPath, newContent.contentDetails+",")
-					// Create paginated static HTML fallbacks.
-					createHTML(newContent)
+					// Add to array of content for creating paginated static HTML fallbacks.
+					allNewContent = append(allNewContent, newContent)
 				}
 			}
 		}
 	}
+	return allNewContent
 }
 
 func writeContentJS(contentJSPath string, contentDetailsStr string) {
