@@ -245,15 +245,7 @@ func paginate(currentContent content, contentJSPath string) []content {
 			// Copy the current content so we can increment the pager.
 			newContent := currentContent
 			for _, paginationVar := range pager.paginationVars {
-				totalPages, getLocalVarErr := SSRctx.RunScript("plenti_global_pager_"+paginationVar, "create_ssr")
-				if getLocalVarErr != nil {
-					fmt.Printf("Could not get value of '%v' used in pager: %v\n", paginationVar, getLocalVarErr)
-				}
-				// Convert string total page value to integer.
-				totalPagesInt, strToIntErr := strconv.Atoi(totalPages.String())
-				if strToIntErr != nil {
-					fmt.Printf("Can't convert pager value '%v' to an integer: %v\n", totalPages.String(), strToIntErr)
-				}
+				totalPagesInt := getTotalPages(paginationVar)
 				// Loop through total number of pages for current pager.
 				for i := 0; i < totalPagesInt; i++ {
 					// Update the path WIP
@@ -277,6 +269,19 @@ func paginate(currentContent content, contentJSPath string) []content {
 		}
 	}
 	return allNewContent
+}
+
+func getTotalPages(paginationVar string) int {
+	totalPages, getLocalVarErr := SSRctx.RunScript("plenti_global_pager_"+paginationVar, "create_ssr")
+	if getLocalVarErr != nil {
+		fmt.Printf("Could not get value of '%v' used in pager: %v\n", paginationVar, getLocalVarErr)
+	}
+	// Convert string total page value to integer.
+	totalPagesInt, strToIntErr := strconv.Atoi(totalPages.String())
+	if strToIntErr != nil {
+		fmt.Printf("Can't convert pager value '%v' to an integer: %v\n", totalPages.String(), strToIntErr)
+	}
+	return totalPagesInt
 }
 
 func writeContentJS(contentJSPath string, contentDetailsStr string) {
