@@ -263,21 +263,21 @@ func incrementPager(paginationVars []string, currentContent content, contentJSPa
 	// Get the number of pages for the pager.
 	totalPagesInt := getTotalPages(paginationVar)
 	// Loop through total number of pages for current pager.
-	for i := 0; i < totalPagesInt; i++ {
-		// Update the path
-		currentPageNumber := strconv.Itoa(i + 1)
+	for i := 1; i <= totalPagesInt; i++ {
+		// Convert page number to a string that can be used in a path.
+		currentPageNumber := strconv.Itoa(i)
+		// Update the path by replacing the current :paginate() pattern.
 		newContent.contentPath = strings.Replace(currentContent.contentPagerPath, ":paginate("+paginationVar+")", currentPageNumber, 1)
 		newContent.contentDest = strings.Replace(currentContent.contentPagerDest, ":paginate("+paginationVar+")", currentPageNumber, 1)
-		// Now we need to update the pager path to replace the pattern with a number.
+		// Now we need to update the pager path to replace the pattern with a number so it's ready if we call incrementPager() again for a second pager.
 		newContent.contentPagerPath = newContent.contentPath
 		newContent.contentPagerDest = newContent.contentDest
-		fmt.Println(newContent.contentPath)
-		fmt.Println(newContent.contentPagerPath)
 
+		// Check if there are more pagers for the route override.
 		if len(paginationVars) > 0 {
 			// Recursively call func to increment second pager.
 			incrementPager(paginationVars, newContent, contentJSPath)
-			//fmt.Println(paginationVars)
+			// Continue because you don't want to complete the loop with a partially updated path (we have more pagers!).
 			continue
 		}
 
