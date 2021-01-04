@@ -109,14 +109,21 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 					}
 				}
 
-				// Setup regex to find pagination.
-				_, rePaginate := getPagination()
+				// Setup regex to find pagination and a leading forward slash.
+				rePaginate := regexp.MustCompile(`/:paginate\((.*?)\)`)
+				// Initialize var for path with replacement patterns still intact.
 				var pagerDestPath string
+				// If there is a /:paginate() replacement found.
 				if rePaginate.MatchString(path) {
 					// Get Destination path before slugifying to preserve pagination.
 					pagerDestPath = buildPath + path + "/index.html"
-					// Remove :pagination()
+					// Remove /:pagination()
 					path = rePaginate.ReplaceAllString(path, "")
+					// If paginating the homepage, the forward slash shouldn't be removed.
+					if path == "" {
+						// Add the forward slash back for the index page.
+						path = "/"
+					}
 				}
 
 				// Create regex for allowed characters when slugifying path.
