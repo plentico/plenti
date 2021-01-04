@@ -246,13 +246,9 @@ func paginate(currentContent content, contentJSPath string) []content {
 	// Loop through all :paginate() replacements found in config file.
 	for _, pager := range paginatedContent {
 		// Check if the config file specifies pagination for this Type.
-		//if pager.contentType == currentContent.contentType {
-		//if len(pager.paginationVars) > 0 {
 		if len(pager.paginationVars) > 0 && pager.contentType == currentContent.contentType {
-			//fmt.Println(pager.contentType)
-			//for _, paginationVar := range pager.paginationVars {
+			// Increment the pager.
 			allNewContent = incrementPager(pager.paginationVars, currentContent, contentJSPath)
-			//}
 		}
 	}
 	return allNewContent
@@ -261,12 +257,7 @@ func paginate(currentContent content, contentJSPath string) []content {
 func incrementPager(paginationVars []string, currentContent content, contentJSPath string) []content {
 	allNewContent := []content{}
 	// Pop first item from the list.
-	//paginationVar, paginationVars := paginationVars[len(paginationVars)-1], paginationVars[:len(paginationVars)-1]
-	//var paginationVar string
-	//fmt.Println(paginationVars)
-	//if len(paginationVars) > 0 {
 	paginationVar, paginationVars := paginationVars[0], paginationVars[1:]
-	//}
 	// Copy the current content so we can increment the pager.
 	newContent := currentContent
 	// Get the number of pages for the pager.
@@ -276,16 +267,20 @@ func incrementPager(paginationVars []string, currentContent content, contentJSPa
 		// Update the path
 		currentPageNumber := strconv.Itoa(i + 1)
 		newContent.contentPath = strings.Replace(currentContent.contentPagerPath, ":paginate("+paginationVar+")", currentPageNumber, 1)
-		//newContent.contentPath = rePaginate.ReplaceAllString(pager.contentPath, currentPageNumber)
 		newContent.contentDest = strings.Replace(currentContent.contentPagerDest, ":paginate("+paginationVar+")", currentPageNumber, 1)
-		//newContent.contentDest = rePaginate.ReplaceAllString(currentContent.contentPagerDest, currentPageNumber)
-		//if strings.Contains(newContent.contentPath, ":paginate(") {
-		/*
-			if len(paginationVars) > 0 {
-				// Recursively call func to increment second pager.
-				incrementPager(paginationVars, newContent, contentJSPath, allNewContent)
-			}
-		*/
+		// Now we need to update the pager path to replace the pattern with a number.
+		newContent.contentPagerPath = newContent.contentPath
+		newContent.contentPagerDest = newContent.contentDest
+		fmt.Println(newContent.contentPath)
+		fmt.Println(newContent.contentPagerPath)
+
+		if len(paginationVars) > 0 {
+			// Recursively call func to increment second pager.
+			incrementPager(paginationVars, newContent, contentJSPath)
+			//fmt.Println(paginationVars)
+			continue
+		}
+
 		// Add current page number to the content source so it can be pulled in as the current page.
 		newContent.contentDetails = "{\n" +
 			"\"pager\": " + currentPageNumber + ",\n" +
@@ -307,7 +302,6 @@ func getTotalPages(paginationVar string) int {
 	if getLocalVarErr != nil {
 		fmt.Printf("Could not get value of '%v' used in pager: %v\n", paginationVar, getLocalVarErr)
 	}
-	fmt.Println(totalPages.String())
 	// Convert string total page value to integer.
 	totalPagesInt, strToIntErr := strconv.Atoi(totalPages.String())
 	if strToIntErr != nil {
