@@ -22,6 +22,7 @@ type content struct {
 	contentFields    string
 	contentPagerDest string
 	contentPagerPath string
+	contentPagerNums []string
 }
 
 // DataSource builds json list from "content/" directory.
@@ -273,17 +274,31 @@ func incrementPager(paginationVars []string, currentContent content, contentJSPa
 		newContent.contentPagerPath = newContent.contentPath
 		newContent.contentPagerDest = newContent.contentDest
 
+		// Collect each pager value.
+		newContent.contentPagerNums = append(newContent.contentPagerNums, currentPageNumber)
+
 		// Check if there are more pagers for the route override.
 		if len(paginationVars) > 0 {
 			// Recursively call func to increment second pager.
 			incrementPager(paginationVars, newContent, contentJSPath)
+			// Remove first item in the array to move to the next number in the first pager.
+			newContent.contentPagerNums = newContent.contentPagerNums[1:]
 			// Continue because you don't want to complete the loop with a partially updated path (we have more pagers!).
 			continue
 		}
 
+		// Set the content.pager value if only one pager is used.
+		pageNums := newContent.contentPagerNums[0]
+		// Check if there are multiple pagers in the router override.
+		if len(newContent.contentPagerNums) > 1 {
+			// Make the content.pager value an array with the current pager values.
+			pageNums = "[" + strings.Join(newContent.contentPagerNums, ", ") + "]"
+		}
+		fmt.Println(pageNums)
+
 		// Add current page number to the content source so it can be pulled in as the current page.
 		newContent.contentDetails = "{\n" +
-			"\"pager\": " + currentPageNumber + ",\n" +
+			"\"pager\": " + pageNums + ",\n" +
 			"\"path\": \"" + newContent.contentPath + "\",\n" +
 			"\"type\": \"" + newContent.contentType + "\",\n" +
 			"\"filename\": \"" + newContent.contentFilename + "\",\n" +
@@ -293,6 +308,9 @@ func incrementPager(paginationVars []string, currentContent content, contentJSPa
 		writeContentJS(contentJSPath, newContent.contentDetails+",")
 		// Add to array of content for creating paginated static HTML fallbacks.
 		allNewContent = append(allNewContent, newContent)
+
+		// Remove last number from array to get next page in current pager.
+		newContent.contentPagerNums = newContent.contentPagerNums[:len(newContent.contentPagerNums)-1]
 	}
 	return allNewContent
 }
