@@ -249,15 +249,13 @@ func paginate(currentContent content, contentJSPath string) []content {
 		// Check if the config file specifies pagination for this Type.
 		if len(pager.paginationVars) > 0 && pager.contentType == currentContent.contentType {
 			// Increment the pager.
-			allNewContent = incrementPager(pager.paginationVars, currentContent, contentJSPath)
-			fmt.Println(allNewContent)
+			allNewContent = incrementPager(pager.paginationVars, currentContent, contentJSPath, allNewContent)
 		}
 	}
 	return allNewContent
 }
 
-func incrementPager(paginationVars []string, currentContent content, contentJSPath string) []content {
-	allNewContent := []content{}
+func incrementPager(paginationVars []string, currentContent content, contentJSPath string, allNewContent []content) []content {
 	// Pop first item from the list.
 	paginationVar, paginationVars := paginationVars[0], paginationVars[1:]
 	// Copy the current content so we can increment the pager.
@@ -281,7 +279,7 @@ func incrementPager(paginationVars []string, currentContent content, contentJSPa
 		// Check if there are more pagers for the route override.
 		if len(paginationVars) > 0 {
 			// Recursively call func to increment second pager.
-			allNewContent = incrementPager(paginationVars, newContent, contentJSPath)
+			allNewContent = incrementPager(paginationVars, newContent, contentJSPath, allNewContent)
 			// Remove first item in the array to move to the next number in the first pager.
 			newContent.contentPagerNums = newContent.contentPagerNums[1:]
 			// Continue because you don't want to complete the loop with a partially updated path (we have more pagers!).
