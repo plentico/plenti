@@ -14,10 +14,15 @@ import (
 )
 
 type content struct {
-	contentType    string
-	contentPath    string
-	contentDest    string
-	contentDetails string
+	contentType      string
+	contentPath      string
+	contentDest      string
+	contentDetails   string
+	contentFilename  string
+	contentFields    string
+	contentPagerDest string
+	contentPagerPath string
+	contentPagerNums []string
 }
 
 // DataSource builds json list from "content/" directory.
@@ -32,7 +37,6 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 
 	// Set up counter for logging output.
 	contentFileCounter := 0
-
 	// Start the string that will be used for allContent object.
 	allContentStr := "["
 	// Store each content file in array we can iterate over for creating static html.
@@ -72,22 +76,18 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 				if fileName == "index.json" {
 					// Remove entire filename from path.
 					path = strings.TrimSuffix(path, fileName)
-					// Remove trailing slash, unless it's the homepage.
-					if path != "/" && path[len(path)-1:] == "/" {
-						path = strings.TrimSuffix(path, "/")
-					}
 				} else {
 					// Remove file extension only from path for files other than index.json.
 					path = strings.TrimSuffix(path, filepath.Ext(path))
 				}
 
+				// Remove the extension (if it exists) from single types since the filename = the type name.
+				contentType = strings.TrimSuffix(contentType, filepath.Ext(contentType))
+
 				// Get field key/values from content source.
 				typeFields := readers.GetTypeFields(fileContentBytes)
 				// Setup regex to find field name.
 				reField := regexp.MustCompile(`:field\((.*?)\)`)
-				// Create regex for allowed characters when slugifying path.
-				reSlugify := regexp.MustCompile("[^a-z0-9/]+")
-
 				// Check for path overrides from plenti.json config file.
 				for configContentType, slug := range siteConfig.Types {
 					if configContentType == contentType {
@@ -106,57 +106,67 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 									slug = strings.ReplaceAll(slug, replacement[0], fieldValue)
 								}
 							}
-
 						}
-
-						// Slugify output using reSlugify regex defined above.
-						slug = strings.Trim(reSlugify.ReplaceAllString(strings.ToLower(slug), "-"), "-")
 						path = slug
 					}
 				}
 
-				// Remove the extension (if it exists) from single types since the filename = the type name.
-				contentType = strings.TrimSuffix(contentType, filepath.Ext(contentType))
+				// Setup regex to find pagination and a leading forward slash.
+				rePaginate := regexp.MustCompile(`/:paginate\((.*?)\)`)
+				// Initialize vars for path with replacement patterns still intact.
+				var pagerPath string
+				var pagerDestPath string
+				// If there is a /:paginate() replacement found.
+				if rePaginate.MatchString(path) {
+					// Save path before slugifying to preserve pagination.
+					pagerPath = path
+					// Get Destination path before slugifying to preserve pagination.
+					pagerDestPath = buildPath + path + "/index.html"
+					// Remove /:pagination()
+					path = rePaginate.ReplaceAllString(path, "")
+					// If paginating the homepage, the forward slash shouldn't be removed.
+					if path == "" {
+						// Add the forward slash back for the index page.
+						path = "/"
+					}
+				}
+
+				// Create regex for allowed characters when slugifying path.
+				reSlugify := regexp.MustCompile("[^a-z0-9/]+")
+				// Slugify output using reSlugify regex defined above.
+				path = strings.Trim(reSlugify.ReplaceAllString(strings.ToLower(path), "-"), "-")
+
+				// Remove trailing slash, unless it's the homepage.
+				if path != "/" && path[len(path)-1:] == "/" {
+					path = strings.TrimSuffix(path, "/")
+				}
 
 				destPath := buildPath + path + "/index.html"
 
 				contentDetailsStr := "{\n" +
+					"\"pager\": 1,\n" +
 					"\"path\": \"" + path + "\",\n" +
 					"\"type\": \"" + contentType + "\",\n" +
 					"\"filename\": \"" + fileName + "\",\n" +
 					"\"fields\": " + fileContentStr + "\n}"
 
-				// Create new content.js file if it doesn't already exist, or add to it if it does.
-				contentJSFile, openContentJSErr := os.OpenFile(contentJSPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-				if openContentJSErr != nil {
-					fmt.Printf("Could not open content.js for writing: %s", openContentJSErr)
-				}
-				// Write to the file with info from current file in "/content" folder.
-				defer contentJSFile.Close()
-				if _, err := contentJSFile.WriteString(contentDetailsStr + ","); err != nil {
-					log.Println(err)
-				}
+				// Write to the content.js client data source file.
+				writeContentJS(contentJSPath, contentDetailsStr+",")
 
-				// Encode html so it can be used as props.
-				encodedContentDetails := contentDetailsStr
-				// Remove newlines.
-				reN := regexp.MustCompile(`\r?\n`)
-				encodedContentDetails = reN.ReplaceAllString(encodedContentDetails, " ")
-				// Remove tabs.
-				reT := regexp.MustCompile(`\t`)
-				encodedContentDetails = reT.ReplaceAllString(encodedContentDetails, " ")
-				// Reduce extra whitespace to a single space.
-				reS := regexp.MustCompile(`\s+`)
-				encodedContentDetails = reS.ReplaceAllString(encodedContentDetails, " ")
-
+				// Remove newlines, tabs, and extra space.
+				encodedContentDetails := encodeString(contentDetailsStr)
 				// Add info for being referenced in allContent object.
 				allContentStr = allContentStr + encodedContentDetails + ","
 
 				content := content{
-					contentType:    contentType,
-					contentPath:    path,
-					contentDest:    destPath,
-					contentDetails: encodedContentDetails,
+					contentType:      contentType,
+					contentPath:      path,
+					contentDest:      destPath,
+					contentDetails:   encodedContentDetails,
+					contentFilename:  fileName,
+					contentFields:    encodeString(fileContentStr),
+					contentPagerDest: pagerDestPath,
+					contentPagerPath: pagerPath,
 				}
 				allContent = append(allContent, content)
 
@@ -174,49 +184,170 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 	// End the string that will be used in allContent object.
 	allContentStr = strings.TrimSuffix(allContentStr, ",") + "]"
 
+	// Prefix for building themes.
 	tempBuildDirSignature := strings.ReplaceAll(strings.ReplaceAll(tempBuildDir, "/", "_"), ".", "_")
 	for _, currentContent := range allContent {
-		routeSignature := tempBuildDirSignature + "layout_content_" + currentContent.contentType + "_svelte"
-		_, createPropsErr := SSRctx.RunScript("var props = {route: "+routeSignature+", content: "+currentContent.contentDetails+", allContent: "+allContentStr+"};", "create_ssr")
-		if createPropsErr != nil {
-			fmt.Printf("Could not create props: %v\n", createPropsErr)
-		}
-		// Render the HTML with props needed for the current content.
-		_, renderHTMLErr := SSRctx.RunScript("var { html, css: staticCss} = "+tempBuildDirSignature+"layout_global_html_svelte.render(props);", "create_ssr")
-		if renderHTMLErr != nil {
-			fmt.Printf("Can't render htmlComponent: %v\n", renderHTMLErr)
-		}
-		// Get the rendered HTML from v8go.
-		renderedHTML, err := SSRctx.RunScript("html;", "create_ssr")
-		if err != nil {
-			fmt.Printf("V8go could not execute js default: %v\n", err)
-		}
-		// Get the string value of the static HTML.
-		renderedHTMLStr := renderedHTML.String()
-		// Inject the main.js script the starts the client-side app.
-		renderedHTMLStr = strings.Replace(renderedHTMLStr, "</head>", "<script type='module' src='https://unpkg.com/dimport?module' data-main='/spa/ejected/main.js'></script><script nomodule src='https://unpkg.com/dimport/nomodule' data-main='/spa/ejected/main.js'></script></head>", 1)
-		// Convert the string to byte array that can be written to file system.
-		htmlBytes := []byte(renderedHTMLStr)
-		// Create any folders need to write file.
-		os.MkdirAll(buildPath+currentContent.contentPath, os.ModePerm)
-		// Write static HTML to the filesystem.
-		htmlWriteErr := ioutil.WriteFile(currentContent.contentDest, htmlBytes, 0755)
-		if htmlWriteErr != nil {
-			fmt.Printf("Unable to write SSR file: %v\n", htmlWriteErr)
+
+		createProps(currentContent, allContentStr, tempBuildDirSignature)
+
+		createHTML(currentContent)
+
+		allPaginatedContent := paginate(currentContent, contentJSPath)
+		for _, paginatedContent := range allPaginatedContent {
+			createProps(paginatedContent, allContentStr, tempBuildDirSignature)
+			createHTML(paginatedContent)
 		}
 
 	}
 
 	// Complete the content.js file.
+	writeContentJS(contentJSPath, "];\n\nexport default contentSource;")
+
+	Log("Number of content files used: " + strconv.Itoa(contentFileCounter))
+
+}
+
+func createProps(currentContent content, allContentStr string, tempBuildDirSignature string) {
+	routeSignature := tempBuildDirSignature + "layout_content_" + currentContent.contentType + "_svelte"
+	_, createPropsErr := SSRctx.RunScript("var props = {route: "+routeSignature+", content: "+currentContent.contentDetails+", allContent: "+allContentStr+"};", "create_ssr")
+	if createPropsErr != nil {
+		fmt.Printf("Could not create props: %v\n", createPropsErr)
+	}
+	// Render the HTML with props needed for the current content.
+	_, renderHTMLErr := SSRctx.RunScript("var { html, css: staticCss} = "+tempBuildDirSignature+"layout_global_html_svelte.render(props);", "create_ssr")
+	if renderHTMLErr != nil {
+		fmt.Printf("Can't render htmlComponent: %v\n", renderHTMLErr)
+	}
+}
+
+func createHTML(currentContent content) {
+	// Get the rendered HTML from v8go.
+	renderedHTML, err := SSRctx.RunScript("html;", "create_ssr")
+	if err != nil {
+		fmt.Printf("V8go could not execute js default: %v\n", err)
+	}
+	// Get the string value of the static HTML.
+	renderedHTMLStr := renderedHTML.String()
+	// Inject the main.js script the starts the client-side app.
+	renderedHTMLStr = strings.Replace(renderedHTMLStr, "</head>", "<script type='module' src='https://unpkg.com/dimport?module' data-main='/spa/ejected/main.js'></script><script nomodule src='https://unpkg.com/dimport/nomodule' data-main='/spa/ejected/main.js'></script></head>", 1)
+	// Convert the string to byte array that can be written to file system.
+	htmlBytes := []byte(renderedHTMLStr)
+	// Create any folders need to write file.
+	os.MkdirAll(strings.TrimSuffix(currentContent.contentDest, "/index.html"), os.ModePerm)
+	// Write static HTML to the filesystem.
+	htmlWriteErr := ioutil.WriteFile(currentContent.contentDest, htmlBytes, 0755)
+	if htmlWriteErr != nil {
+		fmt.Printf("Unable to write SSR file: %v\n", htmlWriteErr)
+	}
+}
+
+func paginate(currentContent content, contentJSPath string) []content {
+	paginatedContent, _ := getPagination()
+	allNewContent := []content{}
+	// Loop through all :paginate() replacements found in config file.
+	for _, pager := range paginatedContent {
+		// Check if the config file specifies pagination for this Type.
+		if len(pager.paginationVars) > 0 && pager.contentType == currentContent.contentType {
+			// Increment the pager.
+			allNewContent = incrementPager(pager.paginationVars, currentContent, contentJSPath, allNewContent)
+		}
+	}
+	return allNewContent
+}
+
+func incrementPager(paginationVars []string, currentContent content, contentJSPath string, allNewContent []content) []content {
+	// Pop first item from the list.
+	paginationVar, paginationVars := paginationVars[0], paginationVars[1:]
+	// Copy the current content so we can increment the pager.
+	newContent := currentContent
+	// Get the number of pages for the pager.
+	totalPagesInt := getTotalPages(paginationVar)
+	// Loop through total number of pages for current pager.
+	for i := 1; i <= totalPagesInt; i++ {
+		// Convert page number to a string that can be used in a path.
+		currentPageNumber := strconv.Itoa(i)
+		// Update the path by replacing the current :paginate() pattern.
+		newContent.contentPath = strings.Replace(currentContent.contentPagerPath, ":paginate("+paginationVar+")", currentPageNumber, 1)
+		newContent.contentDest = strings.Replace(currentContent.contentPagerDest, ":paginate("+paginationVar+")", currentPageNumber, 1)
+		// Now we need to update the pager path to replace the pattern with a number so it's ready if we call incrementPager() again for a second pager.
+		newContent.contentPagerPath = newContent.contentPath
+		newContent.contentPagerDest = newContent.contentDest
+
+		// Collect each pager value.
+		newContent.contentPagerNums = append(newContent.contentPagerNums, currentPageNumber)
+
+		// Check if there are more pagers for the route override.
+		if len(paginationVars) > 0 {
+			// Recursively call func to increment second pager.
+			allNewContent = incrementPager(paginationVars, newContent, contentJSPath, allNewContent)
+			// Remove first item in the array to move to the next number in the first pager.
+			newContent.contentPagerNums = newContent.contentPagerNums[1:]
+			// Continue because you don't want to complete the loop with a partially updated path (we have more pagers!).
+			continue
+		}
+
+		// Set the content.pager value if only one pager is used.
+		pageNums := newContent.contentPagerNums[0]
+		// Check if there are multiple pagers in the router override.
+		if len(newContent.contentPagerNums) > 1 {
+			// Make the content.pager value an array with the current pager values.
+			pageNums = "[" + strings.Join(newContent.contentPagerNums, ", ") + "]"
+		}
+
+		// Add current page number to the content source so it can be pulled in as the current page.
+		newContent.contentDetails = "{\n" +
+			"\"pager\": " + pageNums + ",\n" +
+			"\"path\": \"" + newContent.contentPath + "\",\n" +
+			"\"type\": \"" + newContent.contentType + "\",\n" +
+			"\"filename\": \"" + newContent.contentFilename + "\",\n" +
+			"\"fields\": " + newContent.contentFields + "\n}"
+
+		// Add paginated entries to content.js file.
+		writeContentJS(contentJSPath, newContent.contentDetails+",")
+		// Add to array of content for creating paginated static HTML fallbacks.
+		allNewContent = append(allNewContent, newContent)
+
+		// Remove last number from array to get next page in current pager.
+		newContent.contentPagerNums = newContent.contentPagerNums[:len(newContent.contentPagerNums)-1]
+	}
+	return allNewContent
+}
+
+func getTotalPages(paginationVar string) int {
+	totalPages, getLocalVarErr := SSRctx.RunScript("plenti_global_pager_"+paginationVar, "create_ssr")
+	if getLocalVarErr != nil {
+		fmt.Printf("Could not get value of '%v' used in pager: %v\n", paginationVar, getLocalVarErr)
+	}
+	// Convert string total page value to integer.
+	totalPagesInt, strToIntErr := strconv.Atoi(totalPages.String())
+	if strToIntErr != nil {
+		fmt.Printf("Can't convert pager value '%v' to an integer: %v\n", totalPages.String(), strToIntErr)
+	}
+	return totalPagesInt
+}
+
+func writeContentJS(contentJSPath string, contentDetailsStr string) {
+	// Create new content.js file if it doesn't already exist, or add to it if it does.
 	contentJSFile, openContentJSErr := os.OpenFile(contentJSPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if openContentJSErr != nil {
 		fmt.Printf("Could not open content.js for writing: %s", openContentJSErr)
 	}
+	// Write to the file with info from current file in "/content" folder.
 	defer contentJSFile.Close()
-	if _, err := contentJSFile.WriteString("];\n\nexport default contentSource;"); err != nil {
+	if _, err := contentJSFile.WriteString(contentDetailsStr); err != nil {
 		log.Println(err)
 	}
+}
 
-	Log("Number of content files used: " + strconv.Itoa(contentFileCounter))
-
+func encodeString(encodedStr string) string {
+	// Remove newlines.
+	reN := regexp.MustCompile(`\r?\n`)
+	encodedStr = reN.ReplaceAllString(encodedStr, " ")
+	// Remove tabs.
+	reT := regexp.MustCompile(`\t`)
+	encodedStr = reT.ReplaceAllString(encodedStr, " ")
+	// Reduce extra whitespace to a single space.
+	reS := regexp.MustCompile(`\s+`)
+	encodedStr = reS.ReplaceAllString(encodedStr, " ")
+	return encodedStr
 }
