@@ -48,7 +48,7 @@ changelog:
 brews:
   -
     name: plenti
-    github:
+    tap:
       owner: plentico
       name: homebrew-plenti
     homepage: "https://plenti.co/"
