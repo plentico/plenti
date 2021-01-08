@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"plenti/generated"
@@ -81,15 +82,17 @@ automatically).`,
 				for ejectableFile := range generated.Ejected {
 					if ejectableFile == arg {
 						fileExists = true
+						break
 					}
 				}
-				if fileExists {
-					filePath := "ejected" + arg
-					content := generated.Ejected[arg]
-					ejectFile(filePath, content)
-				} else {
+				if !fileExists {
 					fmt.Printf("There is no ejectable file named %s. Run 'plenti eject' to see list of ejectable files.\n", arg)
+					return
 				}
+				filePath := "ejected" + arg
+				content := generated.Ejected[arg]
+				ejectFile(filePath, content)
+
 			}
 		}
 	},
@@ -118,18 +121,21 @@ func ejectFile(filePath string, content []byte) {
 		}
 		_, overwrite, overwriteErr := overwritePrompt.Run()
 		if overwriteErr != nil {
-			fmt.Printf("Prompt failed %v\n", overwriteErr)
-			return
+			log.Fatalf("Prompt failed %v\n", overwriteErr)
+
 		}
 		if overwrite == "No" {
 			return
 		}
 	}
-	os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
-	writeCoreFileErr := ioutil.WriteFile(filePath, content, os.ModePerm)
-	if writeCoreFileErr != nil {
-		fmt.Printf("Unable to write file: %v\n", writeCoreFileErr)
-	} else {
-		fmt.Printf("Ejected %s\n", filePath)
+	if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
+		log.Fatalf("Unable to create path(s) %s: %v\n", filepath.Dir(filePath), err)
+
 	}
+	if err := ioutil.WriteFile(filePath, content, os.ModePerm); err != nil {
+		log.Fatalf("Unable to write file: %v\n", err)
+
+	}
+	fmt.Printf("Ejected %s\n", filePath)
+
 }

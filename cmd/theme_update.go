@@ -44,12 +44,13 @@ file in order to pull updates.
 		url := siteConfig.ThemeConfig[repoName].URL
 
 		// Check that we were able to get the URL from the config file.
-		if url != "" {
-			// Run "theme add" to get new version of the theme.
-			themeAddCmd.Run(cmd, []string{url})
-		} else {
+		if url == "" {
 			fmt.Println("Could not find URL for theme, fix theme_config in plenti.json")
+			return
+
 		}
+		// Run "theme add" to get new version of the theme.
+		themeAddCmd.Run(cmd, []string{url})
 
 	},
 }

@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"plenti/readers"
 	"plenti/writers"
@@ -52,41 +53,51 @@ To use https://plenti.co as a theme for example, run: plenti new theme git@githu
 			Progress: os.Stdout,
 		})
 		if err != nil {
-			fmt.Printf("Can't clone theme repository: %v\n", err)
+			log.Fatalf("Can't clone theme repository: %v\n", err)
+
 		}
 
 		// Get the latest commit hash from the repo.
-		ref, _ := repo.Head()
-		commitObj, _ := repo.CommitObject(ref.Hash())
+		ref, err := repo.Head()
+		if err != nil {
+			log.Fatalf("Can't get HEAD: %v\n", err)
+
+		}
+		commitObj, err := repo.CommitObject(ref.Hash())
+		if err != nil {
+			log.Fatalf("Can't get Commit from hash: %v\n", err)
+
+		}
 		commitHash := commitObj.Hash.String()
 
 		// Check if a --commit flag was used.
 		if CommitFlag != "" {
 			worktree, worktreeErr := repo.Worktree()
 			if worktreeErr != nil {
-				fmt.Printf("Can't get worktree: %v\n", worktreeErr)
+				log.Fatalf("Can't get worktree: %v\n", worktreeErr)
+
 			}
 			// Resolve commit in case short hash is used instead of full hash.
 			resolvedCommitHash, resolveErr := repo.ResolveRevision(plumbing.Revision(CommitFlag))
 			if resolveErr != nil {
-				fmt.Printf("Can't resolve commit hash: %v\n", resolveErr)
+				log.Fatalf("Can't resolve commit hash: %v\n", resolveErr)
+
 			}
 			// Git checkout the commit hash that was sent via the flag.
-			checkoutErr := worktree.Checkout(&git.CheckoutOptions{
+			if checkoutErr := worktree.Checkout(&git.CheckoutOptions{
 				Hash: *resolvedCommitHash,
-			})
-			if checkoutErr != nil {
-				fmt.Printf("Can't get commit: %v\n", checkoutErr)
-			} else {
-				// The --commit flag could be checkout out, so the hash is valid.
-				commitHash = CommitFlag
+			}); checkoutErr != nil {
+				log.Fatalf("Can't get commit: %v\n", checkoutErr)
 			}
+			// The --commit flag could be checkout out, so the hash is valid.
+			commitHash = CommitFlag
+
 		}
 
 		// Remove the theme's .git/ folder to avoid submodule issues.
-		deleteGitErr := os.RemoveAll(themeDir + "/.git")
-		if deleteGitErr != nil {
-			fmt.Printf("Could not delete .git folder for theme: %v", deleteGitErr)
+		if err = os.RemoveAll(themeDir + "/.git"); err != nil {
+			log.Fatalf("Could not delete .git folder for theme: %v", err)
+
 		}
 
 		// Get the current site configuration file values.

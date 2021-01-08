@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"plenti/cmd/build"
@@ -24,13 +25,11 @@ var BenchmarkFlag bool
 var NodeJSFlag bool
 
 func setBuildDir(siteConfig readers.SiteConfig) string {
-	var buildDir string
+	buildDir := siteConfig.BuildDir
 	// Check if directory is overridden by flag.
 	if BuildDirFlag != "" {
 		// If dir flag exists, use it.
 		buildDir = BuildDirFlag
-	} else {
-		buildDir = siteConfig.BuildDir
 	}
 	return buildDir
 }
@@ -88,18 +87,18 @@ func Build() {
 		deleteBuildErr := os.RemoveAll(buildPath)
 		build.Log("Removing old '" + buildPath + "' build directory")
 		if deleteBuildErr != nil {
-			fmt.Println(deleteBuildErr)
-			return
+			log.Fatal(deleteBuildErr)
+
 		}
 	}
 
 	// Create the buildPath directory.
-	err := os.MkdirAll(buildPath, os.ModePerm)
-	if err != nil {
-		fmt.Printf("Unable to create \"%v\" build directory: %s\n", buildDir, err)
-	} else {
-		build.Log("Creating '" + buildDir + "' build directory")
+	if err := os.MkdirAll(buildPath, os.ModePerm); err != nil {
+		// bail on error
+		log.Fatalf("Unable to create \"%v\" build directory: %s\n", buildDir, err)
+
 	}
+	build.Log("Creating '" + buildDir + "' build directory")
 
 	// Add core NPM dependencies if node_module folder doesn't already exist.
 	build.NpmDefaults(tempBuildDir)

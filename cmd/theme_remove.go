@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"plenti/readers"
 	"plenti/writers"
@@ -45,14 +46,12 @@ theme folder within the "themes/" directory.
 			// Update the config file on the filesystem.
 			writers.SetSiteConfig(siteConfig, configPath)
 			// Delete the corresponding theme folder.
-			deleteThemeErr := os.RemoveAll("themes/" + repoName)
-			if deleteThemeErr != nil {
-				fmt.Printf("Could not delete theme folder: %v\n", deleteThemeErr)
+			if err := os.RemoveAll("themes/" + repoName); err != nil {
+				log.Fatalf("Could not delete theme folder: %v\n", err)
 			}
 
-		} else {
-			fmt.Printf("Could not find %v theme_config in plenti.json\n", repoName)
 		}
+		fmt.Printf("Could not find %v theme_config in plenti.json\n", repoName)
 
 	},
 }
