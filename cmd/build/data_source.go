@@ -228,8 +228,6 @@ func createHTML(currentContent content) {
 	}
 	// Get the string value of the static HTML.
 	renderedHTMLStr := renderedHTML.String()
-	// Inject the main.js script the starts the client-side app.
-	renderedHTMLStr = strings.Replace(renderedHTMLStr, "</head>", "<script type='module' src='https://unpkg.com/dimport?module' data-main='/spa/ejected/main.js'></script><script nomodule src='https://unpkg.com/dimport/nomodule' data-main='/spa/ejected/main.js'></script></head>", 1)
 	// Convert the string to byte array that can be written to file system.
 	htmlBytes := []byte(renderedHTMLStr)
 	// Create any folders need to write file.
