@@ -10,12 +10,10 @@ builds:
   - -X plenti/cmd.Version={{.Tag}}
   env:
   - CGO_ENABLED=1
-  - CC=gcc
   goos:
   - linux
-  ignore:
-  - goos: linux
-    goarch: 386
+  goarch:
+  - amd64
 - id: darwin-build
   ldflags:
   - -s
@@ -26,9 +24,8 @@ builds:
   - CXX=/home/runner/work/osxcross/target/bin/o64-clang++
   goos:
   - darwin
-  ignore:
-  - goos: darwin
-    goarch: 386
+  goarch:
+  - amd64
 archives:
 - replacements:
     darwin: Mac
