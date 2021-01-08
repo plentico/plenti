@@ -10,6 +10,7 @@ builds:
   - -X plenti/cmd.Version={{.Tag}}
   env:
   - CGO_ENABLED=1
+  - CC=aarch64-linux-gnu-gcc
   goos:
   - linux
   ignore:
