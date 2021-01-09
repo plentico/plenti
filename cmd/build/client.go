@@ -309,6 +309,8 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 				makeGlobalVar := globalVar + " = " + paginationVar + ";"
 				// Assign value to global var inside create_ssr_component() func, like: plenti_global_pager_totalPages = totalPages;
 				ssrStr = reLocalVar.ReplaceAllString(ssrStr, "${1}\n"+makeGlobalVar)
+				// Clear out styles for SSR since they are already pulled from client components.
+				ssrStr = removeCSS(ssrStr)
 			}
 		}
 	}
@@ -319,6 +321,13 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 		fmt.Printf("Could not add SSR Component: %v\n", addSSRCompErr)
 	}
 
+}
+
+func removeCSS(str string) string {
+	// Match var css = { ... }
+	reCSS := regexp.MustCompile(`var(\s)css(\s)=(\s)\{(.*\n){0,}\};`)
+	// Delete these styles because they often break pagination SSR.
+	return reCSS.ReplaceAllString(str, "")
 }
 
 func makeNameList(importNameSlice []string) []string {
