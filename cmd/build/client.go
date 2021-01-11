@@ -97,9 +97,13 @@ func Client(buildPath string, tempBuildDir string, ejectedPath string) {
 
 				compileSvelte(ctx, SSRctx, layoutPath, destFile, stylePath)
 
+				// Remove temporary theme build directory.
+				destLayoutPath := strings.TrimPrefix(layoutPath, tempBuildDir)
 				// Create entry for layout.js.
-				layoutSignature := strings.ReplaceAll(strings.ReplaceAll((layoutPath), "/", "_"), ".", "_")
-				destLayoutPath := strings.TrimPrefix(layoutPath, "layout/")
+				layoutSignature := strings.ReplaceAll(strings.ReplaceAll((destLayoutPath), "/", "_"), ".", "_")
+				// Remove layout directory.
+				destLayoutPath = strings.TrimPrefix(destLayoutPath, "layout/")
+				// Compose entry for layout.js file.
 				allComponentsStr = allComponentsStr + "export {default as " + layoutSignature + "} from '../" + destLayoutPath + "';\n"
 
 				compiledComponentCounter++
