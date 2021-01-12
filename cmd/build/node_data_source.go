@@ -45,7 +45,7 @@ func NodeDataSource(buildPath string, siteConfig readers.SiteConfig) (string, st
 			fileName := parts[len(parts)-1]
 
 			// Don't add _blueprint.json or other special named files starting with underscores.
-			if fileName[:1] != "_" {
+			if fileName[:1] != "_" && fileName[:1] != "." {
 
 				// Get the contents of the file.
 				fileContentBytes, readFileErr := ioutil.ReadFile(path)
