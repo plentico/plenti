@@ -184,17 +184,15 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 	// End the string that will be used in allContent object.
 	allContentStr = strings.TrimSuffix(allContentStr, ",") + "]"
 
-	// Prefix for building themes.
-	tempBuildDirSignature := strings.ReplaceAll(strings.ReplaceAll(tempBuildDir, "/", "_"), ".", "_")
 	for _, currentContent := range allContent {
 
-		createProps(currentContent, allContentStr, tempBuildDirSignature)
+		createProps(currentContent, allContentStr)
 
 		createHTML(currentContent)
 
 		allPaginatedContent := paginate(currentContent, contentJSPath)
 		for _, paginatedContent := range allPaginatedContent {
-			createProps(paginatedContent, allContentStr, tempBuildDirSignature)
+			createProps(paginatedContent, allContentStr)
 			createHTML(paginatedContent)
 		}
 
@@ -207,14 +205,14 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 
 }
 
-func createProps(currentContent content, allContentStr string, tempBuildDirSignature string) {
-	routeSignature := tempBuildDirSignature + "layout_content_" + currentContent.contentType + "_svelte"
+func createProps(currentContent content, allContentStr string) {
+	routeSignature := "layout_content_" + currentContent.contentType + "_svelte"
 	_, createPropsErr := SSRctx.RunScript("var props = {route: "+routeSignature+", content: "+currentContent.contentDetails+", allContent: "+allContentStr+"};", "create_ssr")
 	if createPropsErr != nil {
 		fmt.Printf("Could not create props: %v\n", createPropsErr)
 	}
 	// Render the HTML with props needed for the current content.
-	_, renderHTMLErr := SSRctx.RunScript("var { html, css: staticCss} = "+tempBuildDirSignature+"layout_global_html_svelte.render(props);", "create_ssr")
+	_, renderHTMLErr := SSRctx.RunScript("var { html, css: staticCss} = layout_global_html_svelte.render(props);", "create_ssr")
 	if renderHTMLErr != nil {
 		fmt.Printf("Can't render htmlComponent: %v\n", renderHTMLErr)
 	}

@@ -78,7 +78,7 @@ func Client(buildPath string, tempBuildDir string, ejectedPath string) {
 	}
 
 	// Compile router separately since it's ejected from core.
-	compileSvelte(ctx, SSRctx, ejectedPath+"/router.svelte", buildPath+"/spa/ejected/router.js", stylePath)
+	compileSvelte(ctx, SSRctx, ejectedPath+"/router.svelte", buildPath+"/spa/ejected/router.js", stylePath, tempBuildDir)
 
 	// Go through all file paths in the "/layout" folder.
 	layoutFilesErr := filepath.Walk(tempBuildDir+"layout", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
@@ -95,7 +95,7 @@ func Client(buildPath string, tempBuildDir string, ejectedPath string) {
 				// Replace .svelte file extension with .js.
 				destFile = strings.TrimSuffix(destFile, filepath.Ext(destFile)) + ".js"
 
-				compileSvelte(ctx, SSRctx, layoutPath, destFile, stylePath)
+				compileSvelte(ctx, SSRctx, layoutPath, destFile, stylePath, tempBuildDir)
 
 				// Remove temporary theme build directory.
 				destLayoutPath := strings.TrimPrefix(layoutPath, tempBuildDir)
@@ -125,7 +125,7 @@ func Client(buildPath string, tempBuildDir string, ejectedPath string) {
 	Log("Number of components compiled: " + strconv.Itoa(compiledComponentCounter))
 }
 
-func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, destFile string, stylePath string) {
+func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, destFile string, stylePath string, tempBuildDir string) {
 
 	component, err := ioutil.ReadFile(layoutPath)
 	if err != nil {
@@ -185,6 +185,8 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 	// Use var instead of const so it can be redeclared multiple times.
 	reConst := regexp.MustCompile(`(?m)^const\s`)
 	ssrStr = reConst.ReplaceAllString(ssrStr, "var ")
+	// Remove temporary theme directory info from path before making a comp signature.
+	layoutPath = strings.TrimPrefix(layoutPath, tempBuildDir)
 	// Create custom variable name for component based on the file path for the layout.
 	componentSignature := strings.ReplaceAll(strings.ReplaceAll(layoutPath, "/", "_"), ".", "_")
 	// Use signature instead of generic "Component". Add space to avoid also replacing part of "loadComponent".
