@@ -111,13 +111,22 @@ func singleTypeProcess(typeName string) error {
 
 	fmt.Printf("Creating new single type content source: %s\n", singleTypePath)
 
-	_, createSingleTypeErr := os.OpenFile(singleTypePath, os.O_RDONLY|os.O_CREATE, os.ModePerm)
+	f, createSingleTypeErr := os.OpenFile(singleTypePath, os.O_RDWR|os.O_CREATE, os.ModePerm)
 
 	if createSingleTypeErr != nil {
 		errorMsg := fmt.Sprintf("Can't create single type named \"%s\": %s", typeName, createSingleTypeErr)
 		fmt.Printf(errorMsg)
 		return errors.New(errorMsg)
 	}
+
+	_, err := f.Write([]byte("{}"))
+	if err != nil {
+		errorMsg := fmt.Sprintf("Can't add empty curly brackets to single type named \"%s\": %s", typeName, createSingleTypeErr)
+		fmt.Printf(errorMsg)
+		return errors.New(errorMsg)
+	}
+
+	defer f.Close()
 
 	return nil
 }
