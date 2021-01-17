@@ -60,22 +60,21 @@ automatically).`,
 				Label: "If ejected, this file will no longer receive updates and we can't gaurantee Plenti will work with your edits. Are you sure you want to proceed?",
 				Items: []string{"Yes", "No"},
 			}
-			_, confirmed, confirmErr := confirmPrompt.Run()
-			if confirmErr != nil {
-				fmt.Printf("Prompt failed %v\n", confirmErr)
+			_, confirmed, err := confirmPrompt.Run()
+			if err != nil {
+				fmt.Printf("Prompt failed %v\n", err)
 				return
 			}
 			if confirmed == "Yes" {
 				filePath := "ejected" + result
 				content := generated.Ejected[result]
 				ejectFile(filePath, content)
-			}
-			if confirmed == "No" {
+			} else if confirmed == "No" {
 				fmt.Println("No file was ejected.")
 			}
 		}
 		if len(args) >= 1 {
-			fmt.Printf("Attempting to eject each file listed\n")
+			fmt.Println("Attempting to eject each file listed")
 			for _, arg := range args {
 				arg = "/" + arg
 				fileExists := false
@@ -114,14 +113,14 @@ func init() {
 }
 
 func ejectFile(filePath string, content []byte) {
-	if _, fileExistsErr := os.Stat(filePath); fileExistsErr == nil {
+	if _, err := os.Stat(filePath); err == nil {
 		overwritePrompt := promptui.Select{
 			Label: "'" + filePath + "' has already been ejected, do you want to overwrite it?",
 			Items: []string{"Yes", "No"},
 		}
-		_, overwrite, overwriteErr := overwritePrompt.Run()
-		if overwriteErr != nil {
-			log.Fatalf("Prompt failed %v\n", overwriteErr)
+		_, overwrite, err := overwritePrompt.Run()
+		if err != nil {
+			log.Fatalf("Prompt failed %v\n", err)
 
 		}
 		if overwrite == "No" {

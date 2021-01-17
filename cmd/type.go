@@ -51,11 +51,12 @@ Optionally add a _blueprint.json file to define the default field structure for 
 	Run: func(cmd *cobra.Command, args []string) {
 		typeName := args[0]
 
+		// shoud we stop here on error from either?
 		if SingleTypeFlag {
+
 			singleTypeProcess(typeName)
 		} else {
 			doTypeContentPath(typeName)
-
 		}
 
 		if EndpointFlag {
@@ -100,10 +101,10 @@ func doTypeContentPath(typeName string) {
 
 }
 func singleTypeProcess(typeName string) error {
-	singleTypePath := "content/" + typeName + ".json"
-	_, singleTypeExistsErr := os.Stat(singleTypePath)
+	singleTypePath := fmt.Sprintf("content/%s.json", typeName)
+	_, err := os.Stat(singleTypePath)
 
-	if singleTypeExistsErr == nil {
+	if err == nil {
 		errorMsg := fmt.Sprintf("A single type content source with the same name located at \"%s\" already exists\n", singleTypePath)
 		fmt.Printf(errorMsg)
 		return errors.New(errorMsg)
@@ -111,24 +112,22 @@ func singleTypeProcess(typeName string) error {
 
 	fmt.Printf("Creating new single type content source: %s\n", singleTypePath)
 
-	f, createSingleTypeErr := os.OpenFile(singleTypePath, os.O_RDWR|os.O_CREATE, os.ModePerm)
+	f, err := os.OpenFile(singleTypePath, os.O_RDWR|os.O_CREATE, os.ModePerm)
 
-	if createSingleTypeErr != nil {
-		errorMsg := fmt.Sprintf("Can't create single type named \"%s\": %s", typeName, createSingleTypeErr)
-		fmt.Printf(errorMsg)
-		return errors.New(errorMsg)
-	}
-
-	_, err := f.Write([]byte("{}"))
 	if err != nil {
-		errorMsg := fmt.Sprintf("Can't add empty curly brackets to single type named \"%s\": %s", typeName, createSingleTypeErr)
+		errorMsg := fmt.Sprintf("Can't create single type named \"%s\": %v", typeName, err)
 		fmt.Printf(errorMsg)
 		return errors.New(errorMsg)
 	}
 
-	defer f.Close()
-
-	return nil
+	_, err = f.Write([]byte("{}"))
+	if err != nil {
+		errorMsg := fmt.Sprintf("Can't add empty curly brackets to single type named \"%s\": %v", typeName, err)
+		fmt.Printf(errorMsg)
+		return errors.New(errorMsg)
+	}
+	// can be non-nil error
+	return f.Close()
 }
 
 func init() {

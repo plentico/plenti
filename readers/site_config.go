@@ -2,8 +2,8 @@ package readers
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
+	"log"
 )
 
 // SiteConfig is the site's configuration file values.
@@ -35,7 +35,7 @@ func GetSiteConfig(basePath string) (SiteConfig, string) {
 	configFile, _ := ioutil.ReadFile(configPath)
 	err := json.Unmarshal(configFile, &siteConfig)
 	if err != nil {
-		fmt.Printf("Unable to read site config file: %s\n", err)
+		log.Fatalf("Unable to read site config file: %v\n", err)
 	}
 
 	// If build directory is not set in config, use default
