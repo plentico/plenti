@@ -23,6 +23,8 @@ func gowatch(buildPath string) {
 		log.Fatalf("couldn't create 'fsnotify.Watcher'")
 	}
 	go func() {
+
+		// this can error
 		defer wtch.Close()
 		w := &watcher{wtch}
 		w.watch(buildPath)
@@ -82,7 +84,7 @@ func (w *watcher) watch(buildPath string) {
 					for _, event := range events {
 						if event.Op&fsnotify.Create == fsnotify.Create {
 							build.Log("File create detected: " + event.String())
-							w.Add(event.Name)
+							CheckErr(w.Add(event.Name))
 							build.Log("Now watching " + event.Name)
 						}
 						if event.Op&fsnotify.Write == fsnotify.Write {

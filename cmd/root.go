@@ -33,7 +33,7 @@ Learn more at https://plenti.co`,
 		if versionFlag {
 			fmt.Println(Version)
 		} else {
-			cmd.Help()
+			CheckErr(cmd.Help())
 		}
 	},
 }

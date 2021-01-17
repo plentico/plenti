@@ -10,7 +10,7 @@ import (
 )
 
 // NpmDefaults creates the node_modules folder with core defaults if it doesn't already exist.
-func NpmDefaults(tempBuildDir string) {
+func NpmDefaults(tempBuildDir string) error {
 
 	defer Benchmark(time.Now(), "Setting up core NPM packages")
 
@@ -23,13 +23,15 @@ func NpmDefaults(tempBuildDir string) {
 			// Make file relative to where CLI is executed
 			file = destPath + "/" + file
 			// Create the directories needed for the current file
-			os.MkdirAll(filepath.Dir(file), os.ModePerm)
+			if err = os.MkdirAll(filepath.Dir(file), os.ModePerm); err != nil {
+				return fmt.Errorf("Unable to MkdirAll in NpmDefaults: %w", err)
+			}
 			// Create the current default file
 			err := ioutil.WriteFile(file, content, os.ModePerm)
 			if err != nil {
-				fmt.Printf("Unable to write npm dependency file: %v", err)
+				return fmt.Errorf("Unable to write npm dependency file: %w", err)
 			}
 		}
 	}
-
+	return nil
 }

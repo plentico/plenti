@@ -8,7 +8,6 @@ import (
 
 	"plenti/readers"
 
-	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/cobra"
 )
 
@@ -59,12 +58,7 @@ You can also set a different port in your site config file.`,
 		}
 		// Watch filesystem for changes.
 		gowatch(buildDir)
-		// Creates a new file watcher.
-		watcher, err := fsnotify.NewWatcher()
-		if err != nil {
-			log.Fatalf("couldn't create 'fsnotify.Watcher'")
-		}
-		defer watcher.Close()
+
 		fmt.Printf("\nServing site from your \"%v\" directory.\n", buildDir)
 
 		// Point to folder containing the built site

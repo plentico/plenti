@@ -54,9 +54,9 @@ Optionally add a _blueprint.json file to define the default field structure for 
 		// shoud we stop here on error from either?
 		if SingleTypeFlag {
 
-			singleTypeProcess(typeName)
+			CheckErr(singleTypeProcess(typeName))
 		} else {
-			doTypeContentPath(typeName)
+			CheckErr(doTypeContentPath(typeName))
 		}
 
 		if EndpointFlag {
@@ -76,29 +76,30 @@ Optionally add a _blueprint.json file to define the default field structure for 
 	},
 }
 
-func doTypeContentPath(typeName string) {
+func doTypeContentPath(typeName string) error {
 	typeContentPath := fmt.Sprintf("content/%s", strings.Trim(typeName, " /"))
 	//  !os.IsNotExist is true, the path exists. os.IsExist(err) == nil for Stat if file exists
 	if _, err := os.Stat(typeContentPath); !os.IsNotExist(err) {
 		fmt.Printf("A Type content source with the same name located at \"%s/\" already exists\n", typeContentPath)
-		return
+		// an error?
+		return nil
 
 	}
 
 	if _, err := os.Stat(typeContentPath + ".json"); !os.IsNotExist(err) {
 		// error or not?
 		fmt.Printf("A single file Type content source with the same name located at \"%s.json\" already exists\n", typeContentPath)
-		return
+		return nil
 	}
 
 	fmt.Printf("Creating new Type content source: %s/\n", typeContentPath)
 	if err := os.MkdirAll(typeContentPath, os.ModePerm); err != nil {
-		log.Fatalf("Can't create type named \"%s\": %s", typeName, err)
+		return fmt.Errorf("Can't create type named \"%s\": %w", typeName, err)
 	}
 	if _, err := os.OpenFile(typeContentPath+"/_blueprint.json", os.O_RDONLY|os.O_CREATE, os.ModePerm); err != nil {
-		log.Fatalf("Can't create _blueprint.json for type \"%s\": %s", typeName, err)
+		return fmt.Errorf("Can't create _blueprint.json for type \"%s\": %w", typeName, err)
 	}
-
+	return nil
 }
 func singleTypeProcess(typeName string) error {
 	singleTypePath := fmt.Sprintf("content/%s.json", typeName)
@@ -115,16 +116,16 @@ func singleTypeProcess(typeName string) error {
 	f, err := os.OpenFile(singleTypePath, os.O_RDWR|os.O_CREATE, os.ModePerm)
 
 	if err != nil {
-		errorMsg := fmt.Sprintf("Can't create single type named \"%s\": %v", typeName, err)
-		fmt.Printf(errorMsg)
-		return errors.New(errorMsg)
+		errorMsg := fmt.Errorf("Can't create single type named \"%s\": %w", typeName, err)
+		fmt.Println(errorMsg)
+		return errorMsg
 	}
 
 	_, err = f.Write([]byte("{}"))
 	if err != nil {
-		errorMsg := fmt.Sprintf("Can't add empty curly brackets to single type named \"%s\": %v", typeName, err)
-		fmt.Printf(errorMsg)
-		return errors.New(errorMsg)
+		err = fmt.Errorf("Can't add empty curly brackets to single type named \"%s\": %w", typeName, err)
+		fmt.Println(err)
+		return err
 	}
 	// can be non-nil error
 	return f.Close()

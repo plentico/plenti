@@ -3,25 +3,25 @@ package build
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"plenti/readers"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 )
 
 // NodeDataSource gathers data json from "content/" directory to use in NodeJS build (NOTE: This is legacy).
-func NodeDataSource(buildPath string, siteConfig readers.SiteConfig) (string, string) {
+func NodeDataSource(buildPath string, siteConfig readers.SiteConfig) (string, string, error) {
 
 	defer Benchmark(time.Now(), "Creating data_source")
 
 	Log("\nGathering data source from 'content/' folder")
 
 	contentJSPath := buildPath + "/spa/ejected/content.js"
-	os.MkdirAll(buildPath+"/spa/ejected", os.ModePerm)
+	if err := os.MkdirAll(buildPath+"/spa/ejected", os.ModePerm); err != nil {
+		return "", "", err
+	}
 
 	// Set up counter for logging output.
 	contentFileCounter := 0
@@ -48,9 +48,10 @@ func NodeDataSource(buildPath string, siteConfig readers.SiteConfig) (string, st
 			if fileName[:1] != "_" && fileName[:1] != "." {
 
 				// Get the contents of the file.
-				fileContentBytes, readFileErr := ioutil.ReadFile(path)
-				if readFileErr != nil {
-					fmt.Printf("Could not read content file: %s\n", readFileErr)
+				fileContentBytes, err := ioutil.ReadFile(path)
+				if err != nil {
+					fmt.Printf("Could not read content file: %s\n", err)
+					return err
 				}
 				fileContentStr := string(fileContentBytes)
 
@@ -122,14 +123,14 @@ func NodeDataSource(buildPath string, siteConfig readers.SiteConfig) (string, st
 					"\"fields\": " + fileContentStr + "\n}"
 
 				// Create new content.js file if it doesn't already exist, or add to it if it does.
-				contentJSFile, openContentJSErr := os.OpenFile(contentJSPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-				if openContentJSErr != nil {
-					fmt.Printf("Could not open content.js for writing: %s", openContentJSErr)
+				contentJSFile, err := os.OpenFile(contentJSPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+				if err != nil {
+					fmt.Printf("Could not open content.js for writing: %s", err)
 				}
 				// Write to the file with info from current file in "/content" folder.
 				defer contentJSFile.Close()
 				if _, err := contentJSFile.WriteString(contentDetailsStr + ","); err != nil {
-					log.Println(err)
+					return err
 				}
 
 				// Need to encode html so it can be send as string to NodeJS in exec.Command.
@@ -152,6 +153,7 @@ func NodeDataSource(buildPath string, siteConfig readers.SiteConfig) (string, st
 				// Do not add a content source without a corresponding template to the build string.
 				if _, noEndpointErr := os.Stat(componentPath); os.IsNotExist(noEndpointErr) {
 					// The componentPath does not exist, go to the next content source.
+					// this is/should be an error?
 					return nil
 				}
 				// Add to list of data_source files for creating static HTML.
@@ -169,21 +171,22 @@ func NodeDataSource(buildPath string, siteConfig readers.SiteConfig) (string, st
 	}
 
 	// Complete the content.js file.
-	contentJSFile, openContentJSErr := os.OpenFile(contentJSPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if openContentJSErr != nil {
-		fmt.Printf("Could not open content.js for writing: %s", openContentJSErr)
+	contentJSFile, err := os.OpenFile(contentJSPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Printf("Could not open content.js for writing: %s", err)
+		return "", "", err
 	}
 	defer contentJSFile.Close()
 	if _, err := contentJSFile.WriteString("];\n\nexport default contentSource;"); err != nil {
-		log.Println(err)
+		return "", "", err
 	}
 
 	// End the string that will be sent to nodejs for compiling.
 	staticBuildStr = strings.TrimSuffix(staticBuildStr, ",") + "]"
 	allContentStr = strings.TrimSuffix(allContentStr, ",") + "]"
 
-	Log("Number of content files used: " + strconv.Itoa(contentFileCounter))
+	Log(fmt.Sprintf("Number of content files used: %d", contentFileCounter))
 
-	return staticBuildStr, allContentStr
+	return staticBuildStr, allContentStr, nil
 
 }

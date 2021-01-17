@@ -9,16 +9,19 @@ import (
 )
 
 // SetSiteConfig writes values to the site's configuration file.
-func SetSiteConfig(siteConfig readers.SiteConfig, configPath string) {
+func SetSiteConfig(siteConfig readers.SiteConfig, configPath string) error {
 
 	result, err := json.MarshalIndent(siteConfig, "", "\t")
 	if err != nil {
-		fmt.Printf("Unable to marshal JSON: %s\n", err)
+		return fmt.Errorf("Unable to marshal JSON: %v", err)
+
 	}
 
 	// Write values to site config file for the project.
-	writeErr := ioutil.WriteFile(configPath, result, os.ModePerm)
-	if writeErr != nil {
-		fmt.Printf("Unable to write to config file: %s\n", writeErr)
+	err = ioutil.WriteFile(configPath, result, os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("Unable to write to config file: %w", err)
+
 	}
+	return nil
 }

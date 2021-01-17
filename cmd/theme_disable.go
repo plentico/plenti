@@ -47,7 +47,7 @@ will no longer inherit assets, content, and layout from this theme.
 		}
 		siteConfig.Theme = ""
 		// Update the config file on the filesystem.
-		writers.SetSiteConfig(siteConfig, configPath)
+		CheckErr(writers.SetSiteConfig(siteConfig, configPath))
 
 	},
 }

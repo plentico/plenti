@@ -42,7 +42,7 @@ and layout from the theme you enabled.
 			siteConfig.Theme = repoName
 
 			// Update the config file on the filesystem.
-			writers.SetSiteConfig(siteConfig, configPath)
+			CheckErr(writers.SetSiteConfig(siteConfig, configPath))
 		} else {
 			fmt.Printf("Could not locate '%v' theme: %v\n", repoName, err)
 		}
