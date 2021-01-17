@@ -18,6 +18,7 @@ func Bundle() []byte {
 		//Externals:   []string{"module", "fs", "path"},
 		Bundle: true,
 	})
+	// error?
 	if result.Errors != nil {
 		fmt.Printf("Error bundling dependencies for build script: %v\n", result.Errors)
 	}

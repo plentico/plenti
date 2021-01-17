@@ -10,7 +10,7 @@ import (
 )
 
 // NodeClient preps the client SPA for execution via NodeJS (NOTE: This is legacy functionality).
-func NodeClient(buildPath string) string {
+func NodeClient(buildPath string) (string, error) {
 
 	defer Benchmark(time.Now(), "Prepping client SPA data")
 
@@ -31,7 +31,9 @@ func NodeClient(buildPath string) string {
 		// Make sure path is a directory
 		if layoutFileInfo.IsDir() {
 			// Create any sub directories need for filepath.
-			os.MkdirAll(destFile, os.ModePerm)
+			if err = os.MkdirAll(destFile, os.ModePerm); err != nil {
+				return fmt.Errorf("cannot create sub directories need for filepath %s: %w", destFile, err)
+			}
 		} else {
 			// If the file is in .svelte format, compile it to .js
 			if filepath.Ext(layoutPath) == ".svelte" {
@@ -49,7 +51,7 @@ func NodeClient(buildPath string) string {
 		return nil
 	})
 	if layoutFilesErr != nil {
-		fmt.Printf("Could not get layout file: %s", layoutFilesErr)
+		return "", fmt.Errorf("Could not get layout file: %w", layoutFilesErr)
 	}
 
 	// Get router from ejected core. NOTE if you remove this, trim the trailing comma below.
@@ -61,6 +63,6 @@ func NodeClient(buildPath string) string {
 
 	Log("Number of components to be compiled: " + strconv.Itoa(compiledComponentCounter))
 
-	return clientBuildStr
+	return clientBuildStr, nil
 
 }

@@ -1,11 +1,10 @@
 package build
 
 import (
+	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -36,33 +35,33 @@ func AssetsCopy(buildPath string, tempBuildDir string) error {
 		}
 		from, err := os.Open(assetPath)
 		if err != nil {
-			log.Printf("Could not open asset for copying: %v\n", err)
-			return err
+			return fmt.Errorf("Could not open asset for copying: %w", err)
+
 		}
 		defer from.Close()
 
 		to, err := os.Create(destPath)
 		if err != nil {
-			log.Printf("Could not create destination asset for copying: %v\n", err)
-			return err
+			return fmt.Errorf("Could not create destination asset for copying: %w", err)
+
 		}
 		defer to.Close()
 
 		_, err = io.Copy(to, from)
 		if err != nil {
-			log.Printf("Could not copy asset from source to destination: %v\n", err)
-			return err
+			return fmt.Errorf("Could not copy asset from source to destination: %w", err)
+
 		}
 
 		copiedSourceCounter++
 		return nil
 	})
 	if err != nil {
-		log.Printf("Could not get asset file: %s", err)
-		return err
+		return fmt.Errorf("Could not get asset file: %w", err)
+
 	}
 
-	Log("Number of assets copied: " + strconv.Itoa(copiedSourceCounter))
+	Log(fmt.Sprintf("Number of assets copied: %d", copiedSourceCounter))
 	return nil
 
 }

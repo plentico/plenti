@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"plenti/common"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -54,9 +55,9 @@ Optionally add a _blueprint.json file to define the default field structure for 
 		// shoud we stop here on error from either?
 		if SingleTypeFlag {
 
-			CheckErr(singleTypeProcess(typeName))
+			common.CheckErr(singleTypeProcess(typeName))
 		} else {
-			CheckErr(doTypeContentPath(typeName))
+			common.CheckErr(doTypeContentPath(typeName))
 		}
 
 		if EndpointFlag {

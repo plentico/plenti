@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"plenti/common"
 
 	"github.com/spf13/cobra"
 
@@ -33,7 +34,7 @@ Learn more at https://plenti.co`,
 		if versionFlag {
 			fmt.Println(Version)
 		} else {
-			CheckErr(cmd.Help())
+			common.CheckErr(cmd.Help())
 		}
 	},
 }

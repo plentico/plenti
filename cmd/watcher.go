@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"plenti/cmd/build"
+	"plenti/common"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -84,7 +85,7 @@ func (w *watcher) watch(buildPath string) {
 					for _, event := range events {
 						if event.Op&fsnotify.Create == fsnotify.Create {
 							build.Log("File create detected: " + event.String())
-							CheckErr(w.Add(event.Name))
+							common.CheckErr(w.Add(event.Name))
 							build.Log("Now watching " + event.Name)
 						}
 						if event.Op&fsnotify.Write == fsnotify.Write {

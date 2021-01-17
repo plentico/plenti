@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"plenti/common"
 	"plenti/readers"
 	"plenti/writers"
 	"strings"
@@ -113,7 +114,7 @@ To use https://plenti.co as a theme for example, run: plenti new theme git@githu
 		siteConfig.ThemeConfig[repoName] = *themeOptions
 
 		// Update the config file on the filesystem.
-		CheckErr(writers.SetSiteConfig(siteConfig, configPath))
+		common.CheckErr(writers.SetSiteConfig(siteConfig, configPath))
 
 	},
 }
