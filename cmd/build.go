@@ -77,13 +77,10 @@ func Build() {
 		themeOptions := siteConfig.ThemeConfig[theme]
 		// Recursively copy all nested themes to a temp folder for building.
 		tempBuildDir, err = build.ThemesCopy("themes/"+theme, themeOptions)
-		if err != nil {
-			log.Fatal(err)
-		}
+		common.CheckErr(err)
 		// Merge the current project files with the theme.
-		if err = build.ThemesMerge(tempBuildDir, buildDir); err != nil {
-			log.Fatal(err)
-		}
+		err = build.ThemesMerge(tempBuildDir, buildDir)
+		common.CheckErr(err)
 	}
 
 	// Get the full path for the build directory of the site.
