@@ -129,19 +129,14 @@ func Gopack(buildPath string) {
 					// A named import/export is being used, look for this in "web_modules/" dir.
 					namedPath := buildPath + "/spa/web_modules/" + pathStr
 					// Check all files in the current directory first.
-					files, _ := ioutil.ReadDir(namedPath)
-					for _, f := range files {
-						if filepath.Ext(f.Name()) == ".js" {
-							foundPath = namedPath + "/" + f.Name()
-							Log("The found import path to use is: " + foundPath)
-						}
-					}
+					foundPath = findJSFile(namedPath)
 					if foundPath == "" {
 						// If JS file was not found in the current directory, check nested directories.
-						findNamedPathErr := filepath.Walk(namedPath, func(namedPath string, namedPathFileInfo os.FileInfo, err error) error {
-							if filepath.Ext(namedPath) == ".js" {
-								foundPath = namedPath
-								Log("The found import path to use is: " + foundPath)
+						findNamedPathErr := filepath.Walk(namedPath, func(subPath string, subPathFileInfo os.FileInfo, err error) error {
+							// We've already checked all files, so look in next dir.
+							if subPathFileInfo.IsDir() {
+								// Check for any JS files at this dir level.
+								foundPath = findJSFile(subPath)
 							}
 							return nil
 						})
@@ -175,4 +170,20 @@ func Gopack(buildPath string) {
 		fmt.Printf("Could not convert file to support esm: %s", convertErr)
 	}
 
+}
+
+// Checks for a JS file in the directory given.
+func findJSFile(path string) string {
+	var foundPath string
+	files, err := ioutil.ReadDir(path)
+	for _, f := range files {
+		if filepath.Ext(f.Name()) == ".js" {
+			foundPath = path + "/" + f.Name()
+			Log("The found import path to use is: " + foundPath)
+		}
+	}
+	if err != nil {
+		fmt.Printf("Could not read files in current dir: %s", err)
+	}
+	return foundPath
 }
