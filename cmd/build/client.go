@@ -94,15 +94,19 @@ func Client(buildPath string, tempBuildDir string, ejectedPath string) {
 
 				// Replace .svelte file extension with .js.
 				destFile = strings.TrimSuffix(destFile, filepath.Ext(destFile)) + ".js"
+				// Convert any spaces into hyphens.
+				destFile = strings.ReplaceAll(destFile, " ", "-")
 
 				compileSvelte(ctx, SSRctx, layoutPath, destFile, stylePath, tempBuildDir)
 
 				// Remove temporary theme build directory.
 				destLayoutPath := strings.TrimPrefix(layoutPath, tempBuildDir)
 				// Create entry for layout.js.
-				layoutSignature := strings.ReplaceAll(strings.ReplaceAll((destLayoutPath), "/", "_"), ".", "_")
+				layoutSignature := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll((destLayoutPath), "/", "_"), ".", "_"), " ", "_")
 				// Remove layout directory.
 				destLayoutPath = strings.TrimPrefix(destLayoutPath, "layout/")
+				// Convert any spaces into hyphens.
+				destLayoutPath = strings.ReplaceAll(destLayoutPath, " ", "-")
 				// Compose entry for layout.js file.
 				allComponentsStr = allComponentsStr + "export {default as " + layoutSignature + "} from '../" + destLayoutPath + "';\n"
 
@@ -188,7 +192,7 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string, d
 	// Remove temporary theme directory info from path before making a comp signature.
 	layoutPath = strings.TrimPrefix(layoutPath, tempBuildDir)
 	// Create custom variable name for component based on the file path for the layout.
-	componentSignature := strings.ReplaceAll(strings.ReplaceAll(layoutPath, "/", "_"), ".", "_")
+	componentSignature := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(layoutPath, "/", "_"), ".", "_"), " ", "_")
 	// Use signature instead of generic "Component". Add space to avoid also replacing part of "loadComponent".
 	ssrStr = strings.ReplaceAll(ssrStr, " Component ", " "+componentSignature+" ")
 

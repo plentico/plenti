@@ -83,6 +83,8 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 
 				// Remove the extension (if it exists) from single types since the filename = the type name.
 				contentType = strings.TrimSuffix(contentType, filepath.Ext(contentType))
+				// Convert any spaces (if found) into underscores.
+				contentType = strings.ReplaceAll(contentType, " ", "_")
 
 				// Get field key/values from content source.
 				typeFields := readers.GetTypeFields(fileContentBytes)
