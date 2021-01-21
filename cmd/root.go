@@ -49,6 +49,9 @@ func Execute() {
 }
 
 func init() {
+	// Print line numbers with errors: https://stackoverflow.com/questions/35679647/trick-to-quickly-find-file-line-number-throwing-an-error-in-go/35793633
+	log.SetFlags(log.Lshortfile | log.LstdFlags)
+
 	cobra.OnInitialize(initConfig)
 
 	// Here you will define your flags and configuration settings.
