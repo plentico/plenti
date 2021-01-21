@@ -67,7 +67,6 @@ func Gopack(buildPath string) error {
 			if err != nil {
 				return fmt.Errorf("Could not read file to convert to esm: %w", err)
 			}
-			//fmt.Printf("The file to convert to esm is: %s\n", convertPath)
 
 			// Match dynamic import statments, e.g. import("") or import('').
 			reDynamicImport := regexp.MustCompile(`import\((?:'|").*(?:'|")\)`)
@@ -132,15 +131,22 @@ func Gopack(buildPath string) error {
 					}
 				} else {
 					// A named import/export is being used, look for this in "web_modules/" dir.
-					findNamedPathErr := filepath.Walk(buildPath+"/spa/web_modules/"+pathStr, func(namedPath string, namedPathFileInfo os.FileInfo, err error) error {
-						if filepath.Ext(namedPath) == ".js" {
-							foundPath = namedPath
-							Log("The found import path to use is: " + foundPath)
+					namedPath := buildPath + "/spa/web_modules/" + pathStr
+					// Check all files in the current directory first.
+					foundPath = findJSFile(namedPath)
+					if foundPath == "" {
+						// If JS file was not found in the current directory, check nested directories.
+						findNamedPathErr := filepath.Walk(namedPath, func(subPath string, subPathFileInfo os.FileInfo, err error) error {
+							// We've already checked all files, so look in next dir.
+							if subPathFileInfo.IsDir() {
+								// Check for any JS files at this dir level.
+								foundPath = findJSFile(subPath)
+							}
+							return nil
+						})
+						if findNamedPathErr != nil {
+              return fmt.Errorf("Could not find related .js file from named import: %w", findNamedPathErr)
 						}
-						return nil
-					})
-					if findNamedPathErr != nil {
-						return fmt.Errorf("Could not find related .js file from named import: %w", findNamedPathErr)
 					}
 				}
 				if foundPath != "" {
@@ -169,4 +175,20 @@ func Gopack(buildPath string) error {
 	}
 	return nil
 
+}
+
+// Checks for a JS file in the directory given.
+func findJSFile(path string) string {
+	var foundPath string
+	files, err := ioutil.ReadDir(path)
+	for _, f := range files {
+		if filepath.Ext(f.Name()) == ".js" {
+			foundPath = path + "/" + f.Name()
+			Log("The found import path to use is: " + foundPath)
+		}
+	}
+	if err != nil {
+		fmt.Printf("Could not read files in current dir: %s", err)
+	}
+	return foundPath
 }
