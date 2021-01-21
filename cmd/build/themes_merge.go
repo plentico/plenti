@@ -50,7 +50,7 @@ func ThemesMerge(tempBuildDir string, buildDir string) error {
 
 		// Create the folders needed to write files to tempDir.
 		if projectFileInfo.IsDir() {
-			// Make directory if it doesn't exist.
+			// Make directory if it doesn't exist and move on to next path.
 			return os.MkdirAll(destPath, os.ModePerm)
 
 		}

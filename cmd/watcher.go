@@ -53,7 +53,7 @@ func (w *watcher) watch(buildPath string) {
 		}
 	}
 	if err := w.Add("plenti.json"); err != nil {
-		log.Fatalf("couldn't add 'plenti.json' to wather")
+		log.Fatalf("couldn't add 'plenti.json' to watcher")
 
 	}
 	if err := w.Add("package.json"); err != nil {

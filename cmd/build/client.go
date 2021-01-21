@@ -3,7 +3,6 @@ package build
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"plenti/readers"
@@ -32,7 +31,6 @@ func Client(buildPath string, tempBuildDir string, ejectedPath string) error {
 
 	// Set up counter for logging output.
 	compiledComponentCounter := 0
-	log.Println(tempBuildDir, 3333333)
 
 	// Get svelte compiler code from node_modules.
 	compiler, err := ioutil.ReadFile(
@@ -90,11 +88,15 @@ func Client(buildPath string, tempBuildDir string, ejectedPath string) error {
 		// Use empty noop() function created above instead of missing method.
 		createSsrStr = strings.ReplaceAll(createSsrStr, "internal.noop", "noop")
 		_, err = SSRctx.RunScript(createSsrStr, "create_ssr")
-		// `ReferenceError: require is not defined` error on build so cannot quit ...
-		if err != nil {
-			fmt.Printf("Could not add create_ssr_component() func from svelte/internal: %v", err)
-			// return err
-		}
+		SSRctx.RunScript(createSsrStr, "create_ssr")
+		/*
+			// `ReferenceError: require is not defined` error on build so cannot quit ...
+			if err != nil {
+				fmt.Printf("Could not add create_ssr_component() func from svelte/internal: %v", err)
+				// return err
+			}
+			// TODO: Fix this ^
+		*/
 	}
 
 	// Compile router separately since it's ejected from core.

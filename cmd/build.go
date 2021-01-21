@@ -50,9 +50,10 @@ you need to deploy for your website.`,
 // Build creates the compiled app that gets deployed.
 func Build() {
 
+	defer build.Benchmark(time.Now(), "Total build", true)
+
 	build.CheckVerboseFlag(VerboseFlag)
 	build.CheckBenchmarkFlag(BenchmarkFlag)
-	defer build.Benchmark(time.Now(), "Total build", true)
 
 	// Handle panic when someone tries building outside of a valid Plenti site.
 	defer func() {

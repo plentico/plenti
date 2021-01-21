@@ -69,18 +69,11 @@ func initConfig() {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
 	} else {
-		// there since go 1.12. ok?
 		home, err := os.UserHomeDir()
 		if err != nil {
 			log.Fatal(err)
 
 		}
-		// // Find home directory.
-		// home, err := homedir.Dir()
-		// if err != nil {
-		// 	log.Fatal(err)
-
-		// }
 
 		// Search config in home directory with name ".plenti" (without extension).
 		viper.AddConfigPath(home)
