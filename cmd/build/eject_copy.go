@@ -5,13 +5,12 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 )
 
 // EjectCopy does a direct copy of any ejectable js files needed in spa build dir.
-func EjectCopy(buildPath string, tempBuildDir string, ejectedDir string) {
+func EjectCopy(buildPath string, tempBuildDir string, ejectedDir string) error {
 
 	defer Benchmark(time.Now(), "Copying ejectable core files for build")
 
@@ -35,23 +34,25 @@ func EjectCopy(buildPath string, tempBuildDir string, ejectedDir string) {
 		if filepath.Ext(ejectPath) == ".js" && !excluded {
 
 			destPath := buildPath + "/spa/"
-			os.MkdirAll(destPath+strings.TrimPrefix(ejectedDir, tempBuildDir), os.ModePerm)
+			if err := os.MkdirAll(destPath+strings.TrimPrefix(ejectedDir, tempBuildDir), os.ModePerm); err != nil {
+				return err
+			}
 
 			from, err := os.Open(ejectPath)
 			if err != nil {
-				fmt.Printf("Could not open source .js file for copying: %s\n", err)
+				return fmt.Errorf("Could not open source .js file for copying: %w", err)
 			}
 			defer from.Close()
 
 			to, err := os.Create(destPath + strings.TrimPrefix(ejectPath, tempBuildDir))
 			if err != nil {
-				fmt.Printf("Could not create destination .js file for copying: %s\n", err)
+				return fmt.Errorf("Could not create destination .js file for copying: %w", err)
 			}
 			defer to.Close()
 
-			_, fileCopyErr := io.Copy(to, from)
+			_, err = io.Copy(to, from)
 			if err != nil {
-				fmt.Printf("Could not copy .js from source to destination: %s\n", fileCopyErr)
+				return fmt.Errorf("Could not copy .js from source to destination: %w", err)
 			}
 
 			copiedSourceCounter++
@@ -59,9 +60,10 @@ func EjectCopy(buildPath string, tempBuildDir string, ejectedDir string) {
 		return nil
 	})
 	if ejectedFilesErr != nil {
-		fmt.Printf("Could not get ejectable file: %s", ejectedFilesErr)
+		return fmt.Errorf("Could not get ejectable file: %w", ejectedFilesErr)
 	}
 
-	Log("Number of ejectable core files copied: " + strconv.Itoa(copiedSourceCounter))
+	Log(fmt.Sprintf("Number of ejectable core files copied: %d\n", copiedSourceCounter))
+	return nil
 
 }

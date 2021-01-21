@@ -12,7 +12,7 @@ import (
 )
 
 // ThemesCopy copies nested themes into a temporary working directory.
-func ThemesCopy(theme string, themeOptions readers.ThemeOptions) string {
+func ThemesCopy(theme string, themeOptions readers.ThemeOptions) (string, error) {
 
 	defer Benchmark(time.Now(), "Building themes")
 
@@ -24,7 +24,10 @@ func ThemesCopy(theme string, themeOptions readers.ThemeOptions) string {
 		// Look for options (like excluded folders) in theme.
 		nestedThemeOptions := siteConfig.ThemeConfig[nestedTheme]
 		// Recursively run merge on nested theme.
-		ThemesCopy(theme+"/themes/"+nestedTheme, nestedThemeOptions)
+		_, err := ThemesCopy(theme+"/themes/"+nestedTheme, nestedThemeOptions)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	// Name of temporary directory to run build inside.
@@ -57,7 +60,7 @@ func ThemesCopy(theme string, themeOptions readers.ThemeOptions) string {
 		// Read the source theme file.
 		from, err := os.Open(themeFilePath)
 		if err != nil {
-			fmt.Printf("Could not open theme file for copying: %s\n", err)
+			return fmt.Errorf("Could not open theme file for copying: %w", err)
 		}
 		defer from.Close()
 
@@ -67,20 +70,19 @@ func ThemesCopy(theme string, themeOptions readers.ThemeOptions) string {
 		// Create the folders needed to write files to tempDir.
 		if themeFileInfo.IsDir() {
 			// Make directory if it doesn't exist.
-			os.MkdirAll(destPath, os.ModePerm)
 			// Move on to next path.
-			return nil
+			return os.MkdirAll(destPath, os.ModePerm)
 		}
 
 		to, err := os.Create(destPath)
 		if err != nil {
-			fmt.Printf("Could not create destination theme file for copying: %s\n", err)
+			return fmt.Errorf("Could not create destination theme file for copying: %w", err)
 		}
 		defer to.Close()
 
 		_, fileCopyErr := io.Copy(to, from)
 		if err != nil {
-			fmt.Printf("Could not copy theme file from source to destination: %s\n", fileCopyErr)
+			return fmt.Errorf("Could not copy theme file from source to destination: %w", fileCopyErr)
 		}
 
 		copiedThemeFileCounter++
@@ -88,11 +90,11 @@ func ThemesCopy(theme string, themeOptions readers.ThemeOptions) string {
 		return nil
 	})
 	if themeFilesErr != nil {
-		fmt.Printf("Could not get theme file: %s", themeFilesErr)
+		return "", fmt.Errorf("Could not get theme file: %w", themeFilesErr)
 	}
 
 	Log("Number of theme files copied: " + strconv.Itoa(copiedThemeFileCounter))
 
-	return tempBuildDir
+	return tempBuildDir, nil
 
 }

@@ -5,13 +5,12 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 )
 
 // AssetsCopy does a direct copy of any static assets.
-func AssetsCopy(buildPath string, tempBuildDir string) {
+func AssetsCopy(buildPath string, tempBuildDir string) error {
 
 	defer Benchmark(time.Now(), "Copying static assets into build dir")
 
@@ -23,41 +22,46 @@ func AssetsCopy(buildPath string, tempBuildDir string) {
 
 	// Exit function if "assets/" directory does not exist.
 	if _, err := os.Stat(assetsDir); os.IsNotExist(err) {
-		return
+		return err
 	}
 
-	assetFilesErr := filepath.Walk(assetsDir, func(assetPath string, assetFileInfo os.FileInfo, err error) error {
+	err := filepath.Walk(assetsDir, func(assetPath string, assetFileInfo os.FileInfo, err error) error {
 		destPath := buildPath + "/" + strings.TrimPrefix(assetPath, tempBuildDir)
 		if assetFileInfo.IsDir() {
 			// Make directory if it doesn't exist.
-			os.MkdirAll(destPath, os.ModePerm)
 			// Move on to next path.
-			return nil
+			return os.MkdirAll(destPath, os.ModePerm)
+
 		}
 		from, err := os.Open(assetPath)
 		if err != nil {
-			fmt.Printf("Could not open asset for copying: %s\n", err)
+			return fmt.Errorf("Could not open asset for copying: %w", err)
+
 		}
 		defer from.Close()
 
 		to, err := os.Create(destPath)
 		if err != nil {
-			fmt.Printf("Could not create destination asset for copying: %s\n", err)
+			return fmt.Errorf("Could not create destination asset for copying: %w", err)
+
 		}
 		defer to.Close()
 
-		_, fileCopyErr := io.Copy(to, from)
+		_, err = io.Copy(to, from)
 		if err != nil {
-			fmt.Printf("Could not copy asset from source to destination: %s\n", fileCopyErr)
+			return fmt.Errorf("Could not copy asset from source to destination: %w", err)
+
 		}
 
 		copiedSourceCounter++
 		return nil
 	})
-	if assetFilesErr != nil {
-		fmt.Printf("Could not get asset file: %s", assetFilesErr)
+	if err != nil {
+		return fmt.Errorf("Could not get asset file: %w", err)
+
 	}
 
-	Log("Number of assets copied: " + strconv.Itoa(copiedSourceCounter))
+	Log(fmt.Sprintf("Number of assets copied: %d", copiedSourceCounter))
+	return nil
 
 }

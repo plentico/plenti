@@ -14,7 +14,7 @@ import (
 )
 
 // Gopack ensures ESM support for NPM dependencies.
-func Gopack(buildPath string) {
+func Gopack(buildPath string) error {
 
 	defer Benchmark(time.Now(), "Running Gopack")
 
@@ -31,38 +31,41 @@ func Gopack(buildPath string) {
 			if !moduleFileInfo.IsDir() && filepath.Ext(modulePath) == ".mjs" {
 				from, err := os.Open(modulePath)
 				if err != nil {
-					fmt.Printf("Could not open source .mjs file for copying: %s\n", err)
+					return fmt.Errorf("Could not open source .mjs file for copying: %w", err)
 				}
 				defer from.Close()
 
 				// Remove "node_modules" from path and add "web_modules".
 				modulePath = gopackDir + strings.Replace(modulePath, "node_modules", "", 1)
 				// Create any subdirectories need to write file to "web_modules" destination.
-				os.MkdirAll(filepath.Dir(modulePath), os.ModePerm)
+				if err = os.MkdirAll(filepath.Dir(modulePath), os.ModePerm); err != nil {
+					return err
+				}
 				// Change the .mjs file extension to .js.
 				modulePath = strings.TrimSuffix(modulePath, filepath.Ext(modulePath)) + ".js"
 				to, err := os.Create(modulePath)
 				if err != nil {
-					fmt.Printf("Could not create destination .mjs file for copying: %s\n", err)
+					return fmt.Errorf("Could not create destination .mjs file for copying: %w", err)
 				}
 				defer to.Close()
 
-				_, fileCopyErr := io.Copy(to, from)
+				_, err = io.Copy(to, from)
 				if err != nil {
-					fmt.Printf("Could not copy .mjs from source to destination: %s\n", fileCopyErr)
+					return fmt.Errorf("Could not copy .mjs from source to destination: %w", err)
 				}
 			}
 			return nil
 		})
 		if nodeModuleErr != nil {
-			fmt.Printf("Could not get node module: %s", nodeModuleErr)
+			return fmt.Errorf("Could not get node module: %w", nodeModuleErr)
 		}
+
 	}
 	convertErr := filepath.Walk(buildPath+"/spa", func(convertPath string, convertFileInfo os.FileInfo, err error) error {
 		if !convertFileInfo.IsDir() && filepath.Ext(convertPath) == ".js" {
 			contentBytes, err := ioutil.ReadFile(convertPath)
 			if err != nil {
-				fmt.Printf("Could not read file to convert to esm: %s\n", err)
+				return fmt.Errorf("Could not read file to convert to esm: %w", err)
 			}
 
 			// Match dynamic import statments, e.g. import("") or import('').
@@ -112,6 +115,7 @@ func Gopack(buildPath string) {
 				}
 				// If the import/export points to a path that exists and it is a .js file (imports must reference the file specifically) then we don't need to convert anything.
 				if _, pathExistsErr := os.Stat(fullPath); !os.IsNotExist(pathExistsErr) && filepath.Ext(fullPath) == ".js" {
+					// error?
 					Log("Skipping converting import/export in " + convertPath + " because import/export is valid: " + string(staticStatement))
 				} else if pathStr[:1] == "." {
 					// If the import/export path starts with a dot (.) or double dot (..) look for the file it's trying to import from this relative path.
@@ -123,7 +127,7 @@ func Gopack(buildPath string) {
 						return nil
 					})
 					if findRelativePathErr != nil {
-						fmt.Printf("Could not find related .mjs file: %s", findRelativePathErr)
+						return fmt.Errorf("Could not find related .mjs file: %w", findRelativePathErr)
 					}
 				} else {
 					// A named import/export is being used, look for this in "web_modules/" dir.
@@ -141,7 +145,7 @@ func Gopack(buildPath string) {
 							return nil
 						})
 						if findNamedPathErr != nil {
-							fmt.Printf("Could not find related .js file from named import: %s", findNamedPathErr)
+              return fmt.Errorf("Could not find related .js file from named import: %w", findNamedPathErr)
 						}
 					}
 				}
@@ -159,16 +163,17 @@ func Gopack(buildPath string) {
 				}
 			}
 			// Overwrite the old file with the new content that contains the updated import path.
-			overwritePathErr := ioutil.WriteFile(convertPath, contentBytes, 0644)
-			if overwritePathErr != nil {
-				fmt.Printf("Could not overwite %s with new import: %s", convertPath, overwritePathErr)
+			err = ioutil.WriteFile(convertPath, contentBytes, 0644)
+			if err != nil {
+				return fmt.Errorf("Could not overwite %s with new import: %w", convertPath, err)
 			}
 		}
 		return nil
 	})
 	if convertErr != nil {
-		fmt.Printf("Could not convert file to support esm: %s", convertErr)
+		return fmt.Errorf("Could not convert file to support esm: %w", convertErr)
 	}
+	return nil
 
 }
 

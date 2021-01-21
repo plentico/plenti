@@ -11,7 +11,7 @@ import (
 )
 
 // ThemesMerge combines any nested themes with the current project.
-func ThemesMerge(tempBuildDir string, buildDir string) {
+func ThemesMerge(tempBuildDir string, buildDir string) error {
 
 	defer Benchmark(time.Now(), "Merging themes with your project")
 
@@ -41,7 +41,7 @@ func ThemesMerge(tempBuildDir string, buildDir string) {
 		// Read the source project file.
 		from, err := os.Open(projectFilePath)
 		if err != nil {
-			fmt.Printf("Could not open project file for copying: %s\n", err)
+			return fmt.Errorf("Could not open project file for copying: %w", err)
 		}
 		defer from.Close()
 
@@ -51,20 +51,19 @@ func ThemesMerge(tempBuildDir string, buildDir string) {
 		// Create the folders needed to write files to tempDir.
 		if projectFileInfo.IsDir() {
 			// Make directory if it doesn't exist.
-			os.MkdirAll(destPath, os.ModePerm)
-			// Move on to next path.
-			return nil
+			return os.MkdirAll(destPath, os.ModePerm)
+
 		}
 
 		to, err := os.Create(destPath)
 		if err != nil {
-			fmt.Printf("Could not create destination project file for copying: %s\n", err)
+			return fmt.Errorf("Could not create destination project file for copying: %w", err)
 		}
 		defer to.Close()
 
 		_, fileCopyErr := io.Copy(to, from)
 		if err != nil {
-			fmt.Printf("Could not copy project file from source to destination: %s\n", fileCopyErr)
+			return fmt.Errorf("Could not copy project file from source to destination: %w", fileCopyErr)
 		}
 
 		copiedProjectFileCounter++
@@ -72,9 +71,10 @@ func ThemesMerge(tempBuildDir string, buildDir string) {
 		return nil
 	})
 	if themeFilesErr != nil {
-		fmt.Printf("Could not get project file: %s", themeFilesErr)
+		return fmt.Errorf("Could not get project file: %w", themeFilesErr)
 	}
 
 	Log("Number of project files copied: " + strconv.Itoa(copiedProjectFileCounter))
+	return nil
 
 }

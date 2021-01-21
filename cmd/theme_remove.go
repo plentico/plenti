@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"plenti/common"
 	"plenti/readers"
 	"plenti/writers"
 
@@ -44,7 +45,7 @@ theme folder within the "themes/" directory.
 			// Remove the corresponding theme_config entry.
 			delete(siteConfig.ThemeConfig, repoName)
 			// Update the config file on the filesystem.
-			writers.SetSiteConfig(siteConfig, configPath)
+			common.CheckErr(writers.SetSiteConfig(siteConfig, configPath))
 			// Delete the corresponding theme folder.
 			if err := os.RemoveAll("themes/" + repoName); err != nil {
 				log.Fatalf("Could not delete theme folder: %v\n", err)

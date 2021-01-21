@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"plenti/common"
 	"plenti/readers"
 	"plenti/writers"
 
@@ -47,7 +48,7 @@ will no longer inherit assets, content, and layout from this theme.
 		}
 		siteConfig.Theme = ""
 		// Update the config file on the filesystem.
-		writers.SetSiteConfig(siteConfig, configPath)
+		common.CheckErr(writers.SetSiteConfig(siteConfig, configPath))
 
 	},
 }

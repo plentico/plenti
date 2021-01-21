@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"plenti/common"
 
 	"github.com/spf13/cobra"
 
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
 )
 
@@ -34,7 +34,7 @@ Learn more at https://plenti.co`,
 		if versionFlag {
 			fmt.Println(Version)
 		} else {
-			cmd.Help()
+			common.CheckErr(cmd.Help())
 		}
 	},
 }
@@ -69,12 +69,18 @@ func initConfig() {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
 	} else {
-		// Find home directory.
-		home, err := homedir.Dir()
+		// there since go 1.12. ok?
+		home, err := os.UserHomeDir()
 		if err != nil {
 			log.Fatal(err)
 
 		}
+		// // Find home directory.
+		// home, err := homedir.Dir()
+		// if err != nil {
+		// 	log.Fatal(err)
+
+		// }
 
 		// Search config in home directory with name ".plenti" (without extension).
 		viper.AddConfigPath(home)

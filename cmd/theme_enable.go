@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"plenti/common"
 	"plenti/readers"
 	"plenti/writers"
 
@@ -42,7 +43,7 @@ and layout from the theme you enabled.
 			siteConfig.Theme = repoName
 
 			// Update the config file on the filesystem.
-			writers.SetSiteConfig(siteConfig, configPath)
+			common.CheckErr(writers.SetSiteConfig(siteConfig, configPath))
 		} else {
 			fmt.Printf("Could not locate '%v' theme: %v\n", repoName, err)
 		}

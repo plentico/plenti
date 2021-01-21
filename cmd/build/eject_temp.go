@@ -10,7 +10,7 @@ import (
 )
 
 // EjectTemp temporarily writes ejectable core files to project filesystem.
-func EjectTemp(tempBuildDir string) ([]string, string) {
+func EjectTemp(tempBuildDir string) ([]string, string, error) {
 
 	defer Benchmark(time.Now(), "Creating non-ejected core files for build")
 
@@ -24,21 +24,23 @@ func EjectTemp(tempBuildDir string) ([]string, string) {
 	for file, content := range generated.Ejected {
 		filePath := ejectedPath + file
 		// Create the directories needed for the current file
-		os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
+		if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
+			return nil, "", err
+		}
 		if _, ejectedFileExistsErr := os.Stat(filePath); os.IsNotExist(ejectedFileExistsErr) {
 			Log("Temp writing '" + file + "' file.")
 			// Create the current default file
-			writeCoreFileErr := ioutil.WriteFile(filePath, content, os.ModePerm)
-			if writeCoreFileErr != nil {
-				fmt.Printf("Unable to write ejected core file: %v\n", writeCoreFileErr)
-			} else {
-				tempFiles = append(tempFiles, filePath)
+			err := ioutil.WriteFile(filePath, content, os.ModePerm)
+			if err != nil {
+				return nil, "", fmt.Errorf("Unable to write ejected core file: %w", err)
 			}
+			tempFiles = append(tempFiles, filePath)
+
 		} else {
 			Log("File '" + file + "' has been ejected already, skipping temp write.")
 		}
 	}
 
-	return tempFiles, ejectedPath
+	return tempFiles, ejectedPath, nil
 
 }

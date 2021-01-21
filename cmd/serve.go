@@ -5,13 +5,9 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
-	"time"
 
-	"plenti/cmd/build"
 	"plenti/readers"
 
-	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/cobra"
 )
 
@@ -60,6 +56,9 @@ You can also set a different port in your site config file.`,
 			fmt.Printf("The \"%v\" build directory does not exist, check your plenti.json file.\n", buildDir)
 			log.Fatal(err)
 		}
+		// Watch filesystem for changes.
+		gowatch(buildDir)
+
 		fmt.Printf("\nServing site from your \"%v\" directory.\n", buildDir)
 
 		// Point to folder containing the built site
@@ -69,15 +68,9 @@ You can also set a different port in your site config file.`,
 		// Check flags and config for local server port
 		port := setPort(siteConfig)
 
-		// Watch filesystem for changes.
-		go Watch(buildDir)
-
 		// Start the webserver
 		fmt.Printf("Visit your site at http://localhost:%v/\n", port)
-		err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
-		if err != nil {
-			log.Fatal(err)
-		}
+		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 
 	},
 }
@@ -100,104 +93,4 @@ func init() {
 	serveCmd.Flags().BoolVarP(&NodeJSFlag, "nodejs", "n", false, "use system nodejs for build with ejectable build.js script")
 	serveCmd.Flags().BoolVarP(&VerboseFlag, "verbose", "v", false, "show log messages")
 	serveCmd.Flags().BoolVarP(&BenchmarkFlag, "benchmark", "b", false, "display build time statistics")
-}
-
-var watcher *fsnotify.Watcher
-
-// Watch looks for updates to filesystem to prompt a site rebuild.
-func Watch(buildPath string) {
-
-	// Creates a new file watcher.
-	watcher, _ = fsnotify.NewWatcher()
-	defer watcher.Close()
-
-	// Watch specific directories for changes (only if they exist).
-	if _, err := os.Stat("content"); !os.IsNotExist(err) {
-		if err := filepath.Walk("content", watchDir(buildPath)); err != nil {
-			fmt.Println("Error watching 'content/' folder for changes: ", err)
-		}
-	}
-	if _, err := os.Stat("layout"); !os.IsNotExist(err) {
-		if err := filepath.Walk("layout", watchDir(buildPath)); err != nil {
-			fmt.Println("Error watching 'layout/' folder for changes: ", err)
-		}
-	}
-	if _, err := os.Stat("assets"); !os.IsNotExist(err) {
-		if err := filepath.Walk("assets", watchDir(buildPath)); err != nil {
-			fmt.Println("Error watching 'assets/' folder for changes: ", err)
-		}
-	}
-	watcher.Add("plenti.json")
-	watcher.Add("package.json")
-
-	done := make(chan bool)
-
-	// Set delay for batching events.
-	ticker := time.NewTicker(300 * time.Millisecond)
-	// Create array for storing double firing events (happens when saving files in some text editors).
-	events := make([]fsnotify.Event, 0)
-
-	go func() {
-		for {
-			select {
-			// Watch for events.
-			case event := <-watcher.Events:
-				// Don't rebuild when build dir is added or deleted.
-				if event.Name != "./"+buildPath {
-					// Add current event to array for batching.
-					events = append(events, event)
-				}
-			case <-ticker.C:
-				// Checks on set interval if there are events.
-				if len(events) > 0 {
-					// Display messages for each events in batch.
-					for _, event := range events {
-						if event.Op&fsnotify.Create == fsnotify.Create {
-							build.Log("File create detected: " + event.String())
-							watcher.Add(event.Name)
-							build.Log("Now watching " + event.Name)
-						}
-						if event.Op&fsnotify.Write == fsnotify.Write {
-							build.Log("File write detected: " + event.String())
-						}
-						if event.Op&fsnotify.Remove == fsnotify.Remove {
-							build.Log("File delete detected: " + event.String())
-						}
-						if event.Op&fsnotify.Rename == fsnotify.Rename {
-							build.Log("File rename detected: " + event.String())
-						}
-					}
-					// Rebuild only one time for all batched events.
-					Build()
-					// Empty the batch array.
-					events = make([]fsnotify.Event, 0)
-
-				}
-
-			// Watch for errors.
-			case err := <-watcher.Errors:
-				if err != nil {
-					fmt.Printf("\nFile watching error: %s\n", err)
-				}
-			}
-		}
-	}()
-
-	<-done
-}
-
-// Closure that enables passing buildPath as arg to callback.
-func watchDir(buildPath string) filepath.WalkFunc {
-	// Callback for walk func: searches for directories to add watchers to.
-	return func(path string, fi os.FileInfo, err error) error {
-		// Skip the "public" build dir to avoid infinite loops.
-		if fi.IsDir() && fi.Name() == buildPath {
-			return filepath.SkipDir
-		}
-		// Add watchers only to nested directory.
-		if fi.Mode().IsDir() {
-			return watcher.Add(path)
-		}
-		return nil
-	}
 }

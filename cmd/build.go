@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"plenti/cmd/build"
+	"plenti/common"
 	"plenti/readers"
 	"time"
 
@@ -68,15 +69,18 @@ func Build() {
 	buildDir := setBuildDir(siteConfig)
 
 	tempBuildDir := ""
+	var err error
 	// Get theme from plenti.json.
 	theme := siteConfig.Theme
 	// If a theme is set, run the nested build.
 	if theme != "" {
 		themeOptions := siteConfig.ThemeConfig[theme]
 		// Recursively copy all nested themes to a temp folder for building.
-		tempBuildDir = build.ThemesCopy("themes/"+theme, themeOptions)
+		tempBuildDir, err = build.ThemesCopy("themes/"+theme, themeOptions)
+		common.CheckErr(err)
 		// Merge the current project files with the theme.
-		build.ThemesMerge(tempBuildDir, buildDir)
+		err = build.ThemesMerge(tempBuildDir, buildDir)
+		common.CheckErr(err)
 	}
 
 	// Get the full path for the build directory of the site.
@@ -84,12 +88,9 @@ func Build() {
 
 	// Clear out any previous build dir of the same name.
 	if _, buildPathExistsErr := os.Stat(buildPath); buildPathExistsErr == nil {
-		deleteBuildErr := os.RemoveAll(buildPath)
 		build.Log("Removing old '" + buildPath + "' build directory")
-		if deleteBuildErr != nil {
-			log.Fatal(deleteBuildErr)
 
-		}
+		common.CheckErr(os.RemoveAll(buildPath))
 	}
 
 	// Create the buildPath directory.
@@ -101,44 +102,52 @@ func Build() {
 	build.Log("Creating '" + buildDir + "' build directory")
 
 	// Add core NPM dependencies if node_module folder doesn't already exist.
-	build.NpmDefaults(tempBuildDir)
+	err = build.NpmDefaults(tempBuildDir)
+	common.CheckErr(err)
 
 	// Write ejectable core files to filesystem before building.
-	tempFiles, ejectedPath := build.EjectTemp(tempBuildDir)
+	tempFiles, ejectedPath, err := build.EjectTemp(tempBuildDir)
+	common.CheckErr(err)
 
 	// Directly copy .js that don't need compiling to the build dir.
-	build.EjectCopy(buildPath, tempBuildDir, ejectedPath)
+	if err = build.EjectCopy(buildPath, tempBuildDir, ejectedPath); err != nil {
+		log.Fatal(err)
+	}
 
 	// Bundle the JavaScript dependencies needed for the build.
 	//bundledContent := build.Bundle()
 
 	// Directly copy static assets to the build dir.
-	build.AssetsCopy(buildPath, tempBuildDir)
+	common.CheckErr(build.AssetsCopy(buildPath, tempBuildDir))
 
 	// Run the build.js script using user local NodeJS.
 	if NodeJSFlag {
-		clientBuildStr := build.NodeClient(buildPath)
-		staticBuildStr, allNodesStr := build.NodeDataSource(buildPath, siteConfig)
-		build.NodeExec(clientBuildStr, staticBuildStr, allNodesStr)
+		clientBuildStr, err := build.NodeClient(buildPath)
+		common.CheckErr(err)
+		staticBuildStr, allNodesStr, err := build.NodeDataSource(buildPath, siteConfig)
+		common.CheckErr(err)
+
+		common.CheckErr(build.NodeExec(clientBuildStr, staticBuildStr, allNodesStr))
 	} else {
 
 		// Prep the client SPA.
-		build.Client(buildPath, tempBuildDir, ejectedPath)
+
+		common.CheckErr(build.Client(buildPath, tempBuildDir, ejectedPath))
 
 		// Build JSON from "content/" directory.
-		build.DataSource(buildPath, siteConfig, tempBuildDir)
+		common.CheckErr(build.DataSource(buildPath, siteConfig, tempBuildDir))
 
 	}
 
 	// Run Gopack (custom Snowpack alternative) for ESM support.
-	build.Gopack(buildPath)
+	common.CheckErr(build.Gopack(buildPath))
 
 	if tempBuildDir != "" {
 		// If using themes, just delete the whole build folder.
-		build.ThemesClean(tempBuildDir)
+		common.CheckErr(build.ThemesClean(tempBuildDir))
 	} else {
 		// If no theme, just delete any ejectable files that the user didn't manually eject.
-		build.EjectClean(tempFiles, ejectedPath)
+		common.CheckErr(build.EjectClean(tempFiles, ejectedPath))
 	}
 
 }

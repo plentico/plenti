@@ -3,9 +3,9 @@ package cmd
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
+	"plenti/common"
 	"plenti/generated"
 
 	"github.com/manifoldco/promptui"
@@ -41,7 +41,7 @@ automatically).`,
 			for _, file := range allEjectableFiles {
 				filePath := "ejected" + file
 				content := generated.Ejected[file]
-				ejectFile(filePath, content)
+				common.CheckErr(ejectFile(filePath, content))
 			}
 			return
 		}
@@ -60,22 +60,21 @@ automatically).`,
 				Label: "If ejected, this file will no longer receive updates and we can't gaurantee Plenti will work with your edits. Are you sure you want to proceed?",
 				Items: []string{"Yes", "No"},
 			}
-			_, confirmed, confirmErr := confirmPrompt.Run()
-			if confirmErr != nil {
-				fmt.Printf("Prompt failed %v\n", confirmErr)
+			_, confirmed, err := confirmPrompt.Run()
+			if err != nil {
+				fmt.Printf("Prompt failed %v\n", err)
 				return
 			}
 			if confirmed == "Yes" {
 				filePath := "ejected" + result
 				content := generated.Ejected[result]
-				ejectFile(filePath, content)
-			}
-			if confirmed == "No" {
+				common.CheckErr(ejectFile(filePath, content))
+			} else if confirmed == "No" {
 				fmt.Println("No file was ejected.")
 			}
 		}
 		if len(args) >= 1 {
-			fmt.Printf("Attempting to eject each file listed\n")
+			fmt.Println("Attempting to eject each file listed")
 			for _, arg := range args {
 				arg = "/" + arg
 				fileExists := false
@@ -91,7 +90,7 @@ automatically).`,
 				}
 				filePath := "ejected" + arg
 				content := generated.Ejected[arg]
-				ejectFile(filePath, content)
+				common.CheckErr(ejectFile(filePath, content))
 
 			}
 		}
@@ -113,29 +112,30 @@ func init() {
 	ejectCmd.Flags().BoolVarP(&EjectAll, "all", "a", false, "Eject all core files")
 }
 
-func ejectFile(filePath string, content []byte) {
-	if _, fileExistsErr := os.Stat(filePath); fileExistsErr == nil {
+func ejectFile(filePath string, content []byte) error {
+	if _, err := os.Stat(filePath); err == nil {
 		overwritePrompt := promptui.Select{
 			Label: "'" + filePath + "' has already been ejected, do you want to overwrite it?",
 			Items: []string{"Yes", "No"},
 		}
-		_, overwrite, overwriteErr := overwritePrompt.Run()
-		if overwriteErr != nil {
-			log.Fatalf("Prompt failed %v\n", overwriteErr)
+		_, overwrite, err := overwritePrompt.Run()
+		if err != nil {
+			return fmt.Errorf("Prompt failed %w", err)
 
 		}
 		if overwrite == "No" {
-			return
+			return nil
 		}
 	}
 	if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
-		log.Fatalf("Unable to create path(s) %s: %v\n", filepath.Dir(filePath), err)
+		return fmt.Errorf("Unable to create path(s) %s: %w", filepath.Dir(filePath), err)
 
 	}
 	if err := ioutil.WriteFile(filePath, content, os.ModePerm); err != nil {
-		log.Fatalf("Unable to write file: %v\n", err)
+		return fmt.Errorf("Unable to write file: %w", err)
 
 	}
 	fmt.Printf("Ejected %s\n", filePath)
+	return nil
 
 }

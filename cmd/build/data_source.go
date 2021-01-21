@@ -3,7 +3,6 @@ package build
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"plenti/readers"
@@ -26,14 +25,16 @@ type content struct {
 }
 
 // DataSource builds json list from "content/" directory.
-func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir string) {
+func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir string) error {
 
 	defer Benchmark(time.Now(), "Creating data_source")
 
 	Log("\nGathering data source from 'content/' folder")
 
 	contentJSPath := buildPath + "/spa/ejected/content.js"
-	os.MkdirAll(buildPath+"/spa/ejected", os.ModePerm)
+	if err := os.MkdirAll(buildPath+"/spa/ejected", os.ModePerm); err != nil {
+		return err
+	}
 
 	// Set up counter for logging output.
 	contentFileCounter := 0
@@ -46,6 +47,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 	err := ioutil.WriteFile(contentJSPath, []byte(`const contentSource = [`), 0755)
 	if err != nil {
 		fmt.Printf("Unable to write content.js file: %v", err)
+		return err
 	}
 
 	// Go through all sub directories in "content/" folder.
@@ -63,9 +65,10 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 			if fileName[:1] != "_" && fileName[:1] != "." {
 
 				// Get the contents of the file.
-				fileContentBytes, readFileErr := ioutil.ReadFile(path)
-				if readFileErr != nil {
-					fmt.Printf("Could not read content file: %s\n", readFileErr)
+				fileContentBytes, err := ioutil.ReadFile(path)
+				if err != nil {
+					fmt.Printf("Could not read content file: %s\n", err)
+					return err
 				}
 				fileContentStr := string(fileContentBytes)
 
@@ -151,7 +154,9 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 					"\"fields\": " + fileContentStr + "\n}"
 
 				// Write to the content.js client data source file.
-				writeContentJS(contentJSPath, contentDetailsStr+",")
+				if err = writeContentJS(contentJSPath, contentDetailsStr+","); err != nil {
+					return err
+				}
 
 				// Remove newlines, tabs, and extra space.
 				encodedContentDetails := encodeString(contentDetailsStr)
@@ -178,7 +183,8 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 		return nil
 	})
 	if contentFilesErr != nil {
-		fmt.Printf("Could not get layout file: %s", contentFilesErr)
+		return fmt.Errorf("Could not get layout file: %w", contentFilesErr)
+
 	}
 
 	// End the string that will be used in allContent object.
@@ -186,78 +192,105 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 
 	for _, currentContent := range allContent {
 
-		createProps(currentContent, allContentStr)
+		if err = createProps(currentContent, allContentStr); err != nil {
+			return err
+		}
 
-		createHTML(currentContent)
+		if err = createHTML(currentContent); err != nil {
+			return err
+		}
 
-		allPaginatedContent := paginate(currentContent, contentJSPath)
+		allPaginatedContent, err := paginate(currentContent, contentJSPath)
+		if err != nil {
+			return err
+		}
 		for _, paginatedContent := range allPaginatedContent {
-			createProps(paginatedContent, allContentStr)
-			createHTML(paginatedContent)
+			if err = createProps(paginatedContent, allContentStr); err != nil {
+				return err
+			}
+
+			if err = createHTML(paginatedContent); err != nil {
+				return err
+			}
+
 		}
 
 	}
 
+	Log("Number of content files used: " + fmt.Sprint(contentFileCounter))
 	// Complete the content.js file.
-	writeContentJS(contentJSPath, "];\n\nexport default contentSource;")
-
-	Log("Number of content files used: " + strconv.Itoa(contentFileCounter))
+	return writeContentJS(contentJSPath, "];\n\nexport default contentSource;")
 
 }
 
-func createProps(currentContent content, allContentStr string) {
+func createProps(currentContent content, allContentStr string) error {
 	routeSignature := "layout_content_" + currentContent.contentType + "_svelte"
-	_, createPropsErr := SSRctx.RunScript("var props = {route: "+routeSignature+", content: "+currentContent.contentDetails+", allContent: "+allContentStr+"};", "create_ssr")
-	if createPropsErr != nil {
-		fmt.Printf("Could not create props: %v\n", createPropsErr)
+	_, err := SSRctx.RunScript("var props = {route: "+routeSignature+", content: "+currentContent.contentDetails+", allContent: "+allContentStr+"};", "create_ssr")
+	if err != nil {
+
+		return fmt.Errorf("Could not create props: %w", err)
+
 	}
 	// Render the HTML with props needed for the current content.
-	_, renderHTMLErr := SSRctx.RunScript("var { html, css: staticCss} = layout_global_html_svelte.render(props);", "create_ssr")
-	if renderHTMLErr != nil {
-		fmt.Printf("Can't render htmlComponent: %v\n", renderHTMLErr)
+	_, err = SSRctx.RunScript("var { html, css: staticCss} = layout_global_html_svelte.render(props);", "create_ssr")
+	if err != nil {
+		return fmt.Errorf("Can't render htmlComponent: %w", err)
+
 	}
+	return nil
 }
 
-func createHTML(currentContent content) {
+func createHTML(currentContent content) error {
 	// Get the rendered HTML from v8go.
 	renderedHTML, err := SSRctx.RunScript("html;", "create_ssr")
 	if err != nil {
-		fmt.Printf("V8go could not execute js default: %v\n", err)
+		return fmt.Errorf("V8go could not execute js default: %w", err)
+
 	}
 	// Get the string value of the static HTML.
 	renderedHTMLStr := renderedHTML.String()
 	// Convert the string to byte array that can be written to file system.
 	htmlBytes := []byte(renderedHTMLStr)
 	// Create any folders need to write file.
-	os.MkdirAll(strings.TrimSuffix(currentContent.contentDest, "/index.html"), os.ModePerm)
-	// Write static HTML to the filesystem.
-	htmlWriteErr := ioutil.WriteFile(currentContent.contentDest, htmlBytes, 0755)
-	if htmlWriteErr != nil {
-		fmt.Printf("Unable to write SSR file: %v\n", htmlWriteErr)
+	if err := os.MkdirAll(strings.TrimSuffix(currentContent.contentDest, "/index.html"), os.ModePerm); err != nil {
+		return fmt.Errorf("couldn't create dirs in createHTML: %w", err)
 	}
+	// Write static HTML to the filesystem.
+	err = ioutil.WriteFile(currentContent.contentDest, htmlBytes, 0755)
+	if err != nil {
+		return fmt.Errorf("unable to write SSR file: %w", err)
+	}
+	return nil
 }
 
-func paginate(currentContent content, contentJSPath string) []content {
+func paginate(currentContent content, contentJSPath string) ([]content, error) {
 	paginatedContent, _ := getPagination()
+	var err error
 	allNewContent := []content{}
 	// Loop through all :paginate() replacements found in config file.
 	for _, pager := range paginatedContent {
 		// Check if the config file specifies pagination for this Type.
 		if len(pager.paginationVars) > 0 && pager.contentType == currentContent.contentType {
 			// Increment the pager.
-			allNewContent = incrementPager(pager.paginationVars, currentContent, contentJSPath, allNewContent)
+			allNewContent, err = incrementPager(pager.paginationVars, currentContent, contentJSPath, allNewContent)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
-	return allNewContent
+	return allNewContent, err
 }
 
-func incrementPager(paginationVars []string, currentContent content, contentJSPath string, allNewContent []content) []content {
+func incrementPager(paginationVars []string, currentContent content, contentJSPath string, allNewContent []content) ([]content, error) {
 	// Pop first item from the list.
 	paginationVar, paginationVars := paginationVars[0], paginationVars[1:]
 	// Copy the current content so we can increment the pager.
 	newContent := currentContent
 	// Get the number of pages for the pager.
-	totalPagesInt := getTotalPages(paginationVar)
+	totalPagesInt, err := getTotalPages(paginationVar)
+	if err != nil {
+		return nil, err
+	}
 	// Loop through total number of pages for current pager.
 	for i := 1; i <= totalPagesInt; i++ {
 		// Convert page number to a string that can be used in a path.
@@ -275,7 +308,12 @@ func incrementPager(paginationVars []string, currentContent content, contentJSPa
 		// Check if there are more pagers for the route override.
 		if len(paginationVars) > 0 {
 			// Recursively call func to increment second pager.
-			allNewContent = incrementPager(paginationVars, newContent, contentJSPath, allNewContent)
+			// todo: a better approach
+			allNewContentTmp, err := incrementPager(paginationVars, newContent, contentJSPath, allNewContent)
+			if err != nil {
+				return nil, err
+			}
+			allNewContent = allNewContentTmp
 			// Remove first item in the array to move to the next number in the first pager.
 			newContent.contentPagerNums = newContent.contentPagerNums[1:]
 			// Continue because you don't want to complete the loop with a partially updated path (we have more pagers!).
@@ -299,40 +337,45 @@ func incrementPager(paginationVars []string, currentContent content, contentJSPa
 			"\"fields\": " + newContent.contentFields + "\n}"
 
 		// Add paginated entries to content.js file.
-		writeContentJS(contentJSPath, newContent.contentDetails+",")
+		if err := writeContentJS(contentJSPath, newContent.contentDetails+","); err != nil {
+			return nil, err
+		}
 		// Add to array of content for creating paginated static HTML fallbacks.
 		allNewContent = append(allNewContent, newContent)
 
 		// Remove last number from array to get next page in current pager.
 		newContent.contentPagerNums = newContent.contentPagerNums[:len(newContent.contentPagerNums)-1]
 	}
-	return allNewContent
+	return allNewContent, nil
 }
 
-func getTotalPages(paginationVar string) int {
-	totalPages, getLocalVarErr := SSRctx.RunScript("plenti_global_pager_"+paginationVar, "create_ssr")
-	if getLocalVarErr != nil {
-		fmt.Printf("Could not get value of '%v' used in pager: %v\n", paginationVar, getLocalVarErr)
+func getTotalPages(paginationVar string) (int, error) {
+	totalPages, err := SSRctx.RunScript("plenti_global_pager_"+paginationVar, "create_ssr")
+	if err != nil {
+		return 0, fmt.Errorf("Could not get value of '%v' used in pager: %w", paginationVar, err)
 	}
 	// Convert string total page value to integer.
-	totalPagesInt, strToIntErr := strconv.Atoi(totalPages.String())
-	if strToIntErr != nil {
-		fmt.Printf("Can't convert pager value '%v' to an integer: %v\n", totalPages.String(), strToIntErr)
+	totalPagesInt, err := strconv.Atoi(totalPages.String())
+	if err != nil {
+		return 0, fmt.Errorf("Can't convert pager value '%s' to an integer: %w", totalPages.String(), err)
 	}
-	return totalPagesInt
+	return totalPagesInt, nil
 }
 
-func writeContentJS(contentJSPath string, contentDetailsStr string) {
+func writeContentJS(contentJSPath string, contentDetailsStr string) error {
 	// Create new content.js file if it doesn't already exist, or add to it if it does.
-	contentJSFile, openContentJSErr := os.OpenFile(contentJSPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if openContentJSErr != nil {
-		fmt.Printf("Could not open content.js for writing: %s", openContentJSErr)
+	contentJSFile, err := os.OpenFile(contentJSPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("could not open content.js for writing: %w", err)
 	}
 	// Write to the file with info from current file in "/content" folder.
 	defer contentJSFile.Close()
 	if _, err := contentJSFile.WriteString(contentDetailsStr); err != nil {
-		log.Println(err)
+
+		return fmt.Errorf("could not write to file %s: %w", contentJSPath, err)
+
 	}
+	return nil
 }
 
 func encodeString(encodedStr string) string {

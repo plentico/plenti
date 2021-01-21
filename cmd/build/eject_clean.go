@@ -7,7 +7,7 @@ import (
 )
 
 // EjectClean removes core files that hadn't been ejected to project filesystem.
-func EjectClean(tempFiles []string, ejectedPath string) {
+func EjectClean(tempFiles []string, ejectedPath string) error {
 
 	defer Benchmark(time.Now(), "Cleaning up non-ejected core files")
 
@@ -15,13 +15,18 @@ func EjectClean(tempFiles []string, ejectedPath string) {
 
 	for _, file := range tempFiles {
 		Log("Removing temp file '" + file + "'")
-		os.Remove(file)
+		if err := os.Remove(file); err != nil {
+			return err
+		}
 	}
 
 	// If no files were ejected by user, clean up the directory after build.
 	if len(tempFiles) == len(generated.Ejected) {
 		Log("Removing the ejected directory.")
-		os.Remove(ejectedPath)
+		if err := os.Remove(ejectedPath); err != nil {
+			return err
+		}
 	}
+	return nil
 
 }
