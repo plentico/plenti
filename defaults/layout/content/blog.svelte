@@ -32,9 +32,8 @@
 {/if}
 
 {#if components}
-	{#each components as { title, component, fields }}
-    <p>{title}</p>
-		<svelte:component this="{allComponents["layout_components_" + component + "_svelte"]}" {...fields} />
+	{#each components as { name }}
+		<svelte:component this="{allComponents["layout_components_" + name + "_svelte"]}" />
 	{/each}
 {/if}
 

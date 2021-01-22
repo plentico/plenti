@@ -33,25 +33,16 @@ node_modules`),
 	"/content/blog/components.json": []byte(`{
     "title": "Dynamic components example",
     "body": [
-        "The <a href=\"https://plenti.co/docs/allComponents\">allComponents</a> helper object holds references to all svelte templates on your site.",
+        "The <a href=\"https://plenti.co/docs/allcomponents\">allComponents</a> helper object holds references to all svelte templates on your site.",
         "This allows you to load components from your JSON data source without explicitly importing them.",
-        "Just remember to use a <em>component signature</em> (e.g. layout/components/template.svelte becomes layout_components_template_svelte)."
+        "Just remember to use a <em>component signature</em> (e.g. layout/components/ball.svelte becomes layout_components_ball_svelte)."
     ],
 	"components": [
 		{
-            "title": "For example we could grab the 'incrementer':",
-			"component": "incrementer",
-			"fields": {}
+			"name": "ball"
 		},
 		{
-            "title": "The 'decrementer':",
-			"component": "decrementer",
-			"fields": {}
-		},
-		{
-            "title": "Or even the 'grid':",
-			"component": "grid",
-			"fields": {"items": [1, 2, 3]}
+			"name": "block"
 		}
 	],
     "author": "Jim Fisk",
@@ -116,6 +107,78 @@ node_modules`),
 	],
 	"author": "Jim Fisk"
 }`),
+	"/layout/components/ball.svelte": []byte(`<!-- From https://codepen.io/surjithctly/pen/yedHk -->
+<div class="ball-wrapper">
+  <div class="bouncingball"></div>
+</div>
+
+<style>
+  .ball-wrapper {
+    position: relative;
+    height: 80px;
+  }
+  .bouncingball {
+    width: 40px;
+    height: 40px;
+    border-radius: 100%;
+    background: var(--primary);
+    animation: bounce 1s;
+    transform: translateY(0px);
+    animation-iteration-count: infinite;
+    position: absolute;
+  }
+
+  @keyframes bounce {
+    0% {
+      top: 0;
+      -webkit-animation-timing-function: ease-in;
+    }
+    40% {}
+    50% {
+      top: 40px;
+      height: 40px;
+      -webkit-animation-timing-function: ease-out;
+    }
+    55% {
+      top: 60px; height: 20px; 
+      -webkit-animation-timing-function: ease-in;}
+    65% {
+      top: 20px; height: 40px; 
+      -webkit-animation-timing-function: ease-out;}
+    95% {
+      top: 0;		
+      -webkit-animation-timing-function: ease-in;
+    }
+    100% {
+      top: 0;
+      -webkit-animation-timing-function: ease-in;
+    }
+  }
+
+</style>`),
+	"/layout/components/block.svelte": []byte(`<!-- From https://codepen.io/teerapuch/pen/vLJXeR -->
+<div class="block"></div>
+
+<style>
+  .block {
+    width: 40px;
+    height: 40px;
+    background-color: var(--accent);
+    animation-name: spin;
+    animation-duration: 4000ms;
+    animation-iteration-count: infinite;
+    animation-timing-function: linear;
+  }
+
+  @keyframes spin {
+    from {
+        transform:rotate(-50deg);
+    }
+    to {
+        transform:rotate(310deg);
+    }
+  }
+</style>`),
 	"/layout/components/decrementer.svelte": []byte(`<script>
   import { count } from '../scripts/stores.svelte';
 
@@ -135,11 +198,7 @@ node_modules`),
 <div class="grid">
   {#each sortByDate(items) as item, i}
     {#if i >= postRangeLow && i < postRangeHigh}
-      {#if typeof item === 'object' && item !== null}
-        <a class="grid-item" href="{item.path}">{item.fields.title}</a>
-      {:else}
-        <div class="grid-item">{item}</div>
-      {/if}
+      <a class="grid-item" href="{item.path}">{item.fields.title}</a>
     {/if}
   {/each}
 </div>
@@ -329,9 +388,8 @@ node_modules`),
 {/if}
 
 {#if components}
-	{#each components as { title, component, fields }}
-    <p>{title}</p>
-		<svelte:component this="{allComponents["layout_components_" + component + "_svelte"]}" {...fields} />
+	{#each components as { name }}
+		<svelte:component this="{allComponents["layout_components_" + name + "_svelte"]}" />
 	{/each}
 {/if}
 

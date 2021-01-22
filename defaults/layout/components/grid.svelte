@@ -6,11 +6,7 @@
 <div class="grid">
   {#each sortByDate(items) as item, i}
     {#if i >= postRangeLow && i < postRangeHigh}
-      {#if typeof item === 'object' && item !== null}
-        <a class="grid-item" href="{item.path}">{item.fields.title}</a>
-      {:else}
-        <div class="grid-item">{item}</div>
-      {/if}
+      <a class="grid-item" href="{item.path}">{item.fields.title}</a>
     {/if}
   {/each}
 </div>
