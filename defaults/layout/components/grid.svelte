@@ -1,14 +1,16 @@
 <script>
   import { sortByDate } from '../scripts/sort_by_date.svelte';
-  export let items;
+  export let items, postRangeLow, postRangeHigh;
 </script>
 
 <div class="grid">
-  {#each sortByDate(items) as item}
-    {#if typeof item === 'object' && item !== null}
-      <a class="grid-item" href="{item.path}">{item.fields.title}</a>
-    {:else}
-      <div class="grid-item">{item}</div>
+  {#each sortByDate(items) as item, i}
+    {#if i >= postRangeLow && i < postRangeHigh}
+      {#if typeof item === 'object' && item !== null}
+        <a class="grid-item" href="{item.path}">{item.fields.title}</a>
+      {:else}
+        <div class="grid-item">{item}</div>
+      {/if}
     {/if}
   {/each}
 </div>

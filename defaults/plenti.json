@@ -1,6 +1,7 @@
 {
 	"types": {
-		"pages": "/:filename"
+		"pages": "/:filename",
+		"index": "/:paginate(totalPages)"
 	},
 	"build": "public",
 	"local": {

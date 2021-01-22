@@ -129,15 +129,17 @@ node_modules`),
 </button>`),
 	"/layout/components/grid.svelte": []byte(`<script>
   import { sortByDate } from '../scripts/sort_by_date.svelte';
-  export let items;
+  export let items, postRangeLow, postRangeHigh;
 </script>
 
 <div class="grid">
-  {#each sortByDate(items) as item}
-    {#if typeof item === 'object' && item !== null}
-      <a class="grid-item" href="{item.path}">{item.fields.title}</a>
-    {:else}
-      <div class="grid-item">{item}</div>
+  {#each sortByDate(items) as item, i}
+    {#if i >= postRangeLow && i < postRangeHigh}
+      {#if typeof item === 'object' && item !== null}
+        <a class="grid-item" href="{item.path}">{item.fields.title}</a>
+      {:else}
+        <div class="grid-item">{item}</div>
+      {/if}
     {/if}
   {/each}
 </div>
@@ -176,6 +178,60 @@ node_modules`),
 <button on:click={increment}>
   +
 </button>`),
+	"/layout/components/pager.svelte": []byte(`<script>
+  export let currentPage, totalPages;
+</script>
+
+<ul>
+  {#if currentPage > 1}
+    <li><a href="/">first</a></li>
+    <li><a href="/{currentPage - 1}">prev</a></li>
+  {:else}
+    <li><span>first</span></li>
+    <li><span>prev</span></li>
+  {/if}
+  {#each [3,2,1] as i}
+    {#if currentPage - i > 0}
+      <li><a href="/{currentPage - i}">{currentPage - i}</a></li>
+    {/if}
+  {/each}
+  <li><span>{currentPage}</span></li>
+  {#each Array(3) as _, i}
+    {#if currentPage + (i+1) <= totalPages}
+      <li><a href="/{currentPage + (i+1)}">{currentPage + (i+1)}</a></li>
+    {/if}
+  {/each}
+  {#if currentPage < totalPages}
+    <li><a href="/{currentPage + 1}">next</a></li>
+    <li><a href="/{totalPages}">last</a></li>
+  {:else}
+    <li><span>next</span></li>
+    <li><span>last</span></li>
+  {/if}
+</ul>
+
+<style>
+  ul {
+    display: flex;
+    max-width: 600px;
+    margin: 20px auto;
+  }
+  li {
+    flex-grow: 1;
+    list-style: none;
+  }
+  a {
+    text-align: center;
+    padding: 5px 20px;
+    border-radius: 5px;
+    background: #f0efef;
+  }
+  span {
+    text-align: center;
+    padding: 5px 20px;
+    color: gray;
+  }
+</style>`),
 	"/layout/components/source.svelte": []byte(`<script>
   export let content;
 
@@ -287,6 +343,15 @@ node_modules`),
 	export let title, intro, components, content, allContent;
 	import Grid from '../components/grid.svelte';
 	import Uses from "../components/source.svelte";
+	import Pager from "../components/pager.svelte";
+
+	$: currentPage = content.pager;
+	let postsPerPage = 3;
+	let allPosts = allContent.filter(content => content.type == "blog");
+	let totalPosts = allPosts.length;
+	let totalPages = Math.ceil(totalPosts / postsPerPage);
+	$: postRangeHigh = currentPage * postsPerPage;
+	$: postRangeLow = postRangeHigh - postsPerPage;
 </script>
 
 <h1>{title}</h1>
@@ -299,9 +364,10 @@ node_modules`),
 
 <div>
 	<h3>Recent blog posts:</h3>
-	<Grid items={allContent.filter(content => content.type == "blog")} />
+	<Grid items={allPosts} {postRangeLow} {postRangeHigh} />
 	<br />
 </div>
+<Pager {currentPage} {totalPages} />
 
 <Uses {content} />`),
 	"/layout/content/pages.svelte": []byte(`<script>
@@ -522,7 +588,8 @@ node_modules`),
 `),
 	"/plenti.json": []byte(`{
 	"types": {
-		"pages": "/:filename"
+		"pages": "/:filename",
+		"index": "/:paginate(totalPages)"
 	},
 	"build": "public",
 	"local": {
