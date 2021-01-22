@@ -1,6 +1,6 @@
 <script>
-	export let title, body, author, date, store;
-  import Uses from "../components/template.svelte";
+	export let title, body, author, date, store, content;
+  import Uses from "../components/source.svelte";
 
   // Svelte store example:
   import { count } from '../scripts/stores.svelte';
@@ -38,6 +38,6 @@
 	{/each}
 {/if}
 
-<Uses type="blog" />
+<Uses {content} />
 
 <p><a href="/">Back home</a></p>

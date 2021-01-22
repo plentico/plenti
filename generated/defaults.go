@@ -176,35 +176,44 @@ node_modules`),
 <button on:click={increment}>
   +
 </button>`),
-	"/layout/components/template.svelte": []byte(`<script>
-  export let type;
+	"/layout/components/source.svelte": []byte(`<script>
+  export let content;
 
-  let path;
-  let copyText = "Copy";
-  const copy = async () => {
+  let templateEl;
+  let contentEl;
+  let copied;
+  const copy = async (el) => {
     if (!navigator.clipboard) {
       return
-    }
+    } 
     try {
-      copyText = "Copied";
-      await navigator.clipboard.writeText(path.innerHTML);
-      setTimeout(() => copyText = "Copy", 500);
+      await navigator.clipboard.writeText(el.innerHTML);
+      copied = el;
+      setTimeout(() => copied = null, 500);
     } catch (err) {
       console.error('Failed to copy!', err)
     }
   }
 </script>
 
-<div class="template">
+<div>
   <span>Template:</span>
   <pre>
-    <code bind:this={path} class="{copyText}">layout/content/{type}.svelte</code>
-    <button on:click={copy}>{copyText}</button>
+    <code bind:this={templateEl} class:selected="{copied === templateEl}">layout/content/{content.type}.svelte</code>
+    <button on:click={() => copy(templateEl)}>{copied === templateEl ? 'copied' : 'copy'}</button>
+  </pre>
+</div>
+
+<div>
+  <span>Content:</span>
+  <pre>
+    <code bind:this={contentEl} class:selected="{copied === contentEl}">content/{content.type === 'index' ? '' : content.type + '/'}{content.filename}</code>
+    <button on:click={() => copy(contentEl)}>{copied === contentEl ? 'copied' : 'copy'}</button>
   </pre>
 </div>
 
 <style>
-  .template {
+  div {
     display: flex;
     align-items: center;
   }
@@ -216,7 +225,7 @@ node_modules`),
       background-color: var(--base);
       padding: 5px 10px;
   }
-  code.copied {
+  code.selected {
       background-color: var(--accent);
   }
   button {
@@ -231,8 +240,8 @@ node_modules`),
 	"/layout/content/404.svelte": []byte(`<h1>Oops... 404 not found</h1>
 <a href="/">Go home?</a>`),
 	"/layout/content/blog.svelte": []byte(`<script>
-	export let title, body, author, date, store;
-  import Uses from "../components/template.svelte";
+	export let title, body, author, date, store, content;
+  import Uses from "../components/source.svelte";
 
   // Svelte store example:
   import { count } from '../scripts/stores.svelte';
@@ -270,14 +279,14 @@ node_modules`),
 	{/each}
 {/if}
 
-<Uses type="blog" />
+<Uses {content} />
 
 <p><a href="/">Back home</a></p>
 `),
 	"/layout/content/index.svelte": []byte(`<script>
-	export let title, intro, components, allContent;
+	export let title, intro, components, content, allContent;
 	import Grid from '../components/grid.svelte';
-  	import Uses from "../components/template.svelte";
+	import Uses from "../components/source.svelte";
 </script>
 
 <h1>{title}</h1>
@@ -294,10 +303,10 @@ node_modules`),
 	<br />
 </div>
 
-<Uses type="index" />`),
+<Uses {content} />`),
 	"/layout/content/pages.svelte": []byte(`<script>
-  export let title, description;
-  import Uses from "../components/template.svelte";
+  export let title, description, content;
+  import Uses from "../components/source.svelte";
 </script>
 
 <h1>{title}</h1>
@@ -308,7 +317,7 @@ node_modules`),
   {/each}
 </div>
 
-<Uses type="pages" />
+<Uses {content} />
 
 <p><a href="/">Back home</a></p>`),
 	"/layout/global/footer.svelte": []byte(`<script>
@@ -377,7 +386,7 @@ node_modules`),
   <Nav />
   <main>
     <div class="container">
-      <svelte:component this={route} {...content.fields} {allContent} {allComponents} />
+      <svelte:component this={route} {...content.fields} {content} {allContent} {allComponents} />
       <br />
     </div>
   </main>

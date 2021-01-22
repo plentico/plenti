@@ -13,7 +13,7 @@
   <Nav />
   <main>
     <div class="container">
-      <svelte:component this={route} {...content.fields} {allContent} {allComponents} />
+      <svelte:component this={route} {...content.fields} {content} {allContent} {allComponents} />
       <br />
     </div>
   </main>

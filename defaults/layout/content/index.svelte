@@ -1,7 +1,7 @@
 <script>
-	export let title, intro, components, allContent;
+	export let title, intro, components, content, allContent;
 	import Grid from '../components/grid.svelte';
-  	import Uses from "../components/template.svelte";
+	import Uses from "../components/source.svelte";
 </script>
 
 <h1>{title}</h1>
@@ -18,4 +18,4 @@
 	<br />
 </div>
 
-<Uses type="index" />
+<Uses {content} />

@@ -1,6 +1,6 @@
 <script>
-  export let title, description;
-  import Uses from "../components/template.svelte";
+  export let title, description, content;
+  import Uses from "../components/source.svelte";
 </script>
 
 <h1>{title}</h1>
@@ -11,6 +11,6 @@
   {/each}
 </div>
 
-<Uses type="pages" />
+<Uses {content} />
 
 <p><a href="/">Back home</a></p>
