@@ -115,9 +115,6 @@ func Build() {
 		log.Fatal(err)
 	}
 
-	// Bundle the JavaScript dependencies needed for the build.
-	//bundledContent := build.Bundle()
-
 	// Directly copy static assets to the build dir.
 	common.CheckErr(build.AssetsCopy(buildPath, tempBuildDir))
 
