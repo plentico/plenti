@@ -39,8 +39,8 @@ var serveCmd = &cobra.Command{
 		Serve will run "plenti build" automatically to create
 		a compiled version of your site.
 
-		This defaults to folder named "public" but you can adjust this in
-		your site config.
+		This defaults to a folder named "public" but you can 
+		adjust this in your site config.
 
 		You can also set a different port in your site config file.
 	`),
@@ -48,10 +48,9 @@ var serveCmd = &cobra.Command{
 
 		s := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
 
-		s.Suffix = " Serving the plenti site."
+		s.Suffix = " Building..."
 		s.Color("blue")
 		s.Start()
-		time.Sleep(4 * time.Second)
 
 		// Get settings from config file.
 		siteConfig, _ := readers.GetSiteConfig(".")

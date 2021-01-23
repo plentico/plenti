@@ -9,10 +9,8 @@ import (
 	"path/filepath"
 	"plenti/generated"
 	"strings"
-	"time"
 
 	"github.com/MakeNowJust/heredoc/v2"
-	"github.com/briandowns/spinner"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 )
@@ -24,17 +22,16 @@ var siteCmd = &cobra.Command{
 	Long: heredoc.Doc(`
 	The project scaffolding follows this convention:
 	  - plenti.json = sitewide configuration.
+	  - assets/ = holds static files like images or videos.
 	  - content/ = json files that hold site content.
 	  - content/pages/ = regular site pages in json format.
 	  - content/pages/_blueprint.json = template for the structure of a typical page.
-	  - content/pages/_index.json = the aggregate, or landing page.
 	  - content/pages/about.json = an example page.
 	  - content/pages/contact.json = another example page.
 	  - layout/ =  the html structure of the site.
 	  - layout/content/ = node level structure that has a route and correspond to content.
 	  - layout/components/ = smaller reusable structures that can be used within larger ones.
 	  - layout/global/ = base level html wrappers.
-	  - layout/static/ = holds assets like images or videos.
 	  - node_modules/ = frontend libraries managed by npm.
 	  - package.json = npm configuration file.
 	`),
@@ -51,23 +48,8 @@ var siteCmd = &cobra.Command{
 		return fmt.Errorf("invalid name specified: %s", args[0])
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		s := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
-
 		// Create base directory for site
 		newpath := strings.Trim(filepath.Join(".", args[0]), " /")
-
-		s.Suffix = fmt.Sprintf(" Creating a plenti site scaffolding in %q folder.", newpath)
-		s.FinalMSG = heredoc.Docf(`
-			Success: Created %q site.
-
-			We suggest that you begin by typing:
-
-			  cd %s
-			  plenti serve
-		`, newpath, newpath)
-		s.Color("blue")
-		s.Start()
-		time.Sleep(4 * time.Second)
 
 		if _, err := os.Stat(newpath); !os.IsNotExist(err) {
 
@@ -134,7 +116,15 @@ var siteCmd = &cobra.Command{
 			}
 		}
 
-		s.Stop()
+		fmt.Printf(heredoc.Docf(`
+			Success: Created %q site.
+
+			We suggest that you begin by typing:
+
+			  cd %s
+			  plenti serve
+		`, newpath, newpath))
+
 	},
 }
 
