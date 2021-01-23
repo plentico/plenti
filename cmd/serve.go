@@ -5,9 +5,12 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"plenti/readers"
 
+	"github.com/MakeNowJust/heredoc/v2"
+	"github.com/briandowns/spinner"
 	"github.com/spf13/cobra"
 )
 
@@ -32,13 +35,23 @@ func setPort(siteConfig readers.SiteConfig) int {
 var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Lightweight webserver for local development",
-	Long: `Serve will run "plenti build" automatically to create
-a compiled version of your site. This defaults to
-folder named "public" but you can adjust this in
-your site config.
+	Long: heredoc.Doc(`
+		Serve will run "plenti build" automatically to create
+		a compiled version of your site.
 
-You can also set a different port in your site config file.`,
+		This defaults to folder named "public" but you can adjust this in
+		your site config.
+
+		You can also set a different port in your site config file.
+	`),
 	Run: func(cmd *cobra.Command, args []string) {
+
+		s := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
+
+		s.Suffix = " Serving the plenti site."
+		s.Color("blue")
+		s.Start()
+		time.Sleep(4 * time.Second)
 
 		// Get settings from config file.
 		siteConfig, _ := readers.GetSiteConfig(".")
@@ -70,6 +83,7 @@ You can also set a different port in your site config file.`,
 
 		// Start the webserver
 		fmt.Printf("Visit your site at http://localhost:%v/\n", port)
+		s.Stop()
 		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 
 	},

@@ -1,9 +1,13 @@
+// Package readers knows how to read different configuration files.
 package readers
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
-	"log"
+	"os"
+
+	"github.com/MakeNowJust/heredoc/v2"
 )
 
 // SiteConfig is the site's configuration file values.
@@ -35,7 +39,18 @@ func GetSiteConfig(basePath string) (SiteConfig, string) {
 	configFile, _ := ioutil.ReadFile(configPath)
 	err := json.Unmarshal(configFile, &siteConfig)
 	if err != nil {
-		log.Fatalf("Unable to read site config file: %v\n", err)
+		fmt.Println(heredoc.Docf(`
+
+			Error: Unable to read site config file %v.
+
+			Are you in the site folder that was created?.
+
+			We suggest that you begin by typing:
+
+			  cd [project name]
+			  plenti serve
+		`, err))
+		os.Exit(1)
 	}
 
 	// If build directory is not set in config, use default
