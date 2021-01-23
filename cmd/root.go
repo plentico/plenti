@@ -1,3 +1,4 @@
+// Package cmd provides commands to manage plenti sites.
 package cmd
 
 import (
@@ -88,8 +89,5 @@ func initConfig() {
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
-	} else {
-		// ???
-		// log.Printf("error reading config file: %v", err)
 	}
 }
