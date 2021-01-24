@@ -8,6 +8,7 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/go-git/go-git/v5 v5.2.0
 	github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00 // indirect
+	github.com/kabukky/httpscerts v0.0.0-20150320125433-617593d7dcb3 // indirect
 	github.com/lunixbochs/vtclean v1.0.0 // indirect
 	github.com/manifoldco/promptui v0.7.0
 	github.com/mattn/go-colorable v0.1.7 // indirect
