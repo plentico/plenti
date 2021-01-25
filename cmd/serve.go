@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"crypto/tls"
 	"fmt"
 	"log"
 	"net/http"
@@ -85,17 +86,9 @@ var serveCmd = &cobra.Command{
 		fmt.Printf("Or with SSL/TLS at https://localhost:%v/\n", port+1)
 		s.Stop()
 
-		// Check if SSL/TLS cert files are available.
-		err := httpscerts.Check("cert.pem", "key.pem")
-		// If the certs are not available, generate new ones.
-		if err != nil {
-			err = httpscerts.Generate("cert.pem", "key.pem", fmt.Sprintf("localhost:%d", port+1))
-			if err != nil {
-				log.Fatal("Error: Couldn't create https certs.")
-			}
-		}
+		go serveSSL(port)
 		// Start the HTTPS server in a goroutine
-		go http.ListenAndServeTLS(fmt.Sprintf(":%d", port+1), "cert.pem", "key.pem", nil)
+		// go http.ListenAndServeTLS(fmt.Sprintf(":%d", port+1), "cert.pem", "key.pem", nil)
 		// Start the HTTP webserver
 		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 
@@ -120,4 +113,37 @@ func init() {
 	serveCmd.Flags().BoolVarP(&NodeJSFlag, "nodejs", "n", false, "use system nodejs for build with ejectable build.js script")
 	serveCmd.Flags().BoolVarP(&VerboseFlag, "verbose", "v", false, "show log messages")
 	serveCmd.Flags().BoolVarP(&BenchmarkFlag, "benchmark", "b", false, "display build time statistics")
+}
+
+func serveSSL(port int) {
+	port = port + 1
+
+	cert, key, err := httpscerts.GenerateArrays(fmt.Sprintf("localhost:%d", port))
+	if err != nil {
+		log.Fatal("Error: Couldn't create https certs.")
+	}
+
+	keyPair, err := tls.X509KeyPair(cert, key)
+	if err != nil {
+		log.Fatal("Error: Couldn't create key pair")
+	}
+
+	var certificates []tls.Certificate
+	certificates = append(certificates, keyPair)
+
+	cfg := &tls.Config{
+		MinVersion:               tls.VersionTLS12,
+		PreferServerCipherSuites: true,
+		Certificates:             certificates,
+	}
+
+	s := &http.Server{
+		Addr:           fmt.Sprintf(":%d", port),
+		Handler:        nil,
+		ReadTimeout:    10 * time.Second,
+		WriteTimeout:   10 * time.Second,
+		MaxHeaderBytes: 1 << 20,
+		TLSConfig:      cfg,
+	}
+	log.Fatal(s.ListenAndServeTLS("", ""))
 }
