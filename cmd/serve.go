@@ -11,7 +11,7 @@ import (
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/briandowns/spinner"
-	"github.com/kabukky/httpscerts"
+	"github.com/gerald1248/httpscerts"
 	"github.com/spf13/cobra"
 )
 
