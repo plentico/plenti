@@ -11,6 +11,7 @@ import (
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/briandowns/spinner"
+	"github.com/kabukky/httpscerts"
 	"github.com/spf13/cobra"
 )
 
@@ -80,9 +81,22 @@ var serveCmd = &cobra.Command{
 		// Check flags and config for local server port
 		port := setPort(siteConfig)
 
-		// Start the webserver
 		fmt.Printf("Visit your site at http://localhost:%v/\n", port)
+		fmt.Printf("Or with SSL/TLS at https://localhost:%v/\n", port+1)
 		s.Stop()
+
+		// Check if SSL/TLS cert files are available.
+		err := httpscerts.Check("cert.pem", "key.pem")
+		// If the certs are not available, generate new ones.
+		if err != nil {
+			err = httpscerts.Generate("cert.pem", "key.pem", fmt.Sprintf("localhost:%d", port+1))
+			if err != nil {
+				log.Fatal("Error: Couldn't create https certs.")
+			}
+		}
+		// Start the HTTPS server in a goroutine
+		go http.ListenAndServeTLS(fmt.Sprintf(":%d", port+1), "cert.pem", "key.pem", nil)
+		// Start the HTTP webserver
 		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 
 	},
