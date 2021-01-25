@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"crypto/tls"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -11,6 +13,7 @@ import (
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/briandowns/spinner"
+	"github.com/gerald1248/httpscerts"
 	"github.com/spf13/cobra"
 )
 
@@ -19,6 +22,9 @@ var PortFlag int
 
 // BuildFlag can be set to false to skip building the site when starting local server
 var BuildFlag bool
+
+// SSLFlag can be set to true to serve localhost over HTTPS with SSL/TLS encryption
+var SSLFlag bool
 
 func setPort(siteConfig readers.SiteConfig) int {
 	// default to  use value from config file
@@ -80,9 +86,15 @@ var serveCmd = &cobra.Command{
 		// Check flags and config for local server port
 		port := setPort(siteConfig)
 
-		// Start the webserver
-		fmt.Printf("Visit your site at http://localhost:%v/\n", port)
 		s.Stop()
+
+		if SSLFlag {
+			// Start an HTTPS webserver
+			serveSSL(port)
+		}
+
+		fmt.Printf("Visit your site at http://localhost:%v/\n", port)
+		// Start the HTTP webserver
 		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 
 	},
@@ -106,4 +118,38 @@ func init() {
 	serveCmd.Flags().BoolVarP(&NodeJSFlag, "nodejs", "n", false, "use system nodejs for build with ejectable build.js script")
 	serveCmd.Flags().BoolVarP(&VerboseFlag, "verbose", "v", false, "show log messages")
 	serveCmd.Flags().BoolVarP(&BenchmarkFlag, "benchmark", "b", false, "display build time statistics")
+	serveCmd.Flags().BoolVarP(&SSLFlag, "ssl", "s", false, "ssl/tls encryption to serve localhost over https")
+}
+
+func serveSSL(port int) {
+	cert, key, err := httpscerts.GenerateArrays(fmt.Sprintf("localhost:%d", port))
+	if err != nil {
+		log.Fatal("Error: Couldn't create https certs.")
+	}
+
+	keyPair, err := tls.X509KeyPair(cert, key)
+	if err != nil {
+		log.Fatal("Error: Couldn't create key pair")
+	}
+
+	var certificates []tls.Certificate
+	certificates = append(certificates, keyPair)
+
+	cfg := &tls.Config{
+		MinVersion:               tls.VersionTLS12,
+		PreferServerCipherSuites: true,
+		Certificates:             certificates,
+	}
+
+	s := &http.Server{
+		Addr:           fmt.Sprintf(":%d", port),
+		Handler:        nil,
+		ReadTimeout:    10 * time.Second,
+		WriteTimeout:   10 * time.Second,
+		ErrorLog:       log.New(ioutil.Discard, "", 0),
+		MaxHeaderBytes: 1 << 20,
+		TLSConfig:      cfg,
+	}
+	fmt.Printf("Visit your site at https://localhost:%v/\n", port)
+	log.Fatal(s.ListenAndServeTLS("", ""))
 }
