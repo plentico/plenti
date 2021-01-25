@@ -22,6 +22,9 @@ var PortFlag int
 // BuildFlag can be set to false to skip building the site when starting local server
 var BuildFlag bool
 
+// SSLFlag can be set to true to serve localhost over HTTPS with SSL/TLS encryption
+var SSLFlag bool
+
 func setPort(siteConfig readers.SiteConfig) int {
 	// default to  use value from config file
 	port := siteConfig.Local.Port
@@ -82,13 +85,13 @@ var serveCmd = &cobra.Command{
 		// Check flags and config for local server port
 		port := setPort(siteConfig)
 
-		fmt.Printf("Visit your site at http://localhost:%v/\n", port)
-		fmt.Printf("Or with SSL/TLS at https://localhost:%v/\n", port+1)
 		s.Stop()
 
-		go serveSSL(port)
-		// Start the HTTPS server in a goroutine
-		// go http.ListenAndServeTLS(fmt.Sprintf(":%d", port+1), "cert.pem", "key.pem", nil)
+		if SSLFlag {
+			serveSSL(port)
+		}
+
+		fmt.Printf("Visit your site at http://localhost:%v/\n", port)
 		// Start the HTTP webserver
 		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 
@@ -113,11 +116,10 @@ func init() {
 	serveCmd.Flags().BoolVarP(&NodeJSFlag, "nodejs", "n", false, "use system nodejs for build with ejectable build.js script")
 	serveCmd.Flags().BoolVarP(&VerboseFlag, "verbose", "v", false, "show log messages")
 	serveCmd.Flags().BoolVarP(&BenchmarkFlag, "benchmark", "b", false, "display build time statistics")
+	serveCmd.Flags().BoolVarP(&SSLFlag, "ssl", "s", false, "ssl/tls encryption to serve localhost over https")
 }
 
 func serveSSL(port int) {
-	port = port + 1
-
 	cert, key, err := httpscerts.GenerateArrays(fmt.Sprintf("localhost:%d", port))
 	if err != nil {
 		log.Fatal("Error: Couldn't create https certs.")
@@ -145,5 +147,6 @@ func serveSSL(port int) {
 		MaxHeaderBytes: 1 << 20,
 		TLSConfig:      cfg,
 	}
+	fmt.Printf("Visit your site at https://localhost:%v/\n", port)
 	log.Fatal(s.ListenAndServeTLS("", ""))
 }
