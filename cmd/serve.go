@@ -3,6 +3,7 @@ package cmd
 import (
 	"crypto/tls"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -88,6 +89,7 @@ var serveCmd = &cobra.Command{
 		s.Stop()
 
 		if SSLFlag {
+			// Start an HTTPS webserver
 			serveSSL(port)
 		}
 
@@ -144,6 +146,7 @@ func serveSSL(port int) {
 		Handler:        nil,
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
+		ErrorLog:       log.New(ioutil.Discard, "", 0),
 		MaxHeaderBytes: 1 << 20,
 		TLSConfig:      cfg,
 	}
