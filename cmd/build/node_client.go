@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"plenti/common"
 	"strconv"
 	"strings"
 	"time"
@@ -26,13 +27,17 @@ func NodeClient(buildPath string) (string, error) {
 
 	// Go through all file paths in the "/layout" folder.
 	layoutFilesErr := filepath.Walk("layout", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
+		if err != nil {
+			return fmt.Errorf("can't stat %s: %w", layoutPath, err)
+		}
 		// Create destination path.
 		destFile := buildPath + strings.Replace(layoutPath, "layout", "/spa", 1)
 		// Make sure path is a directory
 		if layoutFileInfo.IsDir() {
 			// Create any sub directories need for filepath.
 			if err = os.MkdirAll(destFile, os.ModePerm); err != nil {
-				return fmt.Errorf("cannot create sub directories need for filepath %s: %w", destFile, err)
+				return fmt.Errorf("cannot create sub directories need for filepath %s: %w%s",
+					destFile, err, common.Caller())
 			}
 		} else {
 			// If the file is in .svelte format, compile it to .js
@@ -51,7 +56,7 @@ func NodeClient(buildPath string) (string, error) {
 		return nil
 	})
 	if layoutFilesErr != nil {
-		return "", fmt.Errorf("Could not get layout file: %w", layoutFilesErr)
+		return "", fmt.Errorf("Could not get layout file: %w%s", layoutFilesErr, common.Caller())
 	}
 
 	// Get router from ejected core. NOTE if you remove this, trim the trailing comma below.

@@ -3,7 +3,6 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"plenti/common"
 	"plenti/readers"
@@ -48,7 +47,7 @@ theme folder within the "themes/" directory.
 			common.CheckErr(writers.SetSiteConfig(siteConfig, configPath))
 			// Delete the corresponding theme folder.
 			if err := os.RemoveAll("themes/" + repoName); err != nil {
-				log.Fatalf("Could not delete theme folder: %v\n", err)
+				common.CheckErr(fmt.Errorf("Could not delete theme folder: %w", err))
 			}
 
 		}

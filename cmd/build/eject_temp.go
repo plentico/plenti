@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"plenti/common"
 	"plenti/generated"
 	"time"
 )
@@ -32,7 +33,7 @@ func EjectTemp(tempBuildDir string) ([]string, string, error) {
 			// Create the current default file
 			err := ioutil.WriteFile(filePath, content, os.ModePerm)
 			if err != nil {
-				return nil, "", fmt.Errorf("Unable to write ejected core file: %w", err)
+				return nil, "", fmt.Errorf("Unable to write ejected core file: %w%s", err, common.Caller())
 			}
 			tempFiles = append(tempFiles, filePath)
 

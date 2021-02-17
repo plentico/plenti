@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"plenti/common"
 	"plenti/readers"
 	"strconv"
 	"strings"
@@ -46,6 +47,9 @@ func ThemesCopy(theme string, themeOptions readers.ThemeOptions) (string, error)
 	excludedFiles = append(excludedFiles, themeOptions.Exclude...)
 
 	themeFilesErr := filepath.Walk(theme, func(themeFilePath string, themeFileInfo os.FileInfo, err error) error {
+		if err != nil {
+			return fmt.Errorf("can't stat %s: %w", themeFilePath, err)
+		}
 
 		// Check if the current directory is in the excluded list.
 		for _, excluded := range excludedFiles {
@@ -60,7 +64,7 @@ func ThemesCopy(theme string, themeOptions readers.ThemeOptions) (string, error)
 		// Read the source theme file.
 		from, err := os.Open(themeFilePath)
 		if err != nil {
-			return fmt.Errorf("Could not open theme file for copying: %w", err)
+			return fmt.Errorf("Could not open theme file for copying: %w%s", err, common.Caller())
 		}
 		defer from.Close()
 
@@ -76,13 +80,13 @@ func ThemesCopy(theme string, themeOptions readers.ThemeOptions) (string, error)
 
 		to, err := os.Create(destPath)
 		if err != nil {
-			return fmt.Errorf("Could not create destination theme file for copying: %w", err)
+			return fmt.Errorf("Could not create destination theme file for copying: %w%s", err, common.Caller())
 		}
 		defer to.Close()
 
 		_, fileCopyErr := io.Copy(to, from)
 		if err != nil {
-			return fmt.Errorf("Could not copy theme file from source to destination: %w", fileCopyErr)
+			return fmt.Errorf("Could not copy theme file from source to destination: %w%s", fileCopyErr, common.Caller())
 		}
 
 		copiedThemeFileCounter++
@@ -90,7 +94,7 @@ func ThemesCopy(theme string, themeOptions readers.ThemeOptions) (string, error)
 		return nil
 	})
 	if themeFilesErr != nil {
-		return "", fmt.Errorf("Could not get theme file: %w", themeFilesErr)
+		return "", fmt.Errorf("Could not get theme file: %w%s", themeFilesErr, common.Caller())
 	}
 
 	Log("Number of theme files copied: " + strconv.Itoa(copiedThemeFileCounter))

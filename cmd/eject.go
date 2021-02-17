@@ -120,7 +120,7 @@ func ejectFile(filePath string, content []byte) error {
 		}
 		_, overwrite, err := overwritePrompt.Run()
 		if err != nil {
-			return fmt.Errorf("Prompt failed %w", err)
+			return fmt.Errorf("Prompt failed %w%s", err, common.Caller())
 
 		}
 		if overwrite == "No" {
@@ -128,11 +128,11 @@ func ejectFile(filePath string, content []byte) error {
 		}
 	}
 	if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
-		return fmt.Errorf("Unable to create path(s) %s: %w", filepath.Dir(filePath), err)
+		return fmt.Errorf("Unable to create path(s) %s: %w%s", filepath.Dir(filePath), err, common.Caller())
 
 	}
 	if err := ioutil.WriteFile(filePath, content, os.ModePerm); err != nil {
-		return fmt.Errorf("Unable to write file: %w", err)
+		return fmt.Errorf("Unable to write file: %w%s", err, common.Caller())
 
 	}
 	fmt.Printf("Ejected %s\n", filePath)

@@ -9,12 +9,17 @@ import (
 	"os"
 	"time"
 
+	"plenti/cmd/build"
+
+	"plenti/common"
+
 	"plenti/readers"
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/briandowns/spinner"
 	"github.com/gerald1248/httpscerts"
 	"github.com/spf13/cobra"
+	"golang.org/x/net/websocket"
 )
 
 // PortFlag allows users to override default port (3000) for local server
@@ -66,6 +71,7 @@ var serveCmd = &cobra.Command{
 			// Run build command before starting server
 			buildCmd.Run(cmd, args)
 		}
+
 		// Check flags and config for directory to build to
 		buildDir := setBuildDir(siteConfig)
 
@@ -76,12 +82,18 @@ var serveCmd = &cobra.Command{
 		}
 		// Watch filesystem for changes.
 		gowatch(buildDir)
+		if build.Doreload {
+			// websockets
+			http.Handle("/reload", websocket.Handler(wshandler))
 
+		}
+		common.QuitOnErr = false
 		fmt.Printf("\nServing site from your \"%v\" directory.\n", buildDir)
 
 		// Point to folder containing the built site
 		fs := http.FileServer(http.Dir(buildDir))
 		http.Handle("/", fs)
+		// fs := http.FileServer(http.Dir("assets/"))
 
 		// Check flags and config for local server port
 		port := setPort(siteConfig)
@@ -119,6 +131,8 @@ func init() {
 	serveCmd.Flags().BoolVarP(&VerboseFlag, "verbose", "v", false, "show log messages")
 	serveCmd.Flags().BoolVarP(&BenchmarkFlag, "benchmark", "b", false, "display build time statistics")
 	serveCmd.Flags().BoolVarP(&SSLFlag, "ssl", "s", false, "ssl/tls encryption to serve localhost over https")
+	serveCmd.Flags().BoolVarP(&build.Doreload, "live-reload", "L", false, "Enable live reload")
+
 }
 
 func serveSSL(port int) {

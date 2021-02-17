@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"plenti/common"
 	"plenti/generated"
 	"time"
 )
@@ -24,12 +25,12 @@ func NpmDefaults(tempBuildDir string) error {
 			file = destPath + "/" + file
 			// Create the directories needed for the current file
 			if err = os.MkdirAll(filepath.Dir(file), os.ModePerm); err != nil {
-				return fmt.Errorf("Unable to MkdirAll in NpmDefaults: %w", err)
+				return fmt.Errorf("Unable to MkdirAll in NpmDefaults: %w%s", err, common.Caller())
 			}
 			// Create the current default file
 			err := ioutil.WriteFile(file, content, os.ModePerm)
 			if err != nil {
-				return fmt.Errorf("Unable to write npm dependency file: %w", err)
+				return fmt.Errorf("Unable to write npm dependency file: %w%s", err, common.Caller())
 			}
 		}
 	}

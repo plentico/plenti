@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"plenti/cmd/build"
@@ -48,18 +47,19 @@ you need to deploy for your website.`,
 }
 
 // Build creates the compiled app that gets deployed.
-func Build() {
+func Build() error {
 
 	defer build.Benchmark(time.Now(), "Total build", true)
 
 	build.CheckVerboseFlag(VerboseFlag)
 	build.CheckBenchmarkFlag(BenchmarkFlag)
-
+	var err error
 	// Handle panic when someone tries building outside of a valid Plenti site.
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("Please create a valid Plenti project or fix your app structure before trying to run this command again.")
 			fmt.Printf("Error: %v \n\n", r)
+			err = fmt.Errorf("panic recovered in Build: %v", r)
 		}
 	}()
 
@@ -70,7 +70,7 @@ func Build() {
 	buildDir := setBuildDir(siteConfig)
 
 	tempBuildDir := ""
-	var err error
+
 	// Get theme from plenti.json.
 	theme := siteConfig.Theme
 	// If a theme is set, run the nested build.
@@ -78,10 +78,15 @@ func Build() {
 		themeOptions := siteConfig.ThemeConfig[theme]
 		// Recursively copy all nested themes to a temp folder for building.
 		tempBuildDir, err = build.ThemesCopy("themes/"+theme, themeOptions)
-		common.CheckErr(err)
+		if err = common.CheckErr(err); err != nil {
+			return err
+		}
+
 		// Merge the current project files with the theme.
-		err = build.ThemesMerge(tempBuildDir, buildDir)
-		common.CheckErr(err)
+		if err = common.CheckErr(build.ThemesMerge(tempBuildDir, buildDir)); err != nil {
+			return err
+		}
+
 	}
 
 	// Get the full path for the build directory of the site.
@@ -90,63 +95,91 @@ func Build() {
 	// Clear out any previous build dir of the same name.
 	if _, buildPathExistsErr := os.Stat(buildPath); buildPathExistsErr == nil {
 		build.Log("Removing old '" + buildPath + "' build directory")
+		if err = common.CheckErr(os.RemoveAll(buildPath)); err != nil {
+			return err
+		}
 
-		common.CheckErr(os.RemoveAll(buildPath))
 	}
 
 	// Create the buildPath directory.
 	if err := os.MkdirAll(buildPath, os.ModePerm); err != nil {
-		// bail on error
-		log.Fatalf("Unable to create \"%v\" build directory: %s\n", buildDir, err)
+		// bail on error in build
+		if err = common.CheckErr(fmt.Errorf("Unable to create \"%v\" build directory: %s", err, buildDir)); err != nil {
+			return err
+		}
 
 	}
 	build.Log("Creating '" + buildDir + "' build directory")
 
 	// Add core NPM dependencies if node_module folder doesn't already exist.
-	err = build.NpmDefaults(tempBuildDir)
-	common.CheckErr(err)
+	if err = common.CheckErr(build.NpmDefaults(tempBuildDir)); err != nil {
+		return err
+	}
 
 	// Write ejectable core files to filesystem before building.
 	tempFiles, ejectedPath, err := build.EjectTemp(tempBuildDir)
-	common.CheckErr(err)
+	if err = common.CheckErr(err); err != nil {
+		return err
+	}
 
 	// Directly copy .js that don't need compiling to the build dir.
-	if err = build.EjectCopy(buildPath, tempBuildDir, ejectedPath); err != nil {
-		log.Fatal(err)
+	if err = common.CheckErr(build.EjectCopy(buildPath, tempBuildDir, ejectedPath)); err != nil {
+		return err
 	}
 
 	// Directly copy static assets to the build dir.
-	common.CheckErr(build.AssetsCopy(buildPath, tempBuildDir))
+	if err = common.CheckErr(build.AssetsCopy(buildPath, tempBuildDir)); err != nil {
+		return err
+	}
 
 	// Run the build.js script using user local NodeJS.
 	if NodeJSFlag {
 		clientBuildStr, err := build.NodeClient(buildPath)
-		common.CheckErr(err)
+		if err = common.CheckErr(err); err != nil {
+			return err
+		}
 		staticBuildStr, allNodesStr, err := build.NodeDataSource(buildPath, siteConfig)
-		common.CheckErr(err)
+		if err = common.CheckErr(err); err != nil {
+			return err
+		}
 
-		common.CheckErr(build.NodeExec(clientBuildStr, staticBuildStr, allNodesStr))
+		if err = common.CheckErr(build.NodeExec(clientBuildStr, staticBuildStr, allNodesStr)); err != nil {
+			return err
+		}
 	} else {
 
 		// Prep the client SPA.
-
-		common.CheckErr(build.Client(buildPath, tempBuildDir, ejectedPath))
+		err = build.Client(buildPath, tempBuildDir, ejectedPath)
+		if err = common.CheckErr(err); err != nil {
+			return err
+		}
 
 		// Build JSON from "content/" directory.
-		common.CheckErr(build.DataSource(buildPath, siteConfig, tempBuildDir))
+		err = build.DataSource(buildPath, siteConfig, tempBuildDir)
+		if err = common.CheckErr(err); err != nil {
+			return err
+		}
 
 	}
 
 	// Run Gopack (custom Snowpack alternative) for ESM support.
-	common.CheckErr(build.Gopack(buildPath))
+	if err = common.CheckErr(build.Gopack(buildPath)); err != nil {
+		return err
+	}
 
 	if tempBuildDir != "" {
 		// If using themes, just delete the whole build folder.
-		common.CheckErr(build.ThemesClean(tempBuildDir))
+		if err = common.CheckErr(build.ThemesClean(tempBuildDir)); err != nil {
+			return err
+		}
 	} else {
-		// If no theme, just delete any ejectable files that the user didn't manually eject.
-		common.CheckErr(build.EjectClean(tempFiles, ejectedPath))
+		// If no theme, just delete any ejectable files that the user didn't manually eject
+		if err = common.CheckErr(build.EjectClean(tempFiles, ejectedPath)); err != nil {
+			return err
+		}
 	}
+	// only relates to defer recover
+	return err
 
 }
 

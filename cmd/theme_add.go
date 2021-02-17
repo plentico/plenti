@@ -3,7 +3,6 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"plenti/common"
 	"plenti/readers"
@@ -54,19 +53,19 @@ To use https://plenti.co as a theme for example, run: plenti new theme git@githu
 			Progress: os.Stdout,
 		})
 		if err != nil {
-			log.Fatalf("Can't clone theme repository: %v\n", err)
+			common.CheckErr(fmt.Errorf("Can't clone theme repository: %w", err))
 
 		}
 
 		// Get the latest commit hash from the repo.
 		ref, err := repo.Head()
 		if err != nil {
-			log.Fatalf("Can't get HEAD: %v\n", err)
+			common.CheckErr(fmt.Errorf("Can't get HEAD: %w", err))
 
 		}
 		commitObj, err := repo.CommitObject(ref.Hash())
 		if err != nil {
-			log.Fatalf("Can't get Commit from hash: %v\n", err)
+			common.CheckErr(fmt.Errorf("Can't get Commit from hash: %w", err))
 
 		}
 		commitHash := commitObj.Hash.String()
@@ -75,20 +74,20 @@ To use https://plenti.co as a theme for example, run: plenti new theme git@githu
 		if CommitFlag != "" {
 			worktree, worktreeErr := repo.Worktree()
 			if worktreeErr != nil {
-				log.Fatalf("Can't get worktree: %v\n", worktreeErr)
+				common.CheckErr(fmt.Errorf("Can't get worktree: %w", worktreeErr))
 
 			}
 			// Resolve commit in case short hash is used instead of full hash.
 			resolvedCommitHash, resolveErr := repo.ResolveRevision(plumbing.Revision(CommitFlag))
 			if resolveErr != nil {
-				log.Fatalf("Can't resolve commit hash: %v\n", resolveErr)
+				common.CheckErr(fmt.Errorf("Can't resolve commit hash: %w", resolveErr))
 
 			}
 			// Git checkout the commit hash that was sent via the flag.
 			if checkoutErr := worktree.Checkout(&git.CheckoutOptions{
 				Hash: *resolvedCommitHash,
 			}); checkoutErr != nil {
-				log.Fatalf("Can't get commit: %v\n", checkoutErr)
+				common.CheckErr(fmt.Errorf("Can't get commit: %w", checkoutErr))
 			}
 			// The --commit flag could be checkout out, so the hash is valid.
 			commitHash = CommitFlag
@@ -97,7 +96,7 @@ To use https://plenti.co as a theme for example, run: plenti new theme git@githu
 
 		// Remove the theme's .git/ folder to avoid submodule issues.
 		if err = os.RemoveAll(themeDir + "/.git"); err != nil {
-			log.Fatalf("Could not delete .git folder for theme: %v", err)
+			common.CheckErr(fmt.Errorf("Could not delete .git folder for theme: %w", err))
 
 		}
 

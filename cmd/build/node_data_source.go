@@ -38,6 +38,10 @@ func NodeDataSource(buildPath string, siteConfig readers.SiteConfig) (string, st
 
 	// Go through all sub directories in "content/" folder.
 	contentFilesErr := filepath.Walk("content", func(path string, info os.FileInfo, err error) error {
+
+		if err != nil {
+			return fmt.Errorf("can't stat %s: %w", path, err)
+		}
 		if !info.IsDir() {
 			// Get individual path arguments.
 			parts := strings.Split(path, "/")
