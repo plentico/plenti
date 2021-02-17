@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"plenti/common"
 	"plenti/readers"
 	"regexp"
 	"strings"
@@ -27,11 +28,15 @@ func Gopack(buildPath string) error {
 		Log("- " + module + ", version " + version)
 		// Walk through all sub directories of each dependency declared.
 		nodeModuleErr := filepath.Walk("node_modules/"+module, func(modulePath string, moduleFileInfo os.FileInfo, err error) error {
+
+			if err != nil {
+				return fmt.Errorf("can't stat %s: %w", modulePath, err)
+			}
 			// Only get ESM supported files.
 			if !moduleFileInfo.IsDir() && filepath.Ext(modulePath) == ".mjs" {
 				from, err := os.Open(modulePath)
 				if err != nil {
-					return fmt.Errorf("Could not open source .mjs file for copying: %w", err)
+					return fmt.Errorf("Could not open source .mjs %s file for copying: %w%s", modulePath, err, common.Caller())
 				}
 				defer from.Close()
 
@@ -39,33 +44,36 @@ func Gopack(buildPath string) error {
 				modulePath = gopackDir + strings.Replace(modulePath, "node_modules", "", 1)
 				// Create any subdirectories need to write file to "web_modules" destination.
 				if err = os.MkdirAll(filepath.Dir(modulePath), os.ModePerm); err != nil {
-					return err
+					return fmt.Errorf("Could not create subdirectories %s: %w%s", filepath.Dir(modulePath), err, common.Caller())
 				}
 				// Change the .mjs file extension to .js.
 				modulePath = strings.TrimSuffix(modulePath, filepath.Ext(modulePath)) + ".js"
 				to, err := os.Create(modulePath)
 				if err != nil {
-					return fmt.Errorf("Could not create destination .mjs file for copying: %w", err)
+					return fmt.Errorf("Could not create destination %s file for copying: %w%s", modulePath, err, common.Caller())
 				}
 				defer to.Close()
 
 				_, err = io.Copy(to, from)
 				if err != nil {
-					return fmt.Errorf("Could not copy .mjs from source to destination: %w", err)
+					return fmt.Errorf("Could not copy .mjs  from source to destination: %w%s", err, common.Caller())
 				}
 			}
 			return nil
 		})
 		if nodeModuleErr != nil {
-			return fmt.Errorf("Could not get node module: %w", nodeModuleErr)
+			return fmt.Errorf("Could not get node module: %w%s", nodeModuleErr, common.Caller())
 		}
 
 	}
 	convertErr := filepath.Walk(buildPath+"/spa", func(convertPath string, convertFileInfo os.FileInfo, err error) error {
+		if err != nil {
+			return fmt.Errorf("can't stat %s: %w", convertPath, err)
+		}
 		if !convertFileInfo.IsDir() && filepath.Ext(convertPath) == ".js" {
 			contentBytes, err := ioutil.ReadFile(convertPath)
 			if err != nil {
-				return fmt.Errorf("Could not read file to convert to esm: %w", err)
+				return fmt.Errorf("Could not read file %s to convert to esm: %w%s", convertPath, err, common.Caller())
 			}
 
 			// Match dynamic import statments, e.g. import("") or import('').
@@ -120,6 +128,10 @@ func Gopack(buildPath string) error {
 				} else if pathStr[:1] == "." {
 					// If the import/export path starts with a dot (.) or double dot (..) look for the file it's trying to import from this relative path.
 					findRelativePathErr := filepath.Walk(fullPath, func(relativePath string, relativePathFileInfo os.FileInfo, err error) error {
+
+						if err != nil {
+							return fmt.Errorf("can't stat %s: %w", relativePath, err)
+						}
 						// Only use .js files in imports (folders aren't specific enough).
 						if filepath.Ext(relativePath) == ".js" {
 							foundPath = relativePath
@@ -127,7 +139,7 @@ func Gopack(buildPath string) error {
 						return nil
 					})
 					if findRelativePathErr != nil {
-						return fmt.Errorf("Could not find related .mjs file: %w", findRelativePathErr)
+						return fmt.Errorf("Could not find related .mjs file: %w%s", findRelativePathErr, common.Caller())
 					}
 				} else {
 					// A named import/export is being used, look for this in "web_modules/" dir.
@@ -137,6 +149,9 @@ func Gopack(buildPath string) error {
 					if foundPath == "" {
 						// If JS file was not found in the current directory, check nested directories.
 						findNamedPathErr := filepath.Walk(namedPath, func(subPath string, subPathFileInfo os.FileInfo, err error) error {
+							if err != nil {
+								return fmt.Errorf("can't stat %s: %w", subPath, err)
+							}
 							// We've already checked all files, so look in next dir.
 							if subPathFileInfo.IsDir() {
 								// Check for any JS files at this dir level.
@@ -145,7 +160,8 @@ func Gopack(buildPath string) error {
 							return nil
 						})
 						if findNamedPathErr != nil {
-              return fmt.Errorf("Could not find related .js file from named import: %w", findNamedPathErr)
+							return fmt.Errorf("Could not find related .js file from named import: %w%s",
+								findNamedPathErr, common.Caller())
 						}
 					}
 				}
@@ -165,13 +181,13 @@ func Gopack(buildPath string) error {
 			// Overwrite the old file with the new content that contains the updated import path.
 			err = ioutil.WriteFile(convertPath, contentBytes, 0644)
 			if err != nil {
-				return fmt.Errorf("Could not overwite %s with new import: %w", convertPath, err)
+				return fmt.Errorf("Could not overwite %s with new import: %w%s", convertPath, err, common.Caller())
 			}
 		}
 		return nil
 	})
 	if convertErr != nil {
-		return fmt.Errorf("Could not convert file to support esm: %w", convertErr)
+		return fmt.Errorf("Could not convert file to support esm: %w%s", convertErr, common.Caller())
 	}
 	return nil
 

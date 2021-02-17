@@ -3,7 +3,6 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"plenti/common"
 	"strings"
@@ -70,7 +69,7 @@ Optionally add a _blueprint.json file to define the default field structure for 
 
 			fmt.Printf("Creating new Type layout: %s\n", typeLayoutPath)
 			if _, err := os.OpenFile(typeLayoutPath, os.O_RDONLY|os.O_CREATE, os.ModePerm); err != nil {
-				log.Fatalf("Can't create layout for type \"%s\": %s", typeName, err)
+				common.CheckErr(fmt.Errorf("Can't create layout for type \"%s\": %w", typeName, err))
 			}
 		}
 
@@ -95,10 +94,10 @@ func doTypeContentPath(typeName string) error {
 
 	fmt.Printf("Creating new Type content source: %s/\n", typeContentPath)
 	if err := os.MkdirAll(typeContentPath, os.ModePerm); err != nil {
-		return fmt.Errorf("Can't create type named \"%s\": %w", typeName, err)
+		return fmt.Errorf("Can't create type named \"%s\": %w%s", typeName, err, common.Caller())
 	}
 	if _, err := os.OpenFile(typeContentPath+"/_blueprint.json", os.O_RDONLY|os.O_CREATE, os.ModePerm); err != nil {
-		return fmt.Errorf("Can't create _blueprint.json for type \"%s\": %w", typeName, err)
+		return fmt.Errorf("Can't create _blueprint.json for type \"%s\": %w%s", typeName, err, common.Caller())
 	}
 	return nil
 }
@@ -117,14 +116,14 @@ func singleTypeProcess(typeName string) error {
 	f, err := os.OpenFile(singleTypePath, os.O_RDWR|os.O_CREATE, os.ModePerm)
 
 	if err != nil {
-		errorMsg := fmt.Errorf("Can't create single type named \"%s\": %w", typeName, err)
+		errorMsg := fmt.Errorf("Can't create single type named \"%s\": %w%s", typeName, err, common.Caller())
 		fmt.Println(errorMsg)
 		return errorMsg
 	}
 
 	_, err = f.Write([]byte("{}"))
 	if err != nil {
-		err = fmt.Errorf("Can't add empty curly brackets to single type named \"%s\": %w", typeName, err)
+		err = fmt.Errorf("Can't add empty curly brackets to single type named \"%s\": %w%s", typeName, err, common.Caller())
 		fmt.Println(err)
 		return err
 	}

@@ -1,16 +1,73 @@
 package build
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"plenti/common"
 	"plenti/readers"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 )
+
+// Doreload and other flags should probably be part of a config accessible across build.
+// It gets set using server flags.
+var Doreload bool
+
+// inject wherever/however, this is just to get it working.
+
+var scr = []byte(`
+<script>
+let socket;
+
+let pop = document.createElement('div');
+pop.style.cssText = 'font-size: 18px;position:absolute;top:60px;right:10px;padding:30px;color:#fff;z-index:100;border-radius: 8px;background:#599118';
+
+window.onload = () => {
+  console.debug("onload");
+  
+  pop.innerHTML= "Reload Connected..."
+  document.body.appendChild(pop);
+  setTimeout(function(){
+	  pop.style.display="none";
+  },1500)
+  
+
+};
+document.addEventListener("DOMContentLoaded", () => {
+	socket = new WebSocket('ws://' + window.location.host + '/reload');
+
+	socket.onmessage = function (event) {
+	  var datastr = event.data.split(":")[0];
+	   if (datastr === 'reload'){
+	
+		console.debug("reloading")
+		window.location.reload();
+		
+		  
+	   }
+	};
+    
+	socket.onopen = function() {
+	  console.debug("connected");
+	  socket.send("loaded");
+	
+	}
+  
+	socket.onclose = function(e) {
+	pop.innerHTML= "Reload Disconnected...";
+	pop.style.display="block";
+	pop.style.backgroundColor="rgb(236,64,3)";
+	console.debug("connection closed (" + e.code + ")");
+	}
+  
+  });
+</script></body>
+`)
 
 type content struct {
 	contentType      string
@@ -52,6 +109,9 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 
 	// Go through all sub directories in "content/" folder.
 	contentFilesErr := filepath.Walk(tempBuildDir+"content", func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return fmt.Errorf("can't stat %s: %w", path, err)
+		}
 		if !info.IsDir() {
 			// Get individual path arguments.
 			parts := strings.Split(path, "/")
@@ -67,8 +127,8 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 				// Get the contents of the file.
 				fileContentBytes, err := ioutil.ReadFile(path)
 				if err != nil {
-					fmt.Printf("Could not read content file: %s\n", err)
-					return err
+
+					return fmt.Errorf("file: %s %w%s", path, err, common.Caller())
 				}
 				fileContentStr := string(fileContentBytes)
 
@@ -155,7 +215,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 
 				// Write to the content.js client data source file.
 				if err = writeContentJS(contentJSPath, contentDetailsStr+","); err != nil {
-					return err
+					return fmt.Errorf("file: %s %w%s", contentJSPath, err, common.Caller())
 				}
 
 				// Remove newlines, tabs, and extra space.
@@ -183,7 +243,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 		return nil
 	})
 	if contentFilesErr != nil {
-		return fmt.Errorf("Could not get layout file: %w", contentFilesErr)
+		return fmt.Errorf("Could not get layout %w", contentFilesErr)
 
 	}
 
@@ -228,13 +288,13 @@ func createProps(currentContent content, allContentStr string) error {
 	_, err := SSRctx.RunScript("var props = {route: "+routeSignature+", content: "+currentContent.contentDetails+", allContent: "+allContentStr+"};", "create_ssr")
 	if err != nil {
 
-		return fmt.Errorf("Could not create props: %w", err)
+		return fmt.Errorf("Could not create props: %w%s", err, common.Caller())
 
 	}
 	// Render the HTML with props needed for the current content.
 	_, err = SSRctx.RunScript("var { html, css: staticCss} = layout_global_html_svelte.render(props);", "create_ssr")
 	if err != nil {
-		return fmt.Errorf("Can't render htmlComponent: %w", err)
+		return fmt.Errorf("Can't render htmlComponent: %w%s", err, common.Caller())
 
 	}
 	return nil
@@ -244,21 +304,25 @@ func createHTML(currentContent content) error {
 	// Get the rendered HTML from v8go.
 	renderedHTML, err := SSRctx.RunScript("html;", "create_ssr")
 	if err != nil {
-		return fmt.Errorf("V8go could not execute js default: %w", err)
+		return fmt.Errorf("V8go could not execute js default: %w%s", err, common.Caller())
 
 	}
 	// Get the string value of the static HTML.
 	renderedHTMLStr := renderedHTML.String()
 	// Convert the string to byte array that can be written to file system.
 	htmlBytes := []byte(renderedHTMLStr)
+	if Doreload {
+		htmlBytes = bytes.Replace(htmlBytes, []byte("</body>"), scr, 1)
+
+	}
 	// Create any folders need to write file.
 	if err := os.MkdirAll(strings.TrimSuffix(currentContent.contentDest, "/index.html"), os.ModePerm); err != nil {
-		return fmt.Errorf("couldn't create dirs in createHTML: %w", err)
+		return fmt.Errorf("couldn't create dirs in createHTML: %w%s", err, common.Caller())
 	}
 	// Write static HTML to the filesystem.
 	err = ioutil.WriteFile(currentContent.contentDest, htmlBytes, 0755)
 	if err != nil {
-		return fmt.Errorf("unable to write SSR file: %w", err)
+		return fmt.Errorf("unable to write SSR file: %w%s", err, common.Caller())
 	}
 	return nil
 }
@@ -352,12 +416,12 @@ func incrementPager(paginationVars []string, currentContent content, contentJSPa
 func getTotalPages(paginationVar string) (int, error) {
 	totalPages, err := SSRctx.RunScript("plenti_global_pager_"+paginationVar, "create_ssr")
 	if err != nil {
-		return 0, fmt.Errorf("Could not get value of '%v' used in pager: %w", paginationVar, err)
+		return 0, fmt.Errorf("Could not get value of '%v' used in pager: %w%s", paginationVar, err, common.Caller())
 	}
 	// Convert string total page value to integer.
 	totalPagesInt, err := strconv.Atoi(totalPages.String())
 	if err != nil {
-		return 0, fmt.Errorf("Can't convert pager value '%s' to an integer: %w", totalPages.String(), err)
+		return 0, fmt.Errorf("Can't convert pager value '%s' to an integer: %w%s", totalPages.String(), err, common.Caller())
 	}
 	return totalPagesInt, nil
 }
@@ -366,13 +430,13 @@ func writeContentJS(contentJSPath string, contentDetailsStr string) error {
 	// Create new content.js file if it doesn't already exist, or add to it if it does.
 	contentJSFile, err := os.OpenFile(contentJSPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		return fmt.Errorf("could not open content.js for writing: %w", err)
+		return fmt.Errorf("could not open content.js for writing: %w%s", err, common.Caller())
 	}
 	// Write to the file with info from current file in "/content" folder.
 	defer contentJSFile.Close()
 	if _, err := contentJSFile.WriteString(contentDetailsStr); err != nil {
 
-		return fmt.Errorf("could not write to file %s: %w", contentJSPath, err)
+		return fmt.Errorf("could not write to file %s: %w%s", contentJSPath, err, common.Caller())
 
 	}
 	return nil

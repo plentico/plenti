@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"plenti/common"
 	"strconv"
 	"strings"
 	"time"
@@ -27,7 +28,9 @@ func ThemesMerge(tempBuildDir string, buildDir string) error {
 	}
 
 	themeFilesErr := filepath.Walk(".", func(projectFilePath string, projectFileInfo os.FileInfo, err error) error {
-
+		if err != nil {
+			return fmt.Errorf("can't stat %s: %w", projectFilePath, err)
+		}
 		// Check if the current directory is in the excluded list.
 		for _, excludedFile := range excludedFiles {
 			if projectFileInfo.IsDir() && projectFileInfo.Name() == excludedFile {
@@ -41,7 +44,7 @@ func ThemesMerge(tempBuildDir string, buildDir string) error {
 		// Read the source project file.
 		from, err := os.Open(projectFilePath)
 		if err != nil {
-			return fmt.Errorf("Could not open project file for copying: %w", err)
+			return fmt.Errorf("Could not open project file for copying: %w%s", err, common.Caller())
 		}
 		defer from.Close()
 
@@ -57,13 +60,13 @@ func ThemesMerge(tempBuildDir string, buildDir string) error {
 
 		to, err := os.Create(destPath)
 		if err != nil {
-			return fmt.Errorf("Could not create destination project file for copying: %w", err)
+			return fmt.Errorf("Could not create destination project file for copying: %w%s", err, common.Caller())
 		}
 		defer to.Close()
 
 		_, fileCopyErr := io.Copy(to, from)
 		if err != nil {
-			return fmt.Errorf("Could not copy project file from source to destination: %w", fileCopyErr)
+			return fmt.Errorf("Could not copy project file from source to destination: %w%s", fileCopyErr, common.Caller())
 		}
 
 		copiedProjectFileCounter++
@@ -71,7 +74,7 @@ func ThemesMerge(tempBuildDir string, buildDir string) error {
 		return nil
 	})
 	if themeFilesErr != nil {
-		return fmt.Errorf("Could not get project file: %w", themeFilesErr)
+		return fmt.Errorf("Could not get project file: %w%s", themeFilesErr, common.Caller())
 	}
 
 	Log("Number of project files copied: " + strconv.Itoa(copiedProjectFileCounter))

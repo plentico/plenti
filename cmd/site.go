@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"plenti/common"
 	"plenti/generated"
 	"strings"
 
@@ -69,13 +70,13 @@ var siteCmd = &cobra.Command{
 		}
 
 		if err := os.MkdirAll(newpath, os.ModePerm); err != nil {
-			log.Fatalf("Unable to create directory %s: %v", newpath, err)
+			common.CheckErr(fmt.Errorf("Unable to create directory %s: %w", newpath, err))
 		}
 
 		// Check for --bare flag.
 		bareFlag, err := cmd.Flags().GetBool("bare")
 		if err != nil {
-			log.Fatalf("Unable to get 'bare' flag: %v", err)
+			common.CheckErr(fmt.Errorf("Unable to get 'bare' flag: %w", err))
 		}
 
 		// set to Defaults and overwrite if bareFlag is set
@@ -90,13 +91,13 @@ var siteCmd = &cobra.Command{
 			// Create the directories needed for the current file
 			pth := fmt.Sprintf("%s/%s", newpath, strings.Trim(filepath.Dir(file), "/"))
 			if err := os.MkdirAll(pth, os.ModePerm); err != nil {
-				log.Fatalf("Unable to create path(s) %s: %v", pth, err)
+				common.CheckErr(fmt.Errorf("Unable to create path(s) %s: %v", pth, err))
 			}
 
 			// Create the current default file
 			if err := ioutil.WriteFile(fmt.Sprintf("%s/%s", newpath, file), content, 0755); err != nil {
 
-				log.Fatalf("Unable to write file: %v", err)
+				common.CheckErr(fmt.Errorf("Unable to write file: %w", err))
 			}
 		}
 
@@ -106,13 +107,13 @@ var siteCmd = &cobra.Command{
 			// Create the directories needed for the current file
 			pth := fmt.Sprintf("%s/node_modules/%s", newpath, strings.Trim(filepath.Dir(file), "/"))
 			if err := os.MkdirAll(pth, os.ModePerm); err != nil {
-				log.Fatalf("Unable to create path(s) %s: %v", pth, err)
+				common.CheckErr(fmt.Errorf("Unable to create path(s) %s: %w", pth, err))
 
 			}
 
 			// Create the current default file
 			if err = ioutil.WriteFile(fmt.Sprintf("%s/%s", pth, filepath.Base(file)), content, 0755); err != nil {
-				log.Fatalf("Unable to write file: %v", err)
+				common.CheckErr(fmt.Errorf("Unable to write file: %w", err))
 			}
 		}
 

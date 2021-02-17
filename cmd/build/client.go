@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"plenti/common"
 	"plenti/readers"
 	"regexp"
 	"strconv"
@@ -37,25 +38,25 @@ func Client(buildPath string, tempBuildDir string, ejectedPath string) error {
 		fmt.Sprintf("%snode_modules/svelte/compiler.js", tempBuildDir),
 	)
 	if err != nil {
-		return fmt.Errorf("Can't read %s/node_modules/svelte/compiler.js: %w", tempBuildDir, err)
+		return fmt.Errorf("Can't read %s/node_modules/svelte/compiler.js: %w%s", tempBuildDir, err, common.Caller())
 
 	}
 	// Remove reference to 'self' that breaks v8go on line 19 of node_modules/svelte/compiler.js.
 	compilerStr := strings.Replace(string(compiler), "self.performance.now();", "'';", 1)
 	ctx, err := v8go.NewContext(nil)
 	if err != nil {
-		return fmt.Errorf("Could not create Isolate: %w", err)
+		return fmt.Errorf("Could not create Isolate: %w%s", err, common.Caller())
 
 	}
 	_, err = ctx.RunScript(compilerStr, "compile_svelte")
 	if err != nil {
-		return fmt.Errorf("Could not add svelte compiler: %w", err)
+		return fmt.Errorf("Could not add svelte compiler: %w%s", err, common.Caller())
 
 	}
 
 	SSRctx, err = v8go.NewContext(nil)
 	if err != nil {
-		return fmt.Errorf("Could not create Isolate: %w", err)
+		return fmt.Errorf("Could not create Isolate: %w%s", err, common.Caller())
 
 	}
 	// Fix "ReferenceError: exports is not defined" errors on line 1319 (exports.current_component;).
@@ -80,7 +81,7 @@ func Client(buildPath string, tempBuildDir string, ejectedPath string) error {
 		// Use v8go and add create_ssr_component() function.
 		createSsrComponent, err := ioutil.ReadFile(svelteLib)
 		if err != nil {
-			return fmt.Errorf("Can't read %s: %w", svelteLib, err)
+			return fmt.Errorf("Can't read %s: %w%s", svelteLib, err, common.Caller())
 
 		}
 		// Fix "Cannot access 'on_destroy' before initialization" errors on line 1320 & line 1337 of node_modules/svelte/internal/index.js.
@@ -88,15 +89,18 @@ func Client(buildPath string, tempBuildDir string, ejectedPath string) error {
 		// Use empty noop() function created above instead of missing method.
 		createSsrStr = strings.ReplaceAll(createSsrStr, "internal.noop", "noop")
 		_, err = SSRctx.RunScript(createSsrStr, "create_ssr")
-		SSRctx.RunScript(createSsrStr, "create_ssr")
-		/*
-			// `ReferenceError: require is not defined` error on build so cannot quit ...
-			if err != nil {
-				fmt.Printf("Could not add create_ssr_component() func from svelte/internal: %v", err)
-				// return err
-			}
-			// TODO: Fix this ^
-		*/
+
+		// TODO: `ReferenceError: require is not defined` error on build so cannot quit ...
+		// 	node_modules/svelte/animate/index.js: ReferenceError: require is not defined
+		//  node_modules/svelte/easing/index.js: ReferenceError: require is not defined
+		//  node_modules/svelte/motion/index.js: ReferenceError: require is not defined
+		//  node_modules/svelte/store/index.js: ReferenceError: require is not defined
+		//  node_modules/svelte/transition/index.js: ReferenceError: require is not defined
+		// if err != nil {
+		// 	fmt.Println(fmt.Errorf("Could not add create_ssr_component() func from svelte/internal for file %s: %w%s", svelteLib, err, common.Caller()))
+
+		// }
+
 	}
 
 	// Compile router separately since it's ejected from core.
@@ -106,13 +110,17 @@ func Client(buildPath string, tempBuildDir string, ejectedPath string) error {
 
 	// Go through all file paths in the "/layout" folder.
 	err = filepath.Walk(tempBuildDir+"layout", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
+
+		if err != nil {
+			return fmt.Errorf("can't stat %s: %w", layoutPath, err)
+		}
 		// Create destination path.
 		destFile := buildPath + "/spa" + strings.TrimPrefix(layoutPath, tempBuildDir+"layout")
 		// Make sure path is a directory
 		if layoutFileInfo.IsDir() {
 			// Create any sub directories need for filepath.
 			if err = os.MkdirAll(destFile, os.ModePerm); err != nil {
-				return err
+				return fmt.Errorf("can't make path: %s %w%s", layoutPath, err, common.Caller())
 			}
 		} else {
 			// If the file is in .svelte format, compile it to .js
@@ -122,7 +130,7 @@ func Client(buildPath string, tempBuildDir string, ejectedPath string) error {
 				destFile = strings.TrimSuffix(destFile, filepath.Ext(destFile)) + ".js"
 
 				if err = compileSvelte(ctx, SSRctx, layoutPath, destFile, stylePath, tempBuildDir); err != nil {
-					return err
+					return fmt.Errorf("%w%s", err, common.Caller())
 				}
 
 				// Remove temporary theme build directory.
@@ -140,15 +148,16 @@ func Client(buildPath string, tempBuildDir string, ejectedPath string) error {
 		}
 		return nil
 	})
+	// TODO: return file names here amd anywhere possible
 	if err != nil {
-		return fmt.Errorf("Could not get layout file: %w", err)
+		return err
 
 	}
 
 	// Write layout.js to filesystem.
 	err = ioutil.WriteFile(buildPath+"/spa/ejected/layout.js", []byte(allComponentsStr), os.ModePerm)
 	if err != nil {
-		return fmt.Errorf("Unable to write layout.js file: %w", err)
+		return fmt.Errorf("Unable to write layout.js file: %w%s", err, common.Caller())
 
 	}
 
@@ -161,52 +170,52 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string,
 
 	component, err := ioutil.ReadFile(layoutPath)
 	if err != nil {
-		return fmt.Errorf("Can't read component: %w", err)
+		return fmt.Errorf("can't read component file: %s %w%s", layoutPath, err, common.Caller())
 	}
 	componentStr := string(component)
 
 	// Compile component with Svelte.
 	_, err = ctx.RunScript("var { js, css } = svelte.compile(`"+componentStr+"`, {css: false, hydratable: true});", "compile_svelte")
 	if err != nil {
-		return err
+		return fmt.Errorf("can't compile component file %s with Svelte: %w%s", layoutPath, err, common.Caller())
 	}
 	// Get the JS code from the compiled result.
 	jsCode, err := ctx.RunScript("js.code;", "compile_svelte")
 	if err != nil {
-		return fmt.Errorf("V8go could not execute js.code: %w", err)
+		return fmt.Errorf("V8go could not execute js.code for %s: %w%s", layoutPath, err, common.Caller())
 	}
 	jsBytes := []byte(jsCode.String())
 	err = ioutil.WriteFile(destFile, jsBytes, 0755)
 	if err != nil {
-		return fmt.Errorf("Unable to write compiled client file: %w", err)
+		return fmt.Errorf("Unable to write compiled client file for %s: %w%s", layoutPath, err, common.Caller())
 	}
 
 	// Get the CSS code from the compiled result.
 	cssCode, err := ctx.RunScript("css.code;", "compile_svelte")
 	if err != nil {
-		return fmt.Errorf("V8go could not execute css.code: %w", err)
+		return fmt.Errorf("V8go could not execute css.code  for %s: %w%s", layoutPath, err, common.Caller())
 	}
 	cssStr := strings.TrimSpace(cssCode.String())
 	// If there is CSS, write it into the bundle.css file.
 	if cssStr != "null" {
 		cssFile, err := os.OpenFile(stylePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
-			return fmt.Errorf("Could not open bundle.css for writing: %w", err)
+			return fmt.Errorf("Could not open bundle.css for writing %s: %w%s", layoutPath, err, common.Caller())
 		}
 		defer cssFile.Close()
 		if _, err := cssFile.WriteString(cssStr); err != nil {
-			return fmt.Errorf("could not write to cssStr: %w", err)
+			return fmt.Errorf("could not write to cssStr for %s: %w%s", layoutPath, err, common.Caller())
 		}
 	}
 
 	// Get Server Side Rendered (SSR) JS.
 	_, ssrCompileErr := ctx.RunScript("var { js: ssrJs, css: ssrCss } = svelte.compile(`"+componentStr+"`, {generate: 'ssr'});", "compile_svelte")
 	if ssrCompileErr != nil {
-		return fmt.Errorf("V8go could not compile ssrJs.code: %w", ssrCompileErr)
+		return fmt.Errorf("V8go could not compile ssrJs.code for %s: %w%s", layoutPath, ssrCompileErr, common.Caller())
 	}
 	ssrJsCode, err := ctx.RunScript("ssrJs.code;", "compile_svelte")
 	if err != nil {
-		return fmt.Errorf("V8go could not get ssrJs.code value: %w", err)
+		return fmt.Errorf("V8go could not get ssrJs.code value for %s: %w%s", layoutPath, err, common.Caller())
 	}
 	// Regex match static import statements.
 	reStaticImport := regexp.MustCompile(`import\s((.*)\sfrom(.*);|(((.*)\n){0,})\}\sfrom(.*);)`)
@@ -358,7 +367,7 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string,
 	// Add component to context so it can be used to render HTML in data_source.go.
 	_, err = SSRctx.RunScript(ssrStr, "create_ssr")
 	if err != nil {
-		return fmt.Errorf("Could not add SSR Component: %w", err)
+		return fmt.Errorf("Could not add SSR Component for %s: %w%s", layoutPath, err, common.Caller())
 	}
 
 	return nil
