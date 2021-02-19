@@ -76,7 +76,7 @@ node_modules`),
   "dependencies": {
     "navaid": "^1.2.0",
     "regexparam": "^1.3.0",
-    "svelte": "^3.29.4"
+    "svelte": "^3.32.3"
   }
 }
 `),

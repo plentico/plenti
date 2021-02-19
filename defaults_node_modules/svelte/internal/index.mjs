@@ -91,6 +91,13 @@ function update_slot(slot, slot_definition, ctx, $$scope, dirty, get_slot_change
         slot.p(slot_context, slot_changes);
     }
 }
+function update_slot_spread(slot, slot_definition, ctx, $$scope, dirty, get_slot_changes_fn, get_slot_spread_changes_fn, get_slot_context_fn) {
+    const slot_changes = get_slot_spread_changes_fn(dirty) | get_slot_changes(slot_definition, $$scope, dirty, get_slot_changes_fn);
+    if (slot_changes) {
+        const slot_context = get_slot_context(slot_definition, ctx, $$scope, get_slot_context_fn);
+        slot.p(slot_context, slot_changes);
+    }
+}
 function exclude_internal_props(props) {
     const result = {};
     for (const k in props)
@@ -414,13 +421,12 @@ function is_crossorigin() {
 }
 function add_resize_listener(node, fn) {
     const computed_style = getComputedStyle(node);
-    const z_index = (parseInt(computed_style.zIndex) || 0) - 1;
     if (computed_style.position === 'static') {
         node.style.position = 'relative';
     }
     const iframe = element('iframe');
     iframe.setAttribute('style', 'display: block; position: absolute; top: 0; left: 0; width: 100%; height: 100%; ' +
-        `overflow: hidden; border: 0; opacity: 0; pointer-events: none; z-index: ${z_index};`);
+        'overflow: hidden; border: 0; opacity: 0; pointer-events: none; z-index: -1;');
     iframe.setAttribute('aria-hidden', 'true');
     iframe.tabIndex = -1;
     const crossorigin = is_crossorigin();
@@ -490,6 +496,20 @@ class HtmlTag {
     d() {
         this.n.forEach(detach);
     }
+}
+function attribute_to_object(attributes) {
+    const result = {};
+    for (const attribute of attributes) {
+        result[attribute.name] = attribute.value;
+    }
+    return result;
+}
+function get_custom_elements_slots(element) {
+    const result = {};
+    element.childNodes.forEach((node) => {
+        result[node.slot || 'default'] = true;
+    });
+    return result;
 }
 
 const active_docs = new Set();
@@ -662,6 +682,9 @@ function setContext(key, context) {
 }
 function getContext(key) {
     return get_current_component().$$.context.get(key);
+}
+function hasContext(key) {
+    return get_current_component().$$.context.has(key);
 }
 // TODO figure out if we still want to support
 // shorthand events, or if we want to implement
@@ -1039,7 +1062,9 @@ function handle_promise(promise, info) {
                     if (i !== index && block) {
                         group_outros();
                         transition_out(block, 1, 1, () => {
-                            info.blocks[i] = null;
+                            if (info.blocks[i] === block) {
+                                info.blocks[i] = null;
+                            }
                         });
                         check_outros();
                     }
@@ -1424,7 +1449,6 @@ function make_dirty(component, i) {
 function init(component, options, instance, create_fragment, not_equal, props, dirty = [-1]) {
     const parent_component = current_component;
     set_current_component(component);
-    const prop_values = options.props || {};
     const $$ = component.$$ = {
         fragment: null,
         ctx: null,
@@ -1446,7 +1470,7 @@ function init(component, options, instance, create_fragment, not_equal, props, d
     };
     let ready = false;
     $$.ctx = instance
-        ? instance(component, prop_values, (i, ret, ...rest) => {
+        ? instance(component, options.props || {}, (i, ret, ...rest) => {
             const value = rest.length ? rest[0] : ret;
             if ($$.ctx && not_equal($$.ctx[i], $$.ctx[i] = value)) {
                 if (!$$.skip_bound && $$.bound[i])
@@ -1520,6 +1544,9 @@ if (typeof HTMLElement === 'function') {
         }
     };
 }
+/**
+ * Base class for Svelte components. Used when dev=false.
+ */
 class SvelteComponent {
     $destroy() {
         destroy_component(this, 1);
@@ -1544,7 +1571,7 @@ class SvelteComponent {
 }
 
 function dispatch_dev(type, detail) {
-    document.dispatchEvent(custom_event(type, Object.assign({ version: '3.29.4' }, detail)));
+    document.dispatchEvent(custom_event(type, Object.assign({ version: '3.32.3' }, detail)));
 }
 function append_dev(target, node) {
     dispatch_dev('SvelteDOMInsert', { target, node });
@@ -1624,6 +1651,9 @@ function validate_slots(name, slot, keys) {
         }
     }
 }
+/**
+ * Base class for Svelte components with some minor dev-enhancements. Used when dev=true.
+ */
 class SvelteComponentDev extends SvelteComponent {
     constructor(options) {
         if (!options || (!options.target && !options.$$inline)) {
@@ -1640,6 +1670,42 @@ class SvelteComponentDev extends SvelteComponent {
     $capture_state() { }
     $inject_state() { }
 }
+/**
+ * Base class to create strongly typed Svelte components.
+ * This only exists for typing purposes and should be used in `.d.ts` files.
+ *
+ * ### Example:
+ *
+ * You have component library on npm called `component-library`, from which
+ * you export a component called `MyComponent`. For Svelte+TypeScript users,
+ * you want to provide typings. Therefore you create a `index.d.ts`:
+ * ```ts
+ * import { SvelteComponentTyped } from "svelte";
+ * export class MyComponent extends SvelteComponentTyped<{foo: string}> {}
+ * ```
+ * Typing this makes it possible for IDEs like VS Code with the Svelte extension
+ * to provide intellisense and to use the component like this in a Svelte file
+ * with TypeScript:
+ * ```svelte
+ * <script lang="ts">
+ * 	import { MyComponent } from "component-library";
+ * </script>
+ * <MyComponent foo={'bar'} />
+ * ```
+ *
+ * #### Why not make this part of `SvelteComponent(Dev)`?
+ * Because
+ * ```ts
+ * class ASubclassOfSvelteComponent extends SvelteComponent<{foo: string}> {}
+ * const component: typeof SvelteComponent = ASubclassOfSvelteComponent;
+ * ```
+ * will throw a type error, so we need to seperate the more strictly typed class.
+ */
+class SvelteComponentTyped extends SvelteComponentDev {
+    constructor(options) {
+        super(options);
+    }
+}
 function loop_guard(timeout) {
     const start = Date.now();
     return () => {
@@ -1649,4 +1715,4 @@ function loop_guard(timeout) {
     };
 }
 
-export { HtmlTag, SvelteComponent, SvelteComponentDev, SvelteElement, action_destroyer, add_attribute, add_classes, add_flush_callback, add_location, add_render_callback, add_resize_listener, add_transform, afterUpdate, append, append_dev, assign, attr, attr_dev, beforeUpdate, bind, binding_callbacks, blank_object, bubble, check_outros, children, claim_component, claim_element, claim_space, claim_text, clear_loops, component_subscribe, compute_rest_props, compute_slots, createEventDispatcher, create_animation, create_bidirectional_transition, create_component, create_in_transition, create_out_transition, create_slot, create_ssr_component, current_component, custom_event, dataset_dev, debug, destroy_block, destroy_component, destroy_each, detach, detach_after_dev, detach_before_dev, detach_between_dev, detach_dev, dirty_components, dispatch_dev, each, element, element_is, empty, escape, escaped, exclude_internal_props, fix_and_destroy_block, fix_and_outro_and_destroy_block, fix_position, flush, getContext, get_binding_group_value, get_current_component, get_slot_changes, get_slot_context, get_spread_object, get_spread_update, get_store_value, globals, group_outros, handle_promise, has_prop, identity, init, insert, insert_dev, intros, invalid_attribute_name_character, is_client, is_crossorigin, is_empty, is_function, is_promise, listen, listen_dev, loop, loop_guard, missing_component, mount_component, noop, not_equal, now, null_to_empty, object_without_properties, onDestroy, onMount, once, outro_and_destroy_block, prevent_default, prop_dev, query_selector_all, raf, run, run_all, safe_not_equal, schedule_update, select_multiple_value, select_option, select_options, select_value, self, setContext, set_attributes, set_current_component, set_custom_element_data, set_data, set_data_dev, set_input_type, set_input_value, set_now, set_raf, set_store_value, set_style, set_svg_attributes, space, spread, stop_propagation, subscribe, svg_element, text, tick, time_ranges_to_array, to_number, toggle_class, transition_in, transition_out, update_keyed_each, update_slot, validate_component, validate_each_argument, validate_each_keys, validate_slots, validate_store, xlink_attr };
+export { HtmlTag, SvelteComponent, SvelteComponentDev, SvelteComponentTyped, SvelteElement, action_destroyer, add_attribute, add_classes, add_flush_callback, add_location, add_render_callback, add_resize_listener, add_transform, afterUpdate, append, append_dev, assign, attr, attr_dev, attribute_to_object, beforeUpdate, bind, binding_callbacks, blank_object, bubble, check_outros, children, claim_component, claim_element, claim_space, claim_text, clear_loops, component_subscribe, compute_rest_props, compute_slots, createEventDispatcher, create_animation, create_bidirectional_transition, create_component, create_in_transition, create_out_transition, create_slot, create_ssr_component, current_component, custom_event, dataset_dev, debug, destroy_block, destroy_component, destroy_each, detach, detach_after_dev, detach_before_dev, detach_between_dev, detach_dev, dirty_components, dispatch_dev, each, element, element_is, empty, escape, escaped, exclude_internal_props, fix_and_destroy_block, fix_and_outro_and_destroy_block, fix_position, flush, getContext, get_binding_group_value, get_current_component, get_custom_elements_slots, get_slot_changes, get_slot_context, get_spread_object, get_spread_update, get_store_value, globals, group_outros, handle_promise, hasContext, has_prop, identity, init, insert, insert_dev, intros, invalid_attribute_name_character, is_client, is_crossorigin, is_empty, is_function, is_promise, listen, listen_dev, loop, loop_guard, missing_component, mount_component, noop, not_equal, now, null_to_empty, object_without_properties, onDestroy, onMount, once, outro_and_destroy_block, prevent_default, prop_dev, query_selector_all, raf, run, run_all, safe_not_equal, schedule_update, select_multiple_value, select_option, select_options, select_value, self, setContext, set_attributes, set_current_component, set_custom_element_data, set_data, set_data_dev, set_input_type, set_input_value, set_now, set_raf, set_store_value, set_style, set_svg_attributes, space, spread, stop_propagation, subscribe, svg_element, text, tick, time_ranges_to_array, to_number, toggle_class, transition_in, transition_out, update_keyed_each, update_slot, update_slot_spread, validate_component, validate_each_argument, validate_each_keys, validate_slots, validate_store, xlink_attr };

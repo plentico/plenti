@@ -43,6 +43,8 @@ func Client(buildPath string, tempBuildDir string, ejectedPath string) error {
 	}
 	// Remove reference to 'self' that breaks v8go on line 19 of node_modules/svelte/compiler.js.
 	compilerStr := strings.Replace(string(compiler), "self.performance.now();", "'';", 1)
+	// Remove 'require' that breaks v8go on line 22647 of node_modules/svelte/compiler.js.
+	compilerStr = strings.Replace(compilerStr, "const Url$1 = (typeof URL !== 'undefined' ? URL : require('url').URL);", "", 1)
 	ctx, err := v8go.NewContext(nil)
 	if err != nil {
 		return fmt.Errorf("Could not create Isolate: %w%s", err, common.Caller())

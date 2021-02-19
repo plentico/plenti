@@ -46,8 +46,6 @@ func Gopack(buildPath string) error {
 				if err = os.MkdirAll(filepath.Dir(modulePath), os.ModePerm); err != nil {
 					return fmt.Errorf("Could not create subdirectories %s: %w%s", filepath.Dir(modulePath), err, common.Caller())
 				}
-				// Change the .mjs file extension to .js.
-				modulePath = strings.TrimSuffix(modulePath, filepath.Ext(modulePath)) + ".js"
 				to, err := os.Create(modulePath)
 				if err != nil {
 					return fmt.Errorf("Could not create destination %s file for copying: %w%s", modulePath, err, common.Caller())
@@ -70,7 +68,7 @@ func Gopack(buildPath string) error {
 		if err != nil {
 			return fmt.Errorf("can't stat %s: %w", convertPath, err)
 		}
-		if !convertFileInfo.IsDir() && filepath.Ext(convertPath) == ".js" {
+		if !convertFileInfo.IsDir() && (filepath.Ext(convertPath) == ".js" || filepath.Ext(convertPath) == ".mjs") {
 			contentBytes, err := ioutil.ReadFile(convertPath)
 			if err != nil {
 				return fmt.Errorf("Could not read file %s to convert to esm: %w%s", convertPath, err, common.Caller())
@@ -95,7 +93,7 @@ func Gopack(buildPath string) error {
 			// \n = newline
 			// {0,} = repeat any number of times
 			// \{ = just a closing curly bracket (escaped)
-			reStaticImport := regexp.MustCompile(`import(\s)(.*from(.*);|((.*\n){0,})\}(\s)from(.*);)`)
+			reStaticImport := regexp.MustCompile(`(?m)^import(\s)(.*from(.*);|((.*\n){0,})\}(\s)from(.*);)`)
 			reStaticExport := regexp.MustCompile(`export(\s)(.*from(.*);|((.*\n){0,})\}(\s)from(.*);)`)
 			// Get all the import statements.
 			staticImportStatements := reStaticImport.FindAll(contentBytes, -1)
@@ -128,7 +126,6 @@ func Gopack(buildPath string) error {
 				} else if pathStr[:1] == "." {
 					// If the import/export path starts with a dot (.) or double dot (..) look for the file it's trying to import from this relative path.
 					findRelativePathErr := filepath.Walk(fullPath, func(relativePath string, relativePathFileInfo os.FileInfo, err error) error {
-
 						if err != nil {
 							return fmt.Errorf("can't stat %s: %w", relativePath, err)
 						}
@@ -198,7 +195,7 @@ func findJSFile(path string) string {
 	var foundPath string
 	files, err := ioutil.ReadDir(path)
 	for _, f := range files {
-		if filepath.Ext(f.Name()) == ".js" {
+		if filepath.Ext(f.Name()) == ".js" || filepath.Ext(f.Name()) == ".mjs" {
 			foundPath = path + "/" + f.Name()
 			Log("The found import path to use is: " + foundPath)
 		}
