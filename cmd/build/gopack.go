@@ -129,8 +129,8 @@ func Gopack(buildPath string) error {
 						if err != nil {
 							return fmt.Errorf("can't stat %s: %w", relativePath, err)
 						}
-						// Only use .js files in imports (folders aren't specific enough).
-						if filepath.Ext(relativePath) == ".js" {
+						// Only use .js or .mjs files in imports (folders aren't specific enough).
+						if filepath.Ext(relativePath) == ".js" || filepath.Ext(relativePath) == ".mjs" {
 							foundPath = relativePath
 						}
 						return nil
