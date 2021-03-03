@@ -2,10 +2,11 @@ package cmd
 
 import (
 	"log"
-	"plenti/common"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/plentico/plenti/common"
 
 	"golang.org/x/net/websocket"
 )

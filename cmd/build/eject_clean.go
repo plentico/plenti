@@ -2,8 +2,9 @@ package build
 
 import (
 	"os"
-	"plenti/generated"
 	"time"
+
+	"github.com/plentico/plenti/generated"
 )
 
 // EjectClean removes core files that hadn't been ejected to project filesystem.

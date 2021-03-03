@@ -5,9 +5,10 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"plenti/common"
-	"plenti/generated"
 	"time"
+
+	"github.com/plentico/plenti/common"
+	"github.com/plentico/plenti/generated"
 )
 
 // EjectTemp temporarily writes ejectable core files to project filesystem.

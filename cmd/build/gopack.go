@@ -7,11 +7,12 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"plenti/common"
-	"plenti/readers"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/plentico/plenti/common"
+	"github.com/plentico/plenti/readers"
 )
 
 // Gopack ensures ESM support for NPM dependencies.

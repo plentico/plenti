@@ -5,9 +5,10 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"plenti/common"
-	"plenti/generated"
 	"time"
+
+	"github.com/plentico/plenti/common"
+	"github.com/plentico/plenti/generated"
 )
 
 // NpmDefaults creates the node_modules folder with core defaults if it doesn't already exist.

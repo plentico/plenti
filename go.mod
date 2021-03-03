@@ -1,4 +1,4 @@
-module plenti
+module github.com/plentico/plenti
 
 go 1.14
 

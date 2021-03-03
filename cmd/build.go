@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"plenti/cmd/build"
-	"plenti/common"
-	"plenti/readers"
 	"time"
+
+	"github.com/plentico/plenti/cmd/build"
+	"github.com/plentico/plenti/common"
+	"github.com/plentico/plenti/readers"
 
 	"github.com/spf13/cobra"
 )

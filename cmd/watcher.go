@@ -5,11 +5,12 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"plenti/cmd/build"
+
+	"github.com/plentico/plenti/cmd/build"
 
 	"sync"
 
-	"plenti/common"
+	"github.com/plentico/plenti/common"
 
 	"time"
 

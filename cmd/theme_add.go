@@ -4,10 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"plenti/common"
-	"plenti/readers"
-	"plenti/writers"
 	"strings"
+
+	"github.com/plentico/plenti/common"
+	"github.com/plentico/plenti/readers"
+	"github.com/plentico/plenti/writers"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"

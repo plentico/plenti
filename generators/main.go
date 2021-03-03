@@ -5,8 +5,9 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"plenti/common"
 	"strings"
+
+	"github.com/plentico/plenti/common"
 )
 
 // Packages static files in your Go binary.
