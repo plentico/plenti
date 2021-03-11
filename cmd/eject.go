@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"plenti/common"
-	"plenti/generated"
 
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
@@ -90,7 +89,7 @@ automatically).`,
 			for _, arg := range args {
 				arg = "/" + arg
 				fileExists := false
-				for ejectableFile := range generated.Ejected {
+				for _, ejectableFile := range ejectableFilesArray {
 					if ejectableFile == arg {
 						fileExists = true
 						break
@@ -100,10 +99,7 @@ automatically).`,
 					fmt.Printf("There is no ejectable file named %s. Run 'plenti eject' to see list of ejectable files.\n", arg)
 					return
 				}
-				filePath := "ejected" + arg
-				content := generated.Ejected[arg]
-				common.CheckErr(ejectFile(filePath, content))
-
+				common.CheckErr(ejectFile(arg, ejectableFilesMap[arg]))
 			}
 		}
 	},
