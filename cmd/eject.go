@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -32,15 +33,28 @@ continue to work properly and you will have to manually apply any
 updates that are made to the core files (these are normally applied
 automatically).`,
 	Run: func(cmd *cobra.Command, args []string) {
-		allEjectableFiles := []string{}
-		for file := range generated.Ejected {
-			allEjectableFiles = append(allEjectableFiles, file)
+		ejected, err := fs.Sub(defaultsEjectedFS, "defaults")
+		if err != nil {
+			common.CheckErr(fmt.Errorf("Unable to get ejected defaults: %w", err))
 		}
+		ejectableFilesMap := map[string][]byte{}
+		ejectableFilesArray := []string{}
+		fs.WalkDir(ejected, ".", func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if d.IsDir() {
+				return nil
+			}
+			contentFile, _ := ejected.Open(path)
+			contentBytes, _ := ioutil.ReadAll(contentFile)
+			ejectableFilesMap[path] = contentBytes
+			ejectableFilesArray = append(ejectableFilesArray, path)
+			return nil
+		})
 		if len(args) < 1 && EjectAll {
 			fmt.Println("All flag used, eject all core files.")
-			for _, file := range allEjectableFiles {
-				filePath := "ejected" + file
-				content := generated.Ejected[file]
+			for filePath, content := range ejectableFilesMap {
 				common.CheckErr(ejectFile(filePath, content))
 			}
 			return
@@ -49,7 +63,7 @@ automatically).`,
 			fmt.Printf("Show all ejectable files as select list\n")
 			prompt := promptui.Select{
 				Label: "Select File to Eject",
-				Items: allEjectableFiles,
+				Items: ejectableFilesArray,
 			}
 			_, result, err := prompt.Run()
 			if err != nil {
@@ -66,9 +80,7 @@ automatically).`,
 				return
 			}
 			if confirmed == "Yes" {
-				filePath := "ejected" + result
-				content := generated.Ejected[result]
-				common.CheckErr(ejectFile(filePath, content))
+				common.CheckErr(ejectFile(result, ejectableFilesMap[result]))
 			} else if confirmed == "No" {
 				fmt.Println("No file was ejected.")
 			}
