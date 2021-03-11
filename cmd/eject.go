@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"plenti/common"
+	"reflect"
 
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
@@ -36,8 +37,7 @@ automatically).`,
 		if err != nil {
 			common.CheckErr(fmt.Errorf("Unable to get ejected defaults: %w", err))
 		}
-		ejectableFilesMap := map[string][]byte{}
-		ejectableFilesArray := []string{}
+		ejectableFiles := map[string][]byte{}
 		fs.WalkDir(ejected, ".", func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
 				return err
@@ -47,13 +47,12 @@ automatically).`,
 			}
 			contentFile, _ := ejected.Open(path)
 			contentBytes, _ := ioutil.ReadAll(contentFile)
-			ejectableFilesMap[path] = contentBytes
-			ejectableFilesArray = append(ejectableFilesArray, path)
+			ejectableFiles[path] = contentBytes
 			return nil
 		})
 		if len(args) < 1 && EjectAll {
 			fmt.Println("All flag used, eject all core files.")
-			for filePath, content := range ejectableFilesMap {
+			for filePath, content := range ejectableFiles {
 				common.CheckErr(ejectFile(filePath, content))
 			}
 			return
@@ -62,7 +61,7 @@ automatically).`,
 			fmt.Printf("Show all ejectable files as select list\n")
 			prompt := promptui.Select{
 				Label: "Select File to Eject",
-				Items: ejectableFilesArray,
+				Items: reflect.ValueOf(ejectableFiles).MapKeys(),
 			}
 			_, result, err := prompt.Run()
 			if err != nil {
@@ -79,7 +78,7 @@ automatically).`,
 				return
 			}
 			if confirmed == "Yes" {
-				common.CheckErr(ejectFile(result, ejectableFilesMap[result]))
+				common.CheckErr(ejectFile(result, ejectableFiles[result]))
 			} else if confirmed == "No" {
 				fmt.Println("No file was ejected.")
 			}
@@ -89,7 +88,7 @@ automatically).`,
 			for _, arg := range args {
 				arg = "/" + arg
 				fileExists := false
-				for _, ejectableFile := range ejectableFilesArray {
+				for ejectableFile := range ejectableFiles {
 					if ejectableFile == arg {
 						fileExists = true
 						break
@@ -99,7 +98,7 @@ automatically).`,
 					fmt.Printf("There is no ejectable file named %s. Run 'plenti eject' to see list of ejectable files.\n", arg)
 					return
 				}
-				common.CheckErr(ejectFile(arg, ejectableFilesMap[arg]))
+				common.CheckErr(ejectFile(arg, ejectableFiles[arg]))
 			}
 		}
 	},
