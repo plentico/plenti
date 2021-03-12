@@ -86,7 +86,6 @@ automatically).`,
 		if len(args) >= 1 {
 			fmt.Println("Attempting to eject each file listed")
 			for _, arg := range args {
-				arg = "/" + arg
 				fileExists := false
 				for ejectableFile := range ejectableFiles {
 					if ejectableFile == arg {

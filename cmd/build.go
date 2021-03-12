@@ -112,7 +112,7 @@ func Build() error {
 	build.Log("Creating '" + buildDir + "' build directory")
 
 	// Add core NPM dependencies if node_module folder doesn't already exist.
-	if err = common.CheckErr(build.NpmDefaults(tempBuildDir)); err != nil {
+	if err = common.CheckErr(build.NpmDefaults(tempBuildDir, defaultsNodeModulesFS)); err != nil {
 		return err
 	}
 
