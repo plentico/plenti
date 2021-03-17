@@ -1,17 +1,17 @@
 package build
 
 import (
+	"embed"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"plenti/common"
-	"plenti/generated"
 	"time"
 )
 
 // NpmDefaults creates the node_modules folder with core defaults if it doesn't already exist.
-func NpmDefaults(tempBuildDir string) error {
+func NpmDefaults(tempBuildDir string, defaultsNodeModulesFS embed.FS) error {
 
 	defer Benchmark(time.Now(), "Setting up core NPM packages")
 
@@ -20,19 +20,29 @@ func NpmDefaults(tempBuildDir string) error {
 	destPath := tempBuildDir + "node_modules"
 
 	if _, err := os.Stat(destPath); os.IsNotExist(err) {
-		for file, content := range generated.Defaults_node_modules {
-			// Make file relative to where CLI is executed
-			file = destPath + "/" + file
-			// Create the directories needed for the current file
-			if err = os.MkdirAll(filepath.Dir(file), os.ModePerm); err != nil {
-				return fmt.Errorf("Unable to MkdirAll in NpmDefaults: %w%s", err, common.Caller())
-			}
-			// Create the current default file
-			err := ioutil.WriteFile(file, content, os.ModePerm)
-			if err != nil {
-				return fmt.Errorf("Unable to write npm dependency file: %w%s", err, common.Caller())
-			}
+		nodeModules, err := fs.Sub(defaultsNodeModulesFS, "defaults")
+		if err != nil {
+			common.CheckErr(fmt.Errorf("Unable to get node_modules defaults: %w", err))
 		}
+		fs.WalkDir(nodeModules, ".", func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if d.IsDir() {
+				// Create the directories needed for the current file
+				if err := os.MkdirAll(path, os.ModePerm); err != nil {
+					common.CheckErr(fmt.Errorf("Unable to create path(s) %s: %v", path, err))
+				}
+				return nil
+			}
+			content, _ := nodeModules.Open(path)
+			contentBytes, err := ioutil.ReadAll(content)
+			// Create the current default file
+			if err := ioutil.WriteFile(path, contentBytes, 0755); err != nil {
+				common.CheckErr(fmt.Errorf("Unable to write node_modules file: %w", err))
+			}
+			return nil
+		})
 	}
 	return nil
 }

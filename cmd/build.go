@@ -112,18 +112,12 @@ func Build() error {
 	build.Log("Creating '" + buildDir + "' build directory")
 
 	// Add core NPM dependencies if node_module folder doesn't already exist.
-	if err = common.CheckErr(build.NpmDefaults(tempBuildDir)); err != nil {
-		return err
-	}
-
-	// Write ejectable core files to filesystem before building.
-	tempFiles, ejectedPath, err := build.EjectTemp(tempBuildDir)
-	if err = common.CheckErr(err); err != nil {
+	if err = common.CheckErr(build.NpmDefaults(tempBuildDir, defaultsNodeModulesFS)); err != nil {
 		return err
 	}
 
 	// Directly copy .js that don't need compiling to the build dir.
-	if err = common.CheckErr(build.EjectCopy(buildPath, tempBuildDir, ejectedPath)); err != nil {
+	if err = common.CheckErr(build.EjectCopy(buildPath, tempBuildDir, defaultsEjectedFS)); err != nil {
 		return err
 	}
 
@@ -149,7 +143,7 @@ func Build() error {
 	} else {
 
 		// Prep the client SPA.
-		err = build.Client(buildPath, tempBuildDir, ejectedPath)
+		err = build.Client(buildPath, tempBuildDir, defaultsEjectedFS)
 		if err = common.CheckErr(err); err != nil {
 			return err
 		}
@@ -172,12 +166,8 @@ func Build() error {
 		if err = common.CheckErr(build.ThemesClean(tempBuildDir)); err != nil {
 			return err
 		}
-	} else {
-		// If no theme, just delete any ejectable files that the user didn't manually eject
-		if err = common.CheckErr(build.EjectClean(tempFiles, ejectedPath)); err != nil {
-			return err
-		}
 	}
+
 	// only relates to defer recover
 	return err
 

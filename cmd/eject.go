@@ -2,11 +2,12 @@ package cmd
 
 import (
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"plenti/common"
-	"plenti/generated"
+	"reflect"
 
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
@@ -32,15 +33,26 @@ continue to work properly and you will have to manually apply any
 updates that are made to the core files (these are normally applied
 automatically).`,
 	Run: func(cmd *cobra.Command, args []string) {
-		allEjectableFiles := []string{}
-		for file := range generated.Ejected {
-			allEjectableFiles = append(allEjectableFiles, file)
+		ejected, err := fs.Sub(defaultsEjectedFS, "defaults")
+		if err != nil {
+			common.CheckErr(fmt.Errorf("Unable to get ejected defaults: %w", err))
 		}
+		ejectableFiles := map[string][]byte{}
+		fs.WalkDir(ejected, ".", func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if d.IsDir() {
+				return nil
+			}
+			contentFile, _ := ejected.Open(path)
+			contentBytes, _ := ioutil.ReadAll(contentFile)
+			ejectableFiles[path] = contentBytes
+			return nil
+		})
 		if len(args) < 1 && EjectAll {
 			fmt.Println("All flag used, eject all core files.")
-			for _, file := range allEjectableFiles {
-				filePath := "ejected" + file
-				content := generated.Ejected[file]
+			for filePath, content := range ejectableFiles {
 				common.CheckErr(ejectFile(filePath, content))
 			}
 			return
@@ -49,7 +61,7 @@ automatically).`,
 			fmt.Printf("Show all ejectable files as select list\n")
 			prompt := promptui.Select{
 				Label: "Select File to Eject",
-				Items: allEjectableFiles,
+				Items: reflect.ValueOf(ejectableFiles).MapKeys(),
 			}
 			_, result, err := prompt.Run()
 			if err != nil {
@@ -66,9 +78,7 @@ automatically).`,
 				return
 			}
 			if confirmed == "Yes" {
-				filePath := "ejected" + result
-				content := generated.Ejected[result]
-				common.CheckErr(ejectFile(filePath, content))
+				common.CheckErr(ejectFile(result, ejectableFiles[result]))
 			} else if confirmed == "No" {
 				fmt.Println("No file was ejected.")
 			}
@@ -76,9 +86,8 @@ automatically).`,
 		if len(args) >= 1 {
 			fmt.Println("Attempting to eject each file listed")
 			for _, arg := range args {
-				arg = "/" + arg
 				fileExists := false
-				for ejectableFile := range generated.Ejected {
+				for ejectableFile := range ejectableFiles {
 					if ejectableFile == arg {
 						fileExists = true
 						break
@@ -88,10 +97,7 @@ automatically).`,
 					fmt.Printf("There is no ejectable file named %s. Run 'plenti eject' to see list of ejectable files.\n", arg)
 					return
 				}
-				filePath := "ejected" + arg
-				content := generated.Ejected[arg]
-				common.CheckErr(ejectFile(filePath, content))
-
+				common.CheckErr(ejectFile(arg, ejectableFiles[arg]))
 			}
 		}
 	},
@@ -133,7 +139,6 @@ func ejectFile(filePath string, content []byte) error {
 	}
 	if err := ioutil.WriteFile(filePath, content, os.ModePerm); err != nil {
 		return fmt.Errorf("Unable to write file: %w%s", err, common.Caller())
-
 	}
 	fmt.Printf("Ejected %s\n", filePath)
 	return nil

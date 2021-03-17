@@ -1,7 +1,9 @@
 package build
 
 import (
+	"embed"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -19,7 +21,7 @@ import (
 var SSRctx *v8go.Context
 
 // Client builds the SPA.
-func Client(buildPath string, tempBuildDir string, ejectedPath string) error {
+func Client(buildPath string, tempBuildDir string, defaultsEjectedFS embed.FS) error {
 
 	defer Benchmark(time.Now(), "Compiling client SPA with Svelte")
 
@@ -105,8 +107,28 @@ func Client(buildPath string, tempBuildDir string, ejectedPath string) error {
 
 	}
 
+	routerPath := tempBuildDir + "ejected/router.svelte"
+	var componentStr string
+	if _, err := os.Stat(routerPath); err == nil {
+		// The router has been ejected to the filesystem.
+		component, err := ioutil.ReadFile(routerPath)
+		if err != nil {
+			return fmt.Errorf("can't read component file: %s %w%s", routerPath, err, common.Caller())
+		}
+		componentStr = string(component)
+	} else if os.IsNotExist(err) {
+		// The router has not been ejected, use the embedded defaults.
+		ejected, err := fs.Sub(defaultsEjectedFS, "defaults")
+		if err != nil {
+			common.CheckErr(fmt.Errorf("Unable to get ejected defaults: %w", err))
+		}
+		ejected.Open(routerPath)
+		routerComp, _ := ejected.Open(routerPath)
+		routerCompBytes, _ := ioutil.ReadAll(routerComp)
+		componentStr = string(routerCompBytes)
+	}
 	// Compile router separately since it's ejected from core.
-	if err = (compileSvelte(ctx, SSRctx, ejectedPath+"/router.svelte", buildPath+"/spa/ejected/router.js", stylePath, tempBuildDir)); err != nil {
+	if err = (compileSvelte(ctx, SSRctx, "ejected/router.svelte", componentStr, buildPath+"/spa/ejected/router.js", stylePath, tempBuildDir)); err != nil {
 		return err
 	}
 
@@ -131,7 +153,12 @@ func Client(buildPath string, tempBuildDir string, ejectedPath string) error {
 				// Replace .svelte file extension with .js.
 				destFile = strings.TrimSuffix(destFile, filepath.Ext(destFile)) + ".js"
 
-				if err = compileSvelte(ctx, SSRctx, layoutPath, destFile, stylePath, tempBuildDir); err != nil {
+				component, err := ioutil.ReadFile(layoutPath)
+				if err != nil {
+					return fmt.Errorf("can't read component file: %s %w%s", layoutPath, err, common.Caller())
+				}
+				componentStr := string(component)
+				if err = compileSvelte(ctx, SSRctx, layoutPath, componentStr, destFile, stylePath, tempBuildDir); err != nil {
 					return fmt.Errorf("%w%s", err, common.Caller())
 				}
 
@@ -168,16 +195,10 @@ func Client(buildPath string, tempBuildDir string, ejectedPath string) error {
 }
 
 func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string,
-	destFile string, stylePath string, tempBuildDir string) error {
-
-	component, err := ioutil.ReadFile(layoutPath)
-	if err != nil {
-		return fmt.Errorf("can't read component file: %s %w%s", layoutPath, err, common.Caller())
-	}
-	componentStr := string(component)
+	componentStr string, destFile string, stylePath string, tempBuildDir string) error {
 
 	// Compile component with Svelte.
-	_, err = ctx.RunScript("var { js, css } = svelte.compile(`"+componentStr+"`, {css: false, hydratable: true});", "compile_svelte")
+	_, err := ctx.RunScript("var { js, css } = svelte.compile(`"+componentStr+"`, {css: false, hydratable: true});", "compile_svelte")
 	if err != nil {
 		return fmt.Errorf("can't compile component file %s with Svelte: %w%s", layoutPath, err, common.Caller())
 	}

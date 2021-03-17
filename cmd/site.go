@@ -3,12 +3,12 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"plenti/common"
-	"plenti/generated"
 	"strings"
 
 	"github.com/MakeNowJust/heredoc/v2"
@@ -80,42 +80,26 @@ var siteCmd = &cobra.Command{
 		}
 
 		// set to Defaults and overwrite if bareFlag is set
-		scaffolding := generated.Defaults
+		scaffolding, err := fs.Sub(defaultsLearnerFS, "defaults/starters/learner")
+		if err != nil {
+			common.CheckErr(fmt.Errorf("Unable to get learner defaults: %w", err))
+		}
 		// Choose which scaffolding to use for new site.
 		if bareFlag {
-			scaffolding = generated.Defaults_bare
-		}
-
-		// Loop through generated file defaults to create site scaffolding
-		for file, content := range scaffolding {
-			// Create the directories needed for the current file
-			pth := fmt.Sprintf("%s/%s", newpath, strings.Trim(filepath.Dir(file), "/"))
-			if err := os.MkdirAll(pth, os.ModePerm); err != nil {
-				common.CheckErr(fmt.Errorf("Unable to create path(s) %s: %v", pth, err))
-			}
-
-			// Create the current default file
-			if err := ioutil.WriteFile(fmt.Sprintf("%s/%s", newpath, file), content, 0755); err != nil {
-
-				common.CheckErr(fmt.Errorf("Unable to write file: %w", err))
+			scaffolding, err = fs.Sub(defaultsBareFS, "defaults/starters/bare")
+			if err != nil {
+				common.CheckErr(fmt.Errorf("Unable to get bare defaults: %w", err))
 			}
 		}
+		// Loop through site defaults to create site scaffolding
+		writeScaffolding(scaffolding, newpath)
 
-		// Loop through generated node_modules npm pacakges to include in scaffolding
-		for file, content := range generated.Defaults_node_modules {
-
-			// Create the directories needed for the current file
-			pth := fmt.Sprintf("%s/node_modules/%s", newpath, strings.Trim(filepath.Dir(file), "/"))
-			if err := os.MkdirAll(pth, os.ModePerm); err != nil {
-				common.CheckErr(fmt.Errorf("Unable to create path(s) %s: %w", pth, err))
-
-			}
-
-			// Create the current default file
-			if err = ioutil.WriteFile(fmt.Sprintf("%s/%s", pth, filepath.Base(file)), content, 0755); err != nil {
-				common.CheckErr(fmt.Errorf("Unable to write file: %w", err))
-			}
+		nodeModules, err := fs.Sub(defaultsNodeModulesFS, "defaults")
+		if err != nil {
+			common.CheckErr(fmt.Errorf("Unable to get node_modules defaults: %w", err))
 		}
+		// Loop through node_modules npm pacakges to include in scaffolding
+		writeScaffolding(nodeModules, newpath)
 
 		fmt.Printf(heredoc.Docf(`
 			Success: Created %q site.
@@ -127,6 +111,29 @@ var siteCmd = &cobra.Command{
 		`, newpath, newpath))
 
 	},
+}
+
+func writeScaffolding(defaults fs.FS, newpath string) {
+	fs.WalkDir(defaults, ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			// Create the directories needed for the current file
+			if err := os.MkdirAll(newpath+"/"+path, os.ModePerm); err != nil {
+				common.CheckErr(fmt.Errorf("Unable to create path(s) %s: %v", path, err))
+			}
+			return nil
+		}
+		content, _ := defaults.Open(path)
+		contentBytes, err := ioutil.ReadAll(content)
+		// Create the current default file
+		if err := ioutil.WriteFile(newpath+"/"+path, contentBytes, 0755); err != nil {
+			common.CheckErr(fmt.Errorf("Unable to write file: %w", err))
+		}
+		return nil
+	})
+
 }
 
 func init() {

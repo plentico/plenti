@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"embed"
 	"fmt"
 	"log"
 	"os"
@@ -15,6 +16,18 @@ import (
 var cfgFile string
 
 var versionFlag bool
+
+//go:embed defaults/ejected/*
+var defaultsEjectedFS embed.FS
+
+//go:embed defaults/node_modules/*
+var defaultsNodeModulesFS embed.FS
+
+//go:embed defaults/starters/bare/*
+var defaultsBareFS embed.FS
+
+//go:embed defaults/starters/learner/*
+var defaultsLearnerFS embed.FS
 
 // Version gets replaced by git tag referenced in -ldflags on build.
 var Version = "undefined"
