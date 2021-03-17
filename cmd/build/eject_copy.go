@@ -47,7 +47,6 @@ func EjectCopy(buildPath string, tempBuildDir string, defaultsEjectedFS embed.FS
 			if err := os.MkdirAll(destPath+strings.TrimPrefix("ejected", tempBuildDir), os.ModePerm); err != nil {
 				return err
 			}
-
 			ejectedFile, err := ejected.Open(ejectPath)
 			if err != nil {
 				return fmt.Errorf("Could not open source .js file for copying: %w%s", err, common.Caller())
@@ -58,26 +57,7 @@ func EjectCopy(buildPath string, tempBuildDir string, defaultsEjectedFS embed.FS
 			}
 			if err := ioutil.WriteFile(destPath+ejectPath, ejectedContent, os.ModePerm); err != nil {
 				return fmt.Errorf("Unable to write file: %w%s", err, common.Caller())
-
 			}
-			/*
-				from, err := os.Open(ejectPath)
-				if err != nil {
-					return fmt.Errorf("Could not open source .js file for copying: %w%s", err, common.Caller())
-				}
-				defer from.Close()
-
-				to, err := os.Create(destPath + strings.TrimPrefix(ejectPath, tempBuildDir))
-				if err != nil {
-					return fmt.Errorf("Could not create destination .js file for copying: %w%s", err, common.Caller())
-				}
-				defer to.Close()
-
-				_, err = io.Copy(to, from)
-				if err != nil {
-					return fmt.Errorf("Could not copy .js from source to destination: %w%s", err, common.Caller())
-				}
-			*/
 
 			copiedSourceCounter++
 		}
