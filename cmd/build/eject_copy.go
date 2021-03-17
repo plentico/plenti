@@ -47,13 +47,21 @@ func EjectCopy(buildPath string, tempBuildDir string, defaultsEjectedFS embed.FS
 			if err := os.MkdirAll(destPath+strings.TrimPrefix("ejected", tempBuildDir), os.ModePerm); err != nil {
 				return err
 			}
-			ejectedFile, err := ejected.Open(ejectPath)
-			if err != nil {
-				return fmt.Errorf("Could not open source .js file for copying: %w%s", err, common.Caller())
-			}
-			ejectedContent, err := ioutil.ReadAll(ejectedFile)
-			if err != nil {
-				return fmt.Errorf("Can't read ejected .js file: %w%s", err, common.Caller())
+			var ejectedContent []byte
+			if _, err := os.Stat(ejectPath); err == nil {
+				ejectedContent, err = ioutil.ReadFile(ejectPath)
+				if err != nil {
+					return fmt.Errorf("can't read .js file: %s %w%s", ejectPath, err, common.Caller())
+				}
+			} else if os.IsNotExist(err) {
+				ejectedFile, err := ejected.Open(ejectPath)
+				if err != nil {
+					return fmt.Errorf("Could not open source .js file for copying: %w%s", err, common.Caller())
+				}
+				ejectedContent, err = ioutil.ReadAll(ejectedFile)
+				if err != nil {
+					return fmt.Errorf("Can't read ejected .js file: %w%s", err, common.Caller())
+				}
 			}
 			if err := ioutil.WriteFile(destPath+ejectPath, ejectedContent, os.ModePerm); err != nil {
 				return fmt.Errorf("Unable to write file: %w%s", err, common.Caller())
