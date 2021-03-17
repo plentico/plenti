@@ -139,7 +139,6 @@ func ejectFile(filePath string, content []byte) error {
 	}
 	if err := ioutil.WriteFile(filePath, content, os.ModePerm); err != nil {
 		return fmt.Errorf("Unable to write file: %w%s", err, common.Caller())
-
 	}
 	fmt.Printf("Ejected %s\n", filePath)
 	return nil
