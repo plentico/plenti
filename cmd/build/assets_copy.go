@@ -5,9 +5,10 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"plenti/common"
 	"strings"
 	"time"
+
+	"github.com/plentico/plenti/common"
 )
 
 // AssetsCopy does a direct copy of any static assets.

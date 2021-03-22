@@ -5,11 +5,12 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"plenti/common"
-	"plenti/readers"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/plentico/plenti/common"
+	"github.com/plentico/plenti/readers"
 )
 
 // ThemesCopy copies nested themes into a temporary working directory.

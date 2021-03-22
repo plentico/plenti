@@ -4,9 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"plenti/common"
-	"plenti/readers"
-	"plenti/writers"
+
+	"github.com/plentico/plenti/common"
+	"github.com/plentico/plenti/readers"
+	"github.com/plentico/plenti/writers"
 
 	"github.com/spf13/cobra"
 )

@@ -9,11 +9,11 @@ import (
 	"os"
 	"time"
 
-	"plenti/cmd/build"
+	"github.com/plentico/plenti/cmd/build"
 
-	"plenti/common"
+	"github.com/plentico/plenti/common"
 
-	"plenti/readers"
+	"github.com/plentico/plenti/readers"
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/briandowns/spinner"

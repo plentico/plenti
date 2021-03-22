@@ -4,8 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"plenti/common"
 	"strings"
+
+	"github.com/plentico/plenti/common"
 
 	"github.com/spf13/cobra"
 )

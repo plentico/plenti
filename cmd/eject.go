@@ -6,8 +6,9 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"plenti/common"
 	"reflect"
+
+	"github.com/plentico/plenti/common"
 
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"

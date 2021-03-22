@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"plenti/common"
-	"plenti/readers"
+
+	"github.com/plentico/plenti/common"
+	"github.com/plentico/plenti/readers"
 )
 
 // SetSiteConfig writes values to the site's configuration file.

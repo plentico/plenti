@@ -8,8 +8,9 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"plenti/common"
 	"strings"
+
+	"github.com/plentico/plenti/common"
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/manifoldco/promptui"

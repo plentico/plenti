@@ -7,9 +7,10 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"plenti/common"
 	"strings"
 	"time"
+
+	"github.com/plentico/plenti/common"
 )
 
 // EjectCopy does a direct copy of any ejectable js files needed in spa build dir.
