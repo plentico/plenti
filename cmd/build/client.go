@@ -31,7 +31,7 @@ func Client(buildPath string, tempBuildDir string, defaultsEjectedFS embed.FS) e
 	stylePath := buildPath + "/spa/bundle.css"
 
 	// Initialize string for layout.js component list.
-	var allComponentsStr string
+	var allLayoutsStr string
 
 	// Set up counter for logging output.
 	compiledComponentCounter := 0
@@ -170,7 +170,7 @@ func Client(buildPath string, tempBuildDir string, defaultsEjectedFS embed.FS) e
 				// Remove layout directory.
 				destLayoutPath = strings.TrimPrefix(destLayoutPath, "layout/")
 				// Compose entry for layout.js file.
-				allComponentsStr = allComponentsStr + "export {default as " + layoutSignature + "} from '../" + destLayoutPath + "';\n"
+				allLayoutsStr = allLayoutsStr + "export {default as " + layoutSignature + "} from '../" + destLayoutPath + "';\n"
 
 				compiledComponentCounter++
 
@@ -185,7 +185,7 @@ func Client(buildPath string, tempBuildDir string, defaultsEjectedFS embed.FS) e
 	}
 
 	// Write layout.js to filesystem.
-	err = ioutil.WriteFile(buildPath+"/spa/ejected/layout.js", []byte(allComponentsStr), os.ModePerm)
+	err = ioutil.WriteFile(buildPath+"/spa/ejected/layout.js", []byte(allLayoutsStr), os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("Unable to write layout.js file: %w%s", err, common.Caller())
 
@@ -357,16 +357,16 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string,
 		}
 	}
 
-	// Remove allComponents object (leaving just componentSignature) for SSR.
-	// Match: allComponents.layout_components_grid_svelte
-	reAllComponentsDot := regexp.MustCompile(`allComponents\.(layout_.*_svelte)`)
-	ssrStr = reAllComponentsDot.ReplaceAllString(ssrStr, "${1}")
-	// Match: allComponents[component]
-	reAllComponentsBracket := regexp.MustCompile(`allComponents\[(.*)\]`)
-	ssrStr = reAllComponentsBracket.ReplaceAllString(ssrStr, "globalThis[${1}]")
-	// Match: allComponents["layout_components_decrementer_svelte"]
-	reAllComponentsBracketStr := regexp.MustCompile(`allComponents\[\"(.*)\"\]`)
-	ssrStr = reAllComponentsBracketStr.ReplaceAllString(ssrStr, "${1}")
+	// Remove allLayouts object (leaving just componentSignature) for SSR.
+	// Match: allLayouts.layout_components_grid_svelte
+	reAllLayoutsDot := regexp.MustCompile(`allLayouts\.(layout_.*_svelte)`)
+	ssrStr = reAllLayoutsDot.ReplaceAllString(ssrStr, "${1}")
+	// Match: allLayouts[component]
+	reAllLayoutsBracket := regexp.MustCompile(`allLayouts\[(.*)\]`)
+	ssrStr = reAllLayoutsBracket.ReplaceAllString(ssrStr, "globalThis[${1}]")
+	// Match: allLayouts["layout_components_decrementer_svelte"]
+	reAllLayoutsBracketStr := regexp.MustCompile(`allLayouts\[\"(.*)\"\]`)
+	ssrStr = reAllLayoutsBracketStr.ReplaceAllString(ssrStr, "${1}")
 
 	paginatedContent, _ := getPagination()
 	for _, pager := range paginatedContent {
