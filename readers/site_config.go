@@ -18,7 +18,7 @@ type SiteConfig struct {
 	Local       struct {
 		Port int `json:"port"`
 	} `json:"local"`
-	Types map[string]string `json:"types"`
+	Routes map[string]string `json:"routes"`
 }
 
 // ThemeOptions is the theme configuration information.

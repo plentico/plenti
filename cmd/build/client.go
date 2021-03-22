@@ -437,7 +437,7 @@ func getPagination() ([]pager, *regexp.Regexp) {
 	// Initialize new pager struct
 	var pagers []pager
 	// Check for pagination in plenti.json config file.
-	for configContentType, slug := range siteConfig.Types {
+	for configContentType, slug := range siteConfig.Routes {
 		// Initialize list of all :paginate() vars in a given slug.
 		replacements := []string{}
 		// Find every instance of :paginate() in the slug.

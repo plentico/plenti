@@ -153,7 +153,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 				// Setup regex to find field name.
 				reField := regexp.MustCompile(`:field\((.*?)\)`)
 				// Check for path overrides from plenti.json config file.
-				for configContentType, slug := range siteConfig.Types {
+				for configContentType, slug := range siteConfig.Routes {
 					if configContentType == contentType {
 						// Replace :filename.
 						slug = strings.Replace(slug, ":filename", strings.TrimSuffix(fileName, filepath.Ext(fileName)), -1)
