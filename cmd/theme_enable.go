@@ -18,7 +18,7 @@ var themeEnableCmd = &cobra.Command{
 	Short: "Use a specific theme as a starting point for your project",
 	Long: `Enabling a theme adds a "theme" entry to plenti.json. Once
 this has been added, builds will inherit assets, content,
-and layout from the theme you enabled.
+and layouts from the theme you enabled.
 `,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {

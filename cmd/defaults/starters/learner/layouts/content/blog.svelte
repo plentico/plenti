@@ -33,7 +33,7 @@
 
 {#if components}
 	{#each components as { name }}
-		<svelte:component this="{allLayouts["layout_components_" + name + "_svelte"]}" />
+		<svelte:component this="{allLayouts["layouts_components_" + name + "_svelte"]}" />
 	{/each}
 {/if}
 

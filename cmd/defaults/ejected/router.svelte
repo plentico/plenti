@@ -42,7 +42,7 @@
     import('../content/404.js')
       .then(draw)
       .catch(err => {
-        console.log("Add a '/layout/content/404.svelte' file to handle Page Not Found errors.");
+        console.log("Add a '/layouts/content/404.svelte' file to handle Page Not Found errors.");
         console.log("If you want to pass data to your 404 component, you can also add a '/content/404.json' file.");
         console.log(err);
       });

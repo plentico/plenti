@@ -1,6 +1,6 @@
 import Router from './router.svelte';
 import contentSource from './content.js';
-import * as allLayouts from './layout.js';
+import * as allLayouts from './layouts.js';
 
 let uri = location.pathname;
 let route, content, allContent;

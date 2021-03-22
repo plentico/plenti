@@ -16,7 +16,7 @@ var themeDisableCmd = &cobra.Command{
 	Use:   "disable [theme]",
 	Short: "Stop actively using a specific theme in your project",
 	Long: `Disabling a theme removes the "theme" entry in plenti.json. Your
-will no longer inherit assets, content, and layout from this theme.
+will no longer inherit assets, content, and layouts from this theme.
 `,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {

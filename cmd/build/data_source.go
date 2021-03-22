@@ -285,7 +285,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 }
 
 func createProps(currentContent content, allContentStr string) error {
-	routeSignature := "layout_content_" + currentContent.contentType + "_svelte"
+	routeSignature := "layouts_content_" + currentContent.contentType + "_svelte"
 	_, err := SSRctx.RunScript("var props = {route: "+routeSignature+", content: "+currentContent.contentDetails+", allContent: "+allContentStr+"};", "create_ssr")
 	if err != nil {
 
@@ -293,7 +293,7 @@ func createProps(currentContent content, allContentStr string) error {
 
 	}
 	// Render the HTML with props needed for the current content.
-	_, err = SSRctx.RunScript("var { html, css: staticCss} = layout_global_html_svelte.render(props);", "create_ssr")
+	_, err = SSRctx.RunScript("var { html, css: staticCss} = layouts_global_html_svelte.render(props);", "create_ssr")
 	if err != nil {
 		return fmt.Errorf("Can't render htmlComponent: %w%s", err, common.Caller())
 
