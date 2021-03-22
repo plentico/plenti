@@ -1,6 +1,6 @@
 package main
 
-import "plenti/cmd"
+import "github.com/plentico/plenti/cmd"
 
 func main() {
 	cmd.Execute()

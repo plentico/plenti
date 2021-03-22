@@ -5,10 +5,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"plenti/common"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/plentico/plenti/common"
 )
 
 // ThemesMerge combines any nested themes with the current project.

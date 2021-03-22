@@ -6,8 +6,9 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"os"
-	"plenti/common"
 	"time"
+
+	"github.com/plentico/plenti/common"
 )
 
 // NpmDefaults creates the node_modules folder with core defaults if it doesn't already exist.

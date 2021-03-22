@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"plenti/common"
+
+	"github.com/plentico/plenti/common"
 
 	"github.com/spf13/cobra"
 

@@ -6,12 +6,13 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"plenti/common"
-	"plenti/readers"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/plentico/plenti/common"
+	"github.com/plentico/plenti/readers"
 )
 
 // Doreload and other flags should probably be part of a config accessible across build.

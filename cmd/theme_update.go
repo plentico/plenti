@@ -3,7 +3,8 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"plenti/readers"
+
+	"github.com/plentico/plenti/readers"
 
 	"github.com/spf13/cobra"
 )

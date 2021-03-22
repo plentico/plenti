@@ -5,10 +5,11 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"plenti/readers"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/plentico/plenti/readers"
 )
 
 // NodeDataSource gathers data json from "content/" directory to use in NodeJS build (NOTE: This is legacy).
