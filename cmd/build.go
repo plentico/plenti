@@ -13,8 +13,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// BuildDirFlag allows users to override name of default build directory (public)
-var BuildDirFlag string
+// OutputDirFlag allows users to override name of default build directory (public)
+var OutputDirFlag string
 
 // VerboseFlag provides users with additional logging information.
 var VerboseFlag bool
@@ -25,9 +25,9 @@ var BenchmarkFlag bool
 func setBuildDir(siteConfig readers.SiteConfig) string {
 	buildDir := siteConfig.BuildDir
 	// Check if directory is overridden by flag.
-	if BuildDirFlag != "" {
+	if OutputDirFlag != "" {
 		// If dir flag exists, use it.
-		buildDir = BuildDirFlag
+		buildDir = OutputDirFlag
 	}
 	return buildDir
 }
@@ -165,7 +165,7 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// buildCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	buildCmd.Flags().StringVarP(&BuildDirFlag, "dir", "d", "", "change name of the build directory")
+	buildCmd.Flags().StringVarP(&OutputDirFlag, "output", "o", "", "change name of the public build directory")
 	buildCmd.Flags().BoolVarP(&VerboseFlag, "verbose", "v", false, "show log messages")
 	buildCmd.Flags().BoolVarP(&BenchmarkFlag, "benchmark", "b", false, "display build time statistics")
 }
