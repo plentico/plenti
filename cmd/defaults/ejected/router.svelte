@@ -1,11 +1,11 @@
-<Html {route} {content} {allContent} {allLayouts} />
+<Html {content} {layout} {allContent} {allLayouts} />
 
 <script>
   import Navaid from 'navaid';
   import contentSource from './content.js';
   import Html from '../global/html.svelte';
 
-  export let uri, route, content, allContent, allLayouts;
+  export let uri, content, layout, allContent, allLayouts;
 
   const getContent = (uri, trailingSlash = "") => {
     return contentSource.find(content => content.path + trailingSlash == uri);
@@ -26,7 +26,7 @@
         }
       }
     }
-    route = m.default;
+    layout = m.default;
     window.scrollTo(0, 0);
   }
 

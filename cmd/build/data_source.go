@@ -285,8 +285,8 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 }
 
 func createProps(currentContent content, allContentStr string) error {
-	routeSignature := "layouts_content_" + currentContent.contentType + "_svelte"
-	_, err := SSRctx.RunScript("var props = {route: "+routeSignature+", content: "+currentContent.contentDetails+", allContent: "+allContentStr+"};", "create_ssr")
+	componentSignature := "layouts_content_" + currentContent.contentType + "_svelte"
+	_, err := SSRctx.RunScript("var props = {content: "+currentContent.contentDetails+", layout: "+componentSignature+", allContent: "+allContentStr+"};", "create_ssr")
 	if err != nil {
 
 		return fmt.Errorf("Could not create props: %w%s", err, common.Caller())
