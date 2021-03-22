@@ -92,14 +92,14 @@ func (w *watcher) watch(buildPath string) {
 				// only build if there was an event.
 				if len(events) > 0 {
 					// if locked i.e still building from last then this will do nothing.
-					// Can queue build with a mutx but gets messy quickly if you have 3-4 quick ctrl-s with one right after next.
-
+					// Can queue build with a mutex but gets messy quickly if you have 3-4 quick ctrl-s with one right after next.
 					if !common.IsBuilding() {
 						err := Build()
 						// will be unlocked when we receive loaded message from ws in window.onload
-						// if any error leave as is.
-						if err == nil && build.Doreload {
+						// if any error leave as is. Shoud never send on channel if no connections or it will hang forever or until re load in browser..
+						if err == nil && build.Doreload && len(connections) > 0 {
 							reloadC <- struct{}{}
+
 						} else {
 							// not reloading so just unlock
 							common.Unlock()
@@ -141,6 +141,18 @@ func (w *watcher) watch(buildPath string) {
 				if err != nil {
 					fmt.Printf("\nFile watching error: %s\n", err)
 				}
+
+				// default:
+				// 	connMU.Lock()
+				// 	if common.IsLocked() {
+				// 		log.Println("lcoked", len(connections), numReloading)
+				// 	}
+				// 	// If no conns and no waiting for reload we have no connections.
+				// 	if common.IsLocked() && len(connections) == 0 && numReloading == 0 {
+				// 		log.Println("unlcokign default")
+				// 		common.Unlock()
+				// 	}
+				// 	connMU.Unlock()
 			}
 		}
 	}()
