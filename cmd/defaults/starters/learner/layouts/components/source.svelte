@@ -21,7 +21,7 @@
 <div>
   <span>Template:</span>
   <pre>
-    <code bind:this={templateEl} class:selected="{copied === templateEl}">layout/content/{content.type}.svelte</code>
+    <code bind:this={templateEl} class:selected="{copied === templateEl}">layouts/content/{content.type}.svelte</code>
     <button on:click={() => copy(templateEl)}>{copied === templateEl ? 'copied' : 'copy'}</button>
   </pre>
 </div>

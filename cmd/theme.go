@@ -9,7 +9,7 @@ var themeCmd = &cobra.Command{
 	Use:   "theme",
 	Short: "Manage themes",
 	Long: `Download, enable, update, or remove "themes" that your
-site can use to inherit assets, content, and layout.`,
+site can use to inherit assets, content, and layouts.`,
 }
 
 func init() {

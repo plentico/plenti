@@ -50,9 +50,9 @@ func (w *watcher) watch(buildPath string) {
 			common.CheckErr(fmt.Errorf("Error watching 'content/' folder for changes: %w", err))
 		}
 	}
-	if _, err := os.Stat("layout"); !os.IsNotExist(err) {
-		if err := filepath.Walk("layout", w.watchDir(buildPath)); err != nil {
-			common.CheckErr(fmt.Errorf("Error watching 'layout/' folder for changes: %w", err))
+	if _, err := os.Stat("layouts"); !os.IsNotExist(err) {
+		if err := filepath.Walk("layouts", w.watchDir(buildPath)); err != nil {
+			common.CheckErr(fmt.Errorf("Error watching 'layouts/' folder for changes: %w", err))
 		}
 	}
 	if _, err := os.Stat("assets"); !os.IsNotExist(err) {

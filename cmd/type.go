@@ -33,7 +33,7 @@ You can define any type you'd like, with any field structure you desire.
 There are no required fields when creating your new type.
 
 Any individual file within a type can contain variations in its field structure.
-Just make sure to account for this in the corresponding '/layout/content/<your_type>.svelte' file.
+Just make sure to account for this in the corresponding '/layouts/content/<your_type>.svelte' file.
 
 Optionally add a _blueprint.json file to define the default field structure for the type.
 `,
@@ -62,7 +62,7 @@ Optionally add a _blueprint.json file to define the default field structure for 
 
 		if EndpointFlag {
 
-			typeLayoutPath := fmt.Sprintf("layout/content/%s.svelte", strings.Trim(typeName, " /"))
+			typeLayoutPath := fmt.Sprintf("layouts/content/%s.svelte", strings.Trim(typeName, " /"))
 			if _, err := os.Stat(typeLayoutPath); !os.IsNotExist(err) {
 				fmt.Printf("A Type layout with the same name located at \"%s\" already exists\n", typeLayoutPath)
 				return

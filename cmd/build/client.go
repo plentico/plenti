@@ -30,8 +30,8 @@ func Client(buildPath string, tempBuildDir string, defaultsEjectedFS embed.FS) e
 
 	stylePath := buildPath + "/spa/bundle.css"
 
-	// Initialize string for layout.js component list.
-	var allComponentsStr string
+	// Initialize string for layouts.js component list.
+	var allLayoutsStr string
 
 	// Set up counter for logging output.
 	compiledComponentCounter := 0
@@ -133,14 +133,14 @@ func Client(buildPath string, tempBuildDir string, defaultsEjectedFS embed.FS) e
 		return err
 	}
 
-	// Go through all file paths in the "/layout" folder.
-	err = filepath.Walk(tempBuildDir+"layout", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
+	// Go through all file paths in the "/layouts" folder.
+	err = filepath.Walk(tempBuildDir+"layouts", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
 
 		if err != nil {
 			return fmt.Errorf("can't stat %s: %w", layoutPath, err)
 		}
 		// Create destination path.
-		destFile := buildPath + "/spa" + strings.TrimPrefix(layoutPath, tempBuildDir+"layout")
+		destFile := buildPath + "/spa" + strings.TrimPrefix(layoutPath, tempBuildDir+"layouts")
 		// Make sure path is a directory
 		if layoutFileInfo.IsDir() {
 			// Create any sub directories need for filepath.
@@ -165,12 +165,12 @@ func Client(buildPath string, tempBuildDir string, defaultsEjectedFS embed.FS) e
 
 				// Remove temporary theme build directory.
 				destLayoutPath := strings.TrimPrefix(layoutPath, tempBuildDir)
-				// Create entry for layout.js.
+				// Create entry for layouts.js.
 				layoutSignature := strings.ReplaceAll(strings.ReplaceAll((destLayoutPath), "/", "_"), ".", "_")
-				// Remove layout directory.
-				destLayoutPath = strings.TrimPrefix(destLayoutPath, "layout/")
-				// Compose entry for layout.js file.
-				allComponentsStr = allComponentsStr + "export {default as " + layoutSignature + "} from '../" + destLayoutPath + "';\n"
+				// Remove layouts directory.
+				destLayoutPath = strings.TrimPrefix(destLayoutPath, "layouts/")
+				// Compose entry for layouts.js file.
+				allLayoutsStr = allLayoutsStr + "export {default as " + layoutSignature + "} from '../" + destLayoutPath + "';\n"
 
 				compiledComponentCounter++
 
@@ -184,10 +184,10 @@ func Client(buildPath string, tempBuildDir string, defaultsEjectedFS embed.FS) e
 
 	}
 
-	// Write layout.js to filesystem.
-	err = ioutil.WriteFile(buildPath+"/spa/ejected/layout.js", []byte(allComponentsStr), os.ModePerm)
+	// Write layouts.js to filesystem.
+	err = ioutil.WriteFile(buildPath+"/spa/ejected/layouts.js", []byte(allLayoutsStr), os.ModePerm)
 	if err != nil {
-		return fmt.Errorf("Unable to write layout.js file: %w%s", err, common.Caller())
+		return fmt.Errorf("Unable to write layouts.js file: %w%s", err, common.Caller())
 
 	}
 
@@ -349,7 +349,7 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string,
 			if currentNamedImport != "" && importSignature != "" {
 				// Only add named imports to create_ssr_component().
 				reCreateFunc := regexp.MustCompile(`(create_ssr_component\(\(.*\)\s=>\s\{)`)
-				// Entry should be block scoped, like: let count = layout_scripts_stores_svelte_count;
+				// Entry should be block scoped, like: let count = layouts_scripts_stores_svelte_count;
 				blockScopedVar := "\n let " + currentNamedImport + " = " + importSignature + "_" + currentNamedImport + ";"
 				// Add block scoped var inside create_ssr_component.
 				ssrStr = reCreateFunc.ReplaceAllString(ssrStr, "${1}"+blockScopedVar)
@@ -357,20 +357,20 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string,
 		}
 	}
 
-	// Remove allComponents object (leaving just componentSignature) for SSR.
-	// Match: allComponents.layout_components_grid_svelte
-	reAllComponentsDot := regexp.MustCompile(`allComponents\.(layout_.*_svelte)`)
-	ssrStr = reAllComponentsDot.ReplaceAllString(ssrStr, "${1}")
-	// Match: allComponents[component]
-	reAllComponentsBracket := regexp.MustCompile(`allComponents\[(.*)\]`)
-	ssrStr = reAllComponentsBracket.ReplaceAllString(ssrStr, "globalThis[${1}]")
-	// Match: allComponents["layout_components_decrementer_svelte"]
-	reAllComponentsBracketStr := regexp.MustCompile(`allComponents\[\"(.*)\"\]`)
-	ssrStr = reAllComponentsBracketStr.ReplaceAllString(ssrStr, "${1}")
+	// Remove allLayouts object (leaving just componentSignature) for SSR.
+	// Match: allLayouts.layouts_components_grid_svelte
+	reAllLayoutsDot := regexp.MustCompile(`allLayouts\.(layouts_.*_svelte)`)
+	ssrStr = reAllLayoutsDot.ReplaceAllString(ssrStr, "${1}")
+	// Match: allLayouts[component]
+	reAllLayoutsBracket := regexp.MustCompile(`allLayouts\[(.*)\]`)
+	ssrStr = reAllLayoutsBracket.ReplaceAllString(ssrStr, "globalThis[${1}]")
+	// Match: allLayouts["layouts_components_decrementer_svelte"]
+	reAllLayoutsBracketStr := regexp.MustCompile(`allLayouts\[\"(.*)\"\]`)
+	ssrStr = reAllLayoutsBracketStr.ReplaceAllString(ssrStr, "${1}")
 
 	paginatedContent, _ := getPagination()
 	for _, pager := range paginatedContent {
-		if "layout_content_"+pager.contentType+"_svelte" == componentSignature {
+		if "layouts_content_"+pager.contentType+"_svelte" == componentSignature {
 			for _, paginationVar := range pager.paginationVars {
 				// Prefix var so it doesn't conflict with other variables.
 				globalVar := "plenti_global_pager_" + paginationVar
@@ -437,7 +437,7 @@ func getPagination() ([]pager, *regexp.Regexp) {
 	// Initialize new pager struct
 	var pagers []pager
 	// Check for pagination in plenti.json config file.
-	for configContentType, slug := range siteConfig.Types {
+	for configContentType, slug := range siteConfig.Routes {
 		// Initialize list of all :paginate() vars in a given slug.
 		replacements := []string{}
 		// Find every instance of :paginate() in the slug.

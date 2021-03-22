@@ -1,11 +1,11 @@
-<Html {route} {content} {allContent} {allComponents} />
+<Html {content} {layout} {allContent} {allLayouts} />
 
 <script>
   import Navaid from 'navaid';
   import contentSource from './content.js';
   import Html from '../global/html.svelte';
 
-  export let uri, route, content, allContent, allComponents;
+  export let uri, content, layout, allContent, allLayouts;
 
   const getContent = (uri, trailingSlash = "") => {
     return contentSource.find(content => content.path + trailingSlash == uri);
@@ -26,7 +26,7 @@
         }
       }
     }
-    route = m.default;
+    layout = m.default;
     window.scrollTo(0, 0);
   }
 
@@ -42,7 +42,7 @@
     import('../content/404.js')
       .then(draw)
       .catch(err => {
-        console.log("Add a '/layout/content/404.svelte' file to handle Page Not Found errors.");
+        console.log("Add a '/layouts/content/404.svelte' file to handle Page Not Found errors.");
         console.log("If you want to pass data to your 404 component, you can also add a '/content/404.json' file.");
         console.log(err);
       });

@@ -151,16 +151,16 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 				// Get field key/values from content source.
 				typeFields := readers.GetTypeFields(fileContentBytes)
 				// Setup regex to find field name.
-				reField := regexp.MustCompile(`:field\((.*?)\)`)
+				reField := regexp.MustCompile(`:fields\((.*?)\)`)
 				// Check for path overrides from plenti.json config file.
-				for configContentType, slug := range siteConfig.Types {
+				for configContentType, slug := range siteConfig.Routes {
 					if configContentType == contentType {
 						// Replace :filename.
 						slug = strings.Replace(slug, ":filename", strings.TrimSuffix(fileName, filepath.Ext(fileName)), -1)
 
-						// Replace :field().
+						// Replace :fields().
 						fieldReplacements := reField.FindAllStringSubmatch(slug, -1)
-						// Loop through all :field() replacements found in config file.
+						// Loop through all :fields() replacements found in config file.
 						for _, replacement := range fieldReplacements {
 							// Loop through all top level keys found in content source file.
 							for field, fieldValue := range typeFields.Fields {
@@ -285,15 +285,15 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 }
 
 func createProps(currentContent content, allContentStr string) error {
-	routeSignature := "layout_content_" + currentContent.contentType + "_svelte"
-	_, err := SSRctx.RunScript("var props = {route: "+routeSignature+", content: "+currentContent.contentDetails+", allContent: "+allContentStr+"};", "create_ssr")
+	componentSignature := "layouts_content_" + currentContent.contentType + "_svelte"
+	_, err := SSRctx.RunScript("var props = {content: "+currentContent.contentDetails+", layout: "+componentSignature+", allContent: "+allContentStr+"};", "create_ssr")
 	if err != nil {
 
 		return fmt.Errorf("Could not create props: %w%s", err, common.Caller())
 
 	}
 	// Render the HTML with props needed for the current content.
-	_, err = SSRctx.RunScript("var { html, css: staticCss} = layout_global_html_svelte.render(props);", "create_ssr")
+	_, err = SSRctx.RunScript("var { html, css: staticCss} = layouts_global_html_svelte.render(props);", "create_ssr")
 	if err != nil {
 		return fmt.Errorf("Can't render htmlComponent: %w%s", err, common.Caller())
 

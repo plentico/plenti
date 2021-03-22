@@ -30,19 +30,8 @@ func EjectCopy(buildPath string, tempBuildDir string, defaultsEjectedFS embed.FS
 		if err != nil {
 			return fmt.Errorf("can't stat %s: %w", ejectPath, err)
 		}
-		// Make list of files not to copy to build.
-		excludedFiles := []string{
-			"ejected/build.js",
-		}
-		// Check if the current file is in the excluded list.
-		excluded := false
-		for _, excludedFile := range excludedFiles {
-			if excludedFile == ejectPath {
-				excluded = true
-			}
-		}
 		// If the file is already in .js format just copy it straight over to build dir.
-		if filepath.Ext(ejectPath) == ".js" && !excluded {
+		if filepath.Ext(ejectPath) == ".js" {
 
 			destPath := buildPath + "/spa/"
 			if err := os.MkdirAll(destPath+strings.TrimPrefix("ejected", tempBuildDir), os.ModePerm); err != nil {

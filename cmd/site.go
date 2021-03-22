@@ -30,10 +30,10 @@ var siteCmd = &cobra.Command{
 	  - content/pages/_blueprint.json = template for the structure of a typical page.
 	  - content/pages/about.json = an example page.
 	  - content/pages/contact.json = another example page.
-	  - layout/ =  the html structure of the site.
-	  - layout/content/ = node level structure that has a route and correspond to content.
-	  - layout/components/ = smaller reusable structures that can be used within larger ones.
-	  - layout/global/ = base level html wrappers.
+	  - layouts/ =  the html structure of the site.
+	  - layouts/content/ = node level structure that has a route and correspond to content.
+	  - layouts/components/ = smaller reusable structures that can be used within larger ones.
+	  - layouts/global/ = base level html wrappers.
 	  - node_modules/ = frontend libraries managed by npm.
 	  - package.json = npm configuration file.
 	`),
