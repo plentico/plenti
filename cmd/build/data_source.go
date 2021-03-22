@@ -151,16 +151,16 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 				// Get field key/values from content source.
 				typeFields := readers.GetTypeFields(fileContentBytes)
 				// Setup regex to find field name.
-				reField := regexp.MustCompile(`:field\((.*?)\)`)
+				reField := regexp.MustCompile(`:fields\((.*?)\)`)
 				// Check for path overrides from plenti.json config file.
 				for configContentType, slug := range siteConfig.Routes {
 					if configContentType == contentType {
 						// Replace :filename.
 						slug = strings.Replace(slug, ":filename", strings.TrimSuffix(fileName, filepath.Ext(fileName)), -1)
 
-						// Replace :field().
+						// Replace :fields().
 						fieldReplacements := reField.FindAllStringSubmatch(slug, -1)
-						// Loop through all :field() replacements found in config file.
+						// Loop through all :fields() replacements found in config file.
 						for _, replacement := range fieldReplacements {
 							// Loop through all top level keys found in content source file.
 							for field, fieldValue := range typeFields.Fields {
