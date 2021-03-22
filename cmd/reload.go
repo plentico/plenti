@@ -3,6 +3,7 @@ package cmd
 import (
 	"log"
 	"plenti/common"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -12,8 +13,13 @@ import (
 
 var reloadC = make(chan struct{}, 1)
 
-// keep all connections in slice for broadcast
-var connections = map[*websocket.Conn]bool{}
+type wsc struct {
+	ws     *websocket.Conn
+	closeC chan struct{}
+}
+
+// keep all connections in map for broadcast
+var connections = map[wsc]bool{}
 
 // lock for ^^
 var connMU sync.Mutex
@@ -23,50 +29,55 @@ var numReloading int32
 
 // wshandler handles the numReloading when serve -L is used
 func wshandler(ws *websocket.Conn) {
-	// add new conn
+	// add new conn and chan to close
+	cc := wsc{ws: ws, closeC: make(chan struct{}, 1)}
 	connMU.Lock()
-	connections[ws] = true
+	// inc new conn
+	atomic.AddInt32(&numReloading, 1)
+	connections[cc] = true
 	connMU.Unlock()
-	// catches when browser/tab is closed.
-	// ws.Request.Context.Done() is always nil so have ping
-	// might do more frequent?
-	pinger := time.NewTicker(time.Second * 5)
 
+	pinger := time.NewTicker(time.Second * 5)
 	defer func() {
 
 		pinger.Stop()
 		ws.Close()
+
 	}()
 
+	// just read once...
 	go func() {
 		var msg string
-
+		ws.SetReadDeadline(time.Now().Add(time.Second * 5))
 		err := websocket.Message.Receive(ws, &msg)
 		if err != nil {
 			log.Println(err, "error in receive")
 
 		}
-
-		connMU.Lock()
-		// atomic.AddInt32 not really needed as we lock... do need the Lock() for if numReloading...
-		if numReloading > 0 && atomic.AddInt32(&numReloading, -1) == 0 {
-			// page(s) is loaded so unlock and allow next build
+		// can't be negative I think...
+		atomic.AddInt32(&numReloading, -1)
+		if atomic.LoadInt32(&numReloading) == 0 {
 			common.Unlock()
 
 		}
-		connMU.Unlock()
 
 	}()
 	for {
 		select {
+		// close and decrement count
+		case <-cc.closeC:
+			cc.closeC = nil
+			return
 		case <-pinger.C:
+
+			ws.SetWriteDeadline(time.Now().Add(time.Second * 10))
 			// presume no news is good news. err/news == closed i.e refresh/tab/browser closed
 			if err := websocket.Message.Send(ws, "ping"); err != nil {
-				// once less for reloading
-				atomic.AddInt32(&numReloading, -1)
+
 				connMU.Lock()
-				// remove if not already gone. no-op if already emptied
-				delete(connections, ws)
+
+				delete(connections, cc)
+
 				connMU.Unlock()
 
 				return
@@ -74,31 +85,36 @@ func wshandler(ws *websocket.Conn) {
 			}
 
 		case <-reloadC:
+
 			connMU.Lock()
-			// reset
-			numReloading = 0
+
 			// broadcast to all
 			for wlst := range connections {
-				err := websocket.Message.Send(wlst, "reload")
-				// presume closed/disconnected on error so don't inc numReloading
-				// will be a tie between pings that could appear in connections but actually gone
-				// todo: check error and log  somewhere
-				if err != nil {
-					continue
-
-				}
-				atomic.AddInt32(&numReloading, 1)
+				// not sure how important this is for way we use
+				wlst.ws.SetWriteDeadline(time.Now().Add(time.Second * 10))
+				err := websocket.Message.Send(wlst.ws, "reload")
+				// todo:  check error and log somewhere
+				_ = err
 
 			}
-			/// empty all conns
+
+			// empty all conns and close
 			for k := range connections {
+				// close each conn individually. Should catch edge cases where closing tabs/browsers even while reloading..
+				k.closeC <- struct{}{}
 				delete(connections, k)
 			}
+
 			connMU.Unlock()
-			// close as new connection each reload, otherwise broken pipe errors etc..
 			return
 
 		}
+
 	}
 
+}
+
+// debugging
+func paddr(ws *websocket.Conn) string {
+	return ws.Request().RemoteAddr[strings.LastIndex(ws.Request().RemoteAddr, ":")+1:]
 }
