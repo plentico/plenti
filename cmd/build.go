@@ -22,9 +22,6 @@ var VerboseFlag bool
 // BenchmarkFlag provides users with build speed statistics to help identify bottlenecks.
 var BenchmarkFlag bool
 
-// NodeJSFlag let you use your systems NodeJS to build the site instead of core build.
-var NodeJSFlag bool
-
 func setBuildDir(siteConfig readers.SiteConfig) string {
 	buildDir := siteConfig.BuildDir
 	// Check if directory is overridden by flag.
@@ -127,34 +124,16 @@ func Build() error {
 		return err
 	}
 
-	// Run the build.js script using user local NodeJS.
-	if NodeJSFlag {
-		clientBuildStr, err := build.NodeClient(buildPath)
-		if err = common.CheckErr(err); err != nil {
-			return err
-		}
-		staticBuildStr, allNodesStr, err := build.NodeDataSource(buildPath, siteConfig)
-		if err = common.CheckErr(err); err != nil {
-			return err
-		}
+	// Prep the client SPA.
+	err = build.Client(buildPath, tempBuildDir, defaultsEjectedFS)
+	if err = common.CheckErr(err); err != nil {
+		return err
+	}
 
-		if err = common.CheckErr(build.NodeExec(clientBuildStr, staticBuildStr, allNodesStr)); err != nil {
-			return err
-		}
-	} else {
-
-		// Prep the client SPA.
-		err = build.Client(buildPath, tempBuildDir, defaultsEjectedFS)
-		if err = common.CheckErr(err); err != nil {
-			return err
-		}
-
-		// Build JSON from "content/" directory.
-		err = build.DataSource(buildPath, siteConfig, tempBuildDir)
-		if err = common.CheckErr(err); err != nil {
-			return err
-		}
-
+	// Build JSON from "content/" directory.
+	err = build.DataSource(buildPath, siteConfig, tempBuildDir)
+	if err = common.CheckErr(err); err != nil {
+		return err
 	}
 
 	// Run Gopack (custom Snowpack alternative) for ESM support.
@@ -189,5 +168,4 @@ func init() {
 	buildCmd.Flags().StringVarP(&BuildDirFlag, "dir", "d", "", "change name of the build directory")
 	buildCmd.Flags().BoolVarP(&VerboseFlag, "verbose", "v", false, "show log messages")
 	buildCmd.Flags().BoolVarP(&BenchmarkFlag, "benchmark", "b", false, "display build time statistics")
-	buildCmd.Flags().BoolVarP(&NodeJSFlag, "nodejs", "n", false, "use system nodejs for build with ejectable build.js script")
 }

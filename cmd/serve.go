@@ -127,12 +127,10 @@ func init() {
 	serveCmd.Flags().IntVarP(&PortFlag, "port", "p", 0, "change port for local server")
 	serveCmd.Flags().StringVarP(&BuildDirFlag, "dir", "d", "", "change name of the build directory")
 	serveCmd.Flags().BoolVarP(&BuildFlag, "build", "B", true, "set \"false\" to disable build step")
-	serveCmd.Flags().BoolVarP(&NodeJSFlag, "nodejs", "n", false, "use system nodejs for build with ejectable build.js script")
 	serveCmd.Flags().BoolVarP(&VerboseFlag, "verbose", "v", false, "show log messages")
 	serveCmd.Flags().BoolVarP(&BenchmarkFlag, "benchmark", "b", false, "display build time statistics")
 	serveCmd.Flags().BoolVarP(&SSLFlag, "ssl", "s", false, "ssl/tls encryption to serve localhost over https")
 	serveCmd.Flags().BoolVarP(&build.Doreload, "live-reload", "L", false, "Enable live reload")
-
 }
 
 func serveSSL(port int) {
