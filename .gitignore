@@ -3,6 +3,7 @@
 !.vscode/tasks.json
 !.vscode/launch.json
 *.code-workspace
+.history
 
 ### Go ###
 # Binaries for programs and plugins
