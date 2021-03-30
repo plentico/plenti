@@ -23,6 +23,11 @@ func IsBuilding() bool {
 
 }
 
+// IsLocked just swaps from 1-0
+func IsLocked() bool {
+	return atomic.LoadUint32(&lock) == 1
+}
+
 // Unlock just swaps from 1-0
 func Unlock() {
 	atomic.StoreUint32(&lock, 0)
@@ -40,6 +45,7 @@ func CheckErr(err error) error {
 		var errorTrace strings.Builder
 		// gives a bit more debug info. More for development
 		errorTrace.WriteString(fmt.Sprintf("%v", err))
+		verbose(err, &errorTrace)
 		if QuitOnErr {
 			log.Fatal(errorTrace.String())
 		}

@@ -82,17 +82,32 @@ var serveCmd = &cobra.Command{
 		}
 		// Watch filesystem for changes.
 		gowatch(buildDir)
+
+		common.QuitOnErr = false
+		fmt.Printf("\nServing site from your \"%v\" directory.\n", buildDir)
+
+		var fs http.Handler
+		// Point to folder containing the built site
+		if common.UseMemFS {
+
+			fs = common.NewH(buildDir)
+
+		} else {
+			// Check that the build directory exists
+			if _, err := os.Stat(buildDir); os.IsNotExist(err) {
+				fmt.Printf("The \"%v\" build directory does not exist, check your plenti.json file.\n", buildDir)
+				log.Fatal(err)
+			}
+			fs = http.FileServer(http.Dir(buildDir))
+		}
+		http.Handle("/", fs)
+		// Watch filesystem for changes.
+		gowatch(buildDir)
 		if build.Doreload {
 			// websockets
 			http.Handle("/reload", websocket.Handler(wshandler))
 
 		}
-		common.QuitOnErr = false
-		fmt.Printf("\nServing site from your \"%v\" directory.\n", buildDir)
-
-		// Point to folder containing the built site
-		fs := http.FileServer(http.Dir(buildDir))
-		http.Handle("/", fs)
 		// fs := http.FileServer(http.Dir("assets/"))
 
 		// Check flags and config for local server port
@@ -131,6 +146,7 @@ func init() {
 	serveCmd.Flags().BoolVarP(&BenchmarkFlag, "benchmark", "b", false, "display build time statistics")
 	serveCmd.Flags().BoolVarP(&SSLFlag, "ssl", "s", false, "ssl/tls encryption to serve localhost over https")
 	serveCmd.Flags().BoolVarP(&build.Doreload, "live-reload", "L", false, "Enable live reload")
+	serveCmd.Flags().BoolVarP(&common.UseMemFS, "in-memory", "M", false, "Use in memory filesystem")
 }
 
 func serveSSL(port int) {

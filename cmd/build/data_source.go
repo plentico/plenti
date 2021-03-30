@@ -3,6 +3,7 @@ package build
 import (
 	"bytes"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -18,6 +19,23 @@ import (
 // Doreload and other flags should probably be part of a config accessible across build.
 // It gets set using server flags.
 var Doreload bool
+var (
+	// Setup regex to find field name.
+	reField = regexp.MustCompile(`:field\((.*?)\)`)
+	// Setup regex to find pagination and a leading forward slash.
+	rePaginate = regexp.MustCompile(`/:paginate\((.*?)\)`)
+
+	// Create regex for allowed characters when slugifying path.
+	reSlugify = regexp.MustCompile("[^a-z0-9/]+")
+	// Remove newlines.
+	reN = regexp.MustCompile(`\r?\n`)
+
+	// Remove tabs.
+	reT = regexp.MustCompile(`\t`)
+
+	// Reduce extra whitespace to a single space.
+	reS = regexp.MustCompile(`\s+`)
+)
 
 // inject wherever/however, this is just to get it working.
 
@@ -88,10 +106,20 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 	defer Benchmark(time.Now(), "Creating data_source")
 
 	Log("\nGathering data source from 'content/' folder")
-
 	contentJSPath := buildPath + "/spa/ejected/content.js"
-	if err := os.MkdirAll(buildPath+"/spa/ejected", os.ModePerm); err != nil {
-		return err
+	// no dirs needed for mem
+	if common.UseMemFS {
+		common.Set(contentJSPath, "", &common.FData{B: []byte(`const contentSource = [`)})
+	} else {
+		if err := os.MkdirAll(buildPath+"/spa/ejected", os.ModePerm); err != nil {
+			return err
+		}
+		// Start the new content.js file.
+		err := ioutil.WriteFile(contentJSPath, []byte(`const contentSource = [`), 0755)
+		if err != nil {
+			fmt.Printf("Unable to write content.js file: %v", err)
+			return err
+		}
 	}
 
 	// Set up counter for logging output.
@@ -101,15 +129,8 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 	// Store each content file in array we can iterate over for creating static html.
 	allContent := []content{}
 
-	// Start the new content.js file.
-	err := ioutil.WriteFile(contentJSPath, []byte(`const contentSource = [`), 0755)
-	if err != nil {
-		fmt.Printf("Unable to write content.js file: %v", err)
-		return err
-	}
-
 	// Go through all sub directories in "content/" folder.
-	contentFilesErr := filepath.Walk(tempBuildDir+"content", func(path string, info os.FileInfo, err error) error {
+	contentFilesErr := filepath.WalkDir(tempBuildDir+"content", func(path string, info fs.DirEntry, err error) error {
 		if err != nil {
 			return fmt.Errorf("can't stat %s: %w", path, err)
 		}
@@ -129,7 +150,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 				fileContentBytes, err := ioutil.ReadFile(path)
 				if err != nil {
 
-					return fmt.Errorf("file: %s %w%s", path, err, common.Caller())
+					return fmt.Errorf("file: %s %w%s\n", path, err, common.Caller())
 				}
 				fileContentStr := string(fileContentBytes)
 
@@ -175,8 +196,6 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 					}
 				}
 
-				// Setup regex to find pagination and a leading forward slash.
-				rePaginate := regexp.MustCompile(`/:paginate\((.*?)\)`)
 				// Initialize vars for path with replacement patterns still intact.
 				var pagerPath string
 				var pagerDestPath string
@@ -195,8 +214,6 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 					}
 				}
 
-				// Create regex for allowed characters when slugifying path.
-				reSlugify := regexp.MustCompile("[^a-z0-9/]+")
 				// Slugify output using reSlugify regex defined above.
 				path = strings.Trim(reSlugify.ReplaceAllString(strings.ToLower(path), "-"), "-")
 
@@ -216,7 +233,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 
 				// Write to the content.js client data source file.
 				if err = writeContentJS(contentJSPath, contentDetailsStr+","); err != nil {
-					return fmt.Errorf("file: %s %w%s", contentJSPath, err, common.Caller())
+					return fmt.Errorf("file: %s %w%s\n", contentJSPath, err, common.Caller())
 				}
 
 				// Remove newlines, tabs, and extra space.
@@ -244,7 +261,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 		return nil
 	})
 	if contentFilesErr != nil {
-		return fmt.Errorf("Could not get layout %w", contentFilesErr)
+		return fmt.Errorf("Could not get layout %w\n", contentFilesErr)
 
 	}
 
@@ -253,11 +270,11 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 
 	for _, currentContent := range allContent {
 
-		if err = createProps(currentContent, allContentStr); err != nil {
+		if err := createProps(currentContent, allContentStr); err != nil {
 			return err
 		}
 
-		if err = createHTML(currentContent); err != nil {
+		if err := createHTML(currentContent); err != nil {
 			return err
 		}
 
@@ -280,7 +297,14 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 
 	Log("Number of content files used: " + fmt.Sprint(contentFileCounter))
 	// Complete the content.js file.
-	return writeContentJS(contentJSPath, "];\n\nexport default contentSource;")
+	if err := writeContentJS(contentJSPath, "];\n\nexport default contentSource;"); err != nil {
+		return err
+	}
+	if common.UseMemFS {
+		// hash all content
+		common.Get(contentJSPath).Hash = common.CRC32Hasher(common.Get(contentJSPath).B)
+	}
+	return nil
 
 }
 
@@ -289,13 +313,13 @@ func createProps(currentContent content, allContentStr string) error {
 	_, err := SSRctx.RunScript("var props = {content: "+currentContent.contentDetails+", layout: "+componentSignature+", allContent: "+allContentStr+"};", "create_ssr")
 	if err != nil {
 
-		return fmt.Errorf("Could not create props: %w%s", err, common.Caller())
+		return fmt.Errorf("Could not create props: %w%s\n", err, common.Caller())
 
 	}
 	// Render the HTML with props needed for the current content.
 	_, err = SSRctx.RunScript("var { html, css: staticCss} = layouts_global_html_svelte.render(props);", "create_ssr")
 	if err != nil {
-		return fmt.Errorf("Can't render htmlComponent: %w%s", err, common.Caller())
+		return fmt.Errorf("Can't render htmlComponent: %w%s\n", err, common.Caller())
 
 	}
 	return nil
@@ -305,7 +329,7 @@ func createHTML(currentContent content) error {
 	// Get the rendered HTML from v8go.
 	renderedHTML, err := SSRctx.RunScript("html;", "create_ssr")
 	if err != nil {
-		return fmt.Errorf("V8go could not execute js default: %w%s", err, common.Caller())
+		return fmt.Errorf("V8go could not execute js default: %w%s\n", err, common.Caller())
 
 	}
 	// Get the string value of the static HTML.
@@ -316,14 +340,18 @@ func createHTML(currentContent content) error {
 		htmlBytes = bytes.Replace(htmlBytes, []byte("</body>"), scr, 1)
 
 	}
+	if common.UseMemFS {
+		common.Set(currentContent.contentDest, "", &common.FData{B: htmlBytes})
+		return nil
+	}
 	// Create any folders need to write file.
 	if err := os.MkdirAll(strings.TrimSuffix(currentContent.contentDest, "/index.html"), os.ModePerm); err != nil {
-		return fmt.Errorf("couldn't create dirs in createHTML: %w%s", err, common.Caller())
+		return fmt.Errorf("couldn't create dirs in createHTML: %w%s\n", err, common.Caller())
 	}
 	// Write static HTML to the filesystem.
 	err = ioutil.WriteFile(currentContent.contentDest, htmlBytes, 0755)
 	if err != nil {
-		return fmt.Errorf("unable to write SSR file: %w%s", err, common.Caller())
+		return fmt.Errorf("unable to write SSR file: %w%s\n", err, common.Caller())
 	}
 	return nil
 }
@@ -417,27 +445,33 @@ func incrementPager(paginationVars []string, currentContent content, contentJSPa
 func getTotalPages(paginationVar string) (int, error) {
 	totalPages, err := SSRctx.RunScript("plenti_global_pager_"+paginationVar, "create_ssr")
 	if err != nil {
-		return 0, fmt.Errorf("Could not get value of '%v' used in pager: %w%s", paginationVar, err, common.Caller())
+		return 0, fmt.Errorf("Could not get value of '%v' used in pager: %w%s\n", paginationVar, err, common.Caller())
 	}
 	// Convert string total page value to integer.
 	totalPagesInt, err := strconv.Atoi(totalPages.String())
 	if err != nil {
-		return 0, fmt.Errorf("Can't convert pager value '%s' to an integer: %w%s", totalPages.String(), err, common.Caller())
+		return 0, fmt.Errorf("Can't convert pager value '%s' to an integer: %w%s\n", totalPages.String(), err, common.Caller())
 	}
 	return totalPagesInt, nil
 }
 
 func writeContentJS(contentJSPath string, contentDetailsStr string) error {
+	if common.UseMemFS {
+		allB := append(common.Get(contentJSPath).B, []byte(contentDetailsStr)...)
+		// ok to append as it gets created each build and has
+		common.Set(contentJSPath, "", &common.FData{B: allB})
+		return nil
+	}
 	// Create new content.js file if it doesn't already exist, or add to it if it does.
 	contentJSFile, err := os.OpenFile(contentJSPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		return fmt.Errorf("could not open content.js for writing: %w%s", err, common.Caller())
+		return fmt.Errorf("could not open content.js for writing: %w%s\n", err, common.Caller())
 	}
 	// Write to the file with info from current file in "/content" folder.
 	defer contentJSFile.Close()
 	if _, err := contentJSFile.WriteString(contentDetailsStr); err != nil {
 
-		return fmt.Errorf("could not write to file %s: %w%s", contentJSPath, err, common.Caller())
+		return fmt.Errorf("could not write to file %s: %w%s\n", contentJSPath, err, common.Caller())
 
 	}
 	return nil
@@ -445,13 +479,12 @@ func writeContentJS(contentJSPath string, contentDetailsStr string) error {
 
 func encodeString(encodedStr string) string {
 	// Remove newlines.
-	reN := regexp.MustCompile(`\r?\n`)
 	encodedStr = reN.ReplaceAllString(encodedStr, " ")
 	// Remove tabs.
-	reT := regexp.MustCompile(`\t`)
+
 	encodedStr = reT.ReplaceAllString(encodedStr, " ")
 	// Reduce extra whitespace to a single space.
-	reS := regexp.MustCompile(`\s+`)
+
 	encodedStr = reS.ReplaceAllString(encodedStr, " ")
 	return encodedStr
 }

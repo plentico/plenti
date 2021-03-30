@@ -35,9 +35,9 @@ updates that are made to the core files (these are normally applied
 automatically).`,
 	Run: func(cmd *cobra.Command, args []string) {
 		ejected, err := fs.Sub(defaultsEjectedFS, "defaults")
-		if err != nil {
-			common.CheckErr(fmt.Errorf("Unable to get ejected defaults: %w", err))
-		}
+
+		common.CheckErr(fmt.Errorf("Unable to get ejected defaults: %w", err))
+
 		ejectableFiles := map[string][]byte{}
 		fs.WalkDir(ejected, ".", func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
@@ -127,7 +127,7 @@ func ejectFile(filePath string, content []byte) error {
 		}
 		_, overwrite, err := overwritePrompt.Run()
 		if err != nil {
-			return fmt.Errorf("Prompt failed %w%s", err, common.Caller())
+			return fmt.Errorf("Prompt failed %w%s\n", err, common.Caller())
 
 		}
 		if overwrite == "No" {
@@ -135,11 +135,11 @@ func ejectFile(filePath string, content []byte) error {
 		}
 	}
 	if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
-		return fmt.Errorf("Unable to create path(s) %s: %w%s", filepath.Dir(filePath), err, common.Caller())
+		return fmt.Errorf("Unable to create path(s) %s: %w%s\n", filepath.Dir(filePath), err, common.Caller())
 
 	}
 	if err := ioutil.WriteFile(filePath, content, os.ModePerm); err != nil {
-		return fmt.Errorf("Unable to write file: %w%s", err, common.Caller())
+		return fmt.Errorf("Unable to write file: %w%s\n", err, common.Caller())
 	}
 	fmt.Printf("Ejected %s\n", filePath)
 	return nil
