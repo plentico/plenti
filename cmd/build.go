@@ -91,21 +91,23 @@ func Build() error {
 	buildPath := filepath.Join(".", buildDir)
 
 	// Clear out any previous build dir of the same name.
-	if _, buildPathExistsErr := os.Stat(buildPath); buildPathExistsErr == nil {
-		build.Log("Removing old '" + buildPath + "' build directory")
-		if err = common.CheckErr(os.RemoveAll(buildPath)); err != nil {
-			return err
+	if !common.UseMemFS {
+		if _, buildPathExistsErr := os.Stat(buildPath); buildPathExistsErr == nil {
+			build.Log("Removing old '" + buildPath + "' build directory")
+			if err = common.CheckErr(os.RemoveAll(buildPath)); err != nil {
+				return err
+			}
+
 		}
 
-	}
+		// Create the buildPath directory.
+		if err := os.MkdirAll(buildPath, os.ModePerm); err != nil {
+			// bail on error in build
+			if err = common.CheckErr(fmt.Errorf("Unable to create \"%v\" build directory: %s", err, buildDir)); err != nil {
+				return err
+			}
 
-	// Create the buildPath directory.
-	if err := os.MkdirAll(buildPath, os.ModePerm); err != nil {
-		// bail on error in build
-		if err = common.CheckErr(fmt.Errorf("Unable to create \"%v\" build directory: %s", err, buildDir)); err != nil {
-			return err
 		}
-
 	}
 	build.Log("Creating '" + buildDir + "' build directory")
 
