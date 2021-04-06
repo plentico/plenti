@@ -114,13 +114,14 @@ func Client(buildPath string, tempBuildDir string, defaultsEjectedFS embed.FS) e
 
 	}
 
-	routerPath := tempBuildDir + "ejected/router.svelte"
+	routerPath := "ejected/router.svelte"
+	ejectedRouterPath := tempBuildDir + routerPath
 	var componentStr string
-	if _, err := os.Stat(routerPath); err == nil {
+	if _, err := os.Stat(ejectedRouterPath); err == nil {
 		// The router has been ejected to the filesystem.
-		component, err := ioutil.ReadFile(routerPath)
+		component, err := ioutil.ReadFile(ejectedRouterPath)
 		if err != nil {
-			return fmt.Errorf("can't read component file: %s %w%s\n", routerPath, err, common.Caller())
+			return fmt.Errorf("can't read component file: %s %w%s\n", ejectedRouterPath, err, common.Caller())
 		}
 		componentStr = string(component)
 	} else if os.IsNotExist(err) {
@@ -140,7 +141,7 @@ func Client(buildPath string, tempBuildDir string, defaultsEjectedFS embed.FS) e
 		componentStr = string(routerCompBytes)
 	}
 	// Compile router separately since it's ejected from core.
-	if err = (compileSvelte(ctx, SSRctx, "ejected/router.svelte", componentStr, buildPath+"/spa/ejected/router.js", stylePath, tempBuildDir)); err != nil {
+	if err = (compileSvelte(ctx, SSRctx, routerPath, componentStr, buildPath+"/spa/ejected/router.js", stylePath, tempBuildDir)); err != nil {
 		return err
 	}
 
