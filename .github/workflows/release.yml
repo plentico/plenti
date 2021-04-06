@@ -31,11 +31,17 @@ jobs:
         env:
           SNAPCRAFT_LOGIN: ${{ secrets.snapcraft_token }}
         run: |
-          snapcraft login --with <(echo "$SNAPCRAFT_LOGIN")
+          snapcraft login --with <(echo "$SNAPCRAFT_LOGIN") --experimental-login=false
       -
         name: Dockerhub Login
         run: |
           echo '${{ secrets.DOCKER_PASSWORD }}' | docker login --username '${{ secrets.DOCKER_USERNAME }}' --password-stdin
+      -
+        name: libssl1.1 => libssl1.0-dev for OSXCross
+        run: |
+          echo 'deb http://security.ubuntu.com/ubuntu bionic-security main' >> /etc/apt/sources.list
+          sudo apt update && apt-cache policy libssl1.0-dev
+          sudo apt-get install libssl1.0-dev
       -
         name: OSXCross for CGO Support
         run: |
