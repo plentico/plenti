@@ -7,7 +7,7 @@ on:
 
 jobs:
   goreleaser:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       -
         name: Checkout
@@ -36,6 +36,12 @@ jobs:
         name: Dockerhub Login
         run: |
           echo '${{ secrets.DOCKER_PASSWORD }}' | docker login --username '${{ secrets.DOCKER_USERNAME }}' --password-stdin
+      -
+        name: libssl1.1 => libssl1.0-dev for OSXCross
+        run: |
+          echo 'deb http://security.ubuntu.com/ubuntu bionic-security main' >> /etc/apt/sources.list
+          sudo apt update && apt-cache policy libssl1.0-dev
+          sudo apt-get install libssl1.0-dev
       -
         name: OSXCross for CGO Support
         run: |
