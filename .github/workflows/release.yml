@@ -39,7 +39,7 @@ jobs:
       -
         name: libssl1.1 => libssl1.0-dev for OSXCross
         run: |
-          echo 'deb http://security.ubuntu.com/ubuntu bionic-security main' >> /etc/apt/sources.list
+          sudo echo 'deb http://security.ubuntu.com/ubuntu bionic-security main' >> /etc/apt/sources.list
           sudo apt update && apt-cache policy libssl1.0-dev
           sudo apt-get install libssl1.0-dev
       -
