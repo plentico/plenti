@@ -2,33 +2,55 @@ package common
 
 import (
 	"fmt"
+	"math/rand"
 	"testing"
 )
 
-var unsort = []string{
-	"public/spa/web_modules/svelte/index.mjs",
-	"public/spa/web_modules/svelte/internal/index.mjs",
-	"public/spa/web_modules/svelte/transition/index.mjs",
-	"public/spa/web_modules/svelte/easing/index.mjs",
-	"public/spa/web_modules/svelte/store/index.mjs",
-	"public/spa/web_modules/regexparam/dist/regexparam.mjs",
-	"public/spa/web_modules/svelte/animate/index.mjs",
-	"public/spa/web_modules/navaid/dist/navaid.mjs",
-	"public/spa/web_modules/svelte/compiler.mjs",
+func unsortSli() []string {
+	out := []string{}
+	for _, s := range sorted {
+		out = append(out, s)
+	}
+	rand.Shuffle(len(out), func(i, j int) {
+		out[i], out[j] = out[j], out[i]
+	})
+	return out
 }
 
 var sorted = []string{
+	"public/spa/web_modules/navaid/dist/navaid.js",
+	"public/spa/web_modules/navaid/dist/navaid.min.js",
 	"public/spa/web_modules/navaid/dist/navaid.mjs",
+	"public/spa/web_modules/regexparam/dist/regexparam.js",
+	"public/spa/web_modules/regexparam/dist/regexparam.min.js",
 	"public/spa/web_modules/regexparam/dist/regexparam.mjs",
-	"public/spa/web_modules/svelte/animate/index.mjs",
+	"public/spa/web_modules/svelte/compiler.js",
 	"public/spa/web_modules/svelte/compiler.mjs",
-	"public/spa/web_modules/svelte/easing/index.mjs",
+	"public/spa/web_modules/svelte/index.js",
 	"public/spa/web_modules/svelte/index.mjs",
+	"public/spa/web_modules/svelte/register.js",
+	"public/spa/web_modules/svelte/animate/index.js",
+	"public/spa/web_modules/svelte/animate/index.mjs",
+	"public/spa/web_modules/svelte/easing/index.js",
+	"public/spa/web_modules/svelte/easing/index.mjs",
+	"public/spa/web_modules/svelte/internal/index.js",
 	"public/spa/web_modules/svelte/internal/index.mjs",
+	"public/spa/web_modules/svelte/motion/index.js",
+	"public/spa/web_modules/svelte/motion/index.mjs",
+	"public/spa/web_modules/svelte/store/index.js",
 	"public/spa/web_modules/svelte/store/index.mjs",
+	"public/spa/web_modules/svelte/transition/index.js",
 	"public/spa/web_modules/svelte/transition/index.mjs",
 }
 
+func insert() *[]string {
+	out := &[]string{}
+	for _, s := range unsortSli() {
+		setEntry(s, out)
+	}
+	return out
+
+}
 func Test_binSearchIndex(t *testing.T) {
 	type args struct {
 		x string
@@ -64,16 +86,16 @@ func Test_setEntry(t *testing.T) {
 		{
 			name: "four",
 			args: args{
-				x:       "e",
+				x:       "e.txt",
 				ind:     4,
-				entries: []string{"a", "b", "c", "d", "f", "g", "h"}},
+				entries: []string{"a.txt", "b.txt", "c.txt", "d.txt", "f.txt", "g.txt", "h.txt"}},
 		},
 		{
 			name: "seven",
 			args: args{
-				x:       "i",
+				x:       "i.txt",
 				ind:     7,
-				entries: []string{"a", "b", "c", "d", "f", "g", "h"}},
+				entries: []string{"a.txt", "b.txt", "c.txt", "d.txt", "f.txt", "g.txt", "h.txt"}},
 		},
 	}
 	for _, tt := range tests {
@@ -98,18 +120,24 @@ func Test_getEntryIndex(t *testing.T) {
 	}{
 		{
 			name: "zero",
-			args: args{x: "public/spa/web_modules/abc/one.svelte", entries: &sorted},
+			args: args{x: "public/spa/web_modules/aaaa.svelte", entries: &sorted},
 			want: 0,
 		},
 		{
-			name: "two",
-			args: args{x: "public/spa/web_modules/svelte/animate/index.mjs", entries: &sorted},
-			want: 2,
+			name: "aDir",
+			args: args{x: "public/spa/web_modules/svelte/animate", entries: &sorted},
+			want: 11,
+		},
+
+		{
+			name: "five",
+			args: args{x: "public/spa/web_modules/regexparam/dist/regexparam.mjs", entries: &sorted},
+			want: 5,
 		},
 
 		{
 			name: "minus1" + fmt.Sprint(len(sorted)-1),
-			args: args{x: "public/spa/web_modules/z/theend.svelte", entries: &sorted},
+			args: args{x: "public/spa/web_modules/z/z/z/theend.svelte", entries: &sorted},
 			want: -1,
 		},
 	}
@@ -124,12 +152,12 @@ func Test_getEntryIndex(t *testing.T) {
 
 func Test_deleteEntry(t *testing.T) {
 
-	entries := []string{"bar", "foo"}
+	entries := []string{"bar.txt", "foo.txt"}
 	t.Run("deleteBar", func(t *testing.T) {
-		deleteEntry("bar", &entries)
+		deleteEntry("bar.txt", &entries)
 
-		if len(entries) != 1 || (entries[0]) != "foo" {
-			t.Errorf("deleteEntry() = %v, want %v", entries, "[foo]")
+		if len(entries) != 1 || (entries[0]) != "foo.txt" {
+			t.Errorf("deleteEntry() = %v, want %v", entries, "[foo.txt]")
 		}
 	})
 
@@ -156,17 +184,9 @@ func Test_searchPath(t *testing.T) {
 	}
 }
 
-func insert(s ...string) *[]string {
-	out := &[]string{}
-	for _, s := range unsort {
-		setEntry(s, out)
-	}
-	return out
-
-}
 func Test_isOrdered(t *testing.T) {
 
-	got := insert(unsort...)
+	got := insert()
 
 	for i, e := range *got {
 		if sorted[i] != e {

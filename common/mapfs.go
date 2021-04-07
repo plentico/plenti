@@ -3,7 +3,6 @@ package common
 import (
 	"fmt"
 	"hash/crc32"
-	"log"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -108,9 +107,13 @@ func Exists(k string) bool {
 }
 
 // GetOrSet wil return existing or new "empty" FData. Used for the layouts  now.
-func GetOrSet(k string) *FData {
+func GetOrSet(k, sourceFile string) *FData {
 	mapFS.mu.Lock()
 	defer mapFS.mu.Unlock()
+	// if there is a source file then add the mapping.
+	if sourceFile != "" {
+		mapFS.sourceToDest[sourceFile] = k
+	}
 	return getOrSet(k, mapFS.fs)
 }
 
@@ -122,6 +125,7 @@ func getOrSet(k string, fs map[string]*FData) *FData {
 	}
 	d := &FData{}
 	fs[clean] = d
+	setEntry(clean, mapFS.entries)
 
 	return d
 }
@@ -160,34 +164,31 @@ func BinSearchIndex(x string) int {
 
 func binSearchIndex(x string, a []string) int {
 	return sort.Search(len(a), func(i int) bool {
-		return x <= a[i]
-	})
-}
 
-// lowest order by path and highest order of that dir wins
-func sortByDir(eles []string) {
-	if len(eles) == 1 {
-		return
-	}
-	sort.SliceStable(eles, func(i, j int) bool {
-		// keeps the dir files together
-		a, b := eles[i], eles[j]
-		cnta, cntb := strings.Count(a, "/"), strings.Count(b, "/")
-		// if the same keep the last one which is what happens in findFile regular readdir....
-		if cnta == cntb {
-			// make same dir files come last
-			if filepath.Dir(a) == filepath.Dir(b) {
-				return a > b
-			}
-			return a < b
+		// Not a great way to check but we will only pass a dir in from GoPack when looking for a .js|.mjs file
+		// todo: use a flag. Could also store info but 99.9% we just have and care about files..
+
+		ad, af := x, ""
+		if filepath.Ext(x) != "" {
+			ad, af = filepath.Split(x)
 		}
-		// else use the count of /
-		return cnta < cntb
+		bd, bf := filepath.Split(a[i])
+		// if we stored dirs this would also be requiredbut we don't...
+		// if filepath.Ext(a[i]) == "" {
+		// 	bd, bf = a[i], ""
+		// }
 
+		// we want <= when we have case of the same file exactly, i.e searching for particular exisiting.
+		// < would go right of.
+		if ad == bd {
+			return af <= bf
+		}
+		// again want start of dir entries.
+		return ad <= bd
 	})
 }
 
-// adds the element and keeps sorted, O(log n) where to place and constant time insert bar we hit cap and resize?
+// adds the element and keeps sorted, O(log n). O(n) in worst case for copy((*entries)[i+1:], (*entries)[i:])?
 // https://github.com/golang/go/wiki/SliceTricks
 func setEntry(x string, entries *[]string) {
 	if len(*entries) == 0 {
@@ -239,7 +240,6 @@ func startFrom(x string, entries *[]string) <-chan string {
 
 func deleteEntry(x string, entries *[]string) {
 	i := getEntryIndex(x, entries)
-	log.Println(i, x)
 	if i != -1 && (*entries)[i] == x {
 		*entries = append((*entries)[:i], (*entries)[i+1:]...)
 	}
@@ -251,27 +251,27 @@ func SearchPath(path string) (string, error) {
 	return searchPath(path, mapFS.entries)
 }
 
+// pulls highest ordered file from same dir or higesht ordered from a sub
 func searchPath(path string, entries *[]string) (string, error) {
 
-	out := []string{}
+	var foundFile string
+	// todo: store last file flag so we know we have left dir which would remove some checks
 	for entry := range startFrom(path, entries) {
-		// another dir/path beyond what our current "dir(s)" of interest
-		if !(strings.HasPrefix(entry, path)) {
+		// Either another dir/path beyond what our current "dir(s)" of interest
+		// if we are in next dir or a subdir and already fond a match then stop.
+		// continuing with a match is like os.Walk through subdirs.
+		if !strings.HasPrefix(entry, path) || (foundFile != "" && filepath.Dir(entry) != path) {
 			break
 		}
+
 		if strings.HasSuffix(entry, ".js") || strings.HasSuffix(entry, ".mjs") {
-			out = append(out, entry)
+			foundFile = entry
 
 		}
 
 	}
-
-	if len(out) > 0 {
-
-		// This can break as can the ReadDir logic in findJSFile.
-		// Need set more logic, maybe hierarchical order like path/index.js/path/index.mjs ...
-		sortByDir(out)
-		return out[0], nil
+	if foundFile == "" {
+		return "", fmt.Errorf("Could not find file %s%s\n", path, Caller())
 	}
-	return "", fmt.Errorf("Could not find file %s%s\n", path, Caller())
+	return foundFile, nil
 }
