@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
@@ -46,17 +48,17 @@ func (w *watcher) watch(buildPath string) {
 	// Watch specific directories for changes (only if they exist).
 	// TODO: these probably needs handling here as it won' quit/log.Fatal on serve
 	if _, err := os.Stat("content"); !os.IsNotExist(err) {
-		if err := filepath.Walk("content", w.watchDir(buildPath)); err != nil {
+		if err := filepath.WalkDir("content", w.watchDir(buildPath)); err != nil {
 			common.CheckErr(fmt.Errorf("Error watching 'content/' folder for changes: %w", err))
 		}
 	}
 	if _, err := os.Stat("layouts"); !os.IsNotExist(err) {
-		if err := filepath.Walk("layouts", w.watchDir(buildPath)); err != nil {
+		if err := filepath.WalkDir("layouts", w.watchDir(buildPath)); err != nil {
 			common.CheckErr(fmt.Errorf("Error watching 'layouts/' folder for changes: %w", err))
 		}
 	}
 	if _, err := os.Stat("assets"); !os.IsNotExist(err) {
-		if err := filepath.Walk("assets", w.watchDir(buildPath)); err != nil {
+		if err := filepath.WalkDir("assets", w.watchDir(buildPath)); err != nil {
 			common.CheckErr(fmt.Errorf("Error watching 'assets/' folder for changes: %w", err))
 		}
 	}
@@ -83,6 +85,18 @@ func (w *watcher) watch(buildPath string) {
 			case event := <-w.Events:
 				// Don't rebuild when build dir is added or deleted.
 				if event.Name != "./"+buildPath {
+					if common.UseMemFS {
+						// seems to be RENAME using vscode on ubuntu...
+						if event.Op&fsnotify.Rename == fsnotify.Rename || event.Op&fsnotify.Remove == fsnotify.Remove {
+							build.Log("File delete detected: " + event.String())
+							if _, err := os.Stat(event.Name); errors.Is(err, os.ErrNotExist) {
+								common.Remove(event.Name)
+
+							}
+
+						}
+					}
+
 					// Add current event to array for batching.
 					// don't really care but if we build with
 					events[event.Name] = event
@@ -162,15 +176,15 @@ func (w *watcher) watch(buildPath string) {
 }
 
 // Closure that enables passing buildPath as arg to callback.
-func (w *watcher) watchDir(buildPath string) filepath.WalkFunc {
+func (w *watcher) watchDir(buildPath string) fs.WalkDirFunc {
 	// Callback for walk func: searches for directories to add watchers to.
-	return func(path string, fi os.FileInfo, err error) error {
+	return func(path string, fi fs.DirEntry, err error) error {
 		// Skip the "public" build dir to avoid infinite loops.
 		if fi.IsDir() && fi.Name() == buildPath {
 			return filepath.SkipDir
 		}
 		// Add watchers only to nested directory.
-		if fi.Mode().IsDir() {
+		if fi.IsDir() {
 			return w.Add(path)
 		}
 		return nil

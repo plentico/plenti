@@ -23,24 +23,33 @@ func NpmDefaults(tempBuildDir string, defaultsNodeModulesFS embed.FS) error {
 	if _, err := os.Stat(destPath); os.IsNotExist(err) {
 		nodeModules, err := fs.Sub(defaultsNodeModulesFS, "defaults")
 		if err != nil {
-			common.CheckErr(fmt.Errorf("Unable to get node_modules defaults: %w", err))
+			return fmt.Errorf("Unable to get node_modules defaults: %w%s\n", err, common.Caller())
 		}
 		fs.WalkDir(nodeModules, ".", func(path string, d fs.DirEntry, err error) error {
+
 			if err != nil {
-				return err
+				return fmt.Errorf("Unable to get stat path %s: %w%s\n", path, err, common.Caller())
 			}
+
 			if d.IsDir() {
 				// Create the directories needed for the current file
 				if err := os.MkdirAll(path, os.ModePerm); err != nil {
-					common.CheckErr(fmt.Errorf("Unable to create path(s) %s: %v", path, err))
+					return fmt.Errorf("Unable to create path(s) %s: %v%s\n", path, err, common.Caller())
 				}
 				return nil
 			}
-			content, _ := nodeModules.Open(path)
+			content, err := nodeModules.Open(path)
+			if err != nil {
+				return fmt.Errorf("Unable to op path %s: %v%s\n", path, err, common.Caller())
+			}
 			contentBytes, err := ioutil.ReadAll(content)
+			if err != nil {
+				return fmt.Errorf("Unable to read node_modules file: %w%s\n", err, common.Caller())
+
+			}
 			// Create the current default file
 			if err := ioutil.WriteFile(path, contentBytes, 0755); err != nil {
-				common.CheckErr(fmt.Errorf("Unable to write node_modules file: %w", err))
+				return fmt.Errorf("Unable to write node_modules file: %w%s\n", err, common.Caller())
 			}
 			return nil
 		})

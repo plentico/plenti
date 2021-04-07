@@ -3,6 +3,7 @@ package build
 import (
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -47,7 +48,7 @@ func ThemesCopy(theme string, themeOptions readers.ThemeOptions) (string, error)
 	// Merge any user specified exclusions.
 	excludedFiles = append(excludedFiles, themeOptions.Exclude...)
 
-	themeFilesErr := filepath.Walk(theme, func(themeFilePath string, themeFileInfo os.FileInfo, err error) error {
+	themeFilesErr := filepath.WalkDir(theme, func(themeFilePath string, themeFileInfo fs.DirEntry, err error) error {
 		if err != nil {
 			return fmt.Errorf("can't stat %s: %w", themeFilePath, err)
 		}
@@ -65,7 +66,7 @@ func ThemesCopy(theme string, themeOptions readers.ThemeOptions) (string, error)
 		// Read the source theme file.
 		from, err := os.Open(themeFilePath)
 		if err != nil {
-			return fmt.Errorf("Could not open theme file for copying: %w%s", err, common.Caller())
+			return fmt.Errorf("Could not open theme file for copying: %w%s\n", err, common.Caller())
 		}
 		defer from.Close()
 
@@ -81,13 +82,13 @@ func ThemesCopy(theme string, themeOptions readers.ThemeOptions) (string, error)
 
 		to, err := os.Create(destPath)
 		if err != nil {
-			return fmt.Errorf("Could not create destination theme file for copying: %w%s", err, common.Caller())
+			return fmt.Errorf("Could not create destination theme file for copying: %w%s\n", err, common.Caller())
 		}
 		defer to.Close()
 
 		_, fileCopyErr := io.Copy(to, from)
 		if err != nil {
-			return fmt.Errorf("Could not copy theme file from source to destination: %w%s", fileCopyErr, common.Caller())
+			return fmt.Errorf("Could not copy theme file from source to destination: %w%s\n", fileCopyErr, common.Caller())
 		}
 
 		copiedThemeFileCounter++
@@ -95,7 +96,7 @@ func ThemesCopy(theme string, themeOptions readers.ThemeOptions) (string, error)
 		return nil
 	})
 	if themeFilesErr != nil {
-		return "", fmt.Errorf("Could not get theme file: %w%s", themeFilesErr, common.Caller())
+		return "", fmt.Errorf("Could not get theme file: %w%s\n", themeFilesErr, common.Caller())
 	}
 
 	Log("Number of theme files copied: " + strconv.Itoa(copiedThemeFileCounter))

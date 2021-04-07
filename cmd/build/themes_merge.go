@@ -3,6 +3,7 @@ package build
 import (
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -28,7 +29,7 @@ func ThemesMerge(tempBuildDir string, buildDir string) error {
 		buildDir,
 	}
 
-	themeFilesErr := filepath.Walk(".", func(projectFilePath string, projectFileInfo os.FileInfo, err error) error {
+	themeFilesErr := filepath.WalkDir(".", func(projectFilePath string, projectFileInfo fs.DirEntry, err error) error {
 		if err != nil {
 			return fmt.Errorf("can't stat %s: %w", projectFilePath, err)
 		}
@@ -45,7 +46,7 @@ func ThemesMerge(tempBuildDir string, buildDir string) error {
 		// Read the source project file.
 		from, err := os.Open(projectFilePath)
 		if err != nil {
-			return fmt.Errorf("Could not open project file for copying: %w%s", err, common.Caller())
+			return fmt.Errorf("Could not open project file for copying: %w%s\n", err, common.Caller())
 		}
 		defer from.Close()
 
@@ -61,13 +62,13 @@ func ThemesMerge(tempBuildDir string, buildDir string) error {
 
 		to, err := os.Create(destPath)
 		if err != nil {
-			return fmt.Errorf("Could not create destination project file for copying: %w%s", err, common.Caller())
+			return fmt.Errorf("Could not create destination project file for copying: %w%s\n", err, common.Caller())
 		}
 		defer to.Close()
 
 		_, fileCopyErr := io.Copy(to, from)
 		if err != nil {
-			return fmt.Errorf("Could not copy project file from source to destination: %w%s", fileCopyErr, common.Caller())
+			return fmt.Errorf("Could not copy project file from source to destination: %w%s\n", fileCopyErr, common.Caller())
 		}
 
 		copiedProjectFileCounter++
@@ -75,7 +76,7 @@ func ThemesMerge(tempBuildDir string, buildDir string) error {
 		return nil
 	})
 	if themeFilesErr != nil {
-		return fmt.Errorf("Could not get project file: %w%s", themeFilesErr, common.Caller())
+		return fmt.Errorf("Could not get project file: %w%s\n", themeFilesErr, common.Caller())
 	}
 
 	Log("Number of project files copied: " + strconv.Itoa(copiedProjectFileCounter))

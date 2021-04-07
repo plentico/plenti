@@ -22,7 +22,7 @@ func SetSiteConfig(siteConfig readers.SiteConfig, configPath string) error {
 	// Write values to site config file for the project.
 	err = ioutil.WriteFile(configPath, result, os.ModePerm)
 	if err != nil {
-		return fmt.Errorf("Unable to write to config file: %w%s", err, common.Caller())
+		return fmt.Errorf("Unable to write to config file: %w%s\n", err, common.Caller())
 
 	}
 	return nil
