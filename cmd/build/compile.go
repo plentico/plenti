@@ -39,10 +39,11 @@ var (
 func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string,
 	componentStr string, destFile string, stylePath string, tempBuildDir string) error {
 
-	layoutFD := common.GetOrSet(layoutPath)
+	var layoutFD *common.FData
 
 	// will break router if no layout check and can't use HasPrefix as themes breaks that
 	if common.UseMemFS {
+		layoutFD = common.GetOrSet(layoutPath, "")
 		if strings.Contains(layoutPath, "layouts/") {
 			// if hash is the same skip. common.Get(layoutPath).Hash will be 0 initially
 			if layoutFD.Hash > 0 && layoutFD.Hash == common.CRC32Hasher([]byte(componentStr)) {
@@ -270,7 +271,10 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string,
 	if err != nil {
 		return fmt.Errorf("Could not add SSR Component for %s: %w%s\n", layoutPath, err, common.Caller())
 	}
-	// again store for no change
-	layoutFD.SSR = []byte(ssrStr)
+
+	if common.UseMemFS {
+		// again store for no change
+		layoutFD.SSR = []byte(ssrStr)
+	}
 	return nil
 }
