@@ -8,6 +8,7 @@ builds:
 - id: linux-build
   ldflags:
   - -X github.com/plentico/plenti/cmd.Version={{.Tag}}
+  - -extldflags=-static
   env:
   - CGO_ENABLED=1
   goos:
