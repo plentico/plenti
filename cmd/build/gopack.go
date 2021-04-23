@@ -229,19 +229,21 @@ func runPack(buildPath, convertPath string) error {
 
 		// clean so matches logic on Set....
 		file := filepath.Clean(fullPath)
-		// If the import/export points to a path that exists and it is a .js file (imports must reference the file specifically) then we don't need to convert anything.
-		if isValidJS = stepOne(file); isValidJS {
+		// If the import/export points to a path that exists and it is a .js file
+		// then we don't need to convert anything.
+		if isValidJS = checkFullPath(file); isValidJS {
 
 			Log("Skipping converting import/export in " + convertPath + " because import/export is valid: " + string(staticStatement))
 
-			// If the import/export path starts with a dot (.) or double dot (..) look for the file it's trying to import from this relative path.
 		} else if pathStr[:1] == "." {
 
-			if foundPath, err = stepTwo(file); err != nil {
+			// The import/export path starts with a dot (.) or double dot (..)
+			// so look for the file it's trying to import from this relative path.
+			if foundPath, err = checkRelativePath(file); err != nil {
 				return err
 			}
 
-		} else if foundPath, err = stepThree(buildPath, pathStr); err != nil {
+		} else if foundPath, err = checkNpmPath(buildPath, pathStr); err != nil {
 			return err
 
 		}
@@ -280,7 +282,7 @@ func runPack(buildPath, convertPath string) error {
 	return nil
 
 }
-func stepOne(file string) bool {
+func checkFullPath(file string) bool {
 	//  || strings.HasSuffix(file, ".mjs")  also?
 	if common.UseMemFS {
 		return common.Exists(file) && (strings.HasSuffix(file, ".js") || strings.HasSuffix(file, ".mjs"))
@@ -293,7 +295,7 @@ func stepOne(file string) bool {
 	return false
 }
 
-func stepTwo(path string) (string, error) {
+func checkRelativePath(path string) (string, error) {
 
 	if common.UseMemFS {
 
@@ -324,7 +326,7 @@ func stepTwo(path string) (string, error) {
 	return foundPath, nil
 }
 
-func stepThree(buildPath, pathStr string) (string, error) {
+func checkNpmPath(buildPath, pathStr string) (string, error) {
 	// A named import/export is being used, look for this in "web_modules/" dir.
 	namedPath := buildPath + "/spa/web_modules/" + pathStr
 
