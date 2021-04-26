@@ -80,7 +80,7 @@ func EjectCopy(buildPath string, tempBuildDir string, defaultsEjectedFS embed.FS
 		return fmt.Errorf("Could not get ejectable file: %w%s\n", ejectedFilesErr, common.Caller())
 	}
 
-	Log(fmt.Sprintf("Number of ejectable core files copied: %d\n", copiedSourceCounter))
+	Log(fmt.Sprintf("Number of ejectable core files copied: %d", copiedSourceCounter))
 	return nil
 
 }

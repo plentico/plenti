@@ -152,8 +152,6 @@ func Gopack(buildPath string) error {
 
 }
 
-var foundPaths = map[string][]byte{}
-
 func runPack(buildPath, convertPath string) error {
 
 	if filepath.Ext(convertPath) != ".js" && filepath.Ext(convertPath) != ".mjs" {
@@ -191,29 +189,24 @@ func runPack(buildPath, convertPath string) error {
 
 		// Get path from the full import/export statement.
 		pathBytes := rePath.Find(staticStatement)
-		// TODO: check if exists still or maybe remove altoghether?
-		//  Not sure if this can break when files are changed...
-		if rp, ok := foundPaths[string(staticStatement)]; ok {
-			// Actually replace the path to the dependency in the source content.
-			contentBytes = bytes.ReplaceAll(contentBytes, staticStatement,
-				rePath.ReplaceAll(staticStatement, rePath.ReplaceAll(pathBytes, rp)))
-			continue
-		}
 
 		// Convert path to a string.
 		pathStr := string(pathBytes)
-
 		// Remove single or double quotes around path.
 		pathStr = strings.Trim(pathStr, `'"`)
+
 		// Make the path relative to the file that is specifying it as an import/export.
 		fullPath := filepath.Dir(convertPath) + "/" + pathStr
+		// Short path equivalent for dot (.) and double dot (..) relative paths.
+		fullPath = filepath.Clean(fullPath)
+
 		// Intialize the path that we are replacing.
 		var foundPath string
+
 		// Convert .svelte file extensions to .js so the browser can read them.
 		if filepath.Ext(fullPath) == ".svelte" {
 			fullPath = strings.Replace(fullPath, ".svelte", ".js", 1)
 			foundPath = fullPath
-
 		}
 
 		// Make sure the import/export path doesn't start with a dot (.) or double dot (..)
@@ -231,12 +224,7 @@ func runPack(buildPath, convertPath string) error {
 			replacePath = "'" + replacePath + "'"
 			// Convert string path to bytes.
 			replacePathBytes := []byte(replacePath)
-			// reFoundImport := regexp.MustCompile(string(staticStatement))
-			// // Actually replace the path to the dependency in the source content.
-			// contentBytes = reFoundImport.ReplaceAll(contentBytes, rePath.ReplaceAll(staticStatement, rePath.ReplaceAll(pathBytes, replacePathBytes)))
-			foundPaths[string(staticStatement)] = replacePathBytes
 			// Actually replace the path to the dependency in the source content.
-			// // Don't need regex for inital staticStatement replace...
 			contentBytes = bytes.ReplaceAll(contentBytes, staticStatement,
 				rePath.ReplaceAll(staticStatement, rePath.ReplaceAll(pathBytes, replacePathBytes)))
 
@@ -304,13 +292,10 @@ func findJSFile(path string) (string, error) {
 	files, err := os.ReadDir(path)
 	if err != nil {
 		return "", fmt.Errorf("Could not read files in current dir: %s %w%s\n", path, err, common.Caller())
-
 	}
 	for _, f := range files {
 		if filepath.Ext(f.Name()) == ".js" || filepath.Ext(f.Name()) == ".mjs" {
 			foundPath = path + "/" + f.Name()
-			Log("The found import path to use is: " + foundPath)
-
 		}
 	}
 
