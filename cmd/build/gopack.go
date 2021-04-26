@@ -181,15 +181,6 @@ func runPack(buildPath, convertPath string) error {
 		contentBytes = bytes.Replace(contentBytes, dynamicImportPath, fixedImportPath, 1)
 	}
 
-	// Find any import statement in the file (including multiline imports).
-	// () = brackets for grouping
-	// \s = space
-	// .* = any character
-	// | = or statement
-	// \n = newline
-	// {0,} = repeat any number of times
-	// \{ = just a closing curly bracket (escaped)
-
 	// Get all the import statements.
 	staticImportStatements := reStaticImportGoPk.FindAll(contentBytes, -1)
 	// Get all the export statements.
@@ -216,10 +207,8 @@ func runPack(buildPath, convertPath string) error {
 		pathStr = strings.Trim(pathStr, `'"`)
 		// Make the path relative to the file that is specifying it as an import/export.
 		fullPath := filepath.Dir(convertPath) + "/" + pathStr
-		var isValidJS = false
 		// Intialize the path that we are replacing.
 		var foundPath string
-		var err error
 		// Convert .svelte file extensions to .js so the browser can read them.
 		if filepath.Ext(fullPath) == ".svelte" {
 			fullPath = strings.Replace(fullPath, ".svelte", ".js", 1)
@@ -227,25 +216,12 @@ func runPack(buildPath, convertPath string) error {
 
 		}
 
-		// clean so matches logic on Set....
-		file := filepath.Clean(fullPath)
-		// If the import/export points to a path that exists and it is a .js file
-		// then we don't need to convert anything.
-		if isValidJS = checkFullPath(file); isValidJS {
-
-			Log("Skipping converting import/export in " + convertPath + " because import/export is valid: " + string(staticStatement))
-
-		} else if pathStr[:1] == "." {
-
-			// The import/export path starts with a dot (.) or double dot (..)
-			// so look for the file it's trying to import from this relative path.
-			if foundPath, err = checkRelativePath(file); err != nil {
+		// Make sure the import/export path doesn't start with a dot (.) or double dot (..)
+		// and make sure that the path doesn't have a file extension.
+		if pathStr[:1] != "." && filepath.Ext(pathStr) == "" {
+			if foundPath, err = checkNpmPath(buildPath, pathStr); err != nil {
 				return err
 			}
-
-		} else if foundPath, err = checkNpmPath(buildPath, pathStr); err != nil {
-			return err
-
 		}
 
 		if foundPath != "" {
@@ -265,9 +241,6 @@ func runPack(buildPath, convertPath string) error {
 				rePath.ReplaceAll(staticStatement, rePath.ReplaceAll(pathBytes, replacePathBytes)))
 
 		}
-		if !isValidJS && foundPath == "" {
-			return fmt.Errorf("couldnt " + file)
-		}
 	}
 	if common.UseMemFS {
 		// Overwrite the old file with the new content that contains the updated import path.
@@ -281,49 +254,6 @@ func runPack(buildPath, convertPath string) error {
 	}
 	return nil
 
-}
-func checkFullPath(file string) bool {
-	//  || strings.HasSuffix(file, ".mjs")  also?
-	if common.UseMemFS {
-		return common.Exists(file) && (strings.HasSuffix(file, ".js") || strings.HasSuffix(file, ".mjs"))
-
-	}
-	// If the import/export points to a path that exists and it is a .js file (imports must reference the file specifically) then we don't need to convert anything.
-	if _, pathExistsErr := os.Stat(file); !os.IsNotExist(pathExistsErr) && filepath.Ext(file) == ".js" {
-		return true
-	}
-	return false
-}
-
-func checkRelativePath(path string) (string, error) {
-
-	if common.UseMemFS {
-
-		p, err := common.SearchPath(path)
-		if err != nil {
-			return p, fmt.Errorf("Error looking for .mjs: %w%s\n", err, common.Caller())
-		}
-		return p, nil
-
-	}
-	var foundPath string
-
-	findRelativePathErr := filepath.WalkDir(path, func(relativePath string, relativePathFileInfo fs.DirEntry, err error) error {
-
-		if err != nil {
-			return fmt.Errorf("can't stat %s: %w%s\n", relativePath, err, common.Caller())
-		}
-		// Only use .js or .mjs files in imports (folders aren't specific enough).
-		if filepath.Ext(relativePath) == ".js" || filepath.Ext(relativePath) == ".mjs" {
-			foundPath = relativePath
-
-		}
-		return nil
-	})
-	if findRelativePathErr != nil {
-		return "", fmt.Errorf("Could not find related .mjs file: %w%s\n", findRelativePathErr, common.Caller())
-	}
-	return foundPath, nil
 }
 
 func checkNpmPath(buildPath, pathStr string) (string, error) {
