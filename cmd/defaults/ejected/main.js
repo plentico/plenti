@@ -1,16 +1,15 @@
 import Router from './router.svelte';
-import contentSource from './content.js';
+import allContent from './content.js';
 import * as allLayouts from './layouts.js';
 
 let uri = location.pathname;
-let layout, content, allContent;
+let layout, content;
 
 const getContent = (uri, trailingSlash = "") => {
-  return contentSource.find(content => content.path + trailingSlash == uri);
+  return allContent.find(content => content.path + trailingSlash == uri);
 }
 
 content = getContent(uri) != undefined ? getContent(uri) : getContent(uri, "/");
-allContent = contentSource;
 
 import('../content/' + content.type + '.js').then(r => {
   layout = r.default;

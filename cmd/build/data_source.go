@@ -58,13 +58,13 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 	contentJSPath := buildPath + "/spa/ejected/content.js"
 	// no dirs needed for mem
 	if common.UseMemFS {
-		common.Set(contentJSPath, "", &common.FData{B: []byte(`const contentSource = [`)})
+		common.Set(contentJSPath, "", &common.FData{B: []byte(`const allContent = [`)})
 	} else {
 		if err := os.MkdirAll(buildPath+"/spa/ejected", os.ModePerm); err != nil {
 			return err
 		}
 		// Start the new content.js file.
-		err := ioutil.WriteFile(contentJSPath, []byte(`const contentSource = [`), 0755)
+		err := ioutil.WriteFile(contentJSPath, []byte(`const allContent = [`), 0755)
 		if err != nil {
 			fmt.Printf("Unable to write content.js file: %v", err)
 			return err
@@ -246,7 +246,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 
 	Log("Number of content files used: " + fmt.Sprint(contentFileCounter))
 	// Complete the content.js file.
-	if err := writeContentJS(contentJSPath, "];\n\nexport default contentSource;"); err != nil {
+	if err := writeContentJS(contentJSPath, "];\n\nexport default allContent;"); err != nil {
 		return err
 	}
 	if common.UseMemFS {
