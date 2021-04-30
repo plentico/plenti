@@ -1,13 +1,16 @@
-<Html {content} {layout} {allContent} {allLayouts} />
+<Html {content} {layout} {allContent} {allLayouts} {local} {baseurl} />
 
 <script>
   import Navaid from 'navaid';
   import contentSource from './content.js';
   import Html from '../global/html.svelte';
 
-  export let uri, content, layout, allContent, allLayouts;
+  export let uri, content, layout, allContent, allLayouts, local, baseurl;
 
   const getContent = (uri, trailingSlash = "") => {
+    uri = uri === "." ? "/" : uri;
+    uri = uri.charAt(0) === "/" && uri !== "/" ? uri.substring(1) : uri;
+    console.log("router.svelte: " + uri);
     return contentSource.find(content => content.path + trailingSlash == uri);
   }
 

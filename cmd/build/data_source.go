@@ -16,6 +16,9 @@ import (
 	"github.com/plentico/plenti/readers"
 )
 
+// Local is set to true when using dev webserver, otherwise bools default to false.
+var Local bool
+
 // Doreload and other flags should probably be part of a config accessible across build.
 // It gets set using server flags.
 var Doreload bool
@@ -23,7 +26,7 @@ var (
 	// Setup regex to find field name.
 	reField = regexp.MustCompile(`:field\((.*?)\)`)
 	// Setup regex to find pagination and a leading forward slash.
-	rePaginate = regexp.MustCompile(`/:paginate\((.*?)\)`)
+	rePaginate = regexp.MustCompile(`:paginate\((.*?)\)`)
 
 	// Create regex for allowed characters when slugifying path.
 	reSlugify = regexp.MustCompile("[^a-z0-9/]+")
@@ -37,6 +40,7 @@ var (
 	reS = regexp.MustCompile(`\s+`)
 )
 
+// Holds info related to a particular content node.
 type content struct {
 	contentType      string
 	contentPath      string
@@ -49,13 +53,27 @@ type content struct {
 	contentPagerNums []string
 }
 
+// Holds sitewide environment variables.
+type env struct {
+	local   string
+	baseurl string
+}
+
 // DataSource builds json list from "content/" directory.
 func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir string) error {
 
 	defer Benchmark(time.Now(), "Creating data_source")
 
 	Log("\nGathering data source from 'content/' folder")
+
+	// Set some defaults
 	contentJSPath := buildPath + "/spa/ejected/content.js"
+	varsPath := buildPath + "/spa/ejected/variables.js"
+	envVars := env{
+		local:   strconv.FormatBool(Local),
+		baseurl: siteConfig.BaseURL,
+	}
+
 	// no dirs needed for mem
 	if common.UseMemFS {
 		common.Set(contentJSPath, "", &common.FData{B: []byte(`const allContent = [`)})
@@ -67,6 +85,15 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 		err := ioutil.WriteFile(contentJSPath, []byte(`const allContent = [`), 0755)
 		if err != nil {
 			fmt.Printf("Unable to write content.js file: %v", err)
+			return err
+		}
+		// Start the new variables.js file.
+		varsStr := "let local = " + envVars.local + ";\n"
+		varsStr += "let baseurl = '" + envVars.baseurl + "';\n"
+		varsStr += "export { local, baseurl };"
+		err = ioutil.WriteFile(varsPath, []byte(varsStr), 0755)
+		if err != nil {
+			fmt.Printf("Unable to write variables.js file: %v", err)
 			return err
 		}
 	}
@@ -103,8 +130,8 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 				}
 				fileContentStr := string(fileContentBytes)
 
-				// Remove the "content" folder from path.
-				path = strings.TrimPrefix(path, tempBuildDir+"content")
+				// Remove the "content/" folder from path.
+				path = strings.TrimPrefix(path, tempBuildDir+"content/")
 
 				// Check for index file at any level.
 				if fileName == "index.json" {
@@ -153,7 +180,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 					// Save path before slugifying to preserve pagination.
 					pagerPath = path
 					// Get Destination path before slugifying to preserve pagination.
-					pagerDestPath = buildPath + path + "/index.html"
+					pagerDestPath = buildPath + "/" + path + "/index.html"
 					// Remove /:pagination()
 					path = rePaginate.ReplaceAllString(path, "")
 					// If paginating the homepage, the forward slash shouldn't be removed.
@@ -171,7 +198,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 					path = strings.TrimSuffix(path, "/")
 				}
 
-				destPath := buildPath + path + "/index.html"
+				destPath := buildPath + "/" + path + "/index.html"
 
 				contentDetailsStr := "{\n" +
 					"\"pager\": 1,\n" +
@@ -219,7 +246,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 
 	for _, currentContent := range allContent {
 
-		if err := createProps(currentContent, allContentStr); err != nil {
+		if err := createProps(currentContent, allContentStr, envVars); err != nil {
 			return err
 		}
 
@@ -232,7 +259,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 			return err
 		}
 		for _, paginatedContent := range allPaginatedContent {
-			if err = createProps(paginatedContent, allContentStr); err != nil {
+			if err = createProps(paginatedContent, allContentStr, envVars); err != nil {
 				return err
 			}
 
@@ -257,9 +284,9 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 
 }
 
-func createProps(currentContent content, allContentStr string) error {
+func createProps(currentContent content, allContentStr string, envVars env) error {
 	componentSignature := "layouts_content_" + currentContent.contentType + "_svelte"
-	_, err := SSRctx.RunScript("var props = {content: "+currentContent.contentDetails+", layout: "+componentSignature+", allContent: "+allContentStr+"};", "create_ssr")
+	_, err := SSRctx.RunScript("var props = {content: "+currentContent.contentDetails+", layout: "+componentSignature+", allContent: "+allContentStr+", local: "+envVars.local+", baseurl: '"+envVars.baseurl+"'};", "create_ssr")
 	if err != nil {
 
 		return fmt.Errorf("Could not create props: %w%s\n", err, common.Caller())
@@ -294,6 +321,7 @@ func createHTML(currentContent content) error {
 		return nil
 	}
 	// Create any folders need to write file.
+	fmt.Println(currentContent.contentDest)
 	if err := os.MkdirAll(strings.TrimSuffix(currentContent.contentDest, "/index.html"), os.ModePerm); err != nil {
 		return fmt.Errorf("couldn't create dirs in createHTML: %w%s\n", err, common.Caller())
 	}

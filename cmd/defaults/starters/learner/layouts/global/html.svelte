@@ -4,11 +4,11 @@
   import Footer from './footer.svelte';
   import { makeTitle } from '../scripts/make_title.svelte';
 
-  export let content, layout, allContent, allLayouts;
+  export let content, layout, allContent, allLayouts, local, baseurl;
 </script>
 
 <html lang="en">
-<Head title={makeTitle(content.filename)} />
+<Head title={makeTitle(content.filename)} {local} {baseurl} />
 <body>
   <Nav />
   <main>

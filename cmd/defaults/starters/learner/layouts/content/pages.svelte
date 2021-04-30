@@ -13,4 +13,4 @@
 
 <Uses {content} />
 
-<p><a href="/">Back home</a></p>
+<p><a href=".">Back home</a></p>

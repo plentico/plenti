@@ -13,6 +13,7 @@ import (
 // SiteConfig is the site's configuration file values.
 type SiteConfig struct {
 	BuildDir    string                  `json:"build"`
+	BaseURL     string                  `json:"baseurl"`
 	Theme       string                  `json:"theme"`
 	ThemeConfig map[string]ThemeOptions `json:"theme_config"`
 	Local       struct {
@@ -61,6 +62,11 @@ func GetSiteConfig(basePath string) (SiteConfig, string) {
 	// If local server port is not set in config, use default
 	if siteConfig.Local.Port <= 0 {
 		siteConfig.Local.Port = 3000
+	}
+
+	// If baseurl is not set in config, use default
+	if siteConfig.BaseURL == "" {
+		siteConfig.BaseURL = "/"
 	}
 
 	return siteConfig, configPath

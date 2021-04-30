@@ -66,6 +66,9 @@ var serveCmd = &cobra.Command{
 		// Get settings from config file.
 		siteConfig, _ := readers.GetSiteConfig(".")
 
+		// Always set as Local when using serve command
+		build.Local = true
+
 		// Skip build command if BuildFlag is set to False
 		if BuildFlag {
 			// Run build command before starting server
