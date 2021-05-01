@@ -2,30 +2,16 @@
 
 <script>
   import Navaid from 'navaid';
-  import contentSource from './content.js';
   import Html from '../global/html.svelte';
+  import { uriCombos } from './main.js';
 
   export let uri, content, layout, allContent, allLayouts, local, baseurl;
 
-  const getContent = (uri, trailingSlash = "") => {
-    // When doing content lookup, convert dot shorthand used for homepage navigation off base element.
-    uri = uri === "." ? "/" : uri;
-    return contentSource.find(content => content.path + trailingSlash == uri);
-  }
-
-  const makeRelativeUri = uri => { 
-    return uri.charAt(0) === "/" && uri !== "/" ? makeRelativeUri(uri.substring(1)) : uri;
-  }
-
-  const makeRootRelativeUri = uri => { 
-    return "/" + uri;
-  }
-
   function draw(m) {
-    content = getContent(uri) ?? getContent(makeRelativeUri(uri)) ?? getContent(makeRootRelativeUri(uri));
+    content = uriCombos(uri); 
     if (content === undefined) {
       // Check if there is a 404 data source.
-      content = getContent("/404");
+      content = uriCombos("/404");
       if (content === undefined) {
         // If no 404.json data source exists, pass placeholder values.
         content = {

@@ -21,7 +21,9 @@ const makeRootRelativeUri = uri => {
   return "/" + uri;
 }
 
-const uriCombos = uri => {
+export const uriCombos = uri => {
+  // When doing content lookup, convert dot shorthand used for homepage navigation off base element.
+  uri = uri === "." ? "/" : uri;
   return getContent(uri) ??
          getContent(makeRelativeUri(uri)) ??
          getContent(makeRootRelativeUri(uri)) ??
@@ -30,11 +32,7 @@ const uriCombos = uri => {
          getContent(makeRootRelativeUri(uri), "/")
 }
 
-//content = getContent(uri) != undefined ? getContent(uri) : getContent(uri, "/");
-console.log(uri);
-//content = getContent(uri) ?? getContent(makeRelativeUri(uri)) ?? getContent(uri, "/");
 content = uriCombos(uri);
-console.log(content);
 
 import('../content/' + content.type + '.js').then(r => {
   layout = r.default;
