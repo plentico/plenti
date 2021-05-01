@@ -8,14 +8,21 @@
   export let uri, content, layout, allContent, allLayouts, local, baseurl;
 
   const getContent = (uri, trailingSlash = "") => {
+    // When doing content lookup, convert dot shorthand used for homepage navigation off base element.
     uri = uri === "." ? "/" : uri;
-    uri = uri.charAt(0) === "/" && uri !== "/" ? uri.substring(1) : uri;
-    console.log("router.svelte: " + uri);
     return contentSource.find(content => content.path + trailingSlash == uri);
   }
 
+  const makeRelativeUri = uri => { 
+    return uri.charAt(0) === "/" && uri !== "/" ? makeRelativeUri(uri.substring(1)) : uri;
+  }
+
+  const makeRootRelativeUri = uri => { 
+    return "/" + uri;
+  }
+
   function draw(m) {
-    content = getContent(uri);
+    content = getContent(uri) ?? getContent(makeRelativeUri(uri)) ?? getContent(makeRootRelativeUri(uri));
     if (content === undefined) {
       // Check if there is a 404 data source.
       content = getContent("/404");

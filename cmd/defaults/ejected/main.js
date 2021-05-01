@@ -7,12 +7,34 @@ let uri = location.pathname;
 let layout, content;
 
 const getContent = (uri, trailingSlash = "") => {
-  uri = uri === "/" ? uri : uri.substring(1);
-  console.log("main.js: " + uri);
-  return allContent.find(content => content.path + trailingSlash == uri);
+  return allContent.find(content => content.path + trailingSlash == uri); 
 }
 
-content = getContent(uri) != undefined ? getContent(uri) : getContent(uri, "/");
+const makeRelativeUri = uri => { 
+  // If first character is a forward slash and we're not on the homepage,
+  // remove it before doing the content lookup. Do this recursively in case
+  // multiple forward slashes are at the beginning of the path.
+  return uri.charAt(0) === "/" && uri !== "/" ? makeRelativeUri(uri.substring(1)) : uri;
+}
+
+const makeRootRelativeUri = uri => { 
+  return "/" + uri;
+}
+
+const uriCombos = uri => {
+  return getContent(uri) ??
+         getContent(makeRelativeUri(uri)) ??
+         getContent(makeRootRelativeUri(uri)) ??
+         getContent(uri, "/") ??
+         getContent(makeRelativeUri(uri), "/") ??
+         getContent(makeRootRelativeUri(uri), "/")
+}
+
+//content = getContent(uri) != undefined ? getContent(uri) : getContent(uri, "/");
+console.log(uri);
+//content = getContent(uri) ?? getContent(makeRelativeUri(uri)) ?? getContent(uri, "/");
+content = uriCombos(uri);
+console.log(content);
 
 import('../content/' + content.type + '.js').then(r => {
   layout = r.default;
