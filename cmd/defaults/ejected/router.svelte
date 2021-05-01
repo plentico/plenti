@@ -3,15 +3,15 @@
 <script>
   import Navaid from 'navaid';
   import Html from '../global/html.svelte';
-  import { uriCombos } from './main.js';
+  import { getContent } from './main.js';
 
   export let uri, content, layout, allContent, allLayouts, local, baseurl;
 
   function draw(m) {
-    content = uriCombos(uri); 
+    content = getContent(uri); 
     if (content === undefined) {
       // Check if there is a 404 data source.
-      content = uriCombos("/404");
+      content = getContent("/404");
       if (content === undefined) {
         // If no 404.json data source exists, pass placeholder values.
         content = {

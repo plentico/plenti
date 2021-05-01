@@ -321,7 +321,6 @@ func createHTML(currentContent content) error {
 		return nil
 	}
 	// Create any folders need to write file.
-	fmt.Println(currentContent.contentDest)
 	if err := os.MkdirAll(strings.TrimSuffix(currentContent.contentDest, "/index.html"), os.ModePerm); err != nil {
 		return fmt.Errorf("couldn't create dirs in createHTML: %w%s\n", err, common.Caller())
 	}

@@ -6,7 +6,7 @@ import { local, baseurl } from './variables.js';
 let uri = location.pathname;
 let layout, content;
 
-const getContent = (uri, trailingSlash = "") => {
+const contentLookup = (uri, trailingSlash = "") => {
   return allContent.find(content => content.path + trailingSlash == uri); 
 }
 
@@ -18,21 +18,23 @@ const makeRelativeUri = uri => {
 }
 
 const makeRootRelativeUri = uri => { 
+  // Add a leading forward slash.
   return "/" + uri;
 }
 
-export const uriCombos = uri => {
-  // When doing content lookup, convert dot shorthand used for homepage navigation off base element.
+export const getContent = uri => {
+  // Convert dot shorthand to slash when used for homepage links using base element.
   uri = uri === "." ? "/" : uri;
-  return getContent(uri) ??
-         getContent(makeRelativeUri(uri)) ??
-         getContent(makeRootRelativeUri(uri)) ??
-         getContent(uri, "/") ??
-         getContent(makeRelativeUri(uri), "/") ??
-         getContent(makeRootRelativeUri(uri), "/")
+  // Lookup content path with and without leading and trailing slashes.
+  return contentLookup(uri) ??
+         contentLookup(makeRelativeUri(uri)) ??
+         contentLookup(makeRootRelativeUri(uri)) ??
+         contentLookup(uri, "/") ??
+         contentLookup(makeRelativeUri(uri), "/") ??
+         contentLookup(makeRootRelativeUri(uri), "/")
 }
 
-content = uriCombos(uri);
+content = getContent(uri);
 
 import('../content/' + content.type + '.js').then(r => {
   layout = r.default;
