@@ -183,16 +183,20 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 					pagerDestPath = buildPath + "/" + path + "/index.html"
 					// Remove /:pagination()
 					path = rePaginate.ReplaceAllString(path, "")
-					// If paginating the homepage, the forward slash shouldn't be removed.
-					if path == "" {
-						// Add the forward slash back for the index page.
-						path = "/"
-					}
 				}
 
 				// Slugify output using reSlugify regex defined above.
 				path = strings.Trim(reSlugify.ReplaceAllString(strings.ToLower(path), "-"), "-")
 
+				// Check for any missing/blank paths.
+				if path == "" {
+					// Add the forward slash back for the index page.
+					path = "/"
+				}
+				// Let the user know if path is blank.
+				if len(path) < 1 {
+					fmt.Println("Content path can't be blank, check your route overrides in plenti.json.")
+				}
 				// Remove trailing slash, unless it's the homepage.
 				if path != "/" && path[len(path)-1:] == "/" {
 					path = strings.TrimSuffix(path, "/")
