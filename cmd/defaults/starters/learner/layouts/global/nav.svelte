@@ -1,8 +1,8 @@
 <nav>
   <div class="container">
-    <span id="brand"><a href="/"><img alt="planarian" src="/assets/logo.svg" />Home</a></span>
-    <a href="/about">About</a>&nbsp;
-    <a href="/contact">Contact</a>
+    <span id="brand"><a href="."><img alt="planarian" src="assets/logo.svg" />Home</a></span>
+    <a href="about">About</a>&nbsp;
+    <a href="contact">Contact</a>
   </div>
 </nav>
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"time"
 
 	"github.com/plentico/plenti/cmd/build"
@@ -57,6 +58,7 @@ func Build() error {
 		if r := recover(); r != nil {
 			fmt.Println("Please create a valid Plenti project or fix your app structure before trying to run this command again.")
 			fmt.Printf("Error: %v \n\n", r)
+			debug.PrintStack()
 			err = fmt.Errorf("panic recovered in Build: %v", r)
 		}
 	}()

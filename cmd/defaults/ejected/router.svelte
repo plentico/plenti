@@ -1,18 +1,14 @@
-<Html {content} {layout} {allContent} {allLayouts} />
+<Html {content} {layout} {allContent} {allLayouts} {env} />
 
 <script>
   import Navaid from 'navaid';
-  import contentSource from './content.js';
   import Html from '../global/html.svelte';
+  import { getContent } from './main.js';
 
-  export let uri, content, layout, allContent, allLayouts;
-
-  const getContent = (uri, trailingSlash = "") => {
-    return contentSource.find(content => content.path + trailingSlash == uri);
-  }
+  export let uri, content, layout, allContent, allLayouts, env;
 
   function draw(m) {
-    content = getContent(uri);
+    content = getContent(uri); 
     if (content === undefined) {
       // Check if there is a 404 data source.
       content = getContent("/404");
@@ -58,11 +54,5 @@
   });
 
   router.listen();
-
-  // Check if the url visited ends in a trailing slash.
-  if (uri.slice(-1) == "/") {
-    // Redirect to the same path without the trailing slash.
-    router.route(content.path, false);
-  }
 
 </script>
