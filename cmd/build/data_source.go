@@ -74,9 +74,13 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 		baseurl: siteConfig.BaseURL,
 	}
 
+	// Create env magic prop.
+	envStr := "export let env = { local: " + env.local + ", baseurl: '" + env.baseurl + "'};"
+
 	// no dirs needed for mem
 	if common.UseMemFS {
 		common.Set(contentJSPath, "", &common.FData{B: []byte(`const allContent = [`)})
+		common.Set(envPath, "", &common.FData{B: []byte(envStr)})
 	} else {
 		if err := os.MkdirAll(buildPath+"/spa/ejected", os.ModePerm); err != nil {
 			return err
@@ -88,7 +92,6 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 			return err
 		}
 		// Create the env.js file.
-		envStr := "export let env = { local: " + env.local + ", baseurl: '" + env.baseurl + "'};"
 		err = ioutil.WriteFile(envPath, []byte(envStr), 0755)
 		if err != nil {
 			fmt.Printf("Unable to write env.js file: %v", err)
