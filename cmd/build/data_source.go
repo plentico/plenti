@@ -68,8 +68,8 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 
 	// Set some defaults
 	contentJSPath := buildPath + "/spa/ejected/content.js"
-	varsPath := buildPath + "/spa/ejected/variables.js"
-	envVars := env{
+	envPath := buildPath + "/spa/ejected/env.js"
+	env := env{
 		local:   strconv.FormatBool(Local),
 		baseurl: siteConfig.BaseURL,
 	}
@@ -87,13 +87,11 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 			fmt.Printf("Unable to write content.js file: %v", err)
 			return err
 		}
-		// Start the new variables.js file.
-		varsStr := "let local = " + envVars.local + ";\n"
-		varsStr += "let baseurl = '" + envVars.baseurl + "';\n"
-		varsStr += "export { local, baseurl };"
-		err = ioutil.WriteFile(varsPath, []byte(varsStr), 0755)
+		// Create the env.js file.
+		envStr := "export let env = { local: " + env.local + ", baseurl: '" + env.baseurl + "'};"
+		err = ioutil.WriteFile(envPath, []byte(envStr), 0755)
 		if err != nil {
-			fmt.Printf("Unable to write variables.js file: %v", err)
+			fmt.Printf("Unable to write env.js file: %v", err)
 			return err
 		}
 	}
@@ -254,7 +252,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 
 	for _, currentContent := range allContent {
 
-		if err := createProps(currentContent, allContentStr, envVars); err != nil {
+		if err := createProps(currentContent, allContentStr, env); err != nil {
 			return err
 		}
 
@@ -267,7 +265,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 			return err
 		}
 		for _, paginatedContent := range allPaginatedContent {
-			if err = createProps(paginatedContent, allContentStr, envVars); err != nil {
+			if err = createProps(paginatedContent, allContentStr, env); err != nil {
 				return err
 			}
 
@@ -292,9 +290,9 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 
 }
 
-func createProps(currentContent content, allContentStr string, envVars env) error {
+func createProps(currentContent content, allContentStr string, env env) error {
 	componentSignature := "layouts_content_" + currentContent.contentType + "_svelte"
-	_, err := SSRctx.RunScript("var props = {content: "+currentContent.contentDetails+", layout: "+componentSignature+", allContent: "+allContentStr+", local: "+envVars.local+", baseurl: '"+envVars.baseurl+"'};", "create_ssr")
+	_, err := SSRctx.RunScript("var props = {content: "+currentContent.contentDetails+", layout: "+componentSignature+", allContent: "+allContentStr+", env: {local: "+env.local+", baseurl: '"+env.baseurl+"'}};", "create_ssr")
 	if err != nil {
 
 		return fmt.Errorf("Could not create props: %w%s\n", err, common.Caller())

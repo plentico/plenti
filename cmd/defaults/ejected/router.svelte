@@ -1,11 +1,11 @@
-<Html {content} {layout} {allContent} {allLayouts} {local} {baseurl} />
+<Html {content} {layout} {allContent} {allLayouts} {env} />
 
 <script>
   import Navaid from 'navaid';
   import Html from '../global/html.svelte';
   import { getContent } from './main.js';
 
-  export let uri, content, layout, allContent, allLayouts, local, baseurl;
+  export let uri, content, layout, allContent, allLayouts, env;
 
   function draw(m) {
     content = getContent(uri); 
