@@ -55,10 +55,4 @@
 
   router.listen();
 
-  // Check if the url visited ends in a trailing slash.
-  if (uri.slice(-1) == "/") {
-    // Redirect to the same path without the trailing slash.
-    router.route(content.path, false);
-  }
-
 </script>

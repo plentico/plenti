@@ -1,6 +1,5 @@
 <script>
   export let title, local, baseurl;
-  let base = local ? "/" : baseurl;
 </script>
 
 <head>
@@ -9,7 +8,7 @@
 
   <title>{ title }</title>
 
-  <base href="{ base }">
+  <base href="{ local ? "/" : baseurl }">
   <script type="module" src="spa/ejected/main.js"></script>
 
   <link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet">

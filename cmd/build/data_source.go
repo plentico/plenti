@@ -197,6 +197,10 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig, tempBuildDir st
 				if len(path) < 1 {
 					fmt.Println("Content path can't be blank, check your route overrides in plenti.json.")
 				}
+
+				// Remove any repeating forward slashes.
+				path = filepath.Clean(path)
+
 				// Remove trailing slash, unless it's the homepage.
 				if path != "/" && path[len(path)-1:] == "/" {
 					path = strings.TrimSuffix(path, "/")
