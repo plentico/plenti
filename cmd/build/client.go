@@ -182,6 +182,8 @@ func Client(buildPath string, tempBuildDir string, defaultsEjectedFS embed.FS) e
 				layoutSignature := strings.ReplaceAll(strings.ReplaceAll((destLayoutPath), "/", "_"), ".", "_")
 				// Remove layouts directory.
 				destLayoutPath = strings.TrimPrefix(destLayoutPath, "layouts/")
+				// Convert .svelte file extension to .js.
+				destLayoutPath = strings.Replace(destLayoutPath, ".svelte", ".js", 1)
 				// Compose entry for layouts.js file.
 				allLayoutsStr = allLayoutsStr + "export {default as " + layoutSignature + "} from '../" + destLayoutPath + "';\n"
 
