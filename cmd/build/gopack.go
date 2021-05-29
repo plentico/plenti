@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -189,24 +190,17 @@ func runPack(buildPath, convertPath string) error {
 
 		// Get path from the full import/export statement.
 		pathBytes := rePath.Find(staticStatement)
-
 		// Convert path to a string.
 		pathStr := string(pathBytes)
 		// Remove single or double quotes around path.
 		pathStr = strings.Trim(pathStr, `'"`)
 
-		// Make the path relative to the file that is specifying it as an import/export.
-		fullPath := filepath.Dir(convertPath) + "/" + pathStr
-		// Short path equivalent for dot (.) and double dot (..) relative paths.
-		fullPath = filepath.Clean(fullPath)
-
 		// Intialize the path that we are replacing.
 		var foundPath string
 
 		// Convert .svelte file extensions to .js so the browser can read them.
-		if filepath.Ext(fullPath) == ".svelte" {
-			fullPath = strings.Replace(fullPath, ".svelte", ".js", 1)
-			foundPath = fullPath
+		if filepath.Ext(pathStr) == ".svelte" {
+			foundPath = strings.Replace(pathStr, ".svelte", ".js", 1)
 		}
 
 		// Make sure the import/export path doesn't start with a dot (.) or double dot (..)
@@ -215,11 +209,17 @@ func runPack(buildPath, convertPath string) error {
 			if foundPath, err = checkNpmPath(buildPath, pathStr); err != nil {
 				return err
 			}
+			// Make absolute foundPath relative to the current file so it works with baseurls.
+			foundPath, err = filepath.Rel(path.Dir(convertPath), foundPath)
+			if err != nil {
+				fmt.Printf("Could not make path to NPM dependency relative: %s", err)
+			}
 		}
 
 		if foundPath != "" {
 			// Remove "public" build dir from path.
-			replacePath := filepath.Clean(strings.Replace(foundPath, buildPath, "", 1))
+			//replacePath := filepath.Clean(strings.Replace(foundPath, buildPath, "", 1))
+			replacePath := strings.Replace(foundPath, buildPath, "", 1)
 			// Wrap path in quotes.
 			replacePath = "'" + replacePath + "'"
 			// Convert string path to bytes.

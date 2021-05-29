@@ -1,4 +1,4 @@
-import Router from './router.js';
+import Router from './router.svelte';
 import allContent from './content.js';
 import * as allLayouts from './layouts.js';
 import { env } from './env.js';
