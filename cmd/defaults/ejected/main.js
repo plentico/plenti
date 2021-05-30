@@ -25,6 +25,8 @@ const makeRootRelativeUri = uri => {
 export const getContent = uri => {
   // Convert dot shorthand to slash when used for homepage links using base element.
   uri = uri === "." ? "/" : uri;
+  // Remove baseurl from beginning of path if it exists.
+  uri = uri.replace(new RegExp('^\/?' + env.baseurl, 'i'),"");
   // Lookup content path with and without leading and trailing slashes.
   return contentLookup(uri) ??
          contentLookup(makeRelativeUri(uri)) ??
