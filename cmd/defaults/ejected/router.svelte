@@ -54,4 +54,7 @@
 
   router.listen();
 
+  // Fix browser back button for initially loaded page.
+  router.route(uri, false);
+
 </script>
