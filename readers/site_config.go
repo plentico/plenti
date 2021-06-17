@@ -64,10 +64,5 @@ func GetSiteConfig(basePath string) (SiteConfig, string) {
 		siteConfig.Local.Port = 3000
 	}
 
-	// If baseurl is not set in config, use default
-	if siteConfig.BaseURL == "" {
-		siteConfig.BaseURL = "/"
-	}
-
 	return siteConfig, configPath
 }
