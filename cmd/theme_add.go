@@ -48,9 +48,14 @@ To use https://plenti.co as a theme for example, run: plenti new theme git@githu
 		// Set the directory to clone code into.
 		themeDir := "themes/" + repoName
 
-		// Clone the theme and set the theme_config
-		addTheme(themeDir, url, repoName)
-
+		// Clone the theme.
+		repo := addTheme(themeDir, url, repoName)
+		// Get the hash the represents the version of the theme.
+		commitHash := getCommitHash(repo)
+		// Update the plenti.json config file with theme info.
+		setThemeConfig(".", url, commitHash, repoName)
+		// Remove .git folder from theme to avoid submodules.
+		cleanThemeGit(themeDir)
 	},
 }
 
@@ -75,7 +80,7 @@ func getRepoName(url string) string {
 	return parts[len(parts)-1]
 }
 
-func addTheme(themeDir string, url string, repoName string) {
+func addTheme(themeDir string, url string, repoName string) *git.Repository {
 	// Run the "git clone" operation.
 	repo, err := git.PlainClone(themeDir, false, &git.CloneOptions{
 		URL:      url,
@@ -83,9 +88,11 @@ func addTheme(themeDir string, url string, repoName string) {
 	})
 	if err != nil {
 		common.CheckErr(fmt.Errorf("Can't clone theme repository: %w", err))
-
 	}
+	return repo
+}
 
+func getCommitHash(repo *git.Repository) string {
 	// Get the latest commit hash from the repo.
 	ref, err := repo.Head()
 	if err != nil {
@@ -120,17 +127,13 @@ func addTheme(themeDir string, url string, repoName string) {
 		}
 		// The --commit flag could be checkout out, so the hash is valid.
 		commitHash = CommitFlag
-
 	}
+	return commitHash
+}
 
-	// Remove the theme's .git/ folder to avoid submodule issues.
-	if err = os.RemoveAll(themeDir + "/.git"); err != nil {
-		common.CheckErr(fmt.Errorf("Could not delete .git folder for theme: %w", err))
-
-	}
-
+func setThemeConfig(configLocation string, url string, commitHash string, repoName string) {
 	// Get the current site configuration file values.
-	siteConfig, configPath := readers.GetSiteConfig(".")
+	siteConfig, configPath := readers.GetSiteConfig(configLocation)
 	// Update the sitConfig struct with new values.
 	themeOptions := new(readers.ThemeOptions)
 	themeOptions.URL = url
@@ -143,4 +146,11 @@ func addTheme(themeDir string, url string, repoName string) {
 
 	// Update the config file on the filesystem.
 	common.CheckErr(writers.SetSiteConfig(siteConfig, configPath))
+}
+
+func cleanThemeGit(themeDir string) {
+	// Remove the theme's .git/ folder to avoid submodule issues.
+	if err := os.RemoveAll(themeDir + "/.git"); err != nil {
+		common.CheckErr(fmt.Errorf("Could not delete .git folder for theme: %w", err))
+	}
 }

@@ -37,19 +37,25 @@ and layouts from the theme you enabled.
 		// Get the theme name passed via the CLI.
 		repoName := args[0]
 
-		// Get the current site configuration file values.
-		siteConfig, configPath := readers.GetSiteConfig(".")
+		themeLocation := "themes/" + repoName
 
-		if _, err := os.Stat("themes/" + repoName); !os.IsNotExist(err) {
-			siteConfig.Theme = repoName
-
-			// Update the config file on the filesystem.
-			common.CheckErr(writers.SetSiteConfig(siteConfig, configPath))
-		} else {
-			fmt.Printf("Could not locate '%v' theme: %v\n", repoName, err)
-		}
+		enableTheme(themeLocation, ".", repoName)
 
 	},
+}
+
+func enableTheme(themeLocation string, configLocation string, repoName string) {
+	// Get the current site configuration file values.
+	siteConfig, configPath := readers.GetSiteConfig(configLocation)
+
+	// Check that the theme actually exists on the filesystem.
+	if _, err := os.Stat(themeLocation); !os.IsNotExist(err) {
+		siteConfig.Theme = repoName
+		// Update the config file on the filesystem.
+		common.CheckErr(writers.SetSiteConfig(siteConfig, configPath))
+	} else {
+		fmt.Printf("Could not locate '%v' theme: %v\n", repoName, err)
+	}
 }
 
 func init() {

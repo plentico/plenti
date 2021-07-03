@@ -96,7 +96,15 @@ var siteCmd = &cobra.Command{
 
 			// Download and set up theme.
 			repoName := getRepoName(themeFlag)
-			addTheme(projectDir+"/themes/"+repoName, themeFlag, repoName)
+			themeDir := projectDir + "/themes/" + repoName
+			repo := addTheme(themeDir, themeFlag, repoName)
+			commitHash := getCommitHash(repo)
+			setThemeConfig(projectDir, themeFlag, commitHash, repoName)
+
+			// Enable the theme.
+			//themeEnableCmd.Run(cmd, []string{repoName})
+			enableTheme(themeDir, projectDir, repoName)
+
 			return
 
 		}
