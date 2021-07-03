@@ -17,6 +17,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// ThemeFlag starts the project using a particular theme
+var themeFlag string
+
 // siteCmd represents the site command
 var siteCmd = &cobra.Command{
 	Use:   "site [name]",
@@ -50,13 +53,13 @@ var siteCmd = &cobra.Command{
 		return fmt.Errorf("invalid name specified: %s", args[0])
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		// Create base directory for site
-		newpath := strings.Trim(filepath.Join(".", args[0]), " /")
-
-		if _, err := os.Stat(newpath); !os.IsNotExist(err) {
-
+		// Get user specified name of site
+		projectDir := strings.Trim(filepath.Join(".", args[0]), " /")
+		// Check if a folder already exists on the filesystem with that name
+		if _, err := os.Stat(projectDir); !os.IsNotExist(err) {
+			// If folder already exists, ask if user wants to replace it
 			confirmPrompt := promptui.Select{
-				Label: fmt.Sprintf("%s exists. Overwrite?", newpath),
+				Label: fmt.Sprintf("%s exists. Overwrite?", projectDir),
 				Items: []string{"No", "Yes"},
 			}
 			_, rep, err := (confirmPrompt.Run())
@@ -67,11 +70,26 @@ var siteCmd = &cobra.Command{
 				fmt.Println("Cancelled.")
 				return
 			}
-
+		}
+		// Create base directory for site
+		if err := os.MkdirAll(projectDir, os.ModePerm); err != nil {
+			common.CheckErr(fmt.Errorf("Unable to create directory %s: %w", projectDir, err))
 		}
 
-		if err := os.MkdirAll(newpath, os.ModePerm); err != nil {
-			common.CheckErr(fmt.Errorf("Unable to create directory %s: %w", newpath, err))
+		// Check for --theme flag.
+		if themeFlag != "" {
+			// Create empty base folders for the project
+			defaultDirs := []string{"assets", "content", "layouts"}
+			for _, dir := range defaultDirs {
+				if err := os.MkdirAll(projectDir+"/"+dir, os.ModePerm); err != nil {
+					common.CheckErr(fmt.Errorf("Unable to create directory %s: %w", projectDir+"/"+dir, err))
+				}
+			}
+			//themeAddCmd.Run(cmd, []string{themeFlag})
+			repoName := getRepoName(themeFlag)
+			addTheme(projectDir+"/themes/"+repoName, themeFlag, repoName)
+			return
+
 		}
 
 		// Check for --bare flag.
@@ -93,14 +111,14 @@ var siteCmd = &cobra.Command{
 			}
 		}
 		// Loop through site defaults to create site scaffolding
-		writeScaffolding(scaffolding, newpath)
+		writeScaffolding(scaffolding, projectDir)
 
 		nodeModules, err := fs.Sub(defaultsNodeModulesFS, "defaults")
 		if err != nil {
 			common.CheckErr(fmt.Errorf("Unable to get node_modules defaults: %w", err))
 		}
 		// Loop through node_modules npm pacakges to include in scaffolding
-		writeScaffolding(nodeModules, newpath)
+		writeScaffolding(nodeModules, projectDir)
 
 		fmt.Printf(heredoc.Docf(`
 			Success: Created %q site.
@@ -109,19 +127,19 @@ var siteCmd = &cobra.Command{
 
 			  cd %s
 			  plenti serve
-		`, newpath, newpath))
+		`, projectDir, projectDir))
 
 	},
 }
 
-func writeScaffolding(defaults fs.FS, newpath string) {
+func writeScaffolding(defaults fs.FS, projectDir string) {
 	fs.WalkDir(defaults, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if d.IsDir() {
 			// Create the directories needed for the current file
-			if err := os.MkdirAll(newpath+"/"+path, os.ModePerm); err != nil {
+			if err := os.MkdirAll(projectDir+"/"+path, os.ModePerm); err != nil {
 				common.CheckErr(fmt.Errorf("Unable to create path(s) %s: %v", path, err))
 			}
 			return nil
@@ -129,7 +147,7 @@ func writeScaffolding(defaults fs.FS, newpath string) {
 		content, _ := defaults.Open(path)
 		contentBytes, err := ioutil.ReadAll(content)
 		// Create the current default file
-		if err := ioutil.WriteFile(newpath+"/"+path, contentBytes, 0755); err != nil {
+		if err := ioutil.WriteFile(projectDir+"/"+path, contentBytes, 0755); err != nil {
 			common.CheckErr(fmt.Errorf("Unable to write file: %w", err))
 		}
 		return nil
@@ -150,4 +168,5 @@ func init() {
 	// is called directly, e.g.:
 	// siteCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	siteCmd.Flags().BoolP("bare", "b", false, "Omit default content from site scaffolding")
+	siteCmd.Flags().StringVarP(&themeFlag, "theme", "t", "", "start your project by inheriting from an existing theme")
 }

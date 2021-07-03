@@ -42,79 +42,14 @@ To use https://plenti.co as a theme for example, run: plenti new theme git@githu
 		// Get the repo URL passed via the CLI.
 		url := args[0]
 
-		// Get the last part of the URL to isolate the repository name.
-		parts := strings.Split(url, "/")
-		repoName := parts[len(parts)-1]
+		// Get just the repository name for the URL.
+		repoName := getRepoName(url)
 
+		// Set the directory to clone code into.
 		themeDir := "themes/" + repoName
 
-		// Run the "git clone" operation.
-		repo, err := git.PlainClone(themeDir, false, &git.CloneOptions{
-			URL:      url,
-			Progress: os.Stdout,
-		})
-		if err != nil {
-			common.CheckErr(fmt.Errorf("Can't clone theme repository: %w", err))
-
-		}
-
-		// Get the latest commit hash from the repo.
-		ref, err := repo.Head()
-		if err != nil {
-			common.CheckErr(fmt.Errorf("Can't get HEAD: %w", err))
-
-		}
-		commitObj, err := repo.CommitObject(ref.Hash())
-		if err != nil {
-			common.CheckErr(fmt.Errorf("Can't get Commit from hash: %w", err))
-
-		}
-		commitHash := commitObj.Hash.String()
-
-		// Check if a --commit flag was used.
-		if CommitFlag != "" {
-			worktree, worktreeErr := repo.Worktree()
-			if worktreeErr != nil {
-				common.CheckErr(fmt.Errorf("Can't get worktree: %w", worktreeErr))
-
-			}
-			// Resolve commit in case short hash is used instead of full hash.
-			resolvedCommitHash, resolveErr := repo.ResolveRevision(plumbing.Revision(CommitFlag))
-			if resolveErr != nil {
-				common.CheckErr(fmt.Errorf("Can't resolve commit hash: %w", resolveErr))
-
-			}
-			// Git checkout the commit hash that was sent via the flag.
-			if checkoutErr := worktree.Checkout(&git.CheckoutOptions{
-				Hash: *resolvedCommitHash,
-			}); checkoutErr != nil {
-				common.CheckErr(fmt.Errorf("Can't get commit: %w", checkoutErr))
-			}
-			// The --commit flag could be checkout out, so the hash is valid.
-			commitHash = CommitFlag
-
-		}
-
-		// Remove the theme's .git/ folder to avoid submodule issues.
-		if err = os.RemoveAll(themeDir + "/.git"); err != nil {
-			common.CheckErr(fmt.Errorf("Could not delete .git folder for theme: %w", err))
-
-		}
-
-		// Get the current site configuration file values.
-		siteConfig, configPath := readers.GetSiteConfig(".")
-		// Update the sitConfig struct with new values.
-		themeOptions := new(readers.ThemeOptions)
-		themeOptions.URL = url
-		themeOptions.Commit = commitHash
-		themeOptions.Exclude = siteConfig.ThemeConfig[repoName].Exclude
-		if siteConfig.ThemeConfig == nil {
-			siteConfig.ThemeConfig = make(map[string]readers.ThemeOptions)
-		}
-		siteConfig.ThemeConfig[repoName] = *themeOptions
-
-		// Update the config file on the filesystem.
-		common.CheckErr(writers.SetSiteConfig(siteConfig, configPath))
+		// Clone the theme and set the theme_config
+		addTheme(themeDir, url, repoName)
 
 	},
 }
@@ -132,4 +67,80 @@ func init() {
 	// is called directly, e.g.:
 	// typeCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	themeAddCmd.Flags().StringVarP(&CommitFlag, "commit", "c", "", "pull a specific commit hash for the theme")
+}
+
+func getRepoName(url string) string {
+	// Get the last part of the git URL to isolate the repository name.
+	parts := strings.Split(url, "/")
+	return parts[len(parts)-1]
+}
+
+func addTheme(themeDir string, url string, repoName string) {
+	// Run the "git clone" operation.
+	repo, err := git.PlainClone(themeDir, false, &git.CloneOptions{
+		URL:      url,
+		Progress: os.Stdout,
+	})
+	if err != nil {
+		common.CheckErr(fmt.Errorf("Can't clone theme repository: %w", err))
+
+	}
+
+	// Get the latest commit hash from the repo.
+	ref, err := repo.Head()
+	if err != nil {
+		common.CheckErr(fmt.Errorf("Can't get HEAD: %w", err))
+
+	}
+	commitObj, err := repo.CommitObject(ref.Hash())
+	if err != nil {
+		common.CheckErr(fmt.Errorf("Can't get Commit from hash: %w", err))
+
+	}
+	commitHash := commitObj.Hash.String()
+
+	// Check if a --commit flag was used.
+	if CommitFlag != "" {
+		worktree, worktreeErr := repo.Worktree()
+		if worktreeErr != nil {
+			common.CheckErr(fmt.Errorf("Can't get worktree: %w", worktreeErr))
+
+		}
+		// Resolve commit in case short hash is used instead of full hash.
+		resolvedCommitHash, resolveErr := repo.ResolveRevision(plumbing.Revision(CommitFlag))
+		if resolveErr != nil {
+			common.CheckErr(fmt.Errorf("Can't resolve commit hash: %w", resolveErr))
+
+		}
+		// Git checkout the commit hash that was sent via the flag.
+		if checkoutErr := worktree.Checkout(&git.CheckoutOptions{
+			Hash: *resolvedCommitHash,
+		}); checkoutErr != nil {
+			common.CheckErr(fmt.Errorf("Can't get commit: %w", checkoutErr))
+		}
+		// The --commit flag could be checkout out, so the hash is valid.
+		commitHash = CommitFlag
+
+	}
+
+	// Remove the theme's .git/ folder to avoid submodule issues.
+	if err = os.RemoveAll(themeDir + "/.git"); err != nil {
+		common.CheckErr(fmt.Errorf("Could not delete .git folder for theme: %w", err))
+
+	}
+
+	// Get the current site configuration file values.
+	siteConfig, configPath := readers.GetSiteConfig(".")
+	// Update the sitConfig struct with new values.
+	themeOptions := new(readers.ThemeOptions)
+	themeOptions.URL = url
+	themeOptions.Commit = commitHash
+	themeOptions.Exclude = siteConfig.ThemeConfig[repoName].Exclude
+	if siteConfig.ThemeConfig == nil {
+		siteConfig.ThemeConfig = make(map[string]readers.ThemeOptions)
+	}
+	siteConfig.ThemeConfig[repoName] = *themeOptions
+
+	// Update the config file on the filesystem.
+	common.CheckErr(writers.SetSiteConfig(siteConfig, configPath))
 }
