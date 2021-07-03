@@ -15723,7 +15723,7 @@ const meta_tags = new Map([
     ['svelte:window', 'Window'],
     ['svelte:body', 'Body']
 ]);
-const valid_meta_tags = Array.from(meta_tags.keys()).concat('svelte:self', 'svelte:component');
+const valid_meta_tags = Array.from(meta_tags.keys()).concat('svelte:self', 'svelte:component', 'svelte:fragment');
 const specials = new Map([
     [
         'script',
@@ -15742,6 +15742,7 @@ const specials = new Map([
 ]);
 const SELF = /^svelte:self(?=[\s/>])/;
 const COMPONENT = /^svelte:component(?=[\s/>])/;
+const SLOT = /^svelte:fragment(?=[\s/>])/;
 function parent_is_head(stack) {
     let i = stack.length;
     while (i--) {
@@ -15799,8 +15800,9 @@ function tag(parser) {
     const type = meta_tags.has(name)
         ? meta_tags.get(name)
         : (/[A-Z]/.test(name[0]) || name === 'svelte:self' || name === 'svelte:component') ? 'InlineComponent'
-            : name === 'title' && parent_is_head(parser.stack) ? 'Title'
-                : name === 'slot' && !parser.customElement ? 'Slot' : 'Element';
+            : name === 'svelte:fragment' ? 'SlotTemplate'
+                : name === 'title' && parent_is_head(parser.stack) ? 'Title'
+                    : name === 'slot' && !parser.customElement ? 'Slot' : 'Element';
     const element = {
         start,
         end: null,
@@ -15890,8 +15892,8 @@ function tag(parser) {
     }
     else if (name === 'textarea') {
         // special case
-        element.children = read_sequence(parser, () => parser.template.slice(parser.index, parser.index + 11) === '</textarea>');
-        parser.read(/<\/textarea>/);
+        element.children = read_sequence(parser, () => /^<\/textarea(\s[^>]*)?>/i.test(parser.template.slice(parser.index)));
+        parser.read(/^<\/textarea(\s[^>]*)?>/i);
         element.end = parser.index;
     }
     else if (name === 'script' || name === 'style') {
@@ -15931,6 +15933,8 @@ function read_tag_name(parser) {
     }
     if (parser.read(COMPONENT))
         return 'svelte:component';
+    if (parser.read(SLOT))
+        return 'svelte:fragment';
     const name = parser.read_until(/(\s|\/|>)/);
     if (meta_tags.has(name))
         return name;
@@ -15981,6 +15985,12 @@ function read_attribute(parser, unique_names) {
             const name = parser.read_identifier();
             parser.allow_whitespace();
             parser.eat('}', true);
+            if (name === null) {
+                parser.error({
+                    code: 'empty-attribute-shorthand',
+                    message: 'Attribute shorthand cannot be empty'
+                }, start);
+            }
             check_unique(name);
             return {
                 start,
@@ -17358,7 +17368,7 @@ function create_debugging_comment(node, component) {
             c -= 1;
     }
     let d;
-    if (node.type === 'InlineComponent' || node.type === 'Element') {
+    if (node.type === 'InlineComponent' || node.type === 'Element' || node.type === 'SlotTemplate') {
         if (node.children.length) {
             d = node.children[0].start;
             while (source[d - 1] !== '>')
@@ -17426,7 +17436,7 @@ class AwaitBlockBranch extends Wrapper {
         }
     }
     render_destructure() {
-        const props = this.value_contexts.map(prop => b `#ctx[${this.block.renderer.context_lookup.get(prop.key.name).index}] = ${prop.modifier(x `#ctx[${this.value_index}]`)};`);
+        const props = this.value_contexts.map(prop => b `#ctx[${this.block.renderer.context_lookup.get(prop.key.name).index}] = ${prop.default_modifier(prop.modifier(x `#ctx[${this.value_index}]`), name => this.renderer.reference(name))};`);
         const get_context = this.block.renderer.component.get_unique_name(`get_${this.status}_context`);
         this.block.renderer.blocks.push(b `
 			function ${get_context}(#ctx) {
@@ -17519,16 +17529,7 @@ class AwaitBlockWrapper extends Wrapper {
             block.chunks.intro.push(b `@transition_in(${info}.block);`);
         }
         const dependencies = this.node.expression.dynamic_dependencies();
-        let update_child_context;
-        if (this.then.value && this.catch.value) {
-            update_child_context = b `#child_ctx[${this.then.value_index}] = #child_ctx[${this.catch.value_index}] = ${info}.resolved;`;
-        }
-        else if (this.then.value) {
-            update_child_context = b `#child_ctx[${this.then.value_index}] = ${info}.resolved;`;
-        }
-        else if (this.catch.value) {
-            update_child_context = b `#child_ctx[${this.catch.value_index}] = ${info}.resolved;`;
-        }
+        const update_await_block_branch = b `@update_await_block_branch(${info}, #ctx, #dirty)`;
         if (dependencies.length > 0) {
             const condition = x `
 				${block.renderer.dirty(dependencies)} &&
@@ -17540,9 +17541,7 @@ class AwaitBlockWrapper extends Wrapper {
 					if (${condition}) {
 
 					} else {
-						const #child_ctx = #ctx.slice();
-						${update_child_context}
-						${info}.block.p(#child_ctx, #dirty);
+						${update_await_block_branch}
 					}
 				`);
             }
@@ -17555,11 +17554,7 @@ class AwaitBlockWrapper extends Wrapper {
         else {
             if (this.pending.block.has_update_method) {
                 block.chunks.update.push(b `
-					{
-						const #child_ctx = #ctx.slice();
-						${update_child_context}
-						${info}.block.p(#child_ctx, #dirty);
-					}
+					${update_await_block_branch}
 				`);
             }
         }
@@ -17592,7 +17587,7 @@ class EventHandlerWrapper {
             this.parent.renderer.add_to_context(node.handler_name.name);
             this.parent.renderer.component.partly_hoisted.push(b `
 				function ${node.handler_name.name}(event) {
-					@bubble($$self, event);
+					@bubble.call(this, $$self, event);
 				}
 			`);
         }
@@ -17800,8 +17795,7 @@ class EachBlockWrapper extends Wrapper {
                 property: this.index_name,
                 modifier: prop.modifier,
                 snippet: prop.modifier(x `${this.vars.each_block_value}[${this.index_name}]`),
-                store,
-                tail: prop.modifier(x `[${this.index_name}]`)
+                store
             });
         });
         if (this.node.index) {
@@ -17956,7 +17950,7 @@ class EachBlockWrapper extends Wrapper {
         if (this.else) {
             this.else.fragment.render(this.else.block, null, x `#nodes`);
         }
-        this.context_props = this.node.contexts.map(prop => b `child_ctx[${renderer.context_lookup.get(prop.key.name).index}] = ${prop.modifier(x `list[i]`)};`);
+        this.context_props = this.node.contexts.map(prop => b `child_ctx[${renderer.context_lookup.get(prop.key.name).index}] = ${prop.default_modifier(prop.modifier(x `list[i]`), name => renderer.context_lookup.has(name) ? x `child_ctx[${renderer.context_lookup.get(name).index}]` : { type: 'Identifier', name })};`);
         if (this.node.has_binding)
             this.context_props.push(b `child_ctx[${renderer.context_lookup.get(this.vars.each_block_value.name).index}] = list;`);
         if (this.node.has_binding || this.node.has_index_binding || this.node.index)
@@ -19451,6 +19445,37 @@ function renderer_invalidate(renderer, name, value, main_execution_context = fal
         .reduce((lhs, rhs) => x `${lhs}, ${rhs}`);
 }
 
+// adapted from klona v2.0.4 - https://github.com/lukeed/klona
+// (c) Luke Edwards, under MIT License
+// The sole modification is to skip function values in objects when cloning, so we don't break tests.
+function clone(val) {
+    let k, out, tmp;
+    if (Array.isArray(val)) {
+        out = Array(k = val.length);
+        while (k--)
+            out[k] = (tmp = val[k]) && typeof tmp === 'object' ? clone(tmp) : tmp;
+        return out;
+    }
+    if (Object.prototype.toString.call(val) === '[object Object]') {
+        out = {}; // null
+        for (k in val) {
+            if (k === '__proto__') {
+                Object.defineProperty(out, k, {
+                    value: clone(val[k]),
+                    configurable: true,
+                    enumerable: true,
+                    writable: true
+                });
+            }
+            else if (typeof val[k] !== 'function') { // MODIFICATION: skip functions
+                out[k] = (tmp = val[k]) && typeof tmp === 'object' ? clone(tmp) : tmp;
+            }
+        }
+        return out;
+    }
+    return val;
+}
+
 class Expression {
     constructor(component, owner, template_scope, info, lazy) {
         this.type = 'Expression';
@@ -19593,7 +19618,7 @@ class Expression {
         const node = walk(this.node, {
             enter(node, parent) {
                 if (node.type === 'Property' && node.shorthand) {
-                    node.value = JSON.parse(JSON.stringify(node.value));
+                    node.value = clone(node.value);
                     node.shorthand = false;
                 }
                 if (map.has(node)) {
@@ -19702,7 +19727,8 @@ class Expression {
                                 // child_ctx[x] = function () { ... }
                                 template_scope.get_owner(deps[0]).contexts.push({
                                     key: func_id,
-                                    modifier: () => func_expression
+                                    modifier: () => func_expression,
+                                    default_modifier: node => node
                                 });
                                 this.replace(block.renderer.reference(func_id));
                             }
@@ -19860,7 +19886,11 @@ class RawMustacheTagWrapper extends Tag {
             block.add_variable(html_tag);
             const { init } = this.rename_this_method(block, content => x `${html_tag}.p(${content})`);
             const update_anchor = needs_anchor ? html_anchor : this.next ? this.next.var : 'null';
-            block.chunks.hydrate.push(b `${html_tag} = new @HtmlTag(${update_anchor});`);
+            block.chunks.create.push(b `${html_tag} = new @HtmlTag();`);
+            if (this.renderer.options.hydratable) {
+                block.chunks.claim.push(b `${html_tag} = @claim_html_tag(${_parent_nodes});`);
+            }
+            block.chunks.hydrate.push(b `${html_tag}.a = ${update_anchor};`);
             block.chunks.mount.push(b `${html_tag}.m(${init}, ${parent_node || '#target'}, ${parent_node ? null : '#anchor'});`);
             if (needs_anchor) {
                 block.add_element(html_anchor, x `@empty()`, x `@empty()`, parent_node);
@@ -19870,139 +19900,6 @@ class RawMustacheTagWrapper extends Tag {
             }
         }
     }
-}
-
-function get_slot_definition(block, scope, lets) {
-    if (lets.length === 0)
-        return { block, scope };
-    const context_input = {
-        type: 'ObjectPattern',
-        properties: lets.map(l => ({
-            type: 'Property',
-            kind: 'init',
-            key: l.name,
-            value: l.value || l.name
-        }))
-    };
-    const properties = [];
-    const value_map = new Map();
-    lets.forEach(l => {
-        let value;
-        if (l.names.length > 1) {
-            // more than one, probably destructuring
-            const unique_name = block.get_unique_name(l.names.join('_')).name;
-            value_map.set(l.value, unique_name);
-            value = { type: 'Identifier', name: unique_name };
-        }
-        else {
-            value = l.value || l.name;
-        }
-        properties.push({
-            type: 'Property',
-            kind: 'init',
-            key: l.name,
-            value
-        });
-    });
-    const changes_input = {
-        type: 'ObjectPattern',
-        properties
-    };
-    const names = new Set();
-    const names_lookup = new Map();
-    lets.forEach(l => {
-        l.names.forEach(name => {
-            names.add(name);
-            if (value_map.has(l.value)) {
-                names_lookup.set(name, value_map.get(l.value));
-            }
-        });
-    });
-    const context = {
-        type: 'ObjectExpression',
-        properties: Array.from(names).map(name => p `${block.renderer.context_lookup.get(name).index}: ${name}`)
-    };
-    const { context_lookup } = block.renderer;
-    // i am well aware that this code is gross
-    // TODO: context-overflow make it less gross
-    const changes = {
-        type: 'ParenthesizedExpression',
-        get expression() {
-            if (block.renderer.context_overflow) {
-                const grouped = [];
-                Array.from(names).forEach(name => {
-                    const i = context_lookup.get(name).index.value;
-                    const g = Math.floor(i / 31);
-                    const lookup_name = names_lookup.has(name) ? names_lookup.get(name) : name;
-                    if (!grouped[g])
-                        grouped[g] = [];
-                    grouped[g].push({ name: lookup_name, n: i % 31 });
-                });
-                const elements = [];
-                for (let g = 0; g < grouped.length; g += 1) {
-                    elements[g] = grouped[g]
-                        ? grouped[g]
-                            .map(({ name, n }) => x `${name} ? ${1 << n} : 0`)
-                            .reduce((lhs, rhs) => x `${lhs} | ${rhs}`)
-                        : x `0`;
-                }
-                return {
-                    type: 'ArrayExpression',
-                    elements
-                };
-            }
-            return Array.from(names)
-                .map(name => {
-                const lookup_name = names_lookup.has(name) ? names_lookup.get(name) : name;
-                const i = context_lookup.get(name).index.value;
-                return x `${lookup_name} ? ${1 << i} : 0`;
-            })
-                .reduce((lhs, rhs) => x `${lhs} | ${rhs}`);
-        }
-    };
-    return {
-        block,
-        scope,
-        get_context: x `${context_input} => ${context}`,
-        get_changes: x `${changes_input} => ${changes}`
-    };
-}
-
-function create_slot_block(attribute, element, block) {
-    const owner = find_slot_owner(element.parent);
-    if (owner && owner.node.type === 'InlineComponent') {
-        const name = attribute.get_static_value();
-        if (!owner.slots.has(name)) {
-            const child_block = block.child({
-                comment: create_debugging_comment(element.node, element.renderer.component),
-                name: element.renderer.component.get_unique_name(`create_${sanitize(name)}_slot`),
-                type: 'slot'
-            });
-            const { scope, lets } = element.node;
-            const seen = new Set(lets.map(l => l.name.name));
-            owner.node.lets.forEach(l => {
-                if (!seen.has(l.name.name))
-                    lets.push(l);
-            });
-            owner.slots.set(name, get_slot_definition(child_block, scope, lets));
-            element.renderer.blocks.push(child_block);
-        }
-        element.slot_block = owner.slots.get(name).block;
-        return element.slot_block;
-    }
-    return block;
-}
-function find_slot_owner(owner) {
-    while (owner) {
-        if (owner.node.type === 'InlineComponent') {
-            break;
-        }
-        if (owner.node.type === 'Element' && /-/.test(owner.node.name)) {
-            break;
-        }
-        owner = owner.parent;
-    }
-    return owner;
 }
 
 const events = [
@@ -20103,9 +20000,6 @@ class ElementWrapper extends Wrapper {
             });
         }
         this.attributes = this.node.attributes.map(attribute => {
-            if (attribute.name === 'slot') {
-                block = create_slot_block(attribute, this, block);
-            }
             if (attribute.name === 'style') {
                 return new StyleAttributeWrapper(this, block, attribute);
             }
@@ -20153,21 +20047,11 @@ class ElementWrapper extends Wrapper {
             }
         }
         this.fragment = new FragmentWrapper(renderer, block, node.children, this, strip_whitespace, next_sibling);
-        if (this.slot_block) {
-            block.parent.add_dependencies(block.dependencies);
-            // appalling hack
-            const index = block.parent.wrappers.indexOf(this);
-            block.parent.wrappers.splice(index, 1);
-            block.wrappers.push(this);
-        }
     }
     render(block, parent_node, parent_nodes) {
         const { renderer } = this;
         if (this.node.name === 'noscript')
             return;
-        if (this.slot_block) {
-            block = this.slot_block;
-        }
         const node = this.var;
         const nodes = parent_nodes && block.get_unique_name(`${this.var.name}_nodes`); // if we're in unclaimable territory, i.e. <head>, parent_nodes is null
         const children = x `@children(${this.node.name === 'template' ? x `${node}.content` : node})`;
@@ -20268,8 +20152,8 @@ class ElementWrapper extends Wrapper {
         return x `@element("${name}")`;
     }
     get_claim_statement(nodes) {
-        const attributes = this.node.attributes
-            .filter((attr) => attr.type === 'Attribute')
+        const attributes = this.attributes
+            .filter((attr) => !(attr instanceof SpreadAttributeWrapper) && !attr.property_name)
             .map((attr) => p `${attr.name}: true`);
         const name = this.node.namespace
             ? this.node.name
@@ -20962,7 +20846,7 @@ class IfBlockWrapper extends Wrapper {
 			`);
         }
         block.chunks.init.push(b `
-			let ${current_block_type} = ${select_block_type}(#ctx, ${this.get_initial_dirty_bit()});
+			let ${current_block_type} = ${select_block_type}(#ctx, ${this.renderer.get_initial_dirty()});
 			let ${name} = ${get_block};
 		`);
         const initial_mount_node = parent_node || '#target';
@@ -21066,13 +20950,13 @@ class IfBlockWrapper extends Wrapper {
 		`);
         if (has_else) {
             block.chunks.init.push(b `
-				${current_block_type_index} = ${select_block_type}(#ctx, ${this.get_initial_dirty_bit()});
+				${current_block_type_index} = ${select_block_type}(#ctx, ${this.renderer.get_initial_dirty()});
 				${name} = ${if_blocks}[${current_block_type_index}] = ${if_block_creators}[${current_block_type_index}](#ctx);
 			`);
         }
         else {
             block.chunks.init.push(b `
-				if (~(${current_block_type_index} = ${select_block_type}(#ctx, ${this.get_initial_dirty_bit()}))) {
+				if (~(${current_block_type_index} = ${select_block_type}(#ctx, ${this.renderer.get_initial_dirty()}))) {
 					${name} = ${if_blocks}[${current_block_type_index}] = ${if_block_creators}[${current_block_type_index}](#ctx);
 				}
 			`);
@@ -21219,22 +21103,6 @@ class IfBlockWrapper extends Wrapper {
 			`);
         }
     }
-    get_initial_dirty_bit() {
-        const _this = this;
-        // TODO: context-overflow make it less gross
-        const val = x `-1`;
-        return {
-            get type() {
-                return _this.renderer.context_overflow ? 'ArrayExpression' : 'UnaryExpression';
-            },
-            // as [-1]
-            elements: [val],
-            // as -1
-            operator: val.operator,
-            prefix: val.prefix,
-            argument: val.argument
-        };
-    }
 }
 
 class KeyBlockWrapper extends Wrapper {
@@ -21321,6 +21189,131 @@ class KeyBlockWrapper extends Wrapper {
     }
 }
 
+function get_slot_definition(block, scope, lets) {
+    if (lets.length === 0)
+        return { block, scope };
+    const context_input = {
+        type: 'ObjectPattern',
+        properties: lets.map(l => ({
+            type: 'Property',
+            kind: 'init',
+            key: l.name,
+            value: l.value || l.name
+        }))
+    };
+    const properties = [];
+    const value_map = new Map();
+    lets.forEach(l => {
+        let value;
+        if (l.names.length > 1) {
+            // more than one, probably destructuring
+            const unique_name = block.get_unique_name(l.names.join('_')).name;
+            value_map.set(l.value, unique_name);
+            value = { type: 'Identifier', name: unique_name };
+        }
+        else {
+            value = l.value || l.name;
+        }
+        properties.push({
+            type: 'Property',
+            kind: 'init',
+            key: l.name,
+            value
+        });
+    });
+    const changes_input = {
+        type: 'ObjectPattern',
+        properties
+    };
+    const names = new Set();
+    const names_lookup = new Map();
+    lets.forEach(l => {
+        l.names.forEach(name => {
+            names.add(name);
+            if (value_map.has(l.value)) {
+                names_lookup.set(name, value_map.get(l.value));
+            }
+        });
+    });
+    const context = {
+        type: 'ObjectExpression',
+        properties: Array.from(names).map(name => p `${block.renderer.context_lookup.get(name).index}: ${name}`)
+    };
+    const { context_lookup } = block.renderer;
+    // i am well aware that this code is gross
+    // TODO: context-overflow make it less gross
+    const changes = {
+        type: 'ParenthesizedExpression',
+        get expression() {
+            if (block.renderer.context_overflow) {
+                const grouped = [];
+                Array.from(names).forEach(name => {
+                    const i = context_lookup.get(name).index.value;
+                    const g = Math.floor(i / 31);
+                    const lookup_name = names_lookup.has(name) ? names_lookup.get(name) : name;
+                    if (!grouped[g])
+                        grouped[g] = [];
+                    grouped[g].push({ name: lookup_name, n: i % 31 });
+                });
+                const elements = [];
+                for (let g = 0; g < grouped.length; g += 1) {
+                    elements[g] = grouped[g]
+                        ? grouped[g]
+                            .map(({ name, n }) => x `${name} ? ${1 << n} : 0`)
+                            .reduce((lhs, rhs) => x `${lhs} | ${rhs}`)
+                        : x `0`;
+                }
+                return {
+                    type: 'ArrayExpression',
+                    elements
+                };
+            }
+            return Array.from(names)
+                .map(name => {
+                const lookup_name = names_lookup.has(name) ? names_lookup.get(name) : name;
+                const i = context_lookup.get(name).index.value;
+                return x `${lookup_name} ? ${1 << i} : 0`;
+            })
+                .reduce((lhs, rhs) => x `${lhs} | ${rhs}`);
+        }
+    };
+    return {
+        block,
+        scope,
+        get_context: x `${context_input} => ${context}`,
+        get_changes: x `${changes_input} => ${changes}`
+    };
+}
+
+class SlotTemplateWrapper extends Wrapper {
+    constructor(renderer, block, parent, node, strip_whitespace, next_sibling) {
+        super(renderer, block, parent, node);
+        const { scope, lets, slot_template_name } = this.node;
+        lets.forEach(l => {
+            extract_names(l.value || l.name).forEach(name => {
+                renderer.add_to_context(name, true);
+            });
+        });
+        this.block = block.child({
+            comment: create_debugging_comment(this.node, this.renderer.component),
+            name: this.renderer.component.get_unique_name(`create_${sanitize(slot_template_name)}_slot`),
+            type: 'slot'
+        });
+        this.renderer.blocks.push(this.block);
+        const seen = new Set(lets.map(l => l.name.name));
+        this.parent.node.lets.forEach(l => {
+            if (!seen.has(l.name.name))
+                lets.push(l);
+        });
+        this.parent.set_slot(slot_template_name, get_slot_definition(this.block, scope, lets));
+        this.fragment = new FragmentWrapper(renderer, this.block, node.type === 'SlotTemplate' ? node.children : [node], this, strip_whitespace, next_sibling);
+        this.block.parent.add_dependencies(this.block.dependencies);
+    }
+    render() {
+        this.fragment.render(this.block, null, x `#nodes`);
+    }
+}
+
 function string_to_member_expression(name) {
     const parts = name.split('.');
     let node = {
@@ -21341,6 +21334,7 @@ class InlineComponentWrapper extends Wrapper {
     constructor(renderer, block, parent, node, strip_whitespace, next_sibling) {
         super(renderer, block, parent, node);
         this.slots = new Map();
+        this.children = [];
         this.cannot_use_innerhtml();
         this.not_static_content();
         if (this.node.expression) {
@@ -21360,6 +21354,9 @@ class InlineComponentWrapper extends Wrapper {
                 block.add_dependencies(handler.expression.dependencies);
             }
         });
+        this.node.css_custom_properties.forEach(attr => {
+            block.add_dependencies(attr.dependencies);
+        });
         this.var = {
             type: 'Identifier',
             name: (this.node.name === 'svelte:self' ? renderer.component.name.name :
@@ -21372,24 +21369,18 @@ class InlineComponentWrapper extends Wrapper {
                     renderer.add_to_context(name, true);
                 });
             });
-            const default_slot = block.child({
-                comment: create_debugging_comment(node, renderer.component),
-                name: renderer.component.get_unique_name('create_default_slot'),
-                type: 'slot'
-            });
-            this.renderer.blocks.push(default_slot);
-            this.slots.set('default', get_slot_definition(default_slot, this.node.scope, this.node.lets));
-            this.fragment = new FragmentWrapper(renderer, default_slot, node.children, this, strip_whitespace, next_sibling);
-            const dependencies = new Set();
-            // TODO is this filtering necessary? (I *think* so)
-            default_slot.dependencies.forEach(name => {
-                if (!this.node.scope.is_let(name)) {
-                    dependencies.add(name);
-                }
-            });
-            block.add_dependencies(dependencies);
+            this.children = this.node.children.map(child => new SlotTemplateWrapper(renderer, block, this, child, strip_whitespace, next_sibling));
         }
         block.add_outro();
+    }
+    set_slot(name, slot_definition) {
+        if (this.slots.has(name)) {
+            if (name === 'default') {
+                throw new Error('Found elements without slot attribute when using slot="default"');
+            }
+            throw new Error(`Duplicate slot name "${name}" in <${this.node.name}>`);
+        }
+        this.slots.set(name, slot_definition);
     }
     warn_if_reactive() {
         const { name } = this.node;
@@ -21413,13 +21404,10 @@ class InlineComponentWrapper extends Wrapper {
         const component_opts = x `{}`;
         const statements = [];
         const updates = [];
-        if (this.fragment) {
+        this.children.forEach((child) => {
             this.renderer.add_to_context('$$scope', true);
-            const default_slot = this.slots.get('default');
-            this.fragment.nodes.forEach((child) => {
-                child.render(default_slot.block, null, x `#nodes`);
-            });
-        }
+            child.render(block, null, x `#nodes`);
+        });
         let props;
         const name_changes = block.get_unique_name(`${name.name}_changes`);
         const uses_spread = !!this.node.attributes.find(a => a.is_spread);
@@ -21429,6 +21417,11 @@ class InlineComponentWrapper extends Wrapper {
                 this.renderer.remove_block(this.slots.get(slot).block);
                 this.slots.delete(slot);
             }
+        }
+        const has_css_custom_properties = this.node.css_custom_properties.length > 0;
+        const css_custom_properties_wrapper = has_css_custom_properties ? block.get_unique_name('div') : null;
+        if (has_css_custom_properties) {
+            block.add_variable(css_custom_properties_wrapper);
         }
         const initial_props = this.slots.size > 0
             ? [
@@ -21464,7 +21457,7 @@ class InlineComponentWrapper extends Wrapper {
             // APIs
             component_opts.properties.push(p `$$inline: true`);
         }
-        const fragment_dependencies = new Set(this.fragment ? ['$$scope'] : []);
+        const fragment_dependencies = new Set(this.slots.size ? ['$$scope'] : []);
         this.slots.forEach(slot => {
             slot.block.dependencies.forEach(name => {
                 const is_let = slot.scope.is_let(name);
@@ -21715,11 +21708,60 @@ class InlineComponentWrapper extends Wrapper {
 				${munged_bindings}
 				${munged_handlers}
 			`);
+            if (has_css_custom_properties) {
+                block.chunks.create.push(b `${css_custom_properties_wrapper} = @element("div");`);
+                block.chunks.hydrate.push(b `@set_style(${css_custom_properties_wrapper}, "display", "contents");`);
+                this.node.css_custom_properties.forEach(attr => {
+                    const dependencies = attr.get_dependencies();
+                    const should_cache = attr.should_cache();
+                    const last = should_cache && block.get_unique_name(`${attr.name.replace(/[^a-zA-Z_$]/g, '_')}_last`);
+                    if (should_cache)
+                        block.add_variable(last);
+                    const value = attr.get_value(block);
+                    const init = should_cache ? x `${last} = ${value}` : value;
+                    block.chunks.hydrate.push(b `@set_style(${css_custom_properties_wrapper}, "${attr.name}", ${init});`);
+                    if (dependencies.length > 0) {
+                        let condition = block.renderer.dirty(dependencies);
+                        if (should_cache)
+                            condition = x `${condition} && (${last} !== (${last} = ${value}))`;
+                        block.chunks.update.push(b `
+							if (${condition}) {
+								@set_style(${css_custom_properties_wrapper}, "${attr.name}", ${should_cache ? last : value});
+							}
+						`);
+                    }
+                });
+            }
             block.chunks.create.push(b `@create_component(${name}.$$.fragment);`);
             if (parent_nodes && this.renderer.options.hydratable) {
-                block.chunks.claim.push(b `@claim_component(${name}.$$.fragment, ${parent_nodes});`);
+                let nodes = parent_nodes;
+                if (has_css_custom_properties) {
+                    nodes = block.get_unique_name(`${css_custom_properties_wrapper.name}_nodes`);
+                    block.chunks.claim.push(b `
+						${css_custom_properties_wrapper} = @claim_element(${parent_nodes}, "DIV", { style: true })
+						var ${nodes} = @children(${css_custom_properties_wrapper});
+					`);
+                }
+                block.chunks.claim.push(b `@claim_component(${name}.$$.fragment, ${nodes});`);
             }
-            block.chunks.mount.push(b `@mount_component(${name}, ${parent_node || '#target'}, ${parent_node ? 'null' : '#anchor'});`);
+            if (has_css_custom_properties) {
+                if (parent_node) {
+                    block.chunks.mount.push(b `@append(${parent_node}, ${css_custom_properties_wrapper})`);
+                    if (is_head(parent_node)) {
+                        block.chunks.destroy.push(b `@detach(${css_custom_properties_wrapper});`);
+                    }
+                }
+                else {
+                    block.chunks.mount.push(b `@insert(#target, ${css_custom_properties_wrapper}, #anchor);`);
+                    // TODO we eventually need to consider what happens to elements
+                    // that belong to the same outgroup as an outroing element...
+                    block.chunks.destroy.push(b `if (detaching) @detach(${css_custom_properties_wrapper});`);
+                }
+                block.chunks.mount.push(b `@mount_component(${name}, ${css_custom_properties_wrapper}, null);`);
+            }
+            else {
+                block.chunks.mount.push(b `@mount_component(${name}, ${parent_node || '#target'}, ${parent_node ? 'null' : '#anchor'});`);
+            }
             block.chunks.intro.push(b `
 				@transition_in(${name}.$$.fragment, #local);
 			`);
@@ -21787,9 +21829,6 @@ class SlotWrapper extends Wrapper {
                 type: 'fallback'
             });
             renderer.blocks.push(this.fallback);
-        }
-        if (this.node.values.has('slot')) {
-            block = create_slot_block(this.node.values.get('slot'), this, block);
         }
         this.fragment = new FragmentWrapper(renderer, this.fallback, node.children, this, strip_whitespace, next_sibling);
         this.node.values.forEach(attribute => {
@@ -21871,18 +21910,30 @@ class SlotWrapper extends Wrapper {
         const fallback_dynamic_dependencies = has_fallback
             ? Array.from(this.fallback.dependencies).filter((name) => this.is_dependency_dynamic(name))
             : [];
+        let condition = renderer.dirty(dynamic_dependencies);
+        if (block.has_outros) {
+            condition = x `!#current || ${condition}`;
+        }
+        let dirty = x `#dirty`;
+        if (block.has_outros) {
+            dirty = x `!#current ? ${renderer.get_initial_dirty()} : ${dirty}`;
+        }
         const slot_update = get_slot_spread_changes_fn ? b `
-			if (${slot}.p && ${renderer.dirty(dynamic_dependencies)}) {
-				@update_slot_spread(${slot}, ${slot_definition}, #ctx, ${renderer.reference('$$scope')}, #dirty, ${get_slot_changes_fn}, ${get_slot_spread_changes_fn}, ${get_slot_context_fn});
+			if (${slot}.p && ${condition}) {
+				@update_slot_spread(${slot}, ${slot_definition}, #ctx, ${renderer.reference('$$scope')}, ${dirty}, ${get_slot_changes_fn}, ${get_slot_spread_changes_fn}, ${get_slot_context_fn});
 			}
 		` : b `
-			if (${slot}.p && ${renderer.dirty(dynamic_dependencies)}) {
-				@update_slot(${slot}, ${slot_definition}, #ctx, ${renderer.reference('$$scope')}, #dirty, ${get_slot_changes_fn}, ${get_slot_context_fn});
+			if (${slot}.p && ${condition}) {
+				@update_slot(${slot}, ${slot_definition}, #ctx, ${renderer.reference('$$scope')}, ${dirty}, ${get_slot_changes_fn}, ${get_slot_context_fn});
 			}
 		`;
+        let fallback_condition = renderer.dirty(fallback_dynamic_dependencies);
+        if (block.has_outros) {
+            fallback_condition = x `!#current || ${fallback_condition}`;
+        }
         const fallback_update = has_fallback && fallback_dynamic_dependencies.length > 0 && b `
-			if (${slot_or_fallback} && ${slot_or_fallback}.p && ${renderer.dirty(fallback_dynamic_dependencies)}) {
-				${slot_or_fallback}.p(#ctx, #dirty);
+			if (${slot_or_fallback} && ${slot_or_fallback}.p && ${fallback_condition}) {
+				${slot_or_fallback}.p(#ctx, ${dirty});
 			}
 		`;
         if (fallback_update) {
@@ -22137,6 +22188,7 @@ const wrappers = {
     Options: null,
     RawMustacheTag: RawMustacheTagWrapper,
     Slot: SlotWrapper,
+    SlotTemplate: SlotTemplateWrapper,
     Text: TextWrapper,
     Title: TitleWrapper,
     Window: WindowWrapper
@@ -22382,6 +22434,30 @@ class Renderer {
                 }
                 return x `${dirty} & /*${names.join(', ')}*/ ${bitmask[0].n}`;
             }
+        };
+    }
+    // NOTE: this method may be called before this.context_overflow / this.context is fully defined
+    // therefore, they can only be evaluated later in a getter function
+    get_initial_dirty() {
+        const _this = this;
+        // TODO: context-overflow make it less gross
+        const val = x `-1`;
+        return {
+            get type() {
+                return _this.context_overflow ? 'ArrayExpression' : 'UnaryExpression';
+            },
+            // as [-1]
+            get elements() {
+                const elements = [];
+                for (let i = 0; i < _this.context.length; i += 31) {
+                    elements.push(val);
+                }
+                return elements;
+            },
+            // as -1
+            operator: val.operator,
+            prefix: val.prefix,
+            argument: val.argument
         };
     }
     reference(node) {
@@ -23872,7 +23948,7 @@ function dom(component, options) {
 
 					${css.code && b `this.shadowRoot.innerHTML = \`<style>${css.code.replace(/\\/g, '\\\\')}${options.dev ? `\n/*# sourceMappingURL=${css.map.toUrl()} */` : ''}</style>\`;`}
 
-					@init(this, { target: this.shadowRoot, props: ${init_props} }, ${definition}, ${has_create_fragment ? 'create_fragment' : 'null'}, ${not_equal}, ${prop_indexes}, ${dirty});
+					@init(this, { target: this.shadowRoot, props: ${init_props}, customElement: true }, ${definition}, ${has_create_fragment ? 'create_fragment' : 'null'}, ${not_equal}, ${prop_indexes}, ${dirty});
 
 					${dev_props_check}
 
@@ -24017,25 +24093,6 @@ function get_attribute_value(attribute) {
         .reduce((lhs, rhs) => x `${lhs} + ${rhs}`);
 }
 
-function get_slot_scope(lets) {
-    if (lets.length === 0)
-        return null;
-    return {
-        type: 'ObjectPattern',
-        properties: lets.map(l => {
-            return {
-                type: 'Property',
-                kind: 'init',
-                method: false,
-                shorthand: false,
-                computed: false,
-                key: l.name,
-                value: l.value || l.name
-            };
-        })
-    };
-}
-
 // source: https://html.spec.whatwg.org/multipage/indices.html
 const boolean_attributes = new Set([
     'allowfullscreen',
@@ -24131,11 +24188,6 @@ function Element (node, renderer, options) {
     const contenteditable = (node.name !== 'textarea' &&
         node.name !== 'input' &&
         node.attributes.some((attribute) => attribute.name === 'contenteditable'));
-    const slot = node.get_static_attribute_value('slot');
-    const nearest_inline_component = node.find_nearest(/InlineComponent/);
-    if (slot && nearest_inline_component) {
-        renderer.push();
-    }
     renderer.add_string(`<${node.name}`);
     const class_expression_list = node.classes.map(class_directive => {
         const { expression, name } = class_directive;
@@ -24152,24 +24204,29 @@ function Element (node, renderer, options) {
         const args = [];
         node.attributes.forEach(attribute => {
             if (attribute.is_spread) {
-                args.push(attribute.expression.node);
+                args.push(x `@escape_object(${attribute.expression.node})`);
             }
             else {
+                const attr_name = node.namespace === namespaces.foreign ? attribute.name : fix_attribute_casing(attribute.name);
                 const name = attribute.name.toLowerCase();
                 if (name === 'value' && node.name.toLowerCase() === 'textarea') {
                     node_contents = get_attribute_value(attribute);
                 }
                 else if (attribute.is_true) {
-                    args.push(x `{ ${attribute.name}: true }`);
+                    args.push(x `{ ${attr_name}: true }`);
                 }
                 else if (boolean_attributes.has(name) &&
                     attribute.chunks.length === 1 &&
                     attribute.chunks[0].type !== 'Text') {
                     // a boolean attribute with one non-Text chunk
-                    args.push(x `{ ${attribute.name}: ${attribute.chunks[0].node} || null }`);
+                    args.push(x `{ ${attr_name}: ${attribute.chunks[0].node} || null }`);
+                }
+                else if (attribute.chunks.length === 1 && attribute.chunks[0].type !== 'Text') {
+                    const snippet = attribute.chunks[0].node;
+                    args.push(x `{ ${attr_name}: @escape_attribute_value(${snippet}) }`);
                 }
                 else {
-                    args.push(x `{ ${attribute.name}: ${get_attribute_value(attribute)} }`);
+                    args.push(x `{ ${attr_name}: ${get_attribute_value(attribute)} }`);
                 }
             }
         });
@@ -24179,31 +24236,32 @@ function Element (node, renderer, options) {
         let add_class_attribute = !!class_expression;
         node.attributes.forEach(attribute => {
             const name = attribute.name.toLowerCase();
+            const attr_name = node.namespace === namespaces.foreign ? attribute.name : fix_attribute_casing(attribute.name);
             if (name === 'value' && node.name.toLowerCase() === 'textarea') {
                 node_contents = get_attribute_value(attribute);
             }
             else if (attribute.is_true) {
-                renderer.add_string(` ${attribute.name}`);
+                renderer.add_string(` ${attr_name}`);
             }
             else if (boolean_attributes.has(name) &&
                 attribute.chunks.length === 1 &&
                 attribute.chunks[0].type !== 'Text') {
                 // a boolean attribute with one non-Text chunk
                 renderer.add_string(' ');
-                renderer.add_expression(x `${attribute.chunks[0].node} ? "${attribute.name}" : ""`);
+                renderer.add_expression(x `${attribute.chunks[0].node} ? "${attr_name}" : ""`);
             }
             else if (name === 'class' && class_expression) {
                 add_class_attribute = false;
-                renderer.add_string(` ${attribute.name}="`);
+                renderer.add_string(` ${attr_name}="`);
                 renderer.add_expression(x `[${get_class_attribute_value(attribute)}, ${class_expression}].join(' ').trim()`);
                 renderer.add_string('"');
             }
             else if (attribute.chunks.length === 1 && attribute.chunks[0].type !== 'Text') {
                 const snippet = attribute.chunks[0].node;
-                renderer.add_expression(x `@add_attribute("${attribute.name}", ${snippet}, ${boolean_attributes.has(name) ? 1 : 0})`);
+                renderer.add_expression(x `@add_attribute("${attr_name}", ${snippet}, ${boolean_attributes.has(name) ? 1 : 0})`);
             }
             else {
-                renderer.add_string(` ${attribute.name}="`);
+                renderer.add_string(` ${attr_name}="`);
                 renderer.add_expression((name === 'class' ? get_class_attribute_value : get_attribute_value)(attribute));
                 renderer.add_string('"');
             }
@@ -24250,22 +24308,6 @@ function Element (node, renderer, options) {
             renderer.add_string(`</${node.name}>`);
         }
     }
-    else if (slot && nearest_inline_component) {
-        renderer.render(children, options);
-        if (!is_void(node.name)) {
-            renderer.add_string(`</${node.name}>`);
-        }
-        const lets = node.lets;
-        const seen = new Set(lets.map(l => l.name.name));
-        nearest_inline_component.lets.forEach(l => {
-            if (!seen.has(l.name.name))
-                lets.push(l);
-        });
-        options.slot_scopes.set(slot, {
-            input: get_slot_scope(node.lets),
-            output: renderer.pop()
-        });
-    }
     else {
         renderer.render(children, options);
         if (!is_void(node.name)) {
@@ -24282,8 +24324,12 @@ function Head (node, renderer, options) {
     renderer.add_expression(x `$$result.head += ${result}, ""`);
 }
 
-function HtmlTag (node, renderer, _options) {
+function HtmlTag (node, renderer, options) {
+    if (options.hydratable)
+        renderer.add_string('<!-- HTML_TAG_START -->');
     renderer.add_expression(node.expression.node);
+    if (options.hydratable)
+        renderer.add_string('<!-- HTML_TAG_END -->');
 }
 
 function IfBlock (node, renderer, options) {
@@ -24350,36 +24396,55 @@ function InlineComponent (node, renderer, options) {
             ? x `(${node.expression.node}) || @missing_component`
             : node.name.split('.').reduce(((lhs, rhs) => x `${lhs}.${rhs}`)));
     const slot_fns = [];
-    const children = remove_whitespace_children(node.children, node.next);
+    const children = node.children;
     if (children.length) {
         const slot_scopes = new Map();
-        renderer.push();
         renderer.render(children, Object.assign({}, options, {
             slot_scopes
         }));
-        slot_scopes.set('default', {
-            input: get_slot_scope(node.lets),
-            output: renderer.pop()
-        });
         slot_scopes.forEach(({ input, output }, name) => {
-            if (!is_empty_template_literal(output)) {
-                slot_fns.push(p `${name}: (${input}) => ${output}`);
-            }
+            slot_fns.push(p `${name}: (${input}) => ${output}`);
         });
     }
     const slots = x `{
 		${slot_fns}
 	}`;
+    if (node.css_custom_properties.length > 0) {
+        renderer.add_string('<div style="display: contents;');
+        node.css_custom_properties.forEach(attr => {
+            renderer.add_string(` ${attr.name}:`);
+            renderer.add_expression(get_attribute_value(attr));
+            renderer.add_string(';');
+        });
+        renderer.add_string('">');
+    }
     renderer.add_expression(x `@validate_component(${expression}, "${node.name}").$$render($$result, ${props}, ${bindings}, ${slots})`);
-}
-function is_empty_template_literal(template_literal) {
-    return (template_literal.expressions.length === 0 &&
-        template_literal.quasis.length === 1 &&
-        template_literal.quasis[0].value.raw === '');
+    if (node.css_custom_properties.length > 0) {
+        renderer.add_string('</div>');
+    }
 }
 
 function KeyBlock (node, renderer, options) {
     renderer.render(node.children, options);
+}
+
+function get_slot_scope(lets) {
+    if (lets.length === 0)
+        return null;
+    return {
+        type: 'ObjectPattern',
+        properties: lets.map(l => {
+            return {
+                type: 'Property',
+                kind: 'init',
+                method: false,
+                shorthand: false,
+                computed: false,
+                key: l.name,
+                value: l.value || l.name
+            };
+        })
+    };
 }
 
 function Slot (node, renderer, options) {
@@ -24411,7 +24476,1839 @@ function Slot (node, renderer, options) {
     }
 }
 
-function Tag$1 (node, renderer, _options) {
+class AbstractBlock extends Node$1 {
+    constructor(component, parent, scope, info) {
+        super(component, parent, scope, info);
+    }
+    warn_if_empty_block() {
+        if (!this.children || this.children.length > 1)
+            return;
+        const child = this.children[0];
+        if (!child || (child.type === 'Text' && !/[^ \r\n\f\v\t]/.test(child.data))) {
+            this.component.warn(this, {
+                code: 'empty-block',
+                message: 'Empty block'
+            });
+        }
+    }
+}
+
+class PendingBlock extends AbstractBlock {
+    constructor(component, parent, scope, info) {
+        super(component, parent, scope, info);
+        this.children = map_children(component, parent, scope, info.children);
+        if (!info.skip) {
+            this.warn_if_empty_block();
+        }
+    }
+}
+
+class ThenBlock extends AbstractBlock {
+    constructor(component, parent, scope, info) {
+        super(component, parent, scope, info);
+        this.scope = scope.child();
+        if (parent.then_node) {
+            parent.then_contexts.forEach(context => {
+                this.scope.add(context.key.name, parent.expression.dependencies, this);
+            });
+        }
+        this.children = map_children(component, parent, this.scope, info.children);
+        if (!info.skip) {
+            this.warn_if_empty_block();
+        }
+    }
+}
+
+class CatchBlock extends AbstractBlock {
+    constructor(component, parent, scope, info) {
+        super(component, parent, scope, info);
+        this.scope = scope.child();
+        if (parent.catch_node) {
+            parent.catch_contexts.forEach(context => {
+                this.scope.add(context.key.name, parent.expression.dependencies, this);
+            });
+        }
+        this.children = map_children(component, parent, this.scope, info.children);
+        if (!info.skip) {
+            this.warn_if_empty_block();
+        }
+    }
+}
+
+function unpack_destructuring(contexts, node, modifier = node => node, default_modifier = node => node) {
+    if (!node)
+        return;
+    if (node.type === 'Identifier') {
+        contexts.push({
+            key: node,
+            modifier,
+            default_modifier
+        });
+    }
+    else if (node.type === 'RestElement') {
+        contexts.push({
+            key: node.argument,
+            modifier,
+            default_modifier
+        });
+    }
+    else if (node.type === 'ArrayPattern') {
+        node.elements.forEach((element, i) => {
+            if (element && element.type === 'RestElement') {
+                unpack_destructuring(contexts, element, node => x `${modifier(node)}.slice(${i})`, default_modifier);
+            }
+            else if (element && element.type === 'AssignmentPattern') {
+                const n = contexts.length;
+                unpack_destructuring(contexts, element.left, node => x `${modifier(node)}[${i}]`, (node, to_ctx) => x `${node} !== undefined ? ${node} : ${update_reference(contexts, n, element.right, to_ctx)}`);
+            }
+            else {
+                unpack_destructuring(contexts, element, node => x `${modifier(node)}[${i}]`, default_modifier);
+            }
+        });
+    }
+    else if (node.type === 'ObjectPattern') {
+        const used_properties = [];
+        node.properties.forEach((property) => {
+            if (property.type === 'RestElement') {
+                unpack_destructuring(contexts, property.argument, node => x `@object_without_properties(${modifier(node)}, [${used_properties}])`, default_modifier);
+            }
+            else {
+                const key = property.key;
+                const value = property.value;
+                used_properties.push(x `"${key.name}"`);
+                if (value.type === 'AssignmentPattern') {
+                    const n = contexts.length;
+                    unpack_destructuring(contexts, value.left, node => x `${modifier(node)}.${key.name}`, (node, to_ctx) => x `${node} !== undefined ? ${node} : ${update_reference(contexts, n, value.right, to_ctx)}`);
+                }
+                else {
+                    unpack_destructuring(contexts, value, node => x `${modifier(node)}.${key.name}`, default_modifier);
+                }
+            }
+        });
+    }
+}
+function update_reference(contexts, n, expression, to_ctx) {
+    const find_from_context = (node) => {
+        for (let i = n; i < contexts.length; i++) {
+            const { key } = contexts[i];
+            if (node.name === key.name) {
+                throw new Error(`Cannot access '${node.name}' before initialization`);
+            }
+        }
+        return to_ctx(node.name);
+    };
+    if (expression.type === 'Identifier') {
+        return find_from_context(expression);
+    }
+    // NOTE: avoid unnecessary deep clone?
+    expression = clone(expression);
+    walk(expression, {
+        enter(node, parent) {
+            if (isReference(node, parent)) {
+                this.replace(find_from_context(node));
+                this.skip();
+            }
+        }
+    });
+    return expression;
+}
+
+class AwaitBlock$1 extends Node$1 {
+    constructor(component, parent, scope, info) {
+        super(component, parent, scope, info);
+        this.expression = new Expression(component, this, scope, info.expression);
+        this.then_node = info.value;
+        this.catch_node = info.error;
+        if (this.then_node) {
+            this.then_contexts = [];
+            unpack_destructuring(this.then_contexts, info.value);
+        }
+        if (this.catch_node) {
+            this.catch_contexts = [];
+            unpack_destructuring(this.catch_contexts, info.error);
+        }
+        this.pending = new PendingBlock(component, this, scope, info.pending);
+        this.then = new ThenBlock(component, this, scope, info.then);
+        this.catch = new CatchBlock(component, this, scope, info.catch);
+    }
+}
+
+class EventHandler extends Node$1 {
+    constructor(component, parent, template_scope, info) {
+        super(component, parent, template_scope, info);
+        this.uses_context = false;
+        this.can_make_passive = false;
+        this.name = info.name;
+        this.modifiers = new Set(info.modifiers);
+        if (info.expression) {
+            this.expression = new Expression(component, this, template_scope, info.expression);
+            this.uses_context = this.expression.uses_context;
+            if (/FunctionExpression/.test(info.expression.type) && info.expression.params.length === 0) {
+                // TODO make this detection more accurate — if `event.preventDefault` isn't called, and
+                // `event` is passed to another function, we can make it passive
+                this.can_make_passive = true;
+            }
+            else if (info.expression.type === 'Identifier') {
+                let node = component.node_for_declaration.get(info.expression.name);
+                if (node) {
+                    if (node.type === 'VariableDeclaration') {
+                        // for `const handleClick = () => {...}`, we want the [arrow] function expression node
+                        const declarator = node.declarations.find(d => d.id.name === info.expression.name);
+                        node = declarator && declarator.init;
+                    }
+                    if (node && (node.type === 'FunctionExpression' || node.type === 'FunctionDeclaration' || node.type === 'ArrowFunctionExpression') && node.params.length === 0) {
+                        this.can_make_passive = true;
+                    }
+                }
+            }
+        }
+        else {
+            this.handler_name = component.get_unique_name(`${sanitize(this.name)}_handler`);
+        }
+    }
+    get reassigned() {
+        if (!this.expression) {
+            return false;
+        }
+        const node = this.expression.node;
+        if (/FunctionExpression/.test(node.type)) {
+            return false;
+        }
+        return this.expression.dynamic_dependencies().length > 0;
+    }
+}
+
+class Body extends Node$1 {
+    constructor(component, parent, scope, info) {
+        super(component, parent, scope, info);
+        this.handlers = [];
+        info.attributes.forEach((node) => {
+            if (node.type === 'EventHandler') {
+                this.handlers.push(new EventHandler(component, this, scope, node));
+            }
+        });
+    }
+}
+
+const pattern = /^\s*svelte-ignore\s+([\s\S]+)\s*$/m;
+class Comment$2 extends Node$1 {
+    constructor(component, parent, scope, info) {
+        super(component, parent, scope, info);
+        this.data = info.data;
+        const match = pattern.exec(this.data);
+        this.ignores = match ? match[1].split(/[^\S]/).map(x => x.trim()).filter(Boolean) : [];
+    }
+}
+
+class ElseBlock extends AbstractBlock {
+    constructor(component, parent, scope, info) {
+        super(component, parent, scope, info);
+        this.children = map_children(component, this, scope, info.children);
+        this.warn_if_empty_block();
+    }
+}
+
+class EachBlock$1 extends AbstractBlock {
+    constructor(component, parent, scope, info) {
+        super(component, parent, scope, info);
+        this.has_binding = false;
+        this.has_index_binding = false;
+        this.expression = new Expression(component, this, scope, info.expression);
+        this.context = info.context.name || 'each'; // TODO this is used to facilitate binding; currently fails with destructuring
+        this.context_node = info.context;
+        this.index = info.index;
+        this.scope = scope.child();
+        this.contexts = [];
+        unpack_destructuring(this.contexts, info.context);
+        this.contexts.forEach(context => {
+            this.scope.add(context.key.name, this.expression.dependencies, this);
+        });
+        if (this.index) {
+            // index can only change if this is a keyed each block
+            const dependencies = info.key ? this.expression.dependencies : new Set([]);
+            this.scope.add(this.index, dependencies, this);
+        }
+        this.key = info.key
+            ? new Expression(component, this, this.scope, info.key)
+            : null;
+        this.has_animation = false;
+        this.children = map_children(component, this, this.scope, info.children);
+        if (this.has_animation) {
+            if (this.children.length !== 1) {
+                const child = this.children.find(child => !!child.animation);
+                component.error(child.animation, {
+                    code: 'invalid-animation',
+                    message: 'An element that uses the animate directive must be the sole child of a keyed each block'
+                });
+            }
+        }
+        this.warn_if_empty_block();
+        this.else = info.else
+            ? new ElseBlock(component, this, this.scope, info.else)
+            : null;
+    }
+}
+
+class Attribute extends Node$1 {
+    constructor(component, parent, scope, info) {
+        super(component, parent, scope, info);
+        this.scope = scope;
+        if (info.type === 'Spread') {
+            this.name = null;
+            this.is_spread = true;
+            this.is_true = false;
+            this.expression = new Expression(component, this, scope, info.expression);
+            this.dependencies = this.expression.dependencies;
+            this.chunks = null;
+            this.is_static = false;
+        }
+        else {
+            this.name = info.name;
+            this.is_true = info.value === true;
+            this.is_static = true;
+            this.dependencies = new Set();
+            this.chunks = this.is_true
+                ? []
+                : info.value.map(node => {
+                    if (node.type === 'Text')
+                        return node;
+                    this.is_static = false;
+                    const expression = new Expression(component, this, scope, node.expression);
+                    add_to_set(this.dependencies, expression.dependencies);
+                    return expression;
+                });
+        }
+    }
+    get_dependencies() {
+        if (this.is_spread)
+            return this.expression.dynamic_dependencies();
+        const dependencies = new Set();
+        this.chunks.forEach(chunk => {
+            if (chunk.type === 'Expression') {
+                add_to_set(dependencies, chunk.dynamic_dependencies());
+            }
+        });
+        return Array.from(dependencies);
+    }
+    get_value(block) {
+        if (this.is_true)
+            return x `true`;
+        if (this.chunks.length === 0)
+            return x `""`;
+        if (this.chunks.length === 1) {
+            return this.chunks[0].type === 'Text'
+                ? string_literal(this.chunks[0].data)
+                : this.chunks[0].manipulate(block);
+        }
+        let expression = this.chunks
+            .map(chunk => chunk.type === 'Text' ? string_literal(chunk.data) : chunk.manipulate(block))
+            .reduce((lhs, rhs) => x `${lhs} + ${rhs}`);
+        if (this.chunks[0].type !== 'Text') {
+            expression = x `"" + ${expression}`;
+        }
+        return expression;
+    }
+    get_static_value() {
+        if (!this.is_static)
+            return null;
+        return this.is_true
+            ? true
+            : this.chunks[0]
+                // method should be called only when `is_static = true`
+                ? this.chunks[0].data
+                : '';
+    }
+    should_cache() {
+        return this.is_static
+            ? false
+            : this.chunks.length === 1
+                // @ts-ignore todo: probably error
+                ? this.chunks[0].node.type !== 'Identifier' || this.scope.names.has(this.chunks[0].node.name)
+                : true;
+    }
+}
+
+// TODO this should live in a specific binding
+const read_only_media_attributes = new Set([
+    'duration',
+    'buffered',
+    'seekable',
+    'played',
+    'seeking',
+    'ended',
+    'videoHeight',
+    'videoWidth'
+]);
+class Binding extends Node$1 {
+    constructor(component, parent, scope, info) {
+        super(component, parent, scope, info);
+        if (info.expression.type !== 'Identifier' && info.expression.type !== 'MemberExpression') {
+            component.error(info, {
+                code: 'invalid-directive-value',
+                message: 'Can only bind to an identifier (e.g. `foo`) or a member expression (e.g. `foo.bar` or `foo[baz]`)'
+            });
+        }
+        this.name = info.name;
+        this.expression = new Expression(component, this, scope, info.expression);
+        this.raw_expression = clone(info.expression);
+        const { name } = get_object(this.expression.node);
+        this.is_contextual = Array.from(this.expression.references).some(name => scope.names.has(name));
+        // make sure we track this as a mutable ref
+        if (scope.is_let(name)) {
+            component.error(this, {
+                code: 'invalid-binding',
+                message: 'Cannot bind to a variable declared with the let: directive'
+            });
+        }
+        else if (scope.names.has(name)) {
+            if (scope.is_await(name)) {
+                component.error(this, {
+                    code: 'invalid-binding',
+                    message: 'Cannot bind to a variable declared with {#await ... then} or {:catch} blocks'
+                });
+            }
+            scope.dependencies_for_name.get(name).forEach(name => {
+                const variable = component.var_lookup.get(name);
+                if (variable) {
+                    variable.mutated = true;
+                }
+            });
+        }
+        else {
+            const variable = component.var_lookup.get(name);
+            if (!variable || variable.global) {
+                component.error(this.expression.node, {
+                    code: 'binding-undeclared',
+                    message: `${name} is not declared`
+                });
+            }
+            variable[this.expression.node.type === 'MemberExpression' ? 'mutated' : 'reassigned'] = true;
+            if (info.expression.type === 'Identifier' && !variable.writable) {
+                component.error(this.expression.node, {
+                    code: 'invalid-binding',
+                    message: 'Cannot bind to a variable which is not writable'
+                });
+            }
+        }
+        const type = parent.get_static_attribute_value('type');
+        this.is_readonly =
+            dimensions.test(this.name) ||
+                (isElement(parent) &&
+                    ((parent.is_media_node() && read_only_media_attributes.has(this.name)) ||
+                        (parent.name === 'input' && type === 'file')) /* TODO others? */);
+    }
+    is_readonly_media_attribute() {
+        return read_only_media_attributes.has(this.name);
+    }
+}
+function isElement(node) {
+    return !!node.is_media_node;
+}
+
+class Transition extends Node$1 {
+    constructor(component, parent, scope, info) {
+        super(component, parent, scope, info);
+        component.warn_if_undefined(info.name, info, scope);
+        this.name = info.name;
+        component.add_reference(info.name.split('.')[0]);
+        this.directive = info.intro && info.outro ? 'transition' : info.intro ? 'in' : 'out';
+        this.is_local = info.modifiers.includes('local');
+        if ((info.intro && parent.intro) || (info.outro && parent.outro)) {
+            const parent_transition = (parent.intro || parent.outro);
+            const message = this.directive === parent_transition.directive
+                ? `An element can only have one '${this.directive}' directive`
+                : `An element cannot have both ${describe(parent_transition)} directive and ${describe(this)} directive`;
+            component.error(info, {
+                code: 'duplicate-transition',
+                message
+            });
+        }
+        this.expression = info.expression
+            ? new Expression(component, this, scope, info.expression)
+            : null;
+    }
+}
+function describe(transition) {
+    return transition.directive === 'transition'
+        ? "a 'transition'"
+        : `an '${transition.directive}'`;
+}
+
+class Animation extends Node$1 {
+    constructor(component, parent, scope, info) {
+        super(component, parent, scope, info);
+        component.warn_if_undefined(info.name, info, scope);
+        this.name = info.name;
+        component.add_reference(info.name.split('.')[0]);
+        if (parent.animation) {
+            component.error(this, {
+                code: 'duplicate-animation',
+                message: "An element can only have one 'animate' directive"
+            });
+        }
+        const block = parent.parent;
+        if (!block || block.type !== 'EachBlock' || !block.key) {
+            // TODO can we relax the 'immediate child' rule?
+            component.error(this, {
+                code: 'invalid-animation',
+                message: 'An element that uses the animate directive must be the immediate child of a keyed each block'
+            });
+        }
+        block.has_animation = true;
+        this.expression = info.expression
+            ? new Expression(component, this, scope, info.expression, true)
+            : null;
+    }
+}
+
+class Class extends Node$1 {
+    constructor(component, parent, scope, info) {
+        super(component, parent, scope, info);
+        this.name = info.name;
+        this.expression = info.expression
+            ? new Expression(component, this, scope, info.expression)
+            : null;
+    }
+}
+
+// Whitespace inside one of these elements will not result in
+// a whitespace node being created in any circumstances. (This
+// list is almost certainly very incomplete)
+const elements_without_text = new Set([
+    'audio',
+    'datalist',
+    'dl',
+    'optgroup',
+    'select',
+    'video'
+]);
+class Text extends Node$1 {
+    constructor(component, parent, scope, info) {
+        super(component, parent, scope, info);
+        this.data = info.data;
+        this.synthetic = info.synthetic || false;
+    }
+    should_skip() {
+        if (/\S/.test(this.data))
+            return false;
+        const parent_element = this.find_nearest(/(?:Element|InlineComponent|SlotTemplate|Head)/);
+        if (!parent_element)
+            return false;
+        if (parent_element.type === 'Head')
+            return true;
+        if (parent_element.type === 'InlineComponent')
+            return parent_element.children.length === 1 && this === parent_element.children[0];
+        // svg namespace exclusions
+        if (/svg$/.test(parent_element.namespace)) {
+            if (this.prev && this.prev.type === 'Element' && this.prev.name === 'tspan')
+                return false;
+        }
+        return parent_element.namespace || elements_without_text.has(parent_element.name);
+    }
+}
+
+const applicable = new Set(['Identifier', 'ObjectExpression', 'ArrayExpression', 'Property']);
+class Let extends Node$1 {
+    constructor(component, parent, scope, info) {
+        super(component, parent, scope, info);
+        this.names = [];
+        this.name = { type: 'Identifier', name: info.name };
+        const { names } = this;
+        if (info.expression) {
+            this.value = info.expression;
+            walk(info.expression, {
+                enter(node) {
+                    if (!applicable.has(node.type)) {
+                        component.error(node, {
+                            code: 'invalid-let',
+                            message: 'let directive value must be an identifier or an object/array pattern'
+                        });
+                    }
+                    if (node.type === 'Identifier') {
+                        names.push(node.name);
+                    }
+                    // slightly unfortunate hack
+                    if (node.type === 'ArrayExpression') {
+                        node.type = 'ArrayPattern';
+                    }
+                    if (node.type === 'ObjectExpression') {
+                        node.type = 'ObjectPattern';
+                    }
+                }
+            });
+        }
+        else {
+            names.push(this.name.name);
+        }
+    }
+}
+
+const svg$1 = /^(?:altGlyph|altGlyphDef|altGlyphItem|animate|animateColor|animateMotion|animateTransform|circle|clipPath|color-profile|cursor|defs|desc|discard|ellipse|feBlend|feColorMatrix|feComponentTransfer|feComposite|feConvolveMatrix|feDiffuseLighting|feDisplacementMap|feDistantLight|feDropShadow|feFlood|feFuncA|feFuncB|feFuncG|feFuncR|feGaussianBlur|feImage|feMerge|feMergeNode|feMorphology|feOffset|fePointLight|feSpecularLighting|feSpotLight|feTile|feTurbulence|filter|font|font-face|font-face-format|font-face-name|font-face-src|font-face-uri|foreignObject|g|glyph|glyphRef|hatch|hatchpath|hkern|image|line|linearGradient|marker|mask|mesh|meshgradient|meshpatch|meshrow|metadata|missing-glyph|mpath|path|pattern|polygon|polyline|radialGradient|rect|set|solidcolor|stop|svg|switch|symbol|text|textPath|tref|tspan|unknown|use|view|vkern)$/;
+const aria_attributes = 'activedescendant atomic autocomplete busy checked colcount colindex colspan controls current describedby details disabled dropeffect errormessage expanded flowto grabbed haspopup hidden invalid keyshortcuts label labelledby level live modal multiline multiselectable orientation owns placeholder posinset pressed readonly relevant required roledescription rowcount rowindex rowspan selected setsize sort valuemax valuemin valuenow valuetext'.split(' ');
+const aria_attribute_set = new Set(aria_attributes);
+const aria_roles = 'alert alertdialog application article banner blockquote button caption cell checkbox code columnheader combobox complementary contentinfo definition deletion dialog directory document emphasis feed figure form generic graphics-document graphics-object graphics-symbol grid gridcell group heading img link list listbox listitem log main marquee math meter menu menubar menuitem menuitemcheckbox menuitemradio navigation none note option paragraph presentation progressbar radio radiogroup region row rowgroup rowheader scrollbar search searchbox separator slider spinbutton status strong subscript superscript switch tab table tablist tabpanel term textbox time timer toolbar tooltip tree treegrid treeitem'.split(' ');
+const aria_role_set = new Set(aria_roles);
+const a11y_required_attributes = {
+    a: ['href'],
+    area: ['alt', 'aria-label', 'aria-labelledby'],
+    // html-has-lang
+    html: ['lang'],
+    // iframe-has-title
+    iframe: ['title'],
+    img: ['alt'],
+    object: ['title', 'aria-label', 'aria-labelledby']
+};
+const a11y_distracting_elements = new Set([
+    'blink',
+    'marquee'
+]);
+const a11y_required_content = new Set([
+    // anchor-has-content
+    'a',
+    // heading-has-content
+    'h1',
+    'h2',
+    'h3',
+    'h4',
+    'h5',
+    'h6'
+]);
+const a11y_no_onchange = new Set([
+    'select',
+    'option'
+]);
+const a11y_labelable = new Set([
+    'button',
+    'input',
+    'keygen',
+    'meter',
+    'output',
+    'progress',
+    'select',
+    'textarea'
+]);
+const invisible_elements = new Set(['meta', 'html', 'script', 'style']);
+const valid_modifiers = new Set([
+    'preventDefault',
+    'stopPropagation',
+    'capture',
+    'once',
+    'passive',
+    'nonpassive',
+    'self'
+]);
+const passive_events = new Set([
+    'wheel',
+    'touchstart',
+    'touchmove',
+    'touchend',
+    'touchcancel'
+]);
+const react_attributes = new Map([
+    ['className', 'class'],
+    ['htmlFor', 'for']
+]);
+function get_namespace(parent, element, explicit_namespace) {
+    const parent_element = parent.find_nearest(/^Element/);
+    if (!parent_element) {
+        return explicit_namespace || (svg$1.test(element.name)
+            ? namespaces.svg
+            : null);
+    }
+    if (parent_element.namespace !== namespaces.foreign) {
+        if (svg$1.test(element.name.toLowerCase()))
+            return namespaces.svg;
+        if (parent_element.name.toLowerCase() === 'foreignobject')
+            return null;
+    }
+    return parent_element.namespace;
+}
+class Element$1 extends Node$1 {
+    constructor(component, parent, scope, info) {
+        super(component, parent, scope, info);
+        this.attributes = [];
+        this.actions = [];
+        this.bindings = [];
+        this.classes = [];
+        this.handlers = [];
+        this.lets = [];
+        this.intro = null;
+        this.outro = null;
+        this.animation = null;
+        this.name = info.name;
+        this.namespace = get_namespace(parent, this, component.namespace);
+        if (this.namespace !== namespaces.foreign) {
+            if (this.name === 'textarea') {
+                if (info.children.length > 0) {
+                    const value_attribute = info.attributes.find(node => node.name === 'value');
+                    if (value_attribute) {
+                        component.error(value_attribute, {
+                            code: 'textarea-duplicate-value',
+                            message: 'A <textarea> can have either a value attribute or (equivalently) child content, but not both'
+                        });
+                    }
+                    // this is an egregious hack, but it's the easiest way to get <textarea>
+                    // children treated the same way as a value attribute
+                    info.attributes.push({
+                        type: 'Attribute',
+                        name: 'value',
+                        value: info.children
+                    });
+                    info.children = [];
+                }
+            }
+            if (this.name === 'option') {
+                // Special case — treat these the same way:
+                //   <option>{foo}</option>
+                //   <option value={foo}>{foo}</option>
+                const value_attribute = info.attributes.find(attribute => attribute.name === 'value');
+                if (!value_attribute) {
+                    info.attributes.push({
+                        type: 'Attribute',
+                        name: 'value',
+                        value: info.children,
+                        synthetic: true
+                    });
+                }
+            }
+        }
+        const has_let = info.attributes.some(node => node.type === 'Let');
+        if (has_let) {
+            scope = scope.child();
+        }
+        // Binding relies on Attribute, defer its evaluation
+        const order = ['Binding']; // everything else is -1
+        info.attributes.sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type));
+        info.attributes.forEach(node => {
+            switch (node.type) {
+                case 'Action':
+                    this.actions.push(new Action(component, this, scope, node));
+                    break;
+                case 'Attribute':
+                case 'Spread':
+                    // special case
+                    if (node.name === 'xmlns')
+                        this.namespace = node.value[0].data;
+                    this.attributes.push(new Attribute(component, this, scope, node));
+                    break;
+                case 'Binding':
+                    this.bindings.push(new Binding(component, this, scope, node));
+                    break;
+                case 'Class':
+                    this.classes.push(new Class(component, this, scope, node));
+                    break;
+                case 'EventHandler':
+                    this.handlers.push(new EventHandler(component, this, scope, node));
+                    break;
+                case 'Let': {
+                    const l = new Let(component, this, scope, node);
+                    this.lets.push(l);
+                    const dependencies = new Set([l.name.name]);
+                    l.names.forEach(name => {
+                        scope.add(name, dependencies, this);
+                    });
+                    break;
+                }
+                case 'Transition':
+                    {
+                        const transition = new Transition(component, this, scope, node);
+                        if (node.intro)
+                            this.intro = transition;
+                        if (node.outro)
+                            this.outro = transition;
+                        break;
+                    }
+                case 'Animation':
+                    this.animation = new Animation(component, this, scope, node);
+                    break;
+                default:
+                    throw new Error(`Not implemented: ${node.type}`);
+            }
+        });
+        this.scope = scope;
+        this.children = map_children(component, this, this.scope, info.children);
+        this.validate();
+        component.apply_stylesheet(this);
+    }
+    validate() {
+        if (this.component.var_lookup.has(this.name) && this.component.var_lookup.get(this.name).imported) {
+            this.component.warn(this, {
+                code: 'component-name-lowercase',
+                message: `<${this.name}> will be treated as an HTML element unless it begins with a capital letter`
+            });
+        }
+        this.validate_attributes();
+        this.validate_event_handlers();
+        if (this.namespace === namespaces.foreign) {
+            this.validate_bindings_foreign();
+        }
+        else {
+            this.validate_attributes_a11y();
+            this.validate_special_cases();
+            this.validate_bindings();
+            this.validate_content();
+        }
+    }
+    validate_attributes() {
+        const { component, parent } = this;
+        this.attributes.forEach(attribute => {
+            if (attribute.is_spread)
+                return;
+            const name = attribute.name.toLowerCase();
+            // Errors
+            if (/(^[0-9-.])|[\^$@%&#?!|()[\]{}^*+~;]/.test(name)) {
+                component.error(attribute, {
+                    code: 'illegal-attribute',
+                    message: `'${name}' is not a valid attribute name`
+                });
+            }
+            if (name === 'slot') {
+                if (!attribute.is_static) {
+                    component.error(attribute, {
+                        code: 'invalid-slot-attribute',
+                        message: 'slot attribute cannot have a dynamic value'
+                    });
+                }
+                if (component.slot_outlets.has(name)) {
+                    component.error(attribute, {
+                        code: 'duplicate-slot-attribute',
+                        message: `Duplicate '${name}' slot`
+                    });
+                    component.slot_outlets.add(name);
+                }
+                if (!(parent.type === 'SlotTemplate' || within_custom_element(parent))) {
+                    component.error(attribute, {
+                        code: 'invalid-slotted-content',
+                        message: 'Element with a slot=\'...\' attribute must be a child of a component or a descendant of a custom element'
+                    });
+                }
+            }
+            // Warnings
+            if (this.namespace !== namespaces.foreign) {
+                if (name === 'is') {
+                    component.warn(attribute, {
+                        code: 'avoid-is',
+                        message: 'The \'is\' attribute is not supported cross-browser and should be avoided'
+                    });
+                }
+                if (react_attributes.has(attribute.name)) {
+                    component.warn(attribute, {
+                        code: 'invalid-html-attribute',
+                        message: `'${attribute.name}' is not a valid HTML attribute. Did you mean '${react_attributes.get(attribute.name)}'?`
+                    });
+                }
+            }
+        });
+    }
+    validate_attributes_a11y() {
+        const { component } = this;
+        this.attributes.forEach(attribute => {
+            if (attribute.is_spread)
+                return;
+            const name = attribute.name.toLowerCase();
+            // aria-props
+            if (name.startsWith('aria-')) {
+                if (invisible_elements.has(this.name)) {
+                    // aria-unsupported-elements
+                    component.warn(attribute, {
+                        code: 'a11y-aria-attributes',
+                        message: `A11y: <${this.name}> should not have aria-* attributes`
+                    });
+                }
+                const type = name.slice(5);
+                if (!aria_attribute_set.has(type)) {
+                    const match = fuzzymatch(type, aria_attributes);
+                    let message = `A11y: Unknown aria attribute 'aria-${type}'`;
+                    if (match)
+                        message += ` (did you mean '${match}'?)`;
+                    component.warn(attribute, {
+                        code: 'a11y-unknown-aria-attribute',
+                        message
+                    });
+                }
+                if (name === 'aria-hidden' && /^h[1-6]$/.test(this.name)) {
+                    component.warn(attribute, {
+                        code: 'a11y-hidden',
+                        message: `A11y: <${this.name}> element should not be hidden`
+                    });
+                }
+            }
+            // aria-role
+            if (name === 'role') {
+                if (invisible_elements.has(this.name)) {
+                    // aria-unsupported-elements
+                    component.warn(attribute, {
+                        code: 'a11y-misplaced-role',
+                        message: `A11y: <${this.name}> should not have role attribute`
+                    });
+                }
+                const value = attribute.get_static_value();
+                // @ts-ignore
+                if (value && !aria_role_set.has(value)) {
+                    // @ts-ignore
+                    const match = fuzzymatch(value, aria_roles);
+                    let message = `A11y: Unknown role '${value}'`;
+                    if (match)
+                        message += ` (did you mean '${match}'?)`;
+                    component.warn(attribute, {
+                        code: 'a11y-unknown-role',
+                        message
+                    });
+                }
+            }
+            // no-access-key
+            if (name === 'accesskey') {
+                component.warn(attribute, {
+                    code: 'a11y-accesskey',
+                    message: 'A11y: Avoid using accesskey'
+                });
+            }
+            // no-autofocus
+            if (name === 'autofocus') {
+                component.warn(attribute, {
+                    code: 'a11y-autofocus',
+                    message: 'A11y: Avoid using autofocus'
+                });
+            }
+            // scope
+            if (name === 'scope' && this.name !== 'th') {
+                component.warn(attribute, {
+                    code: 'a11y-misplaced-scope',
+                    message: 'A11y: The scope attribute should only be used with <th> elements'
+                });
+            }
+            // tabindex-no-positive
+            if (name === 'tabindex') {
+                const value = attribute.get_static_value();
+                // @ts-ignore todo is tabindex=true correct case?
+                if (!isNaN(value) && +value > 0) {
+                    component.warn(attribute, {
+                        code: 'a11y-positive-tabindex',
+                        message: 'A11y: avoid tabindex values above zero'
+                    });
+                }
+            }
+        });
+    }
+    validate_special_cases() {
+        const { component, attributes, handlers } = this;
+        const attribute_map = new Map();
+        const handlers_map = new Map();
+        attributes.forEach(attribute => (attribute_map.set(attribute.name, attribute)));
+        handlers.forEach(handler => (handlers_map.set(handler.name, handler)));
+        if (this.name === 'a') {
+            const href_attribute = attribute_map.get('href') || attribute_map.get('xlink:href');
+            const id_attribute = attribute_map.get('id');
+            const name_attribute = attribute_map.get('name');
+            if (href_attribute) {
+                const href_value = href_attribute.get_static_value();
+                if (href_value === '' || href_value === '#' || /^\W*javascript:/i.test(href_value)) {
+                    component.warn(href_attribute, {
+                        code: 'a11y-invalid-attribute',
+                        message: `A11y: '${href_value}' is not a valid ${href_attribute.name} attribute`
+                    });
+                }
+            }
+            else {
+                const id_attribute_valid = id_attribute && id_attribute.get_static_value() !== '';
+                const name_attribute_valid = name_attribute && name_attribute.get_static_value() !== '';
+                if (!id_attribute_valid && !name_attribute_valid) {
+                    component.warn(this, {
+                        code: 'a11y-missing-attribute',
+                        message: 'A11y: <a> element should have an href attribute'
+                    });
+                }
+            }
+        }
+        else {
+            const required_attributes = a11y_required_attributes[this.name];
+            if (required_attributes) {
+                const has_attribute = required_attributes.some(name => attribute_map.has(name));
+                if (!has_attribute) {
+                    should_have_attribute(this, required_attributes);
+                }
+            }
+        }
+        if (this.name === 'input') {
+            const type = attribute_map.get('type');
+            if (type && type.get_static_value() === 'image') {
+                const required_attributes = ['alt', 'aria-label', 'aria-labelledby'];
+                const has_attribute = required_attributes.some(name => attribute_map.has(name));
+                if (!has_attribute) {
+                    should_have_attribute(this, required_attributes, 'input type="image"');
+                }
+            }
+        }
+        if (this.name === 'img') {
+            const alt_attribute = attribute_map.get('alt');
+            const aria_hidden_attribute = attribute_map.get('aria-hidden');
+            const aria_hidden_exist = aria_hidden_attribute && aria_hidden_attribute.get_static_value();
+            if (alt_attribute && !aria_hidden_exist) {
+                const alt_value = alt_attribute.get_static_value();
+                if (/\b(image|picture|photo)\b/i.test(alt_value)) {
+                    component.warn(this, {
+                        code: 'a11y-img-redundant-alt',
+                        message: 'A11y: Screenreaders already announce <img> elements as an image.'
+                    });
+                }
+            }
+        }
+        if (this.name === 'label') {
+            const has_input_child = this.children.some(i => (i instanceof Element$1 && a11y_labelable.has(i.name)));
+            if (!attribute_map.has('for') && !has_input_child) {
+                component.warn(this, {
+                    code: 'a11y-label-has-associated-control',
+                    message: 'A11y: A form label must be associated with a control.'
+                });
+            }
+        }
+        if (this.is_media_node()) {
+            if (attribute_map.has('muted')) {
+                return;
+            }
+            let has_caption;
+            const track = this.children.find((i) => i.name === 'track');
+            if (track) {
+                has_caption = track.attributes.find(a => a.name === 'kind' && a.get_static_value() === 'captions');
+            }
+            if (!has_caption) {
+                component.warn(this, {
+                    code: 'a11y-media-has-caption',
+                    message: 'A11y: Media elements must have a <track kind="captions">'
+                });
+            }
+        }
+        if (a11y_no_onchange.has(this.name)) {
+            if (handlers_map.has('change') && !handlers_map.has('blur')) {
+                component.warn(this, {
+                    code: 'a11y-no-onchange',
+                    message: 'A11y: on:blur must be used instead of on:change, unless absolutely necessary and it causes no negative consequences for keyboard only or screen reader users.'
+                });
+            }
+        }
+        if (a11y_distracting_elements.has(this.name)) {
+            // no-distracting-elements
+            component.warn(this, {
+                code: 'a11y-distracting-elements',
+                message: `A11y: Avoid <${this.name}> elements`
+            });
+        }
+        if (this.name === 'figcaption') {
+            let { parent } = this;
+            let is_figure_parent = false;
+            while (parent) {
+                if (parent.name === 'figure') {
+                    is_figure_parent = true;
+                    break;
+                }
+                if (parent.type === 'Element') {
+                    break;
+                }
+                parent = parent.parent;
+            }
+            if (!is_figure_parent) {
+                component.warn(this, {
+                    code: 'a11y-structure',
+                    message: 'A11y: <figcaption> must be an immediate child of <figure>'
+                });
+            }
+        }
+        if (this.name === 'figure') {
+            const children = this.children.filter(node => {
+                if (node.type === 'Comment')
+                    return false;
+                if (node.type === 'Text')
+                    return /\S/.test(node.data);
+                return true;
+            });
+            const index = children.findIndex(child => child.name === 'figcaption');
+            if (index !== -1 && (index !== 0 && index !== children.length - 1)) {
+                component.warn(children[index], {
+                    code: 'a11y-structure',
+                    message: 'A11y: <figcaption> must be first or last child of <figure>'
+                });
+            }
+        }
+    }
+    validate_bindings_foreign() {
+        this.bindings.forEach(binding => {
+            if (binding.name !== 'this') {
+                this.component.error(binding, {
+                    code: 'invalid-binding',
+                    message: `'${binding.name}' is not a valid binding. Foreign elements only support bind:this`
+                });
+            }
+        });
+    }
+    validate_bindings() {
+        const { component } = this;
+        const check_type_attribute = () => {
+            const attribute = this.attributes.find((attribute) => attribute.name === 'type');
+            if (!attribute)
+                return null;
+            if (!attribute.is_static) {
+                component.error(attribute, {
+                    code: 'invalid-type',
+                    message: '\'type\' attribute cannot be dynamic if input uses two-way binding'
+                });
+            }
+            const value = attribute.get_static_value();
+            if (value === true) {
+                component.error(attribute, {
+                    code: 'missing-type',
+                    message: '\'type\' attribute must be specified'
+                });
+            }
+            return value;
+        };
+        this.bindings.forEach(binding => {
+            const { name } = binding;
+            if (name === 'value') {
+                if (this.name !== 'input' &&
+                    this.name !== 'textarea' &&
+                    this.name !== 'select') {
+                    component.error(binding, {
+                        code: 'invalid-binding',
+                        message: `'value' is not a valid binding on <${this.name}> elements`
+                    });
+                }
+                if (this.name === 'select') {
+                    const attribute = this.attributes.find((attribute) => attribute.name === 'multiple');
+                    if (attribute && !attribute.is_static) {
+                        component.error(attribute, {
+                            code: 'dynamic-multiple-attribute',
+                            message: '\'multiple\' attribute cannot be dynamic if select uses two-way binding'
+                        });
+                    }
+                }
+                else {
+                    check_type_attribute();
+                }
+            }
+            else if (name === 'checked' || name === 'indeterminate') {
+                if (this.name !== 'input') {
+                    component.error(binding, {
+                        code: 'invalid-binding',
+                        message: `'${name}' is not a valid binding on <${this.name}> elements`
+                    });
+                }
+                const type = check_type_attribute();
+                if (type !== 'checkbox') {
+                    let message = `'${name}' binding can only be used with <input type="checkbox">`;
+                    if (type === 'radio')
+                        message += ' — for <input type="radio">, use \'group\' binding';
+                    component.error(binding, { code: 'invalid-binding', message });
+                }
+            }
+            else if (name === 'group') {
+                if (this.name !== 'input') {
+                    component.error(binding, {
+                        code: 'invalid-binding',
+                        message: `'group' is not a valid binding on <${this.name}> elements`
+                    });
+                }
+                const type = check_type_attribute();
+                if (type !== 'checkbox' && type !== 'radio') {
+                    component.error(binding, {
+                        code: 'invalid-binding',
+                        message: '\'group\' binding can only be used with <input type="checkbox"> or <input type="radio">'
+                    });
+                }
+            }
+            else if (name === 'files') {
+                if (this.name !== 'input') {
+                    component.error(binding, {
+                        code: 'invalid-binding',
+                        message: `'files' is not a valid binding on <${this.name}> elements`
+                    });
+                }
+                const type = check_type_attribute();
+                if (type !== 'file') {
+                    component.error(binding, {
+                        code: 'invalid-binding',
+                        message: '\'files\' binding can only be used with <input type="file">'
+                    });
+                }
+            }
+            else if (name === 'open') {
+                if (this.name !== 'details') {
+                    component.error(binding, {
+                        code: 'invalid-binding',
+                        message: `'${name}' binding can only be used with <details>`
+                    });
+                }
+            }
+            else if (name === 'currentTime' ||
+                name === 'duration' ||
+                name === 'paused' ||
+                name === 'buffered' ||
+                name === 'seekable' ||
+                name === 'played' ||
+                name === 'volume' ||
+                name === 'muted' ||
+                name === 'playbackRate' ||
+                name === 'seeking' ||
+                name === 'ended') {
+                if (this.name !== 'audio' && this.name !== 'video') {
+                    component.error(binding, {
+                        code: 'invalid-binding',
+                        message: `'${name}' binding can only be used with <audio> or <video>`
+                    });
+                }
+            }
+            else if (name === 'videoHeight' ||
+                name === 'videoWidth') {
+                if (this.name !== 'video') {
+                    component.error(binding, {
+                        code: 'invalid-binding',
+                        message: `'${name}' binding can only be used with <video>`
+                    });
+                }
+            }
+            else if (dimensions.test(name)) {
+                if (this.name === 'svg' && (name === 'offsetWidth' || name === 'offsetHeight')) {
+                    component.error(binding, {
+                        code: 'invalid-binding',
+                        message: `'${binding.name}' is not a valid binding on <svg>. Use '${name.replace('offset', 'client')}' instead`
+                    });
+                }
+                else if (svg$1.test(this.name)) {
+                    component.error(binding, {
+                        code: 'invalid-binding',
+                        message: `'${binding.name}' is not a valid binding on SVG elements`
+                    });
+                }
+                else if (is_void(this.name)) {
+                    component.error(binding, {
+                        code: 'invalid-binding',
+                        message: `'${binding.name}' is not a valid binding on void elements like <${this.name}>. Use a wrapper element instead`
+                    });
+                }
+            }
+            else if (name === 'textContent' ||
+                name === 'innerHTML') {
+                const contenteditable = this.attributes.find((attribute) => attribute.name === 'contenteditable');
+                if (!contenteditable) {
+                    component.error(binding, {
+                        code: 'missing-contenteditable-attribute',
+                        message: '\'contenteditable\' attribute is required for textContent and innerHTML two-way bindings'
+                    });
+                }
+                else if (contenteditable && !contenteditable.is_static) {
+                    component.error(contenteditable, {
+                        code: 'dynamic-contenteditable-attribute',
+                        message: '\'contenteditable\' attribute cannot be dynamic if element uses two-way binding'
+                    });
+                }
+            }
+            else if (name !== 'this') {
+                component.error(binding, {
+                    code: 'invalid-binding',
+                    message: `'${binding.name}' is not a valid binding`
+                });
+            }
+        });
+    }
+    validate_content() {
+        if (!a11y_required_content.has(this.name))
+            return;
+        if (this.bindings
+            .some((binding) => ['textContent', 'innerHTML'].includes(binding.name)))
+            return;
+        if (this.children.length === 0) {
+            this.component.warn(this, {
+                code: 'a11y-missing-content',
+                message: `A11y: <${this.name}> element should have child content`
+            });
+        }
+    }
+    validate_event_handlers() {
+        const { component } = this;
+        this.handlers.forEach(handler => {
+            if (handler.modifiers.has('passive') && handler.modifiers.has('preventDefault')) {
+                component.error(handler, {
+                    code: 'invalid-event-modifier',
+                    message: 'The \'passive\' and \'preventDefault\' modifiers cannot be used together'
+                });
+            }
+            if (handler.modifiers.has('passive') && handler.modifiers.has('nonpassive')) {
+                component.error(handler, {
+                    code: 'invalid-event-modifier',
+                    message: 'The \'passive\' and \'nonpassive\' modifiers cannot be used together'
+                });
+            }
+            handler.modifiers.forEach(modifier => {
+                if (!valid_modifiers.has(modifier)) {
+                    component.error(handler, {
+                        code: 'invalid-event-modifier',
+                        message: `Valid event modifiers are ${list(Array.from(valid_modifiers))}`
+                    });
+                }
+                if (modifier === 'passive') {
+                    if (passive_events.has(handler.name)) {
+                        if (handler.can_make_passive) {
+                            component.warn(handler, {
+                                code: 'redundant-event-modifier',
+                                message: 'Touch event handlers that don\'t use the \'event\' object are passive by default'
+                            });
+                        }
+                    }
+                    else {
+                        component.warn(handler, {
+                            code: 'redundant-event-modifier',
+                            message: 'The passive modifier only works with wheel and touch events'
+                        });
+                    }
+                }
+                if (component.compile_options.legacy && (modifier === 'once' || modifier === 'passive')) {
+                    // TODO this could be supported, but it would need a few changes to
+                    // how event listeners work
+                    component.error(handler, {
+                        code: 'invalid-event-modifier',
+                        message: `The '${modifier}' modifier cannot be used in legacy mode`
+                    });
+                }
+            });
+            if (passive_events.has(handler.name) && handler.can_make_passive && !handler.modifiers.has('preventDefault') && !handler.modifiers.has('nonpassive')) {
+                // touch/wheel events should be passive by default
+                handler.modifiers.add('passive');
+            }
+        });
+    }
+    is_media_node() {
+        return this.name === 'audio' || this.name === 'video';
+    }
+    add_css_class() {
+        if (this.attributes.some(attr => attr.is_spread)) {
+            this.needs_manual_style_scoping = true;
+            return;
+        }
+        const { id } = this.component.stylesheet;
+        const class_attribute = this.attributes.find(a => a.name === 'class');
+        if (class_attribute && !class_attribute.is_true) {
+            if (class_attribute.chunks.length === 1 && class_attribute.chunks[0].type === 'Text') {
+                class_attribute.chunks[0].data += ` ${id}`;
+            }
+            else {
+                class_attribute.chunks.push(new Text(this.component, this, this.scope, {
+                    type: 'Text',
+                    data: ` ${id}`,
+                    synthetic: true
+                }));
+            }
+        }
+        else {
+            this.attributes.push(new Attribute(this.component, this, this.scope, {
+                type: 'Attribute',
+                name: 'class',
+                value: [{ type: 'Text', data: id, synthetic: true }]
+            }));
+        }
+    }
+    get slot_template_name() {
+        return this.attributes.find(attribute => attribute.name === 'slot').get_static_value();
+    }
+}
+function should_have_attribute(node, attributes, name = node.name) {
+    const article = /^[aeiou]/.test(attributes[0]) ? 'an' : 'a';
+    const sequence = attributes.length > 1 ?
+        attributes.slice(0, -1).join(', ') + ` or ${attributes[attributes.length - 1]}` :
+        attributes[0];
+    node.component.warn(node, {
+        code: 'a11y-missing-attribute',
+        message: `A11y: <${name}> element should have ${article} ${sequence} attribute`
+    });
+}
+function within_custom_element(parent) {
+    while (parent) {
+        if (parent.type === 'InlineComponent')
+            return false;
+        if (parent.type === 'Element' && /-/.test(parent.name))
+            return true;
+        parent = parent.parent;
+    }
+    return false;
+}
+
+// https://github.com/darkskyapp/string-hash/blob/master/index.js
+function hash(str) {
+    str = str.replace(/\r/g, '');
+    let hash = 5381;
+    let i = str.length;
+    while (i--)
+        hash = ((hash << 5) - hash) ^ str.charCodeAt(i);
+    return (hash >>> 0).toString(36);
+}
+
+class Head$1 extends Node$1 {
+    constructor(component, parent, scope, info) {
+        super(component, parent, scope, info);
+        if (info.attributes.length) {
+            component.error(info.attributes[0], {
+                code: 'invalid-attribute',
+                message: '<svelte:head> should not have any attributes or directives'
+            });
+        }
+        this.children = map_children(component, parent, scope, info.children.filter(child => {
+            return (child.type !== 'Text' || /\S/.test(child.data));
+        }));
+        if (this.children.length > 0) {
+            this.id = `svelte-${hash(this.component.source.slice(this.start, this.end))}`;
+        }
+    }
+}
+
+class IfBlock$1 extends AbstractBlock {
+    constructor(component, parent, scope, info) {
+        super(component, parent, scope, info);
+        this.expression = new Expression(component, this, scope, info.expression);
+        this.children = map_children(component, this, scope, info.children);
+        this.else = info.else
+            ? new ElseBlock(component, this, scope, info.else)
+            : null;
+        this.warn_if_empty_block();
+    }
+}
+
+class InlineComponent$1 extends Node$1 {
+    constructor(component, parent, scope, info) {
+        super(component, parent, scope, info);
+        this.attributes = [];
+        this.bindings = [];
+        this.handlers = [];
+        this.lets = [];
+        this.css_custom_properties = [];
+        if (info.name !== 'svelte:component' && info.name !== 'svelte:self') {
+            const name = info.name.split('.')[0]; // accommodate namespaces
+            component.warn_if_undefined(name, info, scope);
+            component.add_reference(name);
+        }
+        this.name = info.name;
+        this.expression = this.name === 'svelte:component'
+            ? new Expression(component, this, scope, info.expression)
+            : null;
+        info.attributes.forEach(node => {
+            /* eslint-disable no-fallthrough */
+            switch (node.type) {
+                case 'Action':
+                    component.error(node, {
+                        code: 'invalid-action',
+                        message: 'Actions can only be applied to DOM elements, not components'
+                    });
+                case 'Attribute':
+                    if (node.name.startsWith('--')) {
+                        this.css_custom_properties.push(new Attribute(component, this, scope, node));
+                        break;
+                    }
+                // fallthrough
+                case 'Spread':
+                    this.attributes.push(new Attribute(component, this, scope, node));
+                    break;
+                case 'Binding':
+                    this.bindings.push(new Binding(component, this, scope, node));
+                    break;
+                case 'Class':
+                    component.error(node, {
+                        code: 'invalid-class',
+                        message: 'Classes can only be applied to DOM elements, not components'
+                    });
+                case 'EventHandler':
+                    this.handlers.push(new EventHandler(component, this, scope, node));
+                    break;
+                case 'Let':
+                    this.lets.push(new Let(component, this, scope, node));
+                    break;
+                case 'Transition':
+                    component.error(node, {
+                        code: 'invalid-transition',
+                        message: 'Transitions can only be applied to DOM elements, not components'
+                    });
+                default:
+                    throw new Error(`Not implemented: ${node.type}`);
+            }
+            /* eslint-enable no-fallthrough */
+        });
+        if (this.lets.length > 0) {
+            this.scope = scope.child();
+            this.lets.forEach(l => {
+                const dependencies = new Set([l.name.name]);
+                l.names.forEach(name => {
+                    this.scope.add(name, dependencies, this);
+                });
+            });
+        }
+        else {
+            this.scope = scope;
+        }
+        this.handlers.forEach(handler => {
+            handler.modifiers.forEach(modifier => {
+                if (modifier !== 'once') {
+                    component.error(handler, {
+                        code: 'invalid-event-modifier',
+                        message: "Event modifiers other than 'once' can only be used on DOM elements"
+                    });
+                }
+            });
+        });
+        const children = [];
+        for (let i = info.children.length - 1; i >= 0; i--) {
+            const child = info.children[i];
+            if (child.type === 'SlotTemplate') {
+                children.push(child);
+                info.children.splice(i, 1);
+            }
+            else if ((child.type === 'Element' || child.type === 'InlineComponent' || child.type === 'Slot') && child.attributes.find(attribute => attribute.name === 'slot')) {
+                const slot_template = {
+                    start: child.start,
+                    end: child.end,
+                    type: 'SlotTemplate',
+                    name: 'svelte:fragment',
+                    attributes: [],
+                    children: [child]
+                };
+                // transfer attributes
+                for (let i = child.attributes.length - 1; i >= 0; i--) {
+                    const attribute = child.attributes[i];
+                    if (attribute.type === 'Let') {
+                        slot_template.attributes.push(attribute);
+                        child.attributes.splice(i, 1);
+                    }
+                    else if (attribute.type === 'Attribute' && attribute.name === 'slot') {
+                        slot_template.attributes.push(attribute);
+                    }
+                }
+                children.push(slot_template);
+                info.children.splice(i, 1);
+            }
+        }
+        if (info.children.some(node => not_whitespace_text(node))) {
+            children.push({
+                start: info.start,
+                end: info.end,
+                type: 'SlotTemplate',
+                name: 'svelte:fragment',
+                attributes: [],
+                children: info.children
+            });
+        }
+        this.children = map_children(component, this, this.scope, children);
+    }
+    get slot_template_name() {
+        return this.attributes.find(attribute => attribute.name === 'slot').get_static_value();
+    }
+}
+function not_whitespace_text(node) {
+    return !(node.type === 'Text' && /^\s+$/.test(node.data));
+}
+
+class KeyBlock$1 extends AbstractBlock {
+    constructor(component, parent, scope, info) {
+        super(component, parent, scope, info);
+        this.expression = new Expression(component, this, scope, info.expression);
+        this.children = map_children(component, this, scope, info.children);
+        this.warn_if_empty_block();
+    }
+}
+
+class Tag$1 extends Node$1 {
+    constructor(component, parent, scope, info) {
+        super(component, parent, scope, info);
+        this.expression = new Expression(component, this, scope, info.expression);
+        this.should_cache = (info.expression.type !== 'Identifier' ||
+            (this.expression.dependencies.size && scope.names.has(info.expression.name)));
+    }
+}
+
+class MustacheTag extends Tag$1 {
+}
+
+class Options extends Node$1 {
+}
+
+class RawMustacheTag extends Tag$1 {
+}
+
+class DebugTag$1 extends Node$1 {
+    constructor(component, parent, scope, info) {
+        super(component, parent, scope, info);
+        this.expressions = info.identifiers.map((node) => {
+            return new Expression(component, parent, scope, node);
+        });
+    }
+}
+
+class Slot$1 extends Element$1 {
+    constructor(component, parent, scope, info) {
+        super(component, parent, scope, info);
+        this.values = new Map();
+        info.attributes.forEach(attr => {
+            if (attr.type !== 'Attribute' && attr.type !== 'Spread') {
+                component.error(attr, {
+                    code: 'invalid-slot-directive',
+                    message: '<slot> cannot have directives'
+                });
+            }
+            if (attr.name === 'name') {
+                if (attr.value.length !== 1 || attr.value[0].type !== 'Text') {
+                    component.error(attr, {
+                        code: 'dynamic-slot-name',
+                        message: '<slot> name cannot be dynamic'
+                    });
+                }
+                this.slot_name = attr.value[0].data;
+                if (this.slot_name === 'default') {
+                    component.error(attr, {
+                        code: 'invalid-slot-name',
+                        message: 'default is a reserved word — it cannot be used as a slot name'
+                    });
+                }
+            }
+            this.values.set(attr.name, new Attribute(component, this, scope, attr));
+        });
+        if (!this.slot_name)
+            this.slot_name = 'default';
+        if (this.slot_name === 'default') {
+            // if this is the default slot, add our dependencies to any
+            // other slots (which inherit our slot values) that were
+            // previously encountered
+            component.slots.forEach((slot) => {
+                this.values.forEach((attribute, name) => {
+                    if (!slot.values.has(name)) {
+                        slot.values.set(name, attribute);
+                    }
+                });
+            });
+        }
+        else if (component.slots.has('default')) {
+            // otherwise, go the other way — inherit values from
+            // a previously encountered default slot
+            const default_slot = component.slots.get('default');
+            default_slot.values.forEach((attribute, name) => {
+                if (!this.values.has(name)) {
+                    this.values.set(name, attribute);
+                }
+            });
+        }
+        component.slots.set(this.slot_name, this);
+    }
+}
+
+class Title extends Node$1 {
+    constructor(component, parent, scope, info) {
+        super(component, parent, scope, info);
+        this.children = map_children(component, parent, scope, info.children);
+        if (info.attributes.length > 0) {
+            component.error(info.attributes[0], {
+                code: 'illegal-attribute',
+                message: '<title> cannot have attributes'
+            });
+        }
+        info.children.forEach(child => {
+            if (child.type !== 'Text' && child.type !== 'MustacheTag') {
+                component.error(child, {
+                    code: 'illegal-structure',
+                    message: '<title> can only contain text and {tags}'
+                });
+            }
+        });
+        this.should_cache = info.children.length === 1
+            ? (info.children[0].type !== 'Identifier' ||
+                scope.names.has(info.children[0].name))
+            : true;
+    }
+}
+
+const valid_bindings = [
+    'innerWidth',
+    'innerHeight',
+    'outerWidth',
+    'outerHeight',
+    'scrollX',
+    'scrollY',
+    'online'
+];
+class Window extends Node$1 {
+    constructor(component, parent, scope, info) {
+        super(component, parent, scope, info);
+        this.handlers = [];
+        this.bindings = [];
+        this.actions = [];
+        info.attributes.forEach(node => {
+            if (node.type === 'EventHandler') {
+                this.handlers.push(new EventHandler(component, this, scope, node));
+            }
+            else if (node.type === 'Binding') {
+                if (node.expression.type !== 'Identifier') {
+                    const { parts } = flatten_reference(node.expression);
+                    // TODO is this constraint necessary?
+                    component.error(node.expression, {
+                        code: 'invalid-binding',
+                        message: `Bindings on <svelte:window> must be to top-level properties, e.g. '${parts[parts.length - 1]}' rather than '${parts.join('.')}'`
+                    });
+                }
+                if (!~valid_bindings.indexOf(node.name)) {
+                    const match = (node.name === 'width' ? 'innerWidth' :
+                        node.name === 'height' ? 'innerHeight' :
+                            fuzzymatch(node.name, valid_bindings));
+                    const message = `'${node.name}' is not a valid binding on <svelte:window>`;
+                    if (match) {
+                        component.error(node, {
+                            code: 'invalid-binding',
+                            message: `${message} (did you mean '${match}'?)`
+                        });
+                    }
+                    else {
+                        component.error(node, {
+                            code: 'invalid-binding',
+                            message: `${message} — valid bindings are ${list(valid_bindings)}`
+                        });
+                    }
+                }
+                this.bindings.push(new Binding(component, this, scope, node));
+            }
+            else if (node.type === 'Action') {
+                this.actions.push(new Action(component, this, scope, node));
+            }
+        });
+    }
+}
+
+function get_constructor(type) {
+    switch (type) {
+        case 'AwaitBlock': return AwaitBlock$1;
+        case 'Body': return Body;
+        case 'Comment': return Comment$2;
+        case 'EachBlock': return EachBlock$1;
+        case 'Element': return Element$1;
+        case 'Head': return Head$1;
+        case 'IfBlock': return IfBlock$1;
+        case 'InlineComponent': return InlineComponent$1;
+        case 'KeyBlock': return KeyBlock$1;
+        case 'MustacheTag': return MustacheTag;
+        case 'Options': return Options;
+        case 'RawMustacheTag': return RawMustacheTag;
+        case 'DebugTag': return DebugTag$1;
+        case 'Slot': return Slot$1;
+        case 'SlotTemplate': return SlotTemplate;
+        case 'Text': return Text;
+        case 'Title': return Title;
+        case 'Window': return Window;
+        default: throw new Error(`Not implemented: ${type}`);
+    }
+}
+function map_children(component, parent, scope, children) {
+    let last = null;
+    let ignores = [];
+    return children.map(child => {
+        const constructor = get_constructor(child.type);
+        const use_ignores = child.type !== 'Text' && child.type !== 'Comment' && ignores.length;
+        if (use_ignores)
+            component.push_ignores(ignores);
+        const node = new constructor(component, parent, scope, child);
+        if (use_ignores)
+            component.pop_ignores(), ignores = [];
+        if (node.type === 'Comment' && node.ignores.length) {
+            ignores.push(...node.ignores);
+        }
+        if (last)
+            last.next = node;
+        node.prev = last;
+        last = node;
+        return node;
+    });
+}
+
+class SlotTemplate extends Node$1 {
+    constructor(component, parent, scope, info) {
+        super(component, parent, scope, info);
+        this.lets = [];
+        this.slot_template_name = 'default';
+        this.validate_slot_template_placement();
+        const has_let = info.attributes.some((node) => node.type === 'Let');
+        if (has_let) {
+            scope = scope.child();
+        }
+        info.attributes.forEach((node) => {
+            switch (node.type) {
+                case 'Let': {
+                    const l = new Let(component, this, scope, node);
+                    this.lets.push(l);
+                    const dependencies = new Set([l.name.name]);
+                    l.names.forEach((name) => {
+                        scope.add(name, dependencies, this);
+                    });
+                    break;
+                }
+                case 'Attribute': {
+                    if (node.name === 'slot') {
+                        this.slot_attribute = new Attribute(component, this, scope, node);
+                        if (!this.slot_attribute.is_static) {
+                            component.error(node, {
+                                code: 'invalid-slot-attribute',
+                                message: 'slot attribute cannot have a dynamic value'
+                            });
+                        }
+                        const value = this.slot_attribute.get_static_value();
+                        if (typeof value === 'boolean') {
+                            component.error(node, {
+                                code: 'invalid-slot-attribute',
+                                message: 'slot attribute value is missing'
+                            });
+                        }
+                        this.slot_template_name = value;
+                        break;
+                    }
+                    throw new Error(`Invalid attribute '${node.name}' in <svelte:fragment>`);
+                }
+                default:
+                    throw new Error(`Not implemented: ${node.type}`);
+            }
+        });
+        this.scope = scope;
+        this.children = map_children(component, this, this.scope, info.children);
+    }
+    validate_slot_template_placement() {
+        if (this.parent.type !== 'InlineComponent') {
+            this.component.error(this, {
+                code: 'invalid-slotted-content',
+                message: '<svelte:fragment> must be a child of a component'
+            });
+        }
+    }
+}
+
+function SlotTemplate$1 (node, renderer, options) {
+    const parent_inline_component = node.parent;
+    const children = remove_whitespace_children(node instanceof SlotTemplate ? node.children : [node], node.next);
+    renderer.push();
+    renderer.render(children, options);
+    const lets = node.lets;
+    const seen = new Set(lets.map(l => l.name.name));
+    parent_inline_component.lets.forEach(l => {
+        if (!seen.has(l.name.name))
+            lets.push(l);
+    });
+    const slot_fragment_content = renderer.pop();
+    if (!is_empty_template_literal(slot_fragment_content)) {
+        if (options.slot_scopes.has(node.slot_template_name)) {
+            if (node.slot_template_name === 'default') {
+                throw new Error('Found elements without slot attribute when using slot="default"');
+            }
+            throw new Error(`Duplicate slot name "${node.slot_template_name}" in <${parent_inline_component.name}>`);
+        }
+        options.slot_scopes.set(node.slot_template_name, {
+            input: get_slot_scope(node.lets),
+            output: slot_fragment_content
+        });
+    }
+}
+function is_empty_template_literal(template_literal) {
+    return (template_literal.expressions.length === 0 &&
+        template_literal.quasis.length === 1 &&
+        template_literal.quasis[0].value.raw === '');
+}
+
+function Tag$2 (node, renderer, _options) {
     const snippet = node.expression.node;
     renderer.add_expression(node.parent &&
         node.parent.type === 'Element' &&
@@ -24420,7 +26317,7 @@ function Tag$1 (node, renderer, _options) {
         : x `@escape(${snippet})`);
 }
 
-function Text (node, renderer, _options) {
+function Text$1 (node, renderer, _options) {
     let text = node.data;
     if (!node.parent ||
         node.parent.type !== 'Element' ||
@@ -24431,7 +26328,7 @@ function Text (node, renderer, _options) {
     renderer.add_string(text);
 }
 
-function Title (node, renderer, options) {
+function Title$1 (node, renderer, options) {
     renderer.push();
     renderer.add_string('<title>');
     renderer.render(node.children, options);
@@ -24452,12 +26349,13 @@ const handlers$1 = {
     IfBlock,
     InlineComponent,
     KeyBlock,
-    MustacheTag: Tag$1,
+    MustacheTag: Tag$2,
     Options: noop$1,
     RawMustacheTag: HtmlTag,
     Slot,
-    Text,
-    Title,
+    SlotTemplate: SlotTemplate$1,
+    Text: Text$1,
+    Title: Title$1,
     Window: noop$1
 };
 class Renderer$1 {
@@ -25910,7 +27808,17 @@ class Selector$1 {
     }
     transform(code, attr, max_amount_class_specificity_increased) {
         const amount_class_specificity_to_increase = max_amount_class_specificity_increased - this.blocks.filter(block => block.should_encapsulate).length;
+        function remove_global_pseudo_class(selector) {
+            const first = selector.children[0];
+            const last = selector.children[selector.children.length - 1];
+            code.remove(selector.start, first.start).remove(last.end, selector.end);
+        }
         function encapsulate_block(block, attr) {
+            for (const selector of block.selectors) {
+                if (selector.type === 'PseudoClassSelector' && selector.name === 'global') {
+                    remove_global_pseudo_class(selector);
+                }
+            }
             let i = block.selectors.length;
             while (i--) {
                 const selector = block.selectors[i];
@@ -25932,28 +27840,13 @@ class Selector$1 {
         }
         this.blocks.forEach((block, index) => {
             if (block.global) {
-                const selector = block.selectors[0];
-                const first = selector.children[0];
-                const last = selector.children[selector.children.length - 1];
-                code.remove(selector.start, first.start).remove(last.end, selector.end);
+                remove_global_pseudo_class(block.selectors[0]);
             }
             if (block.should_encapsulate)
                 encapsulate_block(block, index === this.blocks.length - 1 ? attr.repeat(amount_class_specificity_to_increase + 1) : attr);
         });
     }
     validate(component) {
-        this.blocks.forEach((block) => {
-            let i = block.selectors.length;
-            while (i-- > 1) {
-                const selector = block.selectors[i];
-                if (selector.type === 'PseudoClassSelector' && selector.name === 'global') {
-                    component.error(selector, {
-                        code: 'css-invalid-global',
-                        message: ':global(...) must be the first element in a compound selector'
-                    });
-                }
-            }
-        });
         let start = 0;
         let end = this.blocks.length;
         for (; start < end; start += 1) {
@@ -25970,6 +27863,18 @@ class Selector$1 {
                     code: 'css-invalid-global',
                     message: ':global(...) can be at the start or end of a selector sequence, but not in the middle'
                 });
+            }
+        }
+        for (const block of this.blocks) {
+            for (const selector of block.selectors) {
+                if (selector.type === 'PseudoClassSelector' && selector.name === 'global') {
+                    if (/[^\\],/.test(selector.children[0].value)) {
+                        component.error(selector, {
+                            code: 'css-invalid-global-selector',
+                            message: ':global(...) must contain a single selector'
+                        });
+                    }
+                }
             }
         }
     }
@@ -26036,7 +27941,7 @@ function apply_selector(blocks, node, to_encapsulate) {
         else if (block.combinator.name === '+' || block.combinator.name === '~') {
             const siblings = get_possible_element_siblings(node, block.combinator.name === '+');
             let has_match = false;
-            // NOTE: if we have :global(), we couldn't figure out what is selected within `:global` due to the 
+            // NOTE: if we have :global(), we couldn't figure out what is selected within `:global` due to the
             // css-tree limitation that does not parse the inner selector of :global
             // so unless we are sure there will be no sibling to match, we will consider it as matched
             const has_global = blocks.some(block => block.global);
@@ -26361,7 +28266,6 @@ function loop_child(children, adjacent_only) {
 class Block$2 {
     constructor(combinator) {
         this.combinator = combinator;
-        this.global = false;
         this.host = false;
         this.selectors = [];
         this.start = null;
@@ -26371,11 +28275,16 @@ class Block$2 {
     add(selector) {
         if (this.selectors.length === 0) {
             this.start = selector.start;
-            this.global = selector.type === 'PseudoClassSelector' && selector.name === 'global';
             this.host = selector.type === 'PseudoClassSelector' && selector.name === 'host';
         }
         this.selectors.push(selector);
         this.end = selector.end;
+    }
+    get global() {
+        return (this.selectors.length >= 1 &&
+            this.selectors[0].type === 'PseudoClassSelector' &&
+            this.selectors[0].name === 'global' &&
+            this.selectors.every((selector) => selector.type === 'PseudoClassSelector'));
     }
 }
 function group_selectors(selector) {
@@ -26391,16 +28300,6 @@ function group_selectors(selector) {
         }
     });
     return blocks;
-}
-
-// https://github.com/darkskyapp/string-hash/blob/master/index.js
-function hash(str) {
-    str = str.replace(/\r/g, '');
-    let hash = 5381;
-    let i = str.length;
-    while (i--)
-        hash = ((hash << 5) - hash) ^ str.charCodeAt(i);
-    return (hash >>> 0).toString(36);
 }
 
 function remove_css_prefix(name) {
@@ -26625,8 +28524,11 @@ class Atrule$1 {
         return Math.max(...this.children.map(rule => rule.get_max_amount_class_specificity_increased()));
     }
 }
+const get_default_css_hash = ({ css, hash }) => {
+    return `svelte-${hash(css)}`;
+};
 class Stylesheet {
-    constructor(source, ast, filename, dev) {
+    constructor({ source, ast, component_name, filename, dev, get_css_hash = get_default_css_hash }) {
         this.children = [];
         this.keyframes = new Map();
         this.nodes_with_css_class = new Set();
@@ -26635,7 +28537,12 @@ class Stylesheet {
         this.filename = filename;
         this.dev = dev;
         if (ast.css && ast.css.children.length) {
-            this.id = `svelte-${hash(ast.css.content.styles)}`;
+            this.id = get_css_hash({
+                filename,
+                name: component_name,
+                css: ast.css.content.styles,
+                hash
+            });
             this.has_styles = true;
             const stack = [];
             let depth = 0;
@@ -26757,1657 +28664,6 @@ class Stylesheet {
 
 const test = typeof process !== 'undefined' && process.env.TEST;
 
-class AbstractBlock extends Node$1 {
-    constructor(component, parent, scope, info) {
-        super(component, parent, scope, info);
-    }
-    warn_if_empty_block() {
-        if (!this.children || this.children.length > 1)
-            return;
-        const child = this.children[0];
-        if (!child || (child.type === 'Text' && !/[^ \r\n\f\v\t]/.test(child.data))) {
-            this.component.warn(this, {
-                code: 'empty-block',
-                message: 'Empty block'
-            });
-        }
-    }
-}
-
-class PendingBlock extends AbstractBlock {
-    constructor(component, parent, scope, info) {
-        super(component, parent, scope, info);
-        this.children = map_children(component, parent, scope, info.children);
-        if (!info.skip) {
-            this.warn_if_empty_block();
-        }
-    }
-}
-
-class ThenBlock extends AbstractBlock {
-    constructor(component, parent, scope, info) {
-        super(component, parent, scope, info);
-        this.scope = scope.child();
-        if (parent.then_node) {
-            parent.then_contexts.forEach(context => {
-                this.scope.add(context.key.name, parent.expression.dependencies, this);
-            });
-        }
-        this.children = map_children(component, parent, this.scope, info.children);
-        if (!info.skip) {
-            this.warn_if_empty_block();
-        }
-    }
-}
-
-class CatchBlock extends AbstractBlock {
-    constructor(component, parent, scope, info) {
-        super(component, parent, scope, info);
-        this.scope = scope.child();
-        if (parent.catch_node) {
-            parent.catch_contexts.forEach(context => {
-                this.scope.add(context.key.name, parent.expression.dependencies, this);
-            });
-        }
-        this.children = map_children(component, parent, this.scope, info.children);
-        if (!info.skip) {
-            this.warn_if_empty_block();
-        }
-    }
-}
-
-function unpack_destructuring(contexts, node, modifier) {
-    if (!node)
-        return;
-    if (node.type === 'Identifier') {
-        contexts.push({
-            key: node,
-            modifier
-        });
-    }
-    else if (node.type === 'RestElement') {
-        contexts.push({
-            key: node.argument,
-            modifier
-        });
-    }
-    else if (node.type === 'ArrayPattern') {
-        node.elements.forEach((element, i) => {
-            if (element && element.type === 'RestElement') {
-                unpack_destructuring(contexts, element, node => x `${modifier(node)}.slice(${i})`);
-            }
-            else if (element && element.type === 'AssignmentPattern') {
-                unpack_destructuring(contexts, element.left, node => x `${modifier(node)}[${i}] !== undefined ? ${modifier(node)}[${i}] : ${element.right}`);
-            }
-            else {
-                unpack_destructuring(contexts, element, node => x `${modifier(node)}[${i}]`);
-            }
-        });
-    }
-    else if (node.type === 'ObjectPattern') {
-        const used_properties = [];
-        node.properties.forEach((property) => {
-            if (property.type === 'RestElement') {
-                unpack_destructuring(contexts, property.argument, node => x `@object_without_properties(${modifier(node)}, [${used_properties}])`);
-            }
-            else {
-                const key = property.key;
-                const value = property.value;
-                used_properties.push(x `"${key.name}"`);
-                if (value.type === 'AssignmentPattern') {
-                    unpack_destructuring(contexts, value.left, node => x `${modifier(node)}.${key.name} !== undefined ? ${modifier(node)}.${key.name} : ${value.right}`);
-                }
-                else {
-                    unpack_destructuring(contexts, value, node => x `${modifier(node)}.${key.name}`);
-                }
-            }
-        });
-    }
-}
-
-class AwaitBlock$1 extends Node$1 {
-    constructor(component, parent, scope, info) {
-        super(component, parent, scope, info);
-        this.expression = new Expression(component, this, scope, info.expression);
-        this.then_node = info.value;
-        this.catch_node = info.error;
-        if (this.then_node) {
-            this.then_contexts = [];
-            unpack_destructuring(this.then_contexts, info.value, node => node);
-        }
-        if (this.catch_node) {
-            this.catch_contexts = [];
-            unpack_destructuring(this.catch_contexts, info.error, node => node);
-        }
-        this.pending = new PendingBlock(component, this, scope, info.pending);
-        this.then = new ThenBlock(component, this, scope, info.then);
-        this.catch = new CatchBlock(component, this, scope, info.catch);
-    }
-}
-
-class EventHandler extends Node$1 {
-    constructor(component, parent, template_scope, info) {
-        super(component, parent, template_scope, info);
-        this.uses_context = false;
-        this.can_make_passive = false;
-        this.name = info.name;
-        this.modifiers = new Set(info.modifiers);
-        if (info.expression) {
-            this.expression = new Expression(component, this, template_scope, info.expression);
-            this.uses_context = this.expression.uses_context;
-            if (/FunctionExpression/.test(info.expression.type) && info.expression.params.length === 0) {
-                // TODO make this detection more accurate — if `event.preventDefault` isn't called, and
-                // `event` is passed to another function, we can make it passive
-                this.can_make_passive = true;
-            }
-            else if (info.expression.type === 'Identifier') {
-                let node = component.node_for_declaration.get(info.expression.name);
-                if (node) {
-                    if (node.type === 'VariableDeclaration') {
-                        // for `const handleClick = () => {...}`, we want the [arrow] function expression node
-                        const declarator = node.declarations.find(d => d.id.name === info.expression.name);
-                        node = declarator && declarator.init;
-                    }
-                    if (node && (node.type === 'FunctionExpression' || node.type === 'FunctionDeclaration' || node.type === 'ArrowFunctionExpression') && node.params.length === 0) {
-                        this.can_make_passive = true;
-                    }
-                }
-            }
-        }
-        else {
-            this.handler_name = component.get_unique_name(`${sanitize(this.name)}_handler`);
-        }
-    }
-    get reassigned() {
-        if (!this.expression) {
-            return false;
-        }
-        const node = this.expression.node;
-        if (/FunctionExpression/.test(node.type)) {
-            return false;
-        }
-        return this.expression.dynamic_dependencies().length > 0;
-    }
-}
-
-class Body extends Node$1 {
-    constructor(component, parent, scope, info) {
-        super(component, parent, scope, info);
-        this.handlers = [];
-        info.attributes.forEach((node) => {
-            if (node.type === 'EventHandler') {
-                this.handlers.push(new EventHandler(component, this, scope, node));
-            }
-        });
-    }
-}
-
-const pattern = /^\s*svelte-ignore\s+([\s\S]+)\s*$/m;
-class Comment$2 extends Node$1 {
-    constructor(component, parent, scope, info) {
-        super(component, parent, scope, info);
-        this.data = info.data;
-        const match = pattern.exec(this.data);
-        this.ignores = match ? match[1].split(/[^\S]/).map(x => x.trim()).filter(Boolean) : [];
-    }
-}
-
-class ElseBlock extends AbstractBlock {
-    constructor(component, parent, scope, info) {
-        super(component, parent, scope, info);
-        this.children = map_children(component, this, scope, info.children);
-        this.warn_if_empty_block();
-    }
-}
-
-class EachBlock$1 extends AbstractBlock {
-    constructor(component, parent, scope, info) {
-        super(component, parent, scope, info);
-        this.has_binding = false;
-        this.has_index_binding = false;
-        this.expression = new Expression(component, this, scope, info.expression);
-        this.context = info.context.name || 'each'; // TODO this is used to facilitate binding; currently fails with destructuring
-        this.context_node = info.context;
-        this.index = info.index;
-        this.scope = scope.child();
-        this.contexts = [];
-        unpack_destructuring(this.contexts, info.context, node => node);
-        this.contexts.forEach(context => {
-            this.scope.add(context.key.name, this.expression.dependencies, this);
-        });
-        if (this.index) {
-            // index can only change if this is a keyed each block
-            const dependencies = info.key ? this.expression.dependencies : new Set([]);
-            this.scope.add(this.index, dependencies, this);
-        }
-        this.key = info.key
-            ? new Expression(component, this, this.scope, info.key)
-            : null;
-        this.has_animation = false;
-        this.children = map_children(component, this, this.scope, info.children);
-        if (this.has_animation) {
-            if (this.children.length !== 1) {
-                const child = this.children.find(child => !!child.animation);
-                component.error(child.animation, {
-                    code: 'invalid-animation',
-                    message: 'An element that uses the animate directive must be the sole child of a keyed each block'
-                });
-            }
-        }
-        this.warn_if_empty_block();
-        this.else = info.else
-            ? new ElseBlock(component, this, this.scope, info.else)
-            : null;
-    }
-}
-
-class Attribute extends Node$1 {
-    constructor(component, parent, scope, info) {
-        super(component, parent, scope, info);
-        this.scope = scope;
-        if (info.type === 'Spread') {
-            this.name = null;
-            this.is_spread = true;
-            this.is_true = false;
-            this.expression = new Expression(component, this, scope, info.expression);
-            this.dependencies = this.expression.dependencies;
-            this.chunks = null;
-            this.is_static = false;
-        }
-        else {
-            this.name = info.name;
-            this.is_true = info.value === true;
-            this.is_static = true;
-            this.dependencies = new Set();
-            this.chunks = this.is_true
-                ? []
-                : info.value.map(node => {
-                    if (node.type === 'Text')
-                        return node;
-                    this.is_static = false;
-                    const expression = new Expression(component, this, scope, node.expression);
-                    add_to_set(this.dependencies, expression.dependencies);
-                    return expression;
-                });
-        }
-    }
-    get_dependencies() {
-        if (this.is_spread)
-            return this.expression.dynamic_dependencies();
-        const dependencies = new Set();
-        this.chunks.forEach(chunk => {
-            if (chunk.type === 'Expression') {
-                add_to_set(dependencies, chunk.dynamic_dependencies());
-            }
-        });
-        return Array.from(dependencies);
-    }
-    get_value(block) {
-        if (this.is_true)
-            return x `true`;
-        if (this.chunks.length === 0)
-            return x `""`;
-        if (this.chunks.length === 1) {
-            return this.chunks[0].type === 'Text'
-                ? string_literal(this.chunks[0].data)
-                : this.chunks[0].manipulate(block);
-        }
-        let expression = this.chunks
-            .map(chunk => chunk.type === 'Text' ? string_literal(chunk.data) : chunk.manipulate(block))
-            .reduce((lhs, rhs) => x `${lhs} + ${rhs}`);
-        if (this.chunks[0].type !== 'Text') {
-            expression = x `"" + ${expression}`;
-        }
-        return expression;
-    }
-    get_static_value() {
-        if (this.is_spread || this.dependencies.size > 0)
-            return null;
-        return this.is_true
-            ? true
-            : this.chunks[0]
-                // method should be called only when `is_static = true`
-                ? this.chunks[0].data
-                : '';
-    }
-    should_cache() {
-        return this.is_static
-            ? false
-            : this.chunks.length === 1
-                // @ts-ignore todo: probably error
-                ? this.chunks[0].node.type !== 'Identifier' || this.scope.names.has(this.chunks[0].node.name)
-                : true;
-    }
-}
-
-// TODO this should live in a specific binding
-const read_only_media_attributes = new Set([
-    'duration',
-    'buffered',
-    'seekable',
-    'played',
-    'seeking',
-    'ended',
-    'videoHeight',
-    'videoWidth'
-]);
-class Binding extends Node$1 {
-    constructor(component, parent, scope, info) {
-        super(component, parent, scope, info);
-        if (info.expression.type !== 'Identifier' && info.expression.type !== 'MemberExpression') {
-            component.error(info, {
-                code: 'invalid-directive-value',
-                message: 'Can only bind to an identifier (e.g. `foo`) or a member expression (e.g. `foo.bar` or `foo[baz]`)'
-            });
-        }
-        this.name = info.name;
-        this.expression = new Expression(component, this, scope, info.expression);
-        this.raw_expression = JSON.parse(JSON.stringify(info.expression));
-        const { name } = get_object(this.expression.node);
-        this.is_contextual = Array.from(this.expression.references).some(name => scope.names.has(name));
-        // make sure we track this as a mutable ref
-        if (scope.is_let(name)) {
-            component.error(this, {
-                code: 'invalid-binding',
-                message: 'Cannot bind to a variable declared with the let: directive'
-            });
-        }
-        else if (scope.names.has(name)) {
-            if (scope.is_await(name)) {
-                component.error(this, {
-                    code: 'invalid-binding',
-                    message: 'Cannot bind to a variable declared with {#await ... then} or {:catch} blocks'
-                });
-            }
-            scope.dependencies_for_name.get(name).forEach(name => {
-                const variable = component.var_lookup.get(name);
-                if (variable) {
-                    variable.mutated = true;
-                }
-            });
-        }
-        else {
-            const variable = component.var_lookup.get(name);
-            if (!variable || variable.global) {
-                component.error(this.expression.node, {
-                    code: 'binding-undeclared',
-                    message: `${name} is not declared`
-                });
-            }
-            variable[this.expression.node.type === 'MemberExpression' ? 'mutated' : 'reassigned'] = true;
-            if (info.expression.type === 'Identifier' && !variable.writable) {
-                component.error(this.expression.node, {
-                    code: 'invalid-binding',
-                    message: 'Cannot bind to a variable which is not writable'
-                });
-            }
-        }
-        const type = parent.get_static_attribute_value('type');
-        this.is_readonly =
-            dimensions.test(this.name) ||
-                (isElement(parent) &&
-                    ((parent.is_media_node() && read_only_media_attributes.has(this.name)) ||
-                        (parent.name === 'input' && type === 'file')) /* TODO others? */);
-    }
-    is_readonly_media_attribute() {
-        return read_only_media_attributes.has(this.name);
-    }
-}
-function isElement(node) {
-    return !!node.is_media_node;
-}
-
-class Transition extends Node$1 {
-    constructor(component, parent, scope, info) {
-        super(component, parent, scope, info);
-        component.warn_if_undefined(info.name, info, scope);
-        this.name = info.name;
-        component.add_reference(info.name.split('.')[0]);
-        this.directive = info.intro && info.outro ? 'transition' : info.intro ? 'in' : 'out';
-        this.is_local = info.modifiers.includes('local');
-        if ((info.intro && parent.intro) || (info.outro && parent.outro)) {
-            const parent_transition = (parent.intro || parent.outro);
-            const message = this.directive === parent_transition.directive
-                ? `An element can only have one '${this.directive}' directive`
-                : `An element cannot have both ${describe(parent_transition)} directive and ${describe(this)} directive`;
-            component.error(info, {
-                code: 'duplicate-transition',
-                message
-            });
-        }
-        this.expression = info.expression
-            ? new Expression(component, this, scope, info.expression)
-            : null;
-    }
-}
-function describe(transition) {
-    return transition.directive === 'transition'
-        ? "a 'transition'"
-        : `an '${transition.directive}'`;
-}
-
-class Animation extends Node$1 {
-    constructor(component, parent, scope, info) {
-        super(component, parent, scope, info);
-        component.warn_if_undefined(info.name, info, scope);
-        this.name = info.name;
-        component.add_reference(info.name.split('.')[0]);
-        if (parent.animation) {
-            component.error(this, {
-                code: 'duplicate-animation',
-                message: "An element can only have one 'animate' directive"
-            });
-        }
-        const block = parent.parent;
-        if (!block || block.type !== 'EachBlock' || !block.key) {
-            // TODO can we relax the 'immediate child' rule?
-            component.error(this, {
-                code: 'invalid-animation',
-                message: 'An element that uses the animate directive must be the immediate child of a keyed each block'
-            });
-        }
-        block.has_animation = true;
-        this.expression = info.expression
-            ? new Expression(component, this, scope, info.expression, true)
-            : null;
-    }
-}
-
-class Class extends Node$1 {
-    constructor(component, parent, scope, info) {
-        super(component, parent, scope, info);
-        this.name = info.name;
-        this.expression = info.expression
-            ? new Expression(component, this, scope, info.expression)
-            : null;
-    }
-}
-
-// Whitespace inside one of these elements will not result in
-// a whitespace node being created in any circumstances. (This
-// list is almost certainly very incomplete)
-const elements_without_text = new Set([
-    'audio',
-    'datalist',
-    'dl',
-    'optgroup',
-    'select',
-    'video'
-]);
-class Text$1 extends Node$1 {
-    constructor(component, parent, scope, info) {
-        super(component, parent, scope, info);
-        this.data = info.data;
-        this.synthetic = info.synthetic || false;
-    }
-    should_skip() {
-        if (/\S/.test(this.data))
-            return false;
-        const parent_element = this.find_nearest(/(?:Element|InlineComponent|Head)/);
-        if (!parent_element)
-            return false;
-        if (parent_element.type === 'Head')
-            return true;
-        if (parent_element.type === 'InlineComponent')
-            return parent_element.children.length === 1 && this === parent_element.children[0];
-        // svg namespace exclusions
-        if (/svg$/.test(parent_element.namespace)) {
-            if (this.prev && this.prev.type === 'Element' && this.prev.name === 'tspan')
-                return false;
-        }
-        return parent_element.namespace || elements_without_text.has(parent_element.name);
-    }
-}
-
-const applicable = new Set(['Identifier', 'ObjectExpression', 'ArrayExpression', 'Property']);
-class Let extends Node$1 {
-    constructor(component, parent, scope, info) {
-        super(component, parent, scope, info);
-        this.names = [];
-        this.name = { type: 'Identifier', name: info.name };
-        const { names } = this;
-        if (info.expression) {
-            this.value = info.expression;
-            walk(info.expression, {
-                enter(node) {
-                    if (!applicable.has(node.type)) {
-                        component.error(node, {
-                            code: 'invalid-let',
-                            message: 'let directive value must be an identifier or an object/array pattern'
-                        });
-                    }
-                    if (node.type === 'Identifier') {
-                        names.push(node.name);
-                    }
-                    // slightly unfortunate hack
-                    if (node.type === 'ArrayExpression') {
-                        node.type = 'ArrayPattern';
-                    }
-                    if (node.type === 'ObjectExpression') {
-                        node.type = 'ObjectPattern';
-                    }
-                }
-            });
-        }
-        else {
-            names.push(this.name.name);
-        }
-    }
-}
-
-const svg$1 = /^(?:altGlyph|altGlyphDef|altGlyphItem|animate|animateColor|animateMotion|animateTransform|circle|clipPath|color-profile|cursor|defs|desc|discard|ellipse|feBlend|feColorMatrix|feComponentTransfer|feComposite|feConvolveMatrix|feDiffuseLighting|feDisplacementMap|feDistantLight|feDropShadow|feFlood|feFuncA|feFuncB|feFuncG|feFuncR|feGaussianBlur|feImage|feMerge|feMergeNode|feMorphology|feOffset|fePointLight|feSpecularLighting|feSpotLight|feTile|feTurbulence|filter|font|font-face|font-face-format|font-face-name|font-face-src|font-face-uri|foreignObject|g|glyph|glyphRef|hatch|hatchpath|hkern|image|line|linearGradient|marker|mask|mesh|meshgradient|meshpatch|meshrow|metadata|missing-glyph|mpath|path|pattern|polygon|polyline|radialGradient|rect|set|solidcolor|stop|svg|switch|symbol|text|textPath|tref|tspan|unknown|use|view|vkern)$/;
-const aria_attributes = 'activedescendant atomic autocomplete busy checked colcount colindex colspan controls current describedby details disabled dropeffect errormessage expanded flowto grabbed haspopup hidden invalid keyshortcuts label labelledby level live modal multiline multiselectable orientation owns placeholder posinset pressed readonly relevant required roledescription rowcount rowindex rowspan selected setsize sort valuemax valuemin valuenow valuetext'.split(' ');
-const aria_attribute_set = new Set(aria_attributes);
-const aria_roles = 'alert alertdialog application article banner blockquote button caption cell checkbox code columnheader combobox complementary contentinfo definition deletion dialog directory document emphasis feed figure form generic graphics-document graphics-object graphics-symbol grid gridcell group heading img link list listbox listitem log main marquee math meter menu menubar menuitem menuitemcheckbox menuitemradio navigation none note option paragraph presentation progressbar radio radiogroup region row rowgroup rowheader scrollbar search searchbox separator slider spinbutton status strong subscript superscript switch tab table tablist tabpanel term textbox time timer toolbar tooltip tree treegrid treeitem'.split(' ');
-const aria_role_set = new Set(aria_roles);
-const a11y_required_attributes = {
-    a: ['href'],
-    area: ['alt', 'aria-label', 'aria-labelledby'],
-    // html-has-lang
-    html: ['lang'],
-    // iframe-has-title
-    iframe: ['title'],
-    img: ['alt'],
-    object: ['title', 'aria-label', 'aria-labelledby']
-};
-const a11y_distracting_elements = new Set([
-    'blink',
-    'marquee'
-]);
-const a11y_required_content = new Set([
-    // anchor-has-content
-    'a',
-    // heading-has-content
-    'h1',
-    'h2',
-    'h3',
-    'h4',
-    'h5',
-    'h6'
-]);
-const a11y_no_onchange = new Set([
-    'select',
-    'option'
-]);
-const a11y_labelable = new Set([
-    'button',
-    'input',
-    'keygen',
-    'meter',
-    'output',
-    'progress',
-    'select',
-    'textarea'
-]);
-const invisible_elements = new Set(['meta', 'html', 'script', 'style']);
-const valid_modifiers = new Set([
-    'preventDefault',
-    'stopPropagation',
-    'capture',
-    'once',
-    'passive',
-    'nonpassive',
-    'self'
-]);
-const passive_events = new Set([
-    'wheel',
-    'touchstart',
-    'touchmove',
-    'touchend',
-    'touchcancel'
-]);
-const react_attributes = new Map([
-    ['className', 'class'],
-    ['htmlFor', 'for']
-]);
-function get_namespace(parent, element, explicit_namespace) {
-    const parent_element = parent.find_nearest(/^Element/);
-    if (!parent_element) {
-        return explicit_namespace || (svg$1.test(element.name)
-            ? namespaces.svg
-            : null);
-    }
-    if (svg$1.test(element.name.toLowerCase()))
-        return namespaces.svg;
-    if (parent_element.name.toLowerCase() === 'foreignobject')
-        return null;
-    return parent_element.namespace;
-}
-class Element$1 extends Node$1 {
-    constructor(component, parent, scope, info) {
-        super(component, parent, scope, info);
-        this.attributes = [];
-        this.actions = [];
-        this.bindings = [];
-        this.classes = [];
-        this.handlers = [];
-        this.lets = [];
-        this.intro = null;
-        this.outro = null;
-        this.animation = null;
-        this.name = info.name;
-        this.namespace = get_namespace(parent, this, component.namespace);
-        if (this.namespace !== namespaces.foreign) {
-            if (this.name === 'textarea') {
-                if (info.children.length > 0) {
-                    const value_attribute = info.attributes.find(node => node.name === 'value');
-                    if (value_attribute) {
-                        component.error(value_attribute, {
-                            code: 'textarea-duplicate-value',
-                            message: 'A <textarea> can have either a value attribute or (equivalently) child content, but not both'
-                        });
-                    }
-                    // this is an egregious hack, but it's the easiest way to get <textarea>
-                    // children treated the same way as a value attribute
-                    info.attributes.push({
-                        type: 'Attribute',
-                        name: 'value',
-                        value: info.children
-                    });
-                    info.children = [];
-                }
-            }
-            if (this.name === 'option') {
-                // Special case — treat these the same way:
-                //   <option>{foo}</option>
-                //   <option value={foo}>{foo}</option>
-                const value_attribute = info.attributes.find(attribute => attribute.name === 'value');
-                if (!value_attribute) {
-                    info.attributes.push({
-                        type: 'Attribute',
-                        name: 'value',
-                        value: info.children,
-                        synthetic: true
-                    });
-                }
-            }
-        }
-        const has_let = info.attributes.some(node => node.type === 'Let');
-        if (has_let) {
-            scope = scope.child();
-        }
-        // Binding relies on Attribute, defer its evaluation
-        const order = ['Binding']; // everything else is -1
-        info.attributes.sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type));
-        info.attributes.forEach(node => {
-            switch (node.type) {
-                case 'Action':
-                    this.actions.push(new Action(component, this, scope, node));
-                    break;
-                case 'Attribute':
-                case 'Spread':
-                    // special case
-                    if (node.name === 'xmlns')
-                        this.namespace = node.value[0].data;
-                    this.attributes.push(new Attribute(component, this, scope, node));
-                    break;
-                case 'Binding':
-                    this.bindings.push(new Binding(component, this, scope, node));
-                    break;
-                case 'Class':
-                    this.classes.push(new Class(component, this, scope, node));
-                    break;
-                case 'EventHandler':
-                    this.handlers.push(new EventHandler(component, this, scope, node));
-                    break;
-                case 'Let': {
-                    const l = new Let(component, this, scope, node);
-                    this.lets.push(l);
-                    const dependencies = new Set([l.name.name]);
-                    l.names.forEach(name => {
-                        scope.add(name, dependencies, this);
-                    });
-                    break;
-                }
-                case 'Transition':
-                    {
-                        const transition = new Transition(component, this, scope, node);
-                        if (node.intro)
-                            this.intro = transition;
-                        if (node.outro)
-                            this.outro = transition;
-                        break;
-                    }
-                case 'Animation':
-                    this.animation = new Animation(component, this, scope, node);
-                    break;
-                default:
-                    throw new Error(`Not implemented: ${node.type}`);
-            }
-        });
-        this.scope = scope;
-        this.children = map_children(component, this, this.scope, info.children);
-        this.validate();
-        component.apply_stylesheet(this);
-    }
-    validate() {
-        if (this.component.var_lookup.has(this.name) && this.component.var_lookup.get(this.name).imported) {
-            this.component.warn(this, {
-                code: 'component-name-lowercase',
-                message: `<${this.name}> will be treated as an HTML element unless it begins with a capital letter`
-            });
-        }
-        this.validate_attributes();
-        this.validate_event_handlers();
-        if (this.namespace === namespaces.foreign) {
-            this.validate_bindings_foreign();
-        }
-        else {
-            this.validate_attributes_a11y();
-            this.validate_special_cases();
-            this.validate_bindings();
-            this.validate_content();
-        }
-    }
-    validate_attributes() {
-        const { component, parent } = this;
-        this.attributes.forEach(attribute => {
-            if (attribute.is_spread)
-                return;
-            const name = attribute.name.toLowerCase();
-            // Errors
-            if (/(^[0-9-.])|[\^$@%&#?!|()[\]{}^*+~;]/.test(name)) {
-                component.error(attribute, {
-                    code: 'illegal-attribute',
-                    message: `'${name}' is not a valid attribute name`
-                });
-            }
-            if (name === 'slot') {
-                if (!attribute.is_static) {
-                    component.error(attribute, {
-                        code: 'invalid-slot-attribute',
-                        message: 'slot attribute cannot have a dynamic value'
-                    });
-                }
-                if (component.slot_outlets.has(name)) {
-                    component.error(attribute, {
-                        code: 'duplicate-slot-attribute',
-                        message: `Duplicate '${name}' slot`
-                    });
-                    component.slot_outlets.add(name);
-                }
-                if (!(parent.type === 'InlineComponent' || within_custom_element(parent))) {
-                    component.error(attribute, {
-                        code: 'invalid-slotted-content',
-                        message: 'Element with a slot=\'...\' attribute must be a child of a component or a descendant of a custom element'
-                    });
-                }
-            }
-            // Warnings
-            if (this.namespace !== namespaces.foreign) {
-                if (name === 'is') {
-                    component.warn(attribute, {
-                        code: 'avoid-is',
-                        message: 'The \'is\' attribute is not supported cross-browser and should be avoided'
-                    });
-                }
-                if (react_attributes.has(attribute.name)) {
-                    component.warn(attribute, {
-                        code: 'invalid-html-attribute',
-                        message: `'${attribute.name}' is not a valid HTML attribute. Did you mean '${react_attributes.get(attribute.name)}'?`
-                    });
-                }
-            }
-        });
-    }
-    validate_attributes_a11y() {
-        const { component } = this;
-        this.attributes.forEach(attribute => {
-            if (attribute.is_spread)
-                return;
-            const name = attribute.name.toLowerCase();
-            // aria-props
-            if (name.startsWith('aria-')) {
-                if (invisible_elements.has(this.name)) {
-                    // aria-unsupported-elements
-                    component.warn(attribute, {
-                        code: 'a11y-aria-attributes',
-                        message: `A11y: <${this.name}> should not have aria-* attributes`
-                    });
-                }
-                const type = name.slice(5);
-                if (!aria_attribute_set.has(type)) {
-                    const match = fuzzymatch(type, aria_attributes);
-                    let message = `A11y: Unknown aria attribute 'aria-${type}'`;
-                    if (match)
-                        message += ` (did you mean '${match}'?)`;
-                    component.warn(attribute, {
-                        code: 'a11y-unknown-aria-attribute',
-                        message
-                    });
-                }
-                if (name === 'aria-hidden' && /^h[1-6]$/.test(this.name)) {
-                    component.warn(attribute, {
-                        code: 'a11y-hidden',
-                        message: `A11y: <${this.name}> element should not be hidden`
-                    });
-                }
-            }
-            // aria-role
-            if (name === 'role') {
-                if (invisible_elements.has(this.name)) {
-                    // aria-unsupported-elements
-                    component.warn(attribute, {
-                        code: 'a11y-misplaced-role',
-                        message: `A11y: <${this.name}> should not have role attribute`
-                    });
-                }
-                const value = attribute.get_static_value();
-                // @ts-ignore
-                if (value && !aria_role_set.has(value)) {
-                    // @ts-ignore
-                    const match = fuzzymatch(value, aria_roles);
-                    let message = `A11y: Unknown role '${value}'`;
-                    if (match)
-                        message += ` (did you mean '${match}'?)`;
-                    component.warn(attribute, {
-                        code: 'a11y-unknown-role',
-                        message
-                    });
-                }
-            }
-            // no-access-key
-            if (name === 'accesskey') {
-                component.warn(attribute, {
-                    code: 'a11y-accesskey',
-                    message: 'A11y: Avoid using accesskey'
-                });
-            }
-            // no-autofocus
-            if (name === 'autofocus') {
-                component.warn(attribute, {
-                    code: 'a11y-autofocus',
-                    message: 'A11y: Avoid using autofocus'
-                });
-            }
-            // scope
-            if (name === 'scope' && this.name !== 'th') {
-                component.warn(attribute, {
-                    code: 'a11y-misplaced-scope',
-                    message: 'A11y: The scope attribute should only be used with <th> elements'
-                });
-            }
-            // tabindex-no-positive
-            if (name === 'tabindex') {
-                const value = attribute.get_static_value();
-                // @ts-ignore todo is tabindex=true correct case?
-                if (!isNaN(value) && +value > 0) {
-                    component.warn(attribute, {
-                        code: 'a11y-positive-tabindex',
-                        message: 'A11y: avoid tabindex values above zero'
-                    });
-                }
-            }
-        });
-    }
-    validate_special_cases() {
-        const { component, attributes, handlers } = this;
-        const attribute_map = new Map();
-        const handlers_map = new Map();
-        attributes.forEach(attribute => (attribute_map.set(attribute.name, attribute)));
-        handlers.forEach(handler => (handlers_map.set(handler.name, handler)));
-        if (this.name === 'a') {
-            const href_attribute = attribute_map.get('href') || attribute_map.get('xlink:href');
-            const id_attribute = attribute_map.get('id');
-            const name_attribute = attribute_map.get('name');
-            if (href_attribute) {
-                const href_value = href_attribute.get_static_value();
-                if (href_value === '' || href_value === '#' || /^\W*javascript:/i.test(href_value)) {
-                    component.warn(href_attribute, {
-                        code: 'a11y-invalid-attribute',
-                        message: `A11y: '${href_value}' is not a valid ${href_attribute.name} attribute`
-                    });
-                }
-            }
-            else {
-                const id_attribute_valid = id_attribute && id_attribute.get_static_value() !== '';
-                const name_attribute_valid = name_attribute && name_attribute.get_static_value() !== '';
-                if (!id_attribute_valid && !name_attribute_valid) {
-                    component.warn(this, {
-                        code: 'a11y-missing-attribute',
-                        message: 'A11y: <a> element should have an href attribute'
-                    });
-                }
-            }
-        }
-        else {
-            const required_attributes = a11y_required_attributes[this.name];
-            if (required_attributes) {
-                const has_attribute = required_attributes.some(name => attribute_map.has(name));
-                if (!has_attribute) {
-                    should_have_attribute(this, required_attributes);
-                }
-            }
-        }
-        if (this.name === 'input') {
-            const type = attribute_map.get('type');
-            if (type && type.get_static_value() === 'image') {
-                const required_attributes = ['alt', 'aria-label', 'aria-labelledby'];
-                const has_attribute = required_attributes.some(name => attribute_map.has(name));
-                if (!has_attribute) {
-                    should_have_attribute(this, required_attributes, 'input type="image"');
-                }
-            }
-        }
-        if (this.name === 'img') {
-            const alt_attribute = attribute_map.get('alt');
-            const aria_hidden_attribute = attribute_map.get('aria-hidden');
-            const aria_hidden_exist = aria_hidden_attribute && aria_hidden_attribute.get_static_value();
-            if (alt_attribute && !aria_hidden_exist) {
-                const alt_value = alt_attribute.get_static_value();
-                if (/\b(image|picture|photo)\b/i.test(alt_value)) {
-                    component.warn(this, {
-                        code: 'a11y-img-redundant-alt',
-                        message: 'A11y: Screenreaders already announce <img> elements as an image.'
-                    });
-                }
-            }
-        }
-        if (this.name === 'label') {
-            const has_input_child = this.children.some(i => (i instanceof Element$1 && a11y_labelable.has(i.name)));
-            if (!attribute_map.has('for') && !has_input_child) {
-                component.warn(this, {
-                    code: 'a11y-label-has-associated-control',
-                    message: 'A11y: A form label must be associated with a control.'
-                });
-            }
-        }
-        if (this.is_media_node()) {
-            if (attribute_map.has('muted')) {
-                return;
-            }
-            let has_caption;
-            const track = this.children.find((i) => i.name === 'track');
-            if (track) {
-                has_caption = track.attributes.find(a => a.name === 'kind' && a.get_static_value() === 'captions');
-            }
-            if (!has_caption) {
-                component.warn(this, {
-                    code: 'a11y-media-has-caption',
-                    message: 'A11y: Media elements must have a <track kind="captions">'
-                });
-            }
-        }
-        if (a11y_no_onchange.has(this.name)) {
-            if (handlers_map.has('change') && !handlers_map.has('blur')) {
-                component.warn(this, {
-                    code: 'a11y-no-onchange',
-                    message: 'A11y: on:blur must be used instead of on:change, unless absolutely necessary and it causes no negative consequences for keyboard only or screen reader users.'
-                });
-            }
-        }
-        if (a11y_distracting_elements.has(this.name)) {
-            // no-distracting-elements
-            component.warn(this, {
-                code: 'a11y-distracting-elements',
-                message: `A11y: Avoid <${this.name}> elements`
-            });
-        }
-        if (this.name === 'figcaption') {
-            let { parent } = this;
-            let is_figure_parent = false;
-            while (parent) {
-                if (parent.name === 'figure') {
-                    is_figure_parent = true;
-                    break;
-                }
-                if (parent.type === 'Element') {
-                    break;
-                }
-                parent = parent.parent;
-            }
-            if (!is_figure_parent) {
-                component.warn(this, {
-                    code: 'a11y-structure',
-                    message: 'A11y: <figcaption> must be an immediate child of <figure>'
-                });
-            }
-        }
-        if (this.name === 'figure') {
-            const children = this.children.filter(node => {
-                if (node.type === 'Comment')
-                    return false;
-                if (node.type === 'Text')
-                    return /\S/.test(node.data);
-                return true;
-            });
-            const index = children.findIndex(child => child.name === 'figcaption');
-            if (index !== -1 && (index !== 0 && index !== children.length - 1)) {
-                component.warn(children[index], {
-                    code: 'a11y-structure',
-                    message: 'A11y: <figcaption> must be first or last child of <figure>'
-                });
-            }
-        }
-    }
-    validate_bindings_foreign() {
-        this.bindings.forEach(binding => {
-            if (binding.name !== 'this') {
-                this.component.error(binding, {
-                    code: 'invalid-binding',
-                    message: `'${binding.name}' is not a valid binding. Foreign elements only support bind:this`
-                });
-            }
-        });
-    }
-    validate_bindings() {
-        const { component } = this;
-        const check_type_attribute = () => {
-            const attribute = this.attributes.find((attribute) => attribute.name === 'type');
-            if (!attribute)
-                return null;
-            if (!attribute.is_static) {
-                component.error(attribute, {
-                    code: 'invalid-type',
-                    message: '\'type\' attribute cannot be dynamic if input uses two-way binding'
-                });
-            }
-            const value = attribute.get_static_value();
-            if (value === true) {
-                component.error(attribute, {
-                    code: 'missing-type',
-                    message: '\'type\' attribute must be specified'
-                });
-            }
-            return value;
-        };
-        this.bindings.forEach(binding => {
-            const { name } = binding;
-            if (name === 'value') {
-                if (this.name !== 'input' &&
-                    this.name !== 'textarea' &&
-                    this.name !== 'select') {
-                    component.error(binding, {
-                        code: 'invalid-binding',
-                        message: `'value' is not a valid binding on <${this.name}> elements`
-                    });
-                }
-                if (this.name === 'select') {
-                    const attribute = this.attributes.find((attribute) => attribute.name === 'multiple');
-                    if (attribute && !attribute.is_static) {
-                        component.error(attribute, {
-                            code: 'dynamic-multiple-attribute',
-                            message: '\'multiple\' attribute cannot be dynamic if select uses two-way binding'
-                        });
-                    }
-                }
-                else {
-                    check_type_attribute();
-                }
-            }
-            else if (name === 'checked' || name === 'indeterminate') {
-                if (this.name !== 'input') {
-                    component.error(binding, {
-                        code: 'invalid-binding',
-                        message: `'${name}' is not a valid binding on <${this.name}> elements`
-                    });
-                }
-                const type = check_type_attribute();
-                if (type !== 'checkbox') {
-                    let message = `'${name}' binding can only be used with <input type="checkbox">`;
-                    if (type === 'radio')
-                        message += ' — for <input type="radio">, use \'group\' binding';
-                    component.error(binding, { code: 'invalid-binding', message });
-                }
-            }
-            else if (name === 'group') {
-                if (this.name !== 'input') {
-                    component.error(binding, {
-                        code: 'invalid-binding',
-                        message: `'group' is not a valid binding on <${this.name}> elements`
-                    });
-                }
-                const type = check_type_attribute();
-                if (type !== 'checkbox' && type !== 'radio') {
-                    component.error(binding, {
-                        code: 'invalid-binding',
-                        message: '\'group\' binding can only be used with <input type="checkbox"> or <input type="radio">'
-                    });
-                }
-            }
-            else if (name === 'files') {
-                if (this.name !== 'input') {
-                    component.error(binding, {
-                        code: 'invalid-binding',
-                        message: `'files' is not a valid binding on <${this.name}> elements`
-                    });
-                }
-                const type = check_type_attribute();
-                if (type !== 'file') {
-                    component.error(binding, {
-                        code: 'invalid-binding',
-                        message: '\'files\' binding can only be used with <input type="file">'
-                    });
-                }
-            }
-            else if (name === 'open') {
-                if (this.name !== 'details') {
-                    component.error(binding, {
-                        code: 'invalid-binding',
-                        message: `'${name}' binding can only be used with <details>`
-                    });
-                }
-            }
-            else if (name === 'currentTime' ||
-                name === 'duration' ||
-                name === 'paused' ||
-                name === 'buffered' ||
-                name === 'seekable' ||
-                name === 'played' ||
-                name === 'volume' ||
-                name === 'muted' ||
-                name === 'playbackRate' ||
-                name === 'seeking' ||
-                name === 'ended') {
-                if (this.name !== 'audio' && this.name !== 'video') {
-                    component.error(binding, {
-                        code: 'invalid-binding',
-                        message: `'${name}' binding can only be used with <audio> or <video>`
-                    });
-                }
-            }
-            else if (name === 'videoHeight' ||
-                name === 'videoWidth') {
-                if (this.name !== 'video') {
-                    component.error(binding, {
-                        code: 'invalid-binding',
-                        message: `'${name}' binding can only be used with <video>`
-                    });
-                }
-            }
-            else if (dimensions.test(name)) {
-                if (this.name === 'svg' && (name === 'offsetWidth' || name === 'offsetHeight')) {
-                    component.error(binding, {
-                        code: 'invalid-binding',
-                        message: `'${binding.name}' is not a valid binding on <svg>. Use '${name.replace('offset', 'client')}' instead`
-                    });
-                }
-                else if (svg$1.test(this.name)) {
-                    component.error(binding, {
-                        code: 'invalid-binding',
-                        message: `'${binding.name}' is not a valid binding on SVG elements`
-                    });
-                }
-                else if (is_void(this.name)) {
-                    component.error(binding, {
-                        code: 'invalid-binding',
-                        message: `'${binding.name}' is not a valid binding on void elements like <${this.name}>. Use a wrapper element instead`
-                    });
-                }
-            }
-            else if (name === 'textContent' ||
-                name === 'innerHTML') {
-                const contenteditable = this.attributes.find((attribute) => attribute.name === 'contenteditable');
-                if (!contenteditable) {
-                    component.error(binding, {
-                        code: 'missing-contenteditable-attribute',
-                        message: '\'contenteditable\' attribute is required for textContent and innerHTML two-way bindings'
-                    });
-                }
-                else if (contenteditable && !contenteditable.is_static) {
-                    component.error(contenteditable, {
-                        code: 'dynamic-contenteditable-attribute',
-                        message: '\'contenteditable\' attribute cannot be dynamic if element uses two-way binding'
-                    });
-                }
-            }
-            else if (name !== 'this') {
-                component.error(binding, {
-                    code: 'invalid-binding',
-                    message: `'${binding.name}' is not a valid binding`
-                });
-            }
-        });
-    }
-    validate_content() {
-        if (!a11y_required_content.has(this.name))
-            return;
-        if (this.bindings
-            .some((binding) => ['textContent', 'innerHTML'].includes(binding.name)))
-            return;
-        if (this.children.length === 0) {
-            this.component.warn(this, {
-                code: 'a11y-missing-content',
-                message: `A11y: <${this.name}> element should have child content`
-            });
-        }
-    }
-    validate_event_handlers() {
-        const { component } = this;
-        this.handlers.forEach(handler => {
-            if (handler.modifiers.has('passive') && handler.modifiers.has('preventDefault')) {
-                component.error(handler, {
-                    code: 'invalid-event-modifier',
-                    message: 'The \'passive\' and \'preventDefault\' modifiers cannot be used together'
-                });
-            }
-            if (handler.modifiers.has('passive') && handler.modifiers.has('nonpassive')) {
-                component.error(handler, {
-                    code: 'invalid-event-modifier',
-                    message: 'The \'passive\' and \'nonpassive\' modifiers cannot be used together'
-                });
-            }
-            handler.modifiers.forEach(modifier => {
-                if (!valid_modifiers.has(modifier)) {
-                    component.error(handler, {
-                        code: 'invalid-event-modifier',
-                        message: `Valid event modifiers are ${list(Array.from(valid_modifiers))}`
-                    });
-                }
-                if (modifier === 'passive') {
-                    if (passive_events.has(handler.name)) {
-                        if (handler.can_make_passive) {
-                            component.warn(handler, {
-                                code: 'redundant-event-modifier',
-                                message: 'Touch event handlers that don\'t use the \'event\' object are passive by default'
-                            });
-                        }
-                    }
-                    else {
-                        component.warn(handler, {
-                            code: 'redundant-event-modifier',
-                            message: 'The passive modifier only works with wheel and touch events'
-                        });
-                    }
-                }
-                if (component.compile_options.legacy && (modifier === 'once' || modifier === 'passive')) {
-                    // TODO this could be supported, but it would need a few changes to
-                    // how event listeners work
-                    component.error(handler, {
-                        code: 'invalid-event-modifier',
-                        message: `The '${modifier}' modifier cannot be used in legacy mode`
-                    });
-                }
-            });
-            if (passive_events.has(handler.name) && handler.can_make_passive && !handler.modifiers.has('preventDefault') && !handler.modifiers.has('nonpassive')) {
-                // touch/wheel events should be passive by default
-                handler.modifiers.add('passive');
-            }
-        });
-    }
-    is_media_node() {
-        return this.name === 'audio' || this.name === 'video';
-    }
-    add_css_class() {
-        if (this.attributes.some(attr => attr.is_spread)) {
-            this.needs_manual_style_scoping = true;
-            return;
-        }
-        const { id } = this.component.stylesheet;
-        const class_attribute = this.attributes.find(a => a.name === 'class');
-        if (class_attribute && !class_attribute.is_true) {
-            if (class_attribute.chunks.length === 1 && class_attribute.chunks[0].type === 'Text') {
-                class_attribute.chunks[0].data += ` ${id}`;
-            }
-            else {
-                class_attribute.chunks.push(new Text$1(this.component, this, this.scope, {
-                    type: 'Text',
-                    data: ` ${id}`,
-                    synthetic: true
-                }));
-            }
-        }
-        else {
-            this.attributes.push(new Attribute(this.component, this, this.scope, {
-                type: 'Attribute',
-                name: 'class',
-                value: [{ type: 'Text', data: id, synthetic: true }]
-            }));
-        }
-    }
-}
-function should_have_attribute(node, attributes, name = node.name) {
-    const article = /^[aeiou]/.test(attributes[0]) ? 'an' : 'a';
-    const sequence = attributes.length > 1 ?
-        attributes.slice(0, -1).join(', ') + ` or ${attributes[attributes.length - 1]}` :
-        attributes[0];
-    node.component.warn(node, {
-        code: 'a11y-missing-attribute',
-        message: `A11y: <${name}> element should have ${article} ${sequence} attribute`
-    });
-}
-function within_custom_element(parent) {
-    while (parent) {
-        if (parent.type === 'InlineComponent')
-            return false;
-        if (parent.type === 'Element' && /-/.test(parent.name))
-            return true;
-        parent = parent.parent;
-    }
-    return false;
-}
-
-class Head$1 extends Node$1 {
-    constructor(component, parent, scope, info) {
-        super(component, parent, scope, info);
-        if (info.attributes.length) {
-            component.error(info.attributes[0], {
-                code: 'invalid-attribute',
-                message: '<svelte:head> should not have any attributes or directives'
-            });
-        }
-        this.children = map_children(component, parent, scope, info.children.filter(child => {
-            return (child.type !== 'Text' || /\S/.test(child.data));
-        }));
-        if (this.children.length > 0) {
-            this.id = `svelte-${hash(this.component.source.slice(this.start, this.end))}`;
-        }
-    }
-}
-
-class IfBlock$1 extends AbstractBlock {
-    constructor(component, parent, scope, info) {
-        super(component, parent, scope, info);
-        this.expression = new Expression(component, this, scope, info.expression);
-        this.children = map_children(component, this, scope, info.children);
-        this.else = info.else
-            ? new ElseBlock(component, this, scope, info.else)
-            : null;
-        this.warn_if_empty_block();
-    }
-}
-
-class InlineComponent$1 extends Node$1 {
-    constructor(component, parent, scope, info) {
-        super(component, parent, scope, info);
-        this.attributes = [];
-        this.bindings = [];
-        this.handlers = [];
-        this.lets = [];
-        if (info.name !== 'svelte:component' && info.name !== 'svelte:self') {
-            const name = info.name.split('.')[0]; // accommodate namespaces
-            component.warn_if_undefined(name, info, scope);
-            component.add_reference(name);
-        }
-        this.name = info.name;
-        this.expression = this.name === 'svelte:component'
-            ? new Expression(component, this, scope, info.expression)
-            : null;
-        info.attributes.forEach(node => {
-            /* eslint-disable no-fallthrough */
-            switch (node.type) {
-                case 'Action':
-                    component.error(node, {
-                        code: 'invalid-action',
-                        message: 'Actions can only be applied to DOM elements, not components'
-                    });
-                case 'Attribute':
-                    if (node.name === 'slot') {
-                        component.error(node, {
-                            code: 'invalid-prop',
-                            message: "'slot' is reserved for future use in named slots"
-                        });
-                    }
-                // fallthrough
-                case 'Spread':
-                    this.attributes.push(new Attribute(component, this, scope, node));
-                    break;
-                case 'Binding':
-                    this.bindings.push(new Binding(component, this, scope, node));
-                    break;
-                case 'Class':
-                    component.error(node, {
-                        code: 'invalid-class',
-                        message: 'Classes can only be applied to DOM elements, not components'
-                    });
-                case 'EventHandler':
-                    this.handlers.push(new EventHandler(component, this, scope, node));
-                    break;
-                case 'Let':
-                    this.lets.push(new Let(component, this, scope, node));
-                    break;
-                case 'Transition':
-                    component.error(node, {
-                        code: 'invalid-transition',
-                        message: 'Transitions can only be applied to DOM elements, not components'
-                    });
-                default:
-                    throw new Error(`Not implemented: ${node.type}`);
-            }
-            /* eslint-enable no-fallthrough */
-        });
-        if (this.lets.length > 0) {
-            this.scope = scope.child();
-            this.lets.forEach(l => {
-                const dependencies = new Set([l.name.name]);
-                l.names.forEach(name => {
-                    this.scope.add(name, dependencies, this);
-                });
-            });
-        }
-        else {
-            this.scope = scope;
-        }
-        this.handlers.forEach(handler => {
-            handler.modifiers.forEach(modifier => {
-                if (modifier !== 'once') {
-                    component.error(handler, {
-                        code: 'invalid-event-modifier',
-                        message: "Event modifiers other than 'once' can only be used on DOM elements"
-                    });
-                }
-            });
-        });
-        this.children = map_children(component, this, this.scope, info.children);
-    }
-}
-
-class KeyBlock$1 extends AbstractBlock {
-    constructor(component, parent, scope, info) {
-        super(component, parent, scope, info);
-        this.expression = new Expression(component, this, scope, info.expression);
-        this.children = map_children(component, this, scope, info.children);
-        this.warn_if_empty_block();
-    }
-}
-
-class Tag$2 extends Node$1 {
-    constructor(component, parent, scope, info) {
-        super(component, parent, scope, info);
-        this.expression = new Expression(component, this, scope, info.expression);
-        this.should_cache = (info.expression.type !== 'Identifier' ||
-            (this.expression.dependencies.size && scope.names.has(info.expression.name)));
-    }
-}
-
-class MustacheTag extends Tag$2 {
-}
-
-class Options extends Node$1 {
-}
-
-class RawMustacheTag extends Tag$2 {
-}
-
-class DebugTag$1 extends Node$1 {
-    constructor(component, parent, scope, info) {
-        super(component, parent, scope, info);
-        this.expressions = info.identifiers.map((node) => {
-            return new Expression(component, parent, scope, node);
-        });
-    }
-}
-
-class Slot$1 extends Element$1 {
-    constructor(component, parent, scope, info) {
-        super(component, parent, scope, info);
-        this.values = new Map();
-        info.attributes.forEach(attr => {
-            if (attr.type !== 'Attribute' && attr.type !== 'Spread') {
-                component.error(attr, {
-                    code: 'invalid-slot-directive',
-                    message: '<slot> cannot have directives'
-                });
-            }
-            if (attr.name === 'name') {
-                if (attr.value.length !== 1 || attr.value[0].type !== 'Text') {
-                    component.error(attr, {
-                        code: 'dynamic-slot-name',
-                        message: '<slot> name cannot be dynamic'
-                    });
-                }
-                this.slot_name = attr.value[0].data;
-                if (this.slot_name === 'default') {
-                    component.error(attr, {
-                        code: 'invalid-slot-name',
-                        message: 'default is a reserved word — it cannot be used as a slot name'
-                    });
-                }
-            }
-            this.values.set(attr.name, new Attribute(component, this, scope, attr));
-        });
-        if (!this.slot_name)
-            this.slot_name = 'default';
-        if (this.slot_name === 'default') {
-            // if this is the default slot, add our dependencies to any
-            // other slots (which inherit our slot values) that were
-            // previously encountered
-            component.slots.forEach((slot) => {
-                this.values.forEach((attribute, name) => {
-                    if (!slot.values.has(name)) {
-                        slot.values.set(name, attribute);
-                    }
-                });
-            });
-        }
-        else if (component.slots.has('default')) {
-            // otherwise, go the other way — inherit values from
-            // a previously encountered default slot
-            const default_slot = component.slots.get('default');
-            default_slot.values.forEach((attribute, name) => {
-                if (!this.values.has(name)) {
-                    this.values.set(name, attribute);
-                }
-            });
-        }
-        component.slots.set(this.slot_name, this);
-    }
-}
-
-class Title$1 extends Node$1 {
-    constructor(component, parent, scope, info) {
-        super(component, parent, scope, info);
-        this.children = map_children(component, parent, scope, info.children);
-        if (info.attributes.length > 0) {
-            component.error(info.attributes[0], {
-                code: 'illegal-attribute',
-                message: '<title> cannot have attributes'
-            });
-        }
-        info.children.forEach(child => {
-            if (child.type !== 'Text' && child.type !== 'MustacheTag') {
-                component.error(child, {
-                    code: 'illegal-structure',
-                    message: '<title> can only contain text and {tags}'
-                });
-            }
-        });
-        this.should_cache = info.children.length === 1
-            ? (info.children[0].type !== 'Identifier' ||
-                scope.names.has(info.children[0].name))
-            : true;
-    }
-}
-
-const valid_bindings = [
-    'innerWidth',
-    'innerHeight',
-    'outerWidth',
-    'outerHeight',
-    'scrollX',
-    'scrollY',
-    'online'
-];
-class Window extends Node$1 {
-    constructor(component, parent, scope, info) {
-        super(component, parent, scope, info);
-        this.handlers = [];
-        this.bindings = [];
-        this.actions = [];
-        info.attributes.forEach(node => {
-            if (node.type === 'EventHandler') {
-                this.handlers.push(new EventHandler(component, this, scope, node));
-            }
-            else if (node.type === 'Binding') {
-                if (node.expression.type !== 'Identifier') {
-                    const { parts } = flatten_reference(node.expression);
-                    // TODO is this constraint necessary?
-                    component.error(node.expression, {
-                        code: 'invalid-binding',
-                        message: `Bindings on <svelte:window> must be to top-level properties, e.g. '${parts[parts.length - 1]}' rather than '${parts.join('.')}'`
-                    });
-                }
-                if (!~valid_bindings.indexOf(node.name)) {
-                    const match = (node.name === 'width' ? 'innerWidth' :
-                        node.name === 'height' ? 'innerHeight' :
-                            fuzzymatch(node.name, valid_bindings));
-                    const message = `'${node.name}' is not a valid binding on <svelte:window>`;
-                    if (match) {
-                        component.error(node, {
-                            code: 'invalid-binding',
-                            message: `${message} (did you mean '${match}'?)`
-                        });
-                    }
-                    else {
-                        component.error(node, {
-                            code: 'invalid-binding',
-                            message: `${message} — valid bindings are ${list(valid_bindings)}`
-                        });
-                    }
-                }
-                this.bindings.push(new Binding(component, this, scope, node));
-            }
-            else if (node.type === 'Action') {
-                this.actions.push(new Action(component, this, scope, node));
-            }
-        });
-    }
-}
-
-function get_constructor(type) {
-    switch (type) {
-        case 'AwaitBlock': return AwaitBlock$1;
-        case 'Body': return Body;
-        case 'Comment': return Comment$2;
-        case 'EachBlock': return EachBlock$1;
-        case 'Element': return Element$1;
-        case 'Head': return Head$1;
-        case 'IfBlock': return IfBlock$1;
-        case 'InlineComponent': return InlineComponent$1;
-        case 'KeyBlock': return KeyBlock$1;
-        case 'MustacheTag': return MustacheTag;
-        case 'Options': return Options;
-        case 'RawMustacheTag': return RawMustacheTag;
-        case 'DebugTag': return DebugTag$1;
-        case 'Slot': return Slot$1;
-        case 'Text': return Text$1;
-        case 'Title': return Title$1;
-        case 'Window': return Window;
-        default: throw new Error(`Not implemented: ${type}`);
-    }
-}
-function map_children(component, parent, scope, children) {
-    let last = null;
-    let ignores = [];
-    return children.map(child => {
-        const constructor = get_constructor(child.type);
-        const use_ignores = child.type !== 'Text' && child.type !== 'Comment' && ignores.length;
-        if (use_ignores)
-            component.push_ignores(ignores);
-        const node = new constructor(component, parent, scope, child);
-        if (use_ignores)
-            component.pop_ignores(), ignores = [];
-        if (node.type === 'Comment' && node.ignores.length) {
-            ignores.push(...node.ignores);
-        }
-        if (last)
-            last.next = node;
-        node.prev = last;
-        last = node;
-        return node;
-    });
-}
-
 class TemplateScope {
     constructor(parent) {
         this.owners = new Map();
@@ -28433,7 +28689,7 @@ class TemplateScope {
     }
     is_let(name) {
         const owner = this.get_owner(name);
-        return owner && (owner.type === 'Element' || owner.type === 'InlineComponent');
+        return owner && (owner.type === 'Element' || owner.type === 'InlineComponent' || owner.type === 'SlotTemplate');
     }
     is_await(name) {
         const owner = this.get_owner(name);
@@ -28451,7 +28707,7 @@ class Fragment extends Node$1 {
 }
 
 // This file is automatically generated
-var internal_exports = new Set(["HtmlTag", "SvelteComponent", "SvelteComponentDev", "SvelteComponentTyped", "SvelteElement", "action_destroyer", "add_attribute", "add_classes", "add_flush_callback", "add_location", "add_render_callback", "add_resize_listener", "add_transform", "afterUpdate", "append", "append_dev", "assign", "attr", "attr_dev", "attribute_to_object", "beforeUpdate", "bind", "binding_callbacks", "blank_object", "bubble", "check_outros", "children", "claim_component", "claim_element", "claim_space", "claim_text", "clear_loops", "component_subscribe", "compute_rest_props", "compute_slots", "createEventDispatcher", "create_animation", "create_bidirectional_transition", "create_component", "create_in_transition", "create_out_transition", "create_slot", "create_ssr_component", "current_component", "custom_event", "dataset_dev", "debug", "destroy_block", "destroy_component", "destroy_each", "detach", "detach_after_dev", "detach_before_dev", "detach_between_dev", "detach_dev", "dirty_components", "dispatch_dev", "each", "element", "element_is", "empty", "escape", "escaped", "exclude_internal_props", "fix_and_destroy_block", "fix_and_outro_and_destroy_block", "fix_position", "flush", "getContext", "get_binding_group_value", "get_current_component", "get_custom_elements_slots", "get_slot_changes", "get_slot_context", "get_spread_object", "get_spread_update", "get_store_value", "globals", "group_outros", "handle_promise", "hasContext", "has_prop", "identity", "init", "insert", "insert_dev", "intros", "invalid_attribute_name_character", "is_client", "is_crossorigin", "is_empty", "is_function", "is_promise", "listen", "listen_dev", "loop", "loop_guard", "missing_component", "mount_component", "noop", "not_equal", "now", "null_to_empty", "object_without_properties", "onDestroy", "onMount", "once", "outro_and_destroy_block", "prevent_default", "prop_dev", "query_selector_all", "raf", "run", "run_all", "safe_not_equal", "schedule_update", "select_multiple_value", "select_option", "select_options", "select_value", "self", "setContext", "set_attributes", "set_current_component", "set_custom_element_data", "set_data", "set_data_dev", "set_input_type", "set_input_value", "set_now", "set_raf", "set_store_value", "set_style", "set_svg_attributes", "space", "spread", "stop_propagation", "subscribe", "svg_element", "text", "tick", "time_ranges_to_array", "to_number", "toggle_class", "transition_in", "transition_out", "update_keyed_each", "update_slot", "update_slot_spread", "validate_component", "validate_each_argument", "validate_each_keys", "validate_slots", "validate_store", "xlink_attr"]);
+var internal_exports = new Set(["HtmlTag", "SvelteComponent", "SvelteComponentDev", "SvelteComponentTyped", "SvelteElement", "action_destroyer", "add_attribute", "add_classes", "add_flush_callback", "add_location", "add_render_callback", "add_resize_listener", "add_transform", "afterUpdate", "append", "append_dev", "assign", "attr", "attr_dev", "attribute_to_object", "beforeUpdate", "bind", "binding_callbacks", "blank_object", "bubble", "check_outros", "children", "claim_component", "claim_element", "claim_html_tag", "claim_space", "claim_text", "clear_loops", "component_subscribe", "compute_rest_props", "compute_slots", "createEventDispatcher", "create_animation", "create_bidirectional_transition", "create_component", "create_in_transition", "create_out_transition", "create_slot", "create_ssr_component", "current_component", "custom_event", "dataset_dev", "debug", "destroy_block", "destroy_component", "destroy_each", "detach", "detach_after_dev", "detach_before_dev", "detach_between_dev", "detach_dev", "dirty_components", "dispatch_dev", "each", "element", "element_is", "empty", "end_hydrating", "escape", "escape_attribute_value", "escape_object", "escaped", "exclude_internal_props", "fix_and_destroy_block", "fix_and_outro_and_destroy_block", "fix_position", "flush", "getContext", "get_binding_group_value", "get_current_component", "get_custom_elements_slots", "get_slot_changes", "get_slot_context", "get_spread_object", "get_spread_update", "get_store_value", "globals", "group_outros", "handle_promise", "hasContext", "has_prop", "identity", "init", "insert", "insert_dev", "intros", "invalid_attribute_name_character", "is_client", "is_crossorigin", "is_empty", "is_function", "is_promise", "listen", "listen_dev", "loop", "loop_guard", "missing_component", "mount_component", "noop", "not_equal", "now", "null_to_empty", "object_without_properties", "onDestroy", "onMount", "once", "outro_and_destroy_block", "prevent_default", "prop_dev", "query_selector_all", "raf", "run", "run_all", "safe_not_equal", "schedule_update", "select_multiple_value", "select_option", "select_options", "select_value", "self", "setContext", "set_attributes", "set_current_component", "set_custom_element_data", "set_data", "set_data_dev", "set_input_type", "set_input_value", "set_now", "set_raf", "set_store_value", "set_style", "set_svg_attributes", "space", "spread", "start_hydrating", "stop_propagation", "subscribe", "svg_element", "text", "tick", "time_ranges_to_array", "to_number", "toggle_class", "transition_in", "transition_out", "update_await_block_branch", "update_keyed_each", "update_slot", "update_slot_spread", "validate_component", "validate_each_argument", "validate_each_keys", "validate_slots", "validate_store", "xlink_attr"]);
 
 function is_used_as_reference(node, parent) {
     if (!isReference(node, parent)) {
@@ -28546,12 +28802,12 @@ class Component {
         this.compile_options = compile_options;
         // the instance JS gets mutated, so we park
         // a copy here for later. TODO this feels gross
-        this.original_ast = {
+        this.original_ast = clone({
             html: ast.html,
             css: ast.css,
-            instance: ast.instance && JSON.parse(JSON.stringify(ast.instance)),
+            instance: ast.instance,
             module: ast.module
-        };
+        });
         this.file =
             compile_options.filename &&
                 (typeof process !== 'undefined'
@@ -28561,7 +28817,14 @@ class Component {
                     : compile_options.filename);
         this.locate = getLocator(this.source, { offsetLine: 1 });
         // styles
-        this.stylesheet = new Stylesheet(source, ast, compile_options.filename, compile_options.dev);
+        this.stylesheet = new Stylesheet({
+            source,
+            ast,
+            filename: compile_options.filename,
+            component_name: name,
+            dev: compile_options.dev,
+            get_css_hash: compile_options.cssHash
+        });
         this.stylesheet.validate(this);
         this.component_options = process_component_options(this, this.ast.html.children);
         this.namespace =
@@ -28646,7 +28909,7 @@ class Component {
         if (result) {
             const { compile_options, name } = this;
             const { format = 'esm' } = compile_options;
-            const banner = `${this.file ? `${this.file} ` : ''}generated by Svelte v${'3.32.3'}`;
+            const banner = `${this.file ? `${this.file} ` : ''}generated by Svelte v${'3.38.3'}`;
             const program = { type: 'Program', body: result.js };
             walk(program, {
                 enter: (node, parent, key) => {
@@ -29072,7 +29335,7 @@ class Component {
                     }
                     return this.skip();
                 }
-                component.warn_on_undefined_store_value_references(node, parent, scope);
+                component.warn_on_undefined_store_value_references(node, parent, prop, scope);
             },
             leave(node) {
                 if ((node.type === 'FunctionDeclaration' || node.type === 'FunctionExpression') && node.generator === true) {
@@ -29149,7 +29412,7 @@ class Component {
             }
         });
     }
-    warn_on_undefined_store_value_references(node, parent, scope) {
+    warn_on_undefined_store_value_references(node, parent, prop, scope) {
         if (node.type === 'LabeledStatement' &&
             node.label.name === '$' &&
             parent.type !== 'Program') {
@@ -29166,10 +29429,12 @@ class Component {
                     this.warn_if_undefined(name, object, null);
                 }
                 if (name[1] !== '$' && scope.has(name.slice(1)) && scope.find_owner(name.slice(1)) !== this.instance_scope) {
-                    this.error(node, {
-                        code: 'contextual-store',
-                        message: 'Stores must be declared at the top level of the component (this may change in a future version of Svelte)'
-                    });
+                    if (!((/Function/.test(parent.type) && prop === 'params') || (parent.type === 'VariableDeclarator' && prop === 'id'))) {
+                        this.error(node, {
+                            code: 'contextual-store',
+                            message: 'Stores must be declared at the top level of the component (this may change in a future version of Svelte)'
+                        });
+                    }
                 }
             }
         }
@@ -29736,7 +30001,8 @@ const valid_options = [
     'css',
     'loopGuardTimeout',
     'preserveComments',
-    'preserveWhitespace'
+    'preserveWhitespace',
+    'cssHash'
 ];
 function validate_options(options, warnings) {
     const { name, filename, loopGuardTimeout, dev, namespace } = options;
@@ -30006,7 +30272,7 @@ function parse_tag_attributes(str) {
  * Calculate the updates required to process all instances of the specified tag.
  */
 async function process_tag(tag_name, preprocessor, source) {
-    const { filename } = source;
+    const { filename, source: markup } = source;
     const tag_regex = tag_name === 'style'
         ? /<!--[^]*?-->|<style(\s[^]*?)?(?:>([^]*?)<\/style>|\/>)/gi
         : /<!--[^]*?-->|<script(\s[^]*?)?(?:>([^]*?)<\/script>|\/>)/gi;
@@ -30018,6 +30284,7 @@ async function process_tag(tag_name, preprocessor, source) {
         const processed = await preprocessor({
             content: content || '',
             attributes: parse_tag_attributes(attributes || ''),
+            markup,
             filename
         });
         if (!processed)
@@ -30074,7 +30341,7 @@ async function preprocess(source, preprocessor, options) {
     return result.to_processed();
 }
 
-const VERSION = '3.32.3';
+const VERSION = '3.38.3';
 
 export { VERSION, compile, parse$3 as parse, preprocess, walk };
 //# sourceMappingURL=compiler.mjs.map

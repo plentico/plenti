@@ -189,11 +189,117 @@ function loop(callback) {
     };
 }
 
+// Track which nodes are claimed during hydration. Unclaimed nodes can then be removed from the DOM
+// at the end of hydration without touching the remaining nodes.
+let is_hydrating = false;
+function start_hydrating() {
+    is_hydrating = true;
+}
+function end_hydrating() {
+    is_hydrating = false;
+}
+function upper_bound(low, high, key, value) {
+    // Return first index of value larger than input value in the range [low, high)
+    while (low < high) {
+        const mid = low + ((high - low) >> 1);
+        if (key(mid) <= value) {
+            low = mid + 1;
+        }
+        else {
+            high = mid;
+        }
+    }
+    return low;
+}
+function init_hydrate(target) {
+    if (target.hydrate_init)
+        return;
+    target.hydrate_init = true;
+    // We know that all children have claim_order values since the unclaimed have been detached
+    const children = target.childNodes;
+    /*
+    * Reorder claimed children optimally.
+    * We can reorder claimed children optimally by finding the longest subsequence of
+    * nodes that are already claimed in order and only moving the rest. The longest
+    * subsequence subsequence of nodes that are claimed in order can be found by
+    * computing the longest increasing subsequence of .claim_order values.
+    *
+    * This algorithm is optimal in generating the least amount of reorder operations
+    * possible.
+    *
+    * Proof:
+    * We know that, given a set of reordering operations, the nodes that do not move
+    * always form an increasing subsequence, since they do not move among each other
+    * meaning that they must be already ordered among each other. Thus, the maximal
+    * set of nodes that do not move form a longest increasing subsequence.
+    */
+    // Compute longest increasing subsequence
+    // m: subsequence length j => index k of smallest value that ends an increasing subsequence of length j
+    const m = new Int32Array(children.length + 1);
+    // Predecessor indices + 1
+    const p = new Int32Array(children.length);
+    m[0] = -1;
+    let longest = 0;
+    for (let i = 0; i < children.length; i++) {
+        const current = children[i].claim_order;
+        // Find the largest subsequence length such that it ends in a value less than our current value
+        // upper_bound returns first greater value, so we subtract one
+        const seqLen = upper_bound(1, longest + 1, idx => children[m[idx]].claim_order, current) - 1;
+        p[i] = m[seqLen] + 1;
+        const newLen = seqLen + 1;
+        // We can guarantee that current is the smallest value. Otherwise, we would have generated a longer sequence.
+        m[newLen] = i;
+        longest = Math.max(newLen, longest);
+    }
+    // The longest increasing subsequence of nodes (initially reversed)
+    const lis = [];
+    // The rest of the nodes, nodes that will be moved
+    const toMove = [];
+    let last = children.length - 1;
+    for (let cur = m[longest] + 1; cur != 0; cur = p[cur - 1]) {
+        lis.push(children[cur - 1]);
+        for (; last >= cur; last--) {
+            toMove.push(children[last]);
+        }
+        last--;
+    }
+    for (; last >= 0; last--) {
+        toMove.push(children[last]);
+    }
+    lis.reverse();
+    // We sort the nodes being moved to guarantee that their insertion order matches the claim order
+    toMove.sort((a, b) => a.claim_order - b.claim_order);
+    // Finally, we move the nodes
+    for (let i = 0, j = 0; i < toMove.length; i++) {
+        while (j < lis.length && toMove[i].claim_order >= lis[j].claim_order) {
+            j++;
+        }
+        const anchor = j < lis.length ? lis[j] : null;
+        target.insertBefore(toMove[i], anchor);
+    }
+}
 function append(target, node) {
-    target.appendChild(node);
+    if (is_hydrating) {
+        init_hydrate(target);
+        if ((target.actual_end_child === undefined) || ((target.actual_end_child !== null) && (target.actual_end_child.parentElement !== target))) {
+            target.actual_end_child = target.firstChild;
+        }
+        if (node !== target.actual_end_child) {
+            target.insertBefore(node, target.actual_end_child);
+        }
+        else {
+            target.actual_end_child = node.nextSibling;
+        }
+    }
+    else if (node.parentNode !== target) {
+        target.appendChild(node);
+    }
 }
 function insert(target, node, anchor) {
-    if (target != document) {
+    if (is_hydrating && !anchor) {
+        append(target, node);
+    }
+    else if (node.parentNode !== target || (anchor && node.nextSibling !== anchor)) {
         target.insertBefore(node, anchor || null);
     }
 }
@@ -295,7 +401,7 @@ function set_svg_attributes(node, attributes) {
 }
 function set_custom_element_data(node, prop, value) {
     if (prop in node) {
-        node[prop] = value;
+        node[prop] = typeof node[prop] === 'boolean' && value === '' ? true : value;
     }
     else {
         attr(node, prop, value);
@@ -328,38 +434,89 @@ function time_ranges_to_array(ranges) {
 function children(element) {
     return Array.from(element.childNodes);
 }
-function claim_element(nodes, name, attributes, svg) {
-    for (let i = 0; i < nodes.length; i += 1) {
-        const node = nodes[i];
-        if (node.nodeName === name) {
-            let j = 0;
-            const remove = [];
-            while (j < node.attributes.length) {
-                const attribute = node.attributes[j++];
-                if (!attributes[attribute.name]) {
-                    remove.push(attribute.name);
-                }
-            }
-            for (let k = 0; k < remove.length; k++) {
-                node.removeAttribute(remove[k]);
-            }
-            return nodes.splice(i, 1)[0];
-        }
+function claim_node(nodes, predicate, processNode, createNode, dontUpdateLastIndex = false) {
+    // Try to find nodes in an order such that we lengthen the longest increasing subsequence
+    if (nodes.claim_info === undefined) {
+        nodes.claim_info = { last_index: 0, total_claimed: 0 };
     }
-    return svg ? svg_element(name) : element(name);
+    const resultNode = (() => {
+        // We first try to find an element after the previous one
+        for (let i = nodes.claim_info.last_index; i < nodes.length; i++) {
+            const node = nodes[i];
+            if (predicate(node)) {
+                processNode(node);
+                nodes.splice(i, 1);
+                if (!dontUpdateLastIndex) {
+                    nodes.claim_info.last_index = i;
+                }
+                return node;
+            }
+        }
+        // Otherwise, we try to find one before
+        // We iterate in reverse so that we don't go too far back
+        for (let i = nodes.claim_info.last_index - 1; i >= 0; i--) {
+            const node = nodes[i];
+            if (predicate(node)) {
+                processNode(node);
+                nodes.splice(i, 1);
+                if (!dontUpdateLastIndex) {
+                    nodes.claim_info.last_index = i;
+                }
+                else {
+                    // Since we spliced before the last_index, we decrease it
+                    nodes.claim_info.last_index--;
+                }
+                return node;
+            }
+        }
+        // If we can't find any matching node, we create a new one
+        return createNode();
+    })();
+    resultNode.claim_order = nodes.claim_info.total_claimed;
+    nodes.claim_info.total_claimed += 1;
+    return resultNode;
+}
+function claim_element(nodes, name, attributes, svg) {
+    return claim_node(nodes, (node) => node.nodeName === name, (node) => {
+        const remove = [];
+        for (let j = 0; j < node.attributes.length; j++) {
+            const attribute = node.attributes[j];
+            if (!attributes[attribute.name]) {
+                remove.push(attribute.name);
+            }
+        }
+        remove.forEach(v => node.removeAttribute(v));
+    }, () => svg ? svg_element(name) : element(name));
 }
 function claim_text(nodes, data) {
-    for (let i = 0; i < nodes.length; i += 1) {
-        const node = nodes[i];
-        if (node.nodeType === 3) {
-            node.data = '' + data;
-            return nodes.splice(i, 1)[0];
-        }
-    }
-    return text(data);
+    return claim_node(nodes, (node) => node.nodeType === 3, (node) => {
+        node.data = '' + data;
+    }, () => text(data), true // Text nodes should not update last index since it is likely not worth it to eliminate an increasing subsequence of actual elements
+    );
 }
 function claim_space(nodes) {
     return claim_text(nodes, ' ');
+}
+function find_comment(nodes, text, start) {
+    for (let i = start; i < nodes.length; i += 1) {
+        const node = nodes[i];
+        if (node.nodeType === 8 /* comment node */ && node.textContent.trim() === text) {
+            return i;
+        }
+    }
+    return nodes.length;
+}
+function claim_html_tag(nodes) {
+    // find html opening tag
+    const start_index = find_comment(nodes, 'HTML_TAG_START', 0);
+    const end_index = find_comment(nodes, 'HTML_TAG_END', start_index);
+    if (start_index === end_index) {
+        return new HtmlTag();
+    }
+    const html_tag_nodes = nodes.splice(start_index, end_index + 1);
+    detach(html_tag_nodes[0]);
+    detach(html_tag_nodes[html_tag_nodes.length - 1]);
+    return new HtmlTag(html_tag_nodes.slice(1, html_tag_nodes.length - 1));
 }
 function set_data(text, data) {
     data = '' + data;
@@ -467,15 +624,20 @@ function query_selector_all(selector, parent = document.body) {
     return Array.from(parent.querySelectorAll(selector));
 }
 class HtmlTag {
-    constructor(anchor = null) {
-        this.a = anchor;
+    constructor(claimed_nodes) {
         this.e = this.n = null;
+        this.l = claimed_nodes;
     }
     m(html, target, anchor = null) {
         if (!this.e) {
             this.e = element(target.nodeName);
             this.t = target;
-            this.h(html);
+            if (this.l) {
+                this.n = this.l;
+            }
+            else {
+                this.h(html);
+            }
         }
         this.i(anchor);
     }
@@ -692,7 +854,8 @@ function hasContext(key) {
 function bubble(component, event) {
     const callbacks = component.$$.callbacks[event.type];
     if (callbacks) {
-        callbacks.slice().forEach(fn => fn(event));
+        // @ts-ignore
+        callbacks.slice().forEach(fn => fn.call(this, event));
     }
 }
 
@@ -1113,6 +1276,17 @@ function handle_promise(promise, info) {
         info.resolved = promise;
     }
 }
+function update_await_block_branch(info, ctx, dirty) {
+    const child_ctx = ctx.slice();
+    const { resolved } = info;
+    if (info.current === info.then) {
+        child_ctx[info.value] = resolved;
+    }
+    if (info.current === info.catch) {
+        child_ctx[info.error] = resolved;
+    }
+    info.block.p(child_ctx, dirty);
+}
 
 const globals = (typeof window !== 'undefined'
     ? window
@@ -1313,7 +1487,7 @@ function spread(args, classes_to_add) {
                 str += ' ' + name;
         }
         else if (value != null) {
-            str += ` ${name}="${String(value).replace(/"/g, '&#34;').replace(/'/g, '&#39;')}"`;
+            str += ` ${name}="${value}"`;
         }
     });
     return str;
@@ -1327,6 +1501,16 @@ const escaped = {
 };
 function escape(html) {
     return String(html).replace(/["'&<>]/g, match => escaped[match]);
+}
+function escape_attribute_value(value) {
+    return typeof value === 'string' ? escape(value) : value;
+}
+function escape_object(obj) {
+    const result = {};
+    for (const key in obj) {
+        result[key] = escape_attribute_value(obj[key]);
+    }
+    return result;
 }
 function each(items, fn) {
     let str = '';
@@ -1353,11 +1537,11 @@ function debug(file, line, column, values) {
 }
 let on_destroy;
 function create_ssr_component(fn) {
-    function $$render(result, props, bindings, slots) {
+    function $$render(result, props, bindings, slots, context) {
         const parent_component = current_component;
         const $$ = {
             on_destroy,
-            context: new Map(parent_component ? parent_component.$$.context : []),
+            context: new Map(parent_component ? parent_component.$$.context : context || []),
             // these will be immediately discarded
             on_mount: [],
             before_update: [],
@@ -1370,10 +1554,10 @@ function create_ssr_component(fn) {
         return html;
     }
     return {
-        render: (props = {}, options = {}) => {
+        render: (props = {}, { $$slots = {}, context = new Map() } = {}) => {
             on_destroy = [];
             const result = { title: '', head: '', css: new Set() };
-            const html = $$render(result, props, {}, options);
+            const html = $$render(result, props, {}, $$slots, context);
             run_all(on_destroy);
             return {
                 html,
@@ -1409,22 +1593,24 @@ function create_component(block) {
 function claim_component(block, parent_nodes) {
     block && block.l(parent_nodes);
 }
-function mount_component(component, target, anchor) {
+function mount_component(component, target, anchor, customElement) {
     const { fragment, on_mount, on_destroy, after_update } = component.$$;
     fragment && fragment.m(target, anchor);
-    // onMount happens before the initial afterUpdate
-    add_render_callback(() => {
-        const new_on_destroy = on_mount.map(run).filter(is_function);
-        if (on_destroy) {
-            on_destroy.push(...new_on_destroy);
-        }
-        else {
-            // Edge case - component was destroyed immediately,
-            // most likely as a result of a binding initialising
-            run_all(new_on_destroy);
-        }
-        component.$$.on_mount = [];
-    });
+    if (!customElement) {
+        // onMount happens before the initial afterUpdate
+        add_render_callback(() => {
+            const new_on_destroy = on_mount.map(run).filter(is_function);
+            if (on_destroy) {
+                on_destroy.push(...new_on_destroy);
+            }
+            else {
+                // Edge case - component was destroyed immediately,
+                // most likely as a result of a binding initialising
+                run_all(new_on_destroy);
+            }
+            component.$$.on_mount = [];
+        });
+    }
     after_update.forEach(add_render_callback);
 }
 function destroy_component(component, detaching) {
@@ -1460,9 +1646,10 @@ function init(component, options, instance, create_fragment, not_equal, props, d
         // lifecycle
         on_mount: [],
         on_destroy: [],
+        on_disconnect: [],
         before_update: [],
         after_update: [],
-        context: new Map(parent_component ? parent_component.$$.context : []),
+        context: new Map(parent_component ? parent_component.$$.context : options.context || []),
         // everything else
         callbacks: blank_object(),
         dirty,
@@ -1488,6 +1675,7 @@ function init(component, options, instance, create_fragment, not_equal, props, d
     $$.fragment = create_fragment ? create_fragment($$.ctx) : false;
     if (options.target) {
         if (options.hydrate) {
+            start_hydrating();
             const nodes = children(options.target);
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             $$.fragment && $$.fragment.l(nodes);
@@ -1499,7 +1687,8 @@ function init(component, options, instance, create_fragment, not_equal, props, d
         }
         if (options.intro)
             transition_in(component.$$.fragment);
-        mount_component(component, options.target, options.anchor);
+        mount_component(component, options.target, options.anchor, options.customElement);
+        end_hydrating();
         flush();
     }
     set_current_component(parent_component);
@@ -1512,6 +1701,8 @@ if (typeof HTMLElement === 'function') {
             this.attachShadow({ mode: 'open' });
         }
         connectedCallback() {
+            const { on_mount } = this.$$;
+            this.$$.on_disconnect = on_mount.map(run).filter(is_function);
             // @ts-ignore todo: improve typings
             for (const key in this.$$.slotted) {
                 // @ts-ignore todo: improve typings
@@ -1520,6 +1711,9 @@ if (typeof HTMLElement === 'function') {
         }
         attributeChangedCallback(attr, _oldValue, newValue) {
             this[attr] = newValue;
+        }
+        disconnectedCallback() {
+            run_all(this.$$.on_disconnect);
         }
         $destroy() {
             destroy_component(this, 1);
@@ -1571,7 +1765,7 @@ class SvelteComponent {
 }
 
 function dispatch_dev(type, detail) {
-    document.dispatchEvent(custom_event(type, Object.assign({ version: '3.32.3' }, detail)));
+    document.dispatchEvent(custom_event(type, Object.assign({ version: '3.38.3' }, detail)));
 }
 function append_dev(target, node) {
     dispatch_dev('SvelteDOMInsert', { target, node });
@@ -1715,4 +1909,4 @@ function loop_guard(timeout) {
     };
 }
 
-export { HtmlTag, SvelteComponent, SvelteComponentDev, SvelteComponentTyped, SvelteElement, action_destroyer, add_attribute, add_classes, add_flush_callback, add_location, add_render_callback, add_resize_listener, add_transform, afterUpdate, append, append_dev, assign, attr, attr_dev, attribute_to_object, beforeUpdate, bind, binding_callbacks, blank_object, bubble, check_outros, children, claim_component, claim_element, claim_space, claim_text, clear_loops, component_subscribe, compute_rest_props, compute_slots, createEventDispatcher, create_animation, create_bidirectional_transition, create_component, create_in_transition, create_out_transition, create_slot, create_ssr_component, current_component, custom_event, dataset_dev, debug, destroy_block, destroy_component, destroy_each, detach, detach_after_dev, detach_before_dev, detach_between_dev, detach_dev, dirty_components, dispatch_dev, each, element, element_is, empty, escape, escaped, exclude_internal_props, fix_and_destroy_block, fix_and_outro_and_destroy_block, fix_position, flush, getContext, get_binding_group_value, get_current_component, get_custom_elements_slots, get_slot_changes, get_slot_context, get_spread_object, get_spread_update, get_store_value, globals, group_outros, handle_promise, hasContext, has_prop, identity, init, insert, insert_dev, intros, invalid_attribute_name_character, is_client, is_crossorigin, is_empty, is_function, is_promise, listen, listen_dev, loop, loop_guard, missing_component, mount_component, noop, not_equal, now, null_to_empty, object_without_properties, onDestroy, onMount, once, outro_and_destroy_block, prevent_default, prop_dev, query_selector_all, raf, run, run_all, safe_not_equal, schedule_update, select_multiple_value, select_option, select_options, select_value, self, setContext, set_attributes, set_current_component, set_custom_element_data, set_data, set_data_dev, set_input_type, set_input_value, set_now, set_raf, set_store_value, set_style, set_svg_attributes, space, spread, stop_propagation, subscribe, svg_element, text, tick, time_ranges_to_array, to_number, toggle_class, transition_in, transition_out, update_keyed_each, update_slot, update_slot_spread, validate_component, validate_each_argument, validate_each_keys, validate_slots, validate_store, xlink_attr };
+export { HtmlTag, SvelteComponent, SvelteComponentDev, SvelteComponentTyped, SvelteElement, action_destroyer, add_attribute, add_classes, add_flush_callback, add_location, add_render_callback, add_resize_listener, add_transform, afterUpdate, append, append_dev, assign, attr, attr_dev, attribute_to_object, beforeUpdate, bind, binding_callbacks, blank_object, bubble, check_outros, children, claim_component, claim_element, claim_html_tag, claim_space, claim_text, clear_loops, component_subscribe, compute_rest_props, compute_slots, createEventDispatcher, create_animation, create_bidirectional_transition, create_component, create_in_transition, create_out_transition, create_slot, create_ssr_component, current_component, custom_event, dataset_dev, debug, destroy_block, destroy_component, destroy_each, detach, detach_after_dev, detach_before_dev, detach_between_dev, detach_dev, dirty_components, dispatch_dev, each, element, element_is, empty, end_hydrating, escape, escape_attribute_value, escape_object, escaped, exclude_internal_props, fix_and_destroy_block, fix_and_outro_and_destroy_block, fix_position, flush, getContext, get_binding_group_value, get_current_component, get_custom_elements_slots, get_slot_changes, get_slot_context, get_spread_object, get_spread_update, get_store_value, globals, group_outros, handle_promise, hasContext, has_prop, identity, init, insert, insert_dev, intros, invalid_attribute_name_character, is_client, is_crossorigin, is_empty, is_function, is_promise, listen, listen_dev, loop, loop_guard, missing_component, mount_component, noop, not_equal, now, null_to_empty, object_without_properties, onDestroy, onMount, once, outro_and_destroy_block, prevent_default, prop_dev, query_selector_all, raf, run, run_all, safe_not_equal, schedule_update, select_multiple_value, select_option, select_options, select_value, self, setContext, set_attributes, set_current_component, set_custom_element_data, set_data, set_data_dev, set_input_type, set_input_value, set_now, set_raf, set_store_value, set_style, set_svg_attributes, space, spread, start_hydrating, stop_propagation, subscribe, svg_element, text, tick, time_ranges_to_array, to_number, toggle_class, transition_in, transition_out, update_await_block_branch, update_keyed_each, update_slot, update_slot_spread, validate_component, validate_each_argument, validate_each_keys, validate_slots, validate_store, xlink_attr };
