@@ -59,21 +59,6 @@ To use https://plenti.co as a theme for example, run: plenti new theme git@githu
 	},
 }
 
-func init() {
-	themeCmd.AddCommand(themeAddCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// typeCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// typeCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	themeAddCmd.Flags().StringVarP(&CommitFlag, "commit", "c", "", "pull a specific commit hash for the theme")
-}
-
 func getRepoName(url string) string {
 	// Get the last part of the git URL to isolate the repository name.
 	parts := strings.Split(url, "/")
@@ -153,4 +138,19 @@ func cleanThemeGit(themeDir string) {
 	if err := os.RemoveAll(themeDir + "/.git"); err != nil {
 		common.CheckErr(fmt.Errorf("Could not delete .git folder for theme: %w", err))
 	}
+}
+
+func init() {
+	themeCmd.AddCommand(themeAddCmd)
+
+	// Here you will define your flags and configuration settings.
+
+	// Cobra supports Persistent Flags which will work for this command
+	// and all subcommands, e.g.:
+	// typeCmd.PersistentFlags().String("foo", "", "A help for foo")
+
+	// Cobra supports local flags which will only run when this command
+	// is called directly, e.g.:
+	// typeCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	themeAddCmd.Flags().StringVarP(&CommitFlag, "commit", "c", "", "pull a specific commit hash for the theme")
 }

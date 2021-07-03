@@ -11,6 +11,8 @@ import (
 	"strings"
 
 	"github.com/plentico/plenti/common"
+	"github.com/plentico/plenti/readers"
+	"github.com/plentico/plenti/writers"
 
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/manifoldco/promptui"
@@ -102,8 +104,16 @@ var siteCmd = &cobra.Command{
 			setThemeConfig(projectDir, themeFlag, commitHash, repoName)
 
 			// Enable the theme.
-			//themeEnableCmd.Run(cmd, []string{repoName})
 			enableTheme(themeDir, projectDir, repoName)
+
+			// Get siteConfig for project.
+			siteConfig, configPath := readers.GetSiteConfig(projectDir)
+			// Get siteConfig for theme.
+			themeSiteConfig, _ := readers.GetSiteConfig(themeDir)
+			// Copy over the route overrides from the theme.
+			siteConfig.Routes = themeSiteConfig.Routes
+			// Save the siteConfig for the project with the updated routes.
+			common.CheckErr(writers.SetSiteConfig(siteConfig, configPath))
 
 			return
 
