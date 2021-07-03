@@ -85,7 +85,16 @@ var siteCmd = &cobra.Command{
 					common.CheckErr(fmt.Errorf("Unable to create directory %s: %w", projectDir+"/"+dir, err))
 				}
 			}
-			//themeAddCmd.Run(cmd, []string{themeFlag})
+
+			// Create NPM depedencies.
+			addNodeModules(projectDir)
+
+			// Create default project files.
+			writeDefaultFile("plenti.json", projectDir)
+			writeDefaultFile("package.json", projectDir)
+			writeDefaultFile(".gitignore", projectDir)
+
+			// Download and set up theme.
 			repoName := getRepoName(themeFlag)
 			addTheme(projectDir+"/themes/"+repoName, themeFlag, repoName)
 			return
@@ -113,12 +122,8 @@ var siteCmd = &cobra.Command{
 		// Loop through site defaults to create site scaffolding
 		writeScaffolding(scaffolding, projectDir)
 
-		nodeModules, err := fs.Sub(defaultsNodeModulesFS, "defaults")
-		if err != nil {
-			common.CheckErr(fmt.Errorf("Unable to get node_modules defaults: %w", err))
-		}
-		// Loop through node_modules npm pacakges to include in scaffolding
-		writeScaffolding(nodeModules, projectDir)
+		// Create NPM depedencies.
+		addNodeModules(projectDir)
 
 		fmt.Printf(heredoc.Docf(`
 			Success: Created %q site.
@@ -130,6 +135,17 @@ var siteCmd = &cobra.Command{
 		`, projectDir, projectDir))
 
 	},
+}
+
+func writeDefaultFile(filename string, projectDir string) {
+	defaultFile, err := defaultsBareFS.ReadFile("defaults/starters/bare/" + filename)
+	if err != nil {
+		fmt.Printf("Can't read default file '%s': %s\n", filename, err)
+	}
+	// Create the current default file
+	if err := ioutil.WriteFile(projectDir+"/"+filename, defaultFile, os.ModePerm); err != nil {
+		common.CheckErr(fmt.Errorf("Unable to write file '%s': %w\n", filename, err))
+	}
 }
 
 func writeScaffolding(defaults fs.FS, projectDir string) {
@@ -153,6 +169,15 @@ func writeScaffolding(defaults fs.FS, projectDir string) {
 		return nil
 	})
 
+}
+
+func addNodeModules(projectDir string) {
+	nodeModules, err := fs.Sub(defaultsNodeModulesFS, "defaults")
+	if err != nil {
+		common.CheckErr(fmt.Errorf("Unable to get node_modules defaults: %w", err))
+	}
+	// Loop through node_modules npm pacakges to include in scaffolding
+	writeScaffolding(nodeModules, projectDir)
 }
 
 func init() {
