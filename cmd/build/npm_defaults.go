@@ -12,14 +12,18 @@ import (
 )
 
 // NpmDefaults creates the node_modules folder with core defaults if it doesn't already exist.
-func NpmDefaults(tempBuildDir string, defaultsNodeModulesFS embed.FS) error {
+func NpmDefaults(defaultsNodeModulesFS embed.FS) error {
 
 	defer Benchmark(time.Now(), "Setting up core NPM packages")
 
 	Log("\nChecking if 'node_modules' directory exists.")
 
-	destPath := tempBuildDir + "node_modules"
-
+	destPath := "node_modules"
+	/*
+		_, err := os.Stat(destPath)
+		_, err = AppFs.Stat(destPath)
+		if os.IsNotExist(err) {
+	*/
 	if _, err := os.Stat(destPath); os.IsNotExist(err) {
 		nodeModules, err := fs.Sub(defaultsNodeModulesFS, "defaults")
 		if err != nil {

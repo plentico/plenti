@@ -71,13 +71,20 @@ func Build() error {
 
 	themeBuildDir := ""
 
+	// Add core NPM dependencies if node_module folder doesn't already exist.
+	if err = common.CheckErr(build.NpmDefaults(defaultsNodeModulesFS)); err != nil {
+		return err
+	}
+	// TODO: ^ only adds node_modules to root project.
+	// We should think of a way to honor theme dependecies,
+	// which aren't usually tracked in git.
+
 	// Get theme from plenti.json.
 	theme := siteConfig.Theme
 	// If a theme is set, run the nested build.
 	if theme != "" {
 		themeOptions := siteConfig.ThemeConfig[theme]
 		// Recursively copy all nested themes to a temp folder for building.
-		//themeBuildDir, err = build.ThemesCopy("themes/"+theme, themeOptions)
 		err = build.ThemesCopy("themes/"+theme, themeOptions)
 		if err = common.CheckErr(err); err != nil {
 			return err
@@ -113,11 +120,6 @@ func Build() error {
 		}
 	}
 	build.Log("Creating '" + buildDir + "' build directory")
-
-	// Add core NPM dependencies if node_module folder doesn't already exist.
-	if err = common.CheckErr(build.NpmDefaults(themeBuildDir, defaultsNodeModulesFS)); err != nil {
-		return err
-	}
 
 	// Directly copy .js that don't need compiling to the build dir.
 	if err = common.CheckErr(build.EjectCopy(buildPath, themeBuildDir, defaultsEjectedFS)); err != nil {
