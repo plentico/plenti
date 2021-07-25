@@ -7,14 +7,13 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/plentico/plenti/common"
 )
 
 // EjectCopy does a direct copy of any ejectable js files needed in spa build dir.
-func EjectCopy(buildPath string, tempBuildDir string, defaultsEjectedFS embed.FS) error {
+func EjectCopy(buildPath string, defaultsEjectedFS embed.FS) error {
 
 	defer Benchmark(time.Now(), "Copying ejectable core files for build")
 
@@ -23,7 +22,6 @@ func EjectCopy(buildPath string, tempBuildDir string, defaultsEjectedFS embed.FS
 	copiedSourceCounter := 0
 
 	ejected, err := fs.Sub(defaultsEjectedFS, "defaults")
-
 	if err != nil {
 		return fmt.Errorf("Unable to get ejected defaults: %w%s\n", err, common.Caller())
 	}
@@ -49,16 +47,23 @@ func EjectCopy(buildPath string, tempBuildDir string, defaultsEjectedFS embed.FS
 
 			}
 
-			if err := os.MkdirAll(destPath+strings.TrimPrefix("ejected", tempBuildDir), os.ModePerm); err != nil {
+			if err := os.MkdirAll(destPath+"ejected", os.ModePerm); err != nil {
 				return err
 			}
 			var ejectedContent []byte
-			if _, err := os.Stat(ejectPath); err == nil {
-				ejectedContent, err = ioutil.ReadFile(ejectPath)
+			_, err := AppFs.Stat(ejectPath)
+			_, err = os.Stat(ejectPath)
+			// Check if file has been ejected to project or virtual theme filesystem.
+			if err == nil {
+				// The file has been ejected.
+				// Get the file from the project or virtual theme.
+				ejectedContent, err = getVirtualFileIfThemeBuild(ejectPath)
 				if err != nil {
 					return fmt.Errorf("can't read .js file: %s %w%s\n", ejectPath, err, common.Caller())
 				}
 			} else if os.IsNotExist(err) {
+				// The file has not been ejected.
+				// Get the file from embedded defaults.
 				ejectedFile, err := ejected.Open(ejectPath)
 				if err != nil {
 					return fmt.Errorf("Could not open source .js file for copying: %w%s\n", err, common.Caller())

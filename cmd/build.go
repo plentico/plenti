@@ -122,7 +122,7 @@ func Build() error {
 	build.Log("Creating '" + buildDir + "' build directory")
 
 	// Directly copy .js that don't need compiling to the build dir.
-	if err = common.CheckErr(build.EjectCopy(buildPath, themeBuildDir, defaultsEjectedFS)); err != nil {
+	if err = common.CheckErr(build.EjectCopy(buildPath, defaultsEjectedFS)); err != nil {
 		return err
 	}
 

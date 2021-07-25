@@ -19,11 +19,7 @@ func NpmDefaults(defaultsNodeModulesFS embed.FS) error {
 	Log("\nChecking if 'node_modules' directory exists.")
 
 	destPath := "node_modules"
-	/*
-		_, err := os.Stat(destPath)
-		_, err = AppFs.Stat(destPath)
-		if os.IsNotExist(err) {
-	*/
+
 	if _, err := os.Stat(destPath); os.IsNotExist(err) {
 		nodeModules, err := fs.Sub(defaultsNodeModulesFS, "defaults")
 		if err != nil {
