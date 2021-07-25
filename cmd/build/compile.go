@@ -37,7 +37,7 @@ var (
 )
 
 func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string,
-	componentStr string, destFile string, stylePath string, tempBuildDir string) error {
+	componentStr string, destFile string, stylePath string) error {
 
 	var layoutFD *common.FData
 
@@ -136,8 +136,6 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string,
 	ssrStr = reStaticExport.ReplaceAllString(ssrStr, `/*$0*/`)
 
 	ssrStr = reConst.ReplaceAllString(ssrStr, "var ")
-	// Remove temporary theme directory info from path before making a comp signature.
-	layoutPath = strings.TrimPrefix(layoutPath, tempBuildDir)
 	// Create custom variable name for component based on the file path for the layout.
 	componentSignature := strings.ReplaceAll(strings.ReplaceAll(layoutPath, "/", "_"), ".", "_")
 	// Use signature instead of generic "Component". Add space to avoid also replacing part of "loadComponent".

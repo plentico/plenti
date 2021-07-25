@@ -7,14 +7,13 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/plentico/plenti/common"
 )
 
 // ThemesMerge combines any nested themes with the current project.
-func ThemesMerge(tempBuildDir string, buildDir string) error {
+func ThemesMerge(buildDir string) error {
 
 	defer Benchmark(time.Now(), "Merging themes with your project")
 
@@ -25,7 +24,6 @@ func ThemesMerge(tempBuildDir string, buildDir string) error {
 		".git",
 		".gitignore",
 		"themes",
-		strings.TrimSuffix(tempBuildDir, "/"),
 		buildDir,
 	}
 
@@ -50,17 +48,14 @@ func ThemesMerge(tempBuildDir string, buildDir string) error {
 		}
 		defer from.Close()
 
-		// Create path for the file to be written to.
-		destPath := tempBuildDir + projectFilePath
-
 		// Create the folders needed to write files to tempDir.
 		if projectFileInfo.IsDir() {
 			// Make directory if it doesn't exist and move on to next path.
-			return AppFs.MkdirAll(destPath, os.ModePerm)
+			return AppFs.MkdirAll(projectFilePath, os.ModePerm)
 
 		}
 
-		to, err := AppFs.Create(destPath)
+		to, err := AppFs.Create(projectFilePath)
 		if err != nil {
 			return fmt.Errorf("Could not create destination project file for copying: %w%s\n", err, common.Caller())
 		}

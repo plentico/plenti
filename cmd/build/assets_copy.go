@@ -13,7 +13,6 @@ import (
 )
 
 // AssetsCopy does a direct copy of any static assets.
-//func AssetsCopy(buildPath string, themeBuildDir string) error {
 func AssetsCopy(buildPath string) error {
 
 	defer Benchmark(time.Now(), "Copying static assets into build dir")
@@ -24,9 +23,7 @@ func AssetsCopy(buildPath string) error {
 	copiedSourceCounter := 0
 	var err error
 
-	//if themeBuildDir != "" {
 	if AppFs != nil {
-		//copiedSourceCounter, err = copyAssetsFromTheme(assetsDir, themeBuildDir, buildPath, copiedSourceCounter)
 		copiedSourceCounter, err = copyAssetsFromTheme(assetsDir, buildPath, copiedSourceCounter)
 		if err != nil {
 			return err
@@ -43,16 +40,12 @@ func AssetsCopy(buildPath string) error {
 
 }
 
-//func copyAssetsFromTheme(assetsDir string, themeBuildDir string, buildPath string, copiedSourceCounter int) (int, error) {
 func copyAssetsFromTheme(assetsDir string, buildPath string, copiedSourceCounter int) (int, error) {
-	//themeAssets := themeBuildDir + assetsDir
-	//if err := afero.Walk(AppFs, themeAssets, func(path string, info os.FileInfo, err error) error {
 	if err := afero.Walk(AppFs, assetsDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 		fullPath := buildPath + "/" + path
-		fmt.Println(fullPath)
 		if info.IsDir() {
 			if err = os.MkdirAll(fullPath, os.ModePerm); err != nil {
 				return fmt.Errorf("cannot create asset dir %s: %w", path, err)
@@ -66,8 +59,6 @@ func copyAssetsFromTheme(assetsDir string, buildPath string, copiedSourceCounter
 		}
 		defer from.Close()
 
-		//destPath := buildPath + "/assets"
-		//destPath := path
 		to, err := os.Create(fullPath)
 		if err != nil {
 			return fmt.Errorf("Could not create destination asset %s for copying from virtual theme: %w%s\n", fullPath, err, common.Caller())
@@ -100,7 +91,6 @@ func copyAssetsFromProject(assetsDir string, buildPath string, copiedSourceCount
 		if err != nil {
 			return fmt.Errorf("can't stat %s: %w", assetPath, err)
 		}
-		//destPath := buildPath + "/" + strings.TrimPrefix(assetPath, themeBuildDir)
 		destPath := buildPath + "/" + assetPath
 		if assetFileInfo.IsDir() {
 			// no dirs

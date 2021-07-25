@@ -84,7 +84,7 @@ func Build() error {
 		}
 
 		// Merge the current project files with the theme.
-		if err = common.CheckErr(build.ThemesMerge(themeBuildDir, buildDir)); err != nil {
+		if err = common.CheckErr(build.ThemesMerge(buildDir)); err != nil {
 			return err
 		}
 
@@ -125,13 +125,12 @@ func Build() error {
 	}
 
 	// Directly copy static assets to the build dir.
-	//if err = common.CheckErr(build.AssetsCopy(buildPath, themeBuildDir)); err != nil {
 	if err = common.CheckErr(build.AssetsCopy(buildPath)); err != nil {
 		return err
 	}
 
 	// Prep the client SPA.
-	err = build.Client(buildPath, themeBuildDir, defaultsEjectedFS)
+	err = build.Client(buildPath, defaultsEjectedFS)
 	if err = common.CheckErr(err); err != nil {
 		return err
 	}
@@ -147,12 +146,10 @@ func Build() error {
 		return err
 	}
 
+	// If using themes, clean up the virtual filesystem afterwards.
 	/*
-		if themeBuildDir != "" {
-			// If using themes, just delete the whole build folder.
-			if err = common.CheckErr(build.ThemesClean(themeBuildDir)); err != nil {
-				return err
-			}
+		if build.AppFs != nil {
+			build.AppFs.RemoveAll(".")
 		}
 	*/
 

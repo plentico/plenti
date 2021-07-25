@@ -15,6 +15,7 @@ import (
 
 	"github.com/plentico/plenti/common"
 	"github.com/plentico/plenti/readers"
+	"github.com/spf13/afero"
 
 	"rogchap.com/v8go"
 )
@@ -23,7 +24,7 @@ import (
 var SSRctx *v8go.Context
 
 // Client builds the SPA.
-func Client(buildPath string, tempBuildDir string, defaultsEjectedFS embed.FS) error {
+func Client(buildPath string, defaultsEjectedFS embed.FS) error {
 
 	defer Benchmark(time.Now(), "Compiling client SPA with Svelte")
 
@@ -43,12 +44,9 @@ func Client(buildPath string, tempBuildDir string, defaultsEjectedFS embed.FS) e
 	compiledComponentCounter := 0
 
 	// Get svelte compiler code from node_modules.
-	compiler, err := ioutil.ReadFile(
-		fmt.Sprintf("%snode_modules/svelte/compiler.js", tempBuildDir),
-	)
+	compiler, err := getVirtualFileIfThemeBuild("node_modules/svelte/compiler.js")
 	if err != nil {
-		return fmt.Errorf("Can't read %s/node_modules/svelte/compiler.js: %w%s\n", tempBuildDir, err, common.Caller())
-
+		return err
 	}
 	// Remove reference to 'self' that breaks v8go on line 19 of node_modules/svelte/compiler.js.
 	compilerStr := strings.Replace(string(compiler), "self.performance.now();", "'';", 1)
@@ -80,19 +78,19 @@ func Client(buildPath string, tempBuildDir string, defaultsEjectedFS embed.FS) e
 	}
 
 	var svelteLibs = [6]string{
-		tempBuildDir + "node_modules/svelte/animate/index.js",
-		tempBuildDir + "node_modules/svelte/easing/index.js",
-		tempBuildDir + "node_modules/svelte/internal/index.js",
-		tempBuildDir + "node_modules/svelte/motion/index.js",
-		tempBuildDir + "node_modules/svelte/store/index.js",
-		tempBuildDir + "node_modules/svelte/transition/index.js",
+		"node_modules/svelte/animate/index.js",
+		"node_modules/svelte/easing/index.js",
+		"node_modules/svelte/internal/index.js",
+		"node_modules/svelte/motion/index.js",
+		"node_modules/svelte/store/index.js",
+		"node_modules/svelte/transition/index.js",
 	}
 
 	for _, svelteLib := range svelteLibs {
 		// Use v8go and add create_ssr_component() function.
-		createSsrComponent, err := ioutil.ReadFile(svelteLib)
+		createSsrComponent, err := getVirtualFileIfThemeBuild(svelteLib)
 		if err != nil {
-			return fmt.Errorf("Can't read %s: %w%s\n", svelteLib, err, common.Caller())
+			return err
 
 		}
 		// Fix "Cannot access 'on_destroy' before initialization" errors on line 1320 & line 1337 of node_modules/svelte/internal/index.js.
@@ -109,19 +107,22 @@ func Client(buildPath string, tempBuildDir string, defaultsEjectedFS embed.FS) e
 		//  node_modules/svelte/transition/index.js: ReferenceError: require is not defined
 		// if err != nil {
 		// 	fmt.Println(fmt.Errorf("Could not add create_ssr_component() func from svelte/internal for file %s: %w%s\n", svelteLib, err, common.Caller()))
-
 		// }
 
 	}
 
 	routerPath := "ejected/router.svelte"
-	ejectedRouterPath := tempBuildDir + routerPath
 	var componentStr string
-	if _, err := os.Stat(ejectedRouterPath); err == nil {
+	// Check if the router has been ejected to the filesystem.
+	_, ejectedErr := os.Stat(routerPath)
+	// Check if the router has been ejected to the virtual filesystem for a theme build.
+	_, ejectedErr = AppFs.Stat(routerPath)
+	if ejectedErr == nil {
 		// The router has been ejected to the filesystem.
-		component, err := ioutil.ReadFile(ejectedRouterPath)
+		//component, err := ioutil.ReadFile(routerPath)
+		component, err := getVirtualFileIfThemeBuild(routerPath)
 		if err != nil {
-			return fmt.Errorf("can't read component file: %s %w%s\n", ejectedRouterPath, err, common.Caller())
+			return fmt.Errorf("can't read component file: %s %w%s\n", routerPath, err, common.Caller())
 		}
 		componentStr = string(component)
 	} else if os.IsNotExist(err) {
@@ -141,18 +142,107 @@ func Client(buildPath string, tempBuildDir string, defaultsEjectedFS embed.FS) e
 		componentStr = string(routerCompBytes)
 	}
 	// Compile router separately since it's ejected from core.
-	if err = (compileSvelte(ctx, SSRctx, routerPath, componentStr, buildPath+"/spa/ejected/router.js", stylePath, tempBuildDir)); err != nil {
+	if err = (compileSvelte(ctx, SSRctx, routerPath, componentStr, buildPath+"/spa/ejected/router.js", stylePath)); err != nil {
 		return err
 	}
 
-	// Go through all file paths in the "/layouts" folder.
-	err = filepath.WalkDir(tempBuildDir+"layouts", func(layoutPath string, layoutFileInfo fs.DirEntry, err error) error {
+	if AppFs != nil {
+		//compileComponentsFromTheme("layouts", buildPath, ctx, SSRctx, stylePath, allLayoutsStr, compiledComponentCounter)
+		if err := afero.Walk(AppFs, "layouts", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
+			return compileComponents(err, layoutPath, layoutFileInfo, buildPath, ctx, SSRctx, stylePath, allLayoutsStr, compiledComponentCounter)
+		}); err != nil {
+			return fmt.Errorf("Could not get layout from virtual theme build: %w%s\n", err, common.Caller())
+		}
+	} else {
+		//err := compileComponentsFromProject("layouts", buildPath, ctx, SSRctx, stylePath, allLayoutsStr, compiledComponentCounter)
+		//if err := filepath.WalkDir("layouts", func(layoutPath string, layoutFileInfo fs.DirEntry, err error) error {
+		if err := filepath.Walk("layouts", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
+			return compileComponents(err, layoutPath, layoutFileInfo, buildPath, ctx, SSRctx, stylePath, allLayoutsStr, compiledComponentCounter)
+		}); err != nil {
+			return fmt.Errorf("Could not get layout: %w%s\n", err, common.Caller())
+		}
+	}
 
+	if common.UseMemFS {
+		b := []byte(allLayoutsStr)
+		common.Set(layoutPath, "", &common.FData{B: b})
+		return nil
+
+	}
+	// Write layouts.js to filesystem.
+	err = ioutil.WriteFile(layoutPath, []byte(allLayoutsStr), os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("Unable to write layouts.js file: %w%s\n", err, common.Caller())
+	}
+
+	Log("Number of components compiled: " + strconv.Itoa(compiledComponentCounter))
+	return nil
+}
+
+func compileComponents(err error, layoutPath string, layoutFileInfo os.FileInfo, buildPath string, ctx *v8go.Context, SSRctx *v8go.Context, stylePath string, allLayoutsStr string, compiledComponentCounter int) error {
+	if err != nil {
+		return fmt.Errorf("can't stat %s: %w", layoutPath, err)
+	}
+	// Create destination path.
+	destFile := buildPath + "/spa" + strings.TrimPrefix(layoutPath, "layouts")
+	// Make sure path is a directory
+	if layoutFileInfo.IsDir() {
+		// Create any sub directories need for filepath.
+		if err = os.MkdirAll(destFile, os.ModePerm); err != nil {
+			return fmt.Errorf("can't make path: %s %w%s\n", layoutPath, err, common.Caller())
+		}
+	} else {
+		// If the file is in .svelte format, compile it to .js
+		if filepath.Ext(layoutPath) == ".svelte" {
+
+			// Replace .svelte file extension with .js.
+			destFile = strings.TrimSuffix(destFile, filepath.Ext(destFile)) + ".js"
+
+			component, err := getVirtualFileIfThemeBuild(layoutPath)
+			if err != nil {
+				return fmt.Errorf("can't read component file: %s %w%s\n", layoutPath, err, common.Caller())
+			}
+			componentStr := string(component)
+
+			if err = compileSvelte(ctx, SSRctx, layoutPath, componentStr, destFile, stylePath); err != nil {
+				return fmt.Errorf("%w%s\n", err, common.Caller())
+			}
+
+			// Create entry for layouts.js.
+			layoutSignature := strings.ReplaceAll(strings.ReplaceAll((layoutPath), "/", "_"), ".", "_")
+			// Remove layouts directory.
+			destLayoutPath := strings.TrimPrefix(layoutPath, "layouts/")
+			// Compose entry for layouts.js file.
+			allLayoutsStr = allLayoutsStr + "export {default as " + layoutSignature + "} from '../" + destLayoutPath + "';\n"
+			// Increment counter for each compiled component.
+			compiledComponentCounter++
+		}
+	}
+	return nil
+}
+
+/*
+func compileComponentsFromTheme(layoutsDir string, buildPath string, ctx *v8go.Context, SSRctx *v8go.Context, stylePath string, allLayoutsStr string, compiledComponentCounter int) error {
+	if err := afero.Walk(AppFs, layoutsDir, func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return fmt.Errorf("Could not get layout from virtual theme build: %w%s\n", err, common.Caller())
+	}
+	return nil
+}
+
+func compileComponentsFromProject(layoutsDir string, buildPath string, ctx *v8go.Context, SSRctx *v8go.Context, stylePath string, allLayoutsStr string, compiledComponentCounter int) error {
+	// Go through all file paths in the "/layouts" folder.
+	//err = filepath.WalkDir(tempBuildDir+"layouts", func(layoutPath string, layoutFileInfo fs.DirEntry, err error) error {
+	if err := filepath.WalkDir(layoutsDir, func(layoutPath string, layoutFileInfo fs.DirEntry, err error) error {
 		if err != nil {
 			return fmt.Errorf("can't stat %s: %w", layoutPath, err)
 		}
 		// Create destination path.
-		destFile := buildPath + "/spa" + strings.TrimPrefix(layoutPath, tempBuildDir+"layouts")
+		destFile := buildPath + "/spa" + strings.TrimPrefix(layoutPath, "layouts")
 		// Make sure path is a directory
 		if layoutFileInfo.IsDir() {
 			// Create any sub directories need for filepath.
@@ -172,16 +262,16 @@ func Client(buildPath string, tempBuildDir string, defaultsEjectedFS embed.FS) e
 				}
 				componentStr := string(component)
 
-				if err = compileSvelte(ctx, SSRctx, layoutPath, componentStr, destFile, stylePath, tempBuildDir); err != nil {
+				if err = compileSvelte(ctx, SSRctx, layoutPath, componentStr, destFile, stylePath); err != nil {
 					return fmt.Errorf("%w%s\n", err, common.Caller())
 				}
 
 				// Remove temporary theme build directory.
-				destLayoutPath := strings.TrimPrefix(layoutPath, tempBuildDir)
+				//destLayoutPath := strings.TrimPrefix(layoutPath, tempBuildDir)
 				// Create entry for layouts.js.
-				layoutSignature := strings.ReplaceAll(strings.ReplaceAll((destLayoutPath), "/", "_"), ".", "_")
+				layoutSignature := strings.ReplaceAll(strings.ReplaceAll((layoutPath), "/", "_"), ".", "_")
 				// Remove layouts directory.
-				destLayoutPath = strings.TrimPrefix(destLayoutPath, "layouts/")
+				destLayoutPath := strings.TrimPrefix(layoutPath, "layouts/")
 				// Compose entry for layouts.js file.
 				allLayoutsStr = allLayoutsStr + "export {default as " + layoutSignature + "} from '../" + destLayoutPath + "';\n"
 
@@ -190,28 +280,28 @@ func Client(buildPath string, tempBuildDir string, defaultsEjectedFS embed.FS) e
 			}
 		}
 		return nil
-	})
-	// TODO: return file names here amd anywhere possible
-	if err != nil {
-		return err
-
+	}); err != nil {
+		return fmt.Errorf("Could not get layout: %w%s\n", err, common.Caller())
 	}
-
-	if common.UseMemFS {
-		b := []byte(allLayoutsStr)
-		common.Set(layoutPath, "", &common.FData{B: b})
-		return nil
-
-	}
-	// Write layouts.js to filesystem.
-	err = ioutil.WriteFile(layoutPath, []byte(allLayoutsStr), os.ModePerm)
-	if err != nil {
-		return fmt.Errorf("Unable to write layouts.js file: %w%s\n", err, common.Caller())
-
-	}
-
-	Log("Number of components compiled: " + strconv.Itoa(compiledComponentCounter))
 	return nil
+}
+*/
+
+func getVirtualFileIfThemeBuild(filename string) ([]byte, error) {
+	var fileContents []byte
+	var err error
+	if AppFs != nil {
+		fileContents, err = afero.ReadFile(AppFs, filename)
+		if err != nil {
+			return []byte{}, fmt.Errorf("Can't read %s from virtual theme: %w%s\n", filename, err, common.Caller())
+		}
+	} else {
+		fileContents, err = ioutil.ReadFile(filename)
+		if err != nil {
+			return []byte{}, fmt.Errorf("Can't read %s from filesystem: %w%s\n", filename, err, common.Caller())
+		}
+	}
+	return fileContents, nil
 }
 
 func removeCSS(str string) string {

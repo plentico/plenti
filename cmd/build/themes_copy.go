@@ -19,7 +19,6 @@ import (
 var AppFs = afero.NewMemMapFs()
 
 // ThemesCopy copies nested themes into a temporary, virtual working directory.
-//func ThemesCopy(theme string, themeOptions readers.ThemeOptions) (string, error) {
 func ThemesCopy(theme string, themeOptions readers.ThemeOptions) error {
 
 	defer Benchmark(time.Now(), "Building themes")
@@ -32,15 +31,11 @@ func ThemesCopy(theme string, themeOptions readers.ThemeOptions) error {
 		// Look for options (like excluded folders) in theme.
 		nestedThemeOptions := siteConfig.ThemeConfig[nestedTheme]
 		// Recursively run merge on nested theme.
-		//_, err := ThemesCopy(theme+"/themes/"+nestedTheme, nestedThemeOptions)
 		err := ThemesCopy(theme+"/themes/"+nestedTheme, nestedThemeOptions)
 		if err != nil {
 			return err
 		}
 	}
-
-	// Name of temporary directory to run build inside.
-	//themeBuildDir := "theme_build/"
 
 	copiedThemeFileCounter := 0
 
@@ -77,7 +72,6 @@ func ThemesCopy(theme string, themeOptions readers.ThemeOptions) error {
 		defer from.Close()
 
 		// Create path for the file to be written to.
-		//destPath := themeBuildDir + strings.TrimPrefix(themeFilePath, theme)
 		destPath := strings.TrimPrefix(themeFilePath, theme+"/")
 
 		// Create the folders needed to write files to tempDir.
@@ -103,13 +97,11 @@ func ThemesCopy(theme string, themeOptions readers.ThemeOptions) error {
 		return nil
 	})
 	if themeFilesErr != nil {
-		//return "", fmt.Errorf("Could not get theme file: %w%s\n", themeFilesErr, common.Caller())
 		return fmt.Errorf("Could not get theme file: %w%s\n", themeFilesErr, common.Caller())
 	}
 
 	Log("Number of theme files copied: " + strconv.Itoa(copiedThemeFileCounter))
 
-	//return themeBuildDir, nil
 	return nil
 
 }
