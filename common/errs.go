@@ -44,7 +44,7 @@ func CheckErr(err error) error {
 	if err != nil {
 		var errorTrace strings.Builder
 		// gives a bit more debug info. More for development
-		errorTrace.WriteString(fmt.Sprintf("%v", err))
+		errorTrace.WriteString(fmt.Sprintf("%v\n", err))
 		verbose(err, &errorTrace)
 		if QuitOnErr {
 			log.Fatal(errorTrace.String())
@@ -52,7 +52,9 @@ func CheckErr(err error) error {
 		// if locked then unlock. Will only be locked on local dev
 		Unlock()
 
-		log.Println(errorTrace.String())
+		// Get filename and line of error.
+		_, fn, line, _ := runtime.Caller(1)
+		log.Printf("%s (File: %s, Line: %d)", errorTrace.String(), fn, line)
 		return err
 
 	}

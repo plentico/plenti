@@ -12,10 +12,15 @@ import (
 
 	"github.com/plentico/plenti/common"
 	"github.com/plentico/plenti/readers"
+	"github.com/spf13/afero"
 )
 
-// ThemesCopy copies nested themes into a temporary working directory.
-func ThemesCopy(theme string, themeOptions readers.ThemeOptions) (string, error) {
+// Virtual filesystem for doing theme builds without writing to disk.
+var AppFs = afero.NewMemMapFs()
+
+// ThemesCopy copies nested themes into a temporary, virtual working directory.
+//func ThemesCopy(theme string, themeOptions readers.ThemeOptions) (string, error) {
+func ThemesCopy(theme string, themeOptions readers.ThemeOptions) error {
 
 	defer Benchmark(time.Now(), "Building themes")
 
@@ -27,14 +32,15 @@ func ThemesCopy(theme string, themeOptions readers.ThemeOptions) (string, error)
 		// Look for options (like excluded folders) in theme.
 		nestedThemeOptions := siteConfig.ThemeConfig[nestedTheme]
 		// Recursively run merge on nested theme.
-		_, err := ThemesCopy(theme+"/themes/"+nestedTheme, nestedThemeOptions)
+		//_, err := ThemesCopy(theme+"/themes/"+nestedTheme, nestedThemeOptions)
+		err := ThemesCopy(theme+"/themes/"+nestedTheme, nestedThemeOptions)
 		if err != nil {
-			return "", err
+			return err
 		}
 	}
 
 	// Name of temporary directory to run build inside.
-	tempBuildDir := "temp_build/"
+	//themeBuildDir := "theme_build/"
 
 	copiedThemeFileCounter := 0
 
@@ -71,16 +77,17 @@ func ThemesCopy(theme string, themeOptions readers.ThemeOptions) (string, error)
 		defer from.Close()
 
 		// Create path for the file to be written to.
-		destPath := tempBuildDir + strings.TrimPrefix(themeFilePath, theme)
+		//destPath := themeBuildDir + strings.TrimPrefix(themeFilePath, theme)
+		destPath := strings.TrimPrefix(themeFilePath, theme+"/")
 
 		// Create the folders needed to write files to tempDir.
 		if themeFileInfo.IsDir() {
 			// Make directory if it doesn't exist.
 			// Move on to next path.
-			return os.MkdirAll(destPath, os.ModePerm)
+			return AppFs.MkdirAll(destPath, os.ModePerm)
 		}
 
-		to, err := os.Create(destPath)
+		to, err := AppFs.Create(destPath)
 		if err != nil {
 			return fmt.Errorf("Could not create destination theme file for copying: %w%s\n", err, common.Caller())
 		}
@@ -96,11 +103,13 @@ func ThemesCopy(theme string, themeOptions readers.ThemeOptions) (string, error)
 		return nil
 	})
 	if themeFilesErr != nil {
-		return "", fmt.Errorf("Could not get theme file: %w%s\n", themeFilesErr, common.Caller())
+		//return "", fmt.Errorf("Could not get theme file: %w%s\n", themeFilesErr, common.Caller())
+		return fmt.Errorf("Could not get theme file: %w%s\n", themeFilesErr, common.Caller())
 	}
 
 	Log("Number of theme files copied: " + strconv.Itoa(copiedThemeFileCounter))
 
-	return tempBuildDir, nil
+	//return themeBuildDir, nil
+	return nil
 
 }

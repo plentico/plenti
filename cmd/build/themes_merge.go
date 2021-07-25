@@ -56,11 +56,11 @@ func ThemesMerge(tempBuildDir string, buildDir string) error {
 		// Create the folders needed to write files to tempDir.
 		if projectFileInfo.IsDir() {
 			// Make directory if it doesn't exist and move on to next path.
-			return os.MkdirAll(destPath, os.ModePerm)
+			return AppFs.MkdirAll(destPath, os.ModePerm)
 
 		}
 
-		to, err := os.Create(destPath)
+		to, err := AppFs.Create(destPath)
 		if err != nil {
 			return fmt.Errorf("Could not create destination project file for copying: %w%s\n", err, common.Caller())
 		}

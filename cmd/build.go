@@ -69,7 +69,7 @@ func Build() error {
 	// Check flags and config for directory to build to.
 	buildDir := setBuildDir(siteConfig)
 
-	tempBuildDir := ""
+	themeBuildDir := ""
 
 	// Get theme from plenti.json.
 	theme := siteConfig.Theme
@@ -77,13 +77,14 @@ func Build() error {
 	if theme != "" {
 		themeOptions := siteConfig.ThemeConfig[theme]
 		// Recursively copy all nested themes to a temp folder for building.
-		tempBuildDir, err = build.ThemesCopy("themes/"+theme, themeOptions)
+		//themeBuildDir, err = build.ThemesCopy("themes/"+theme, themeOptions)
+		err = build.ThemesCopy("themes/"+theme, themeOptions)
 		if err = common.CheckErr(err); err != nil {
 			return err
 		}
 
 		// Merge the current project files with the theme.
-		if err = common.CheckErr(build.ThemesMerge(tempBuildDir, buildDir)); err != nil {
+		if err = common.CheckErr(build.ThemesMerge(themeBuildDir, buildDir)); err != nil {
 			return err
 		}
 
@@ -114,28 +115,29 @@ func Build() error {
 	build.Log("Creating '" + buildDir + "' build directory")
 
 	// Add core NPM dependencies if node_module folder doesn't already exist.
-	if err = common.CheckErr(build.NpmDefaults(tempBuildDir, defaultsNodeModulesFS)); err != nil {
+	if err = common.CheckErr(build.NpmDefaults(themeBuildDir, defaultsNodeModulesFS)); err != nil {
 		return err
 	}
 
 	// Directly copy .js that don't need compiling to the build dir.
-	if err = common.CheckErr(build.EjectCopy(buildPath, tempBuildDir, defaultsEjectedFS)); err != nil {
+	if err = common.CheckErr(build.EjectCopy(buildPath, themeBuildDir, defaultsEjectedFS)); err != nil {
 		return err
 	}
 
 	// Directly copy static assets to the build dir.
-	if err = common.CheckErr(build.AssetsCopy(buildPath, tempBuildDir)); err != nil {
+	//if err = common.CheckErr(build.AssetsCopy(buildPath, themeBuildDir)); err != nil {
+	if err = common.CheckErr(build.AssetsCopy(buildPath)); err != nil {
 		return err
 	}
 
 	// Prep the client SPA.
-	err = build.Client(buildPath, tempBuildDir, defaultsEjectedFS)
+	err = build.Client(buildPath, themeBuildDir, defaultsEjectedFS)
 	if err = common.CheckErr(err); err != nil {
 		return err
 	}
 
 	// Build JSON from "content/" directory.
-	err = build.DataSource(buildPath, siteConfig, tempBuildDir)
+	err = build.DataSource(buildPath, siteConfig, themeBuildDir)
 	if err = common.CheckErr(err); err != nil {
 		return err
 	}
@@ -145,12 +147,14 @@ func Build() error {
 		return err
 	}
 
-	if tempBuildDir != "" {
-		// If using themes, just delete the whole build folder.
-		if err = common.CheckErr(build.ThemesClean(tempBuildDir)); err != nil {
-			return err
+	/*
+		if themeBuildDir != "" {
+			// If using themes, just delete the whole build folder.
+			if err = common.CheckErr(build.ThemesClean(themeBuildDir)); err != nil {
+				return err
+			}
 		}
-	}
+	*/
 
 	// only relates to defer recover
 	return err
