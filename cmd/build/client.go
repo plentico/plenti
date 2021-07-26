@@ -109,20 +109,19 @@ func Client(buildPath string, defaultsEjectedFS embed.FS) error {
 	routerPath := "ejected/router.svelte"
 	var componentStr string
 	// Check if the router has been ejected to the filesystem.
-	_, ejectedErr := os.Stat(routerPath)
+	_, err = os.Stat(routerPath)
 	// Check if the router has been ejected to the virtual filesystem for a theme build.
 	if ThemeFs != nil {
-		_, ejectedErr = ThemeFs.Stat(routerPath)
+		_, err = ThemeFs.Stat(routerPath)
 	}
-	if ejectedErr == nil {
+	if err == nil {
 		// The router has been ejected to the filesystem.
 		component, err := getVirtualFileIfThemeBuild(routerPath)
 		if err != nil {
 			return fmt.Errorf("can't read component file: %s %w%s\n", routerPath, err, common.Caller())
 		}
 		componentStr = string(component)
-	} else if os.IsNotExist(ejectedErr) {
-		fmt.Println(routerPath)
+	} else if os.IsNotExist(err) {
 		// The router has not been ejected, use the embedded defaults.
 		ejected, err := fs.Sub(defaultsEjectedFS, "defaults")
 		if err != nil {
