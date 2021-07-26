@@ -111,7 +111,9 @@ func Client(buildPath string, defaultsEjectedFS embed.FS) error {
 	// Check if the router has been ejected to the filesystem.
 	_, ejectedErr := os.Stat(routerPath)
 	// Check if the router has been ejected to the virtual filesystem for a theme build.
-	_, ejectedErr = AppFs.Stat(routerPath)
+	if ThemeFs != nil {
+		_, ejectedErr = ThemeFs.Stat(routerPath)
+	}
 	if ejectedErr == nil {
 		// The router has been ejected to the filesystem.
 		component, err := getVirtualFileIfThemeBuild(routerPath)
@@ -119,7 +121,8 @@ func Client(buildPath string, defaultsEjectedFS embed.FS) error {
 			return fmt.Errorf("can't read component file: %s %w%s\n", routerPath, err, common.Caller())
 		}
 		componentStr = string(component)
-	} else if os.IsNotExist(err) {
+	} else if os.IsNotExist(ejectedErr) {
+		fmt.Println(routerPath)
 		// The router has not been ejected, use the embedded defaults.
 		ejected, err := fs.Sub(defaultsEjectedFS, "defaults")
 		if err != nil {
@@ -140,8 +143,8 @@ func Client(buildPath string, defaultsEjectedFS embed.FS) error {
 		return err
 	}
 
-	if AppFs != nil {
-		if err := afero.Walk(AppFs, "layouts", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
+	if ThemeFs != nil {
+		if err := afero.Walk(ThemeFs, "layouts", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
 			compiledComponentCounter, allLayoutsStr, err = compileComponent(err, layoutPath, layoutFileInfo, buildPath, ctx, SSRctx, stylePath, allLayoutsStr, compiledComponentCounter)
 			if err != nil {
 				return err
@@ -223,8 +226,8 @@ func compileComponent(err error, layoutPath string, layoutFileInfo os.FileInfo, 
 func getVirtualFileIfThemeBuild(filename string) ([]byte, error) {
 	var fileContents []byte
 	var err error
-	if AppFs != nil {
-		fileContents, err = afero.ReadFile(AppFs, filename)
+	if ThemeFs != nil {
+		fileContents, err = afero.ReadFile(ThemeFs, filename)
 		if err != nil {
 			return []byte{}, fmt.Errorf("Can't read %s from virtual theme: %w%s\n", filename, err, common.Caller())
 		}

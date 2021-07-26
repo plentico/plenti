@@ -107,8 +107,8 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 	allContent := []content{}
 
 	// Go through all sub directories in "content/" folder.
-	if AppFs != nil {
-		if err := afero.Walk(AppFs, "content", func(path string, info os.FileInfo, err error) error {
+	if ThemeFs != nil {
+		if err := afero.Walk(ThemeFs, "content", func(path string, info os.FileInfo, err error) error {
 			contentFileCounter, allContentStr, allContent, err = getContent(path, info, err, siteConfig, buildPath, contentJSPath, allContentStr, allContent, contentFileCounter)
 			if err != nil {
 				return err

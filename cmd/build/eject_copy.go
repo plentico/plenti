@@ -51,8 +51,10 @@ func EjectCopy(buildPath string, defaultsEjectedFS embed.FS) error {
 				return err
 			}
 			var ejectedContent []byte
-			_, err := AppFs.Stat(ejectPath)
-			_, err = os.Stat(ejectPath)
+			_, err := os.Stat(ejectPath)
+			if ThemeFs != nil {
+				_, err = ThemeFs.Stat(ejectPath)
+			}
 			// Check if file has been ejected to project or virtual theme filesystem.
 			if err == nil {
 				// The file has been ejected.

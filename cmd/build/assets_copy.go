@@ -23,7 +23,7 @@ func AssetsCopy(buildPath string) error {
 	copiedSourceCounter := 0
 	var err error
 
-	if AppFs != nil {
+	if ThemeFs != nil {
 		copiedSourceCounter, err = copyAssetsFromTheme(assetsDir, buildPath, copiedSourceCounter)
 		if err != nil {
 			return err
@@ -41,7 +41,7 @@ func AssetsCopy(buildPath string) error {
 }
 
 func copyAssetsFromTheme(assetsDir string, buildPath string, copiedSourceCounter int) (int, error) {
-	if err := afero.Walk(AppFs, assetsDir, func(path string, info os.FileInfo, err error) error {
+	if err := afero.Walk(ThemeFs, assetsDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -52,7 +52,7 @@ func copyAssetsFromTheme(assetsDir string, buildPath string, copiedSourceCounter
 			}
 			return nil
 		}
-		from, err := AppFs.Open(path)
+		from, err := ThemeFs.Open(path)
 		if err != nil {
 			return fmt.Errorf("Could not open asset %s for copying: %w%s\n", path, err, common.Caller())
 

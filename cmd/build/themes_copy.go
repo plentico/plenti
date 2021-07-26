@@ -16,7 +16,8 @@ import (
 )
 
 // Virtual filesystem for doing theme builds without writing to disk.
-var AppFs = afero.NewMemMapFs()
+//var ThemeFs = afero.NewMemMapFs()
+var ThemeFs afero.Fs
 
 // ThemesCopy copies nested themes into a temporary, virtual working directory.
 func ThemesCopy(theme string, themeOptions readers.ThemeOptions) error {
@@ -24,6 +25,11 @@ func ThemesCopy(theme string, themeOptions readers.ThemeOptions) error {
 	defer Benchmark(time.Now(), "Building themes")
 
 	Log("Found theme named: " + theme)
+
+	//if len(siteConfig.Theme) > 0 {
+	// Virtual filesystem for doing theme builds without writing to disk.
+	ThemeFs = afero.NewMemMapFs()
+	//}
 
 	siteConfig, _ := readers.GetSiteConfig(theme)
 	nestedTheme := siteConfig.Theme
@@ -78,10 +84,10 @@ func ThemesCopy(theme string, themeOptions readers.ThemeOptions) error {
 		if themeFileInfo.IsDir() {
 			// Make directory if it doesn't exist.
 			// Move on to next path.
-			return AppFs.MkdirAll(destPath, os.ModePerm)
+			return ThemeFs.MkdirAll(destPath, os.ModePerm)
 		}
 
-		to, err := AppFs.Create(destPath)
+		to, err := ThemeFs.Create(destPath)
 		if err != nil {
 			return fmt.Errorf("Could not create destination theme file for copying: %w%s\n", err, common.Caller())
 		}
