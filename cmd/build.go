@@ -69,8 +69,6 @@ func Build() error {
 	// Check flags and config for directory to build to.
 	buildDir := setBuildDir(siteConfig)
 
-	themeBuildDir := ""
-
 	// Add core NPM dependencies if node_module folder doesn't already exist.
 	if err = common.CheckErr(build.NpmDefaults(defaultsNodeModulesFS)); err != nil {
 		return err
@@ -138,7 +136,7 @@ func Build() error {
 	}
 
 	// Build JSON from "content/" directory.
-	err = build.DataSource(buildPath, siteConfig, themeBuildDir)
+	err = build.DataSource(buildPath, siteConfig)
 	if err = common.CheckErr(err); err != nil {
 		return err
 	}
@@ -147,13 +145,6 @@ func Build() error {
 	if err = common.CheckErr(build.Gopack(buildPath)); err != nil {
 		return err
 	}
-
-	// If using themes, clean up the virtual filesystem afterwards.
-	/*
-		if build.AppFs != nil {
-			build.AppFs.RemoveAll(".")
-		}
-	*/
 
 	// only relates to defer recover
 	return err
