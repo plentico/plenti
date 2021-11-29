@@ -180,8 +180,8 @@ func checkNpmPath(pathStr string, gopackDir string) string {
 	// Check all files in the current directory first.
 	foundPath := findJSFile(namedPath)
 
-	// our loop goes till we have no matching prefix in SeacrhPath so this is as far as that goes.
-	if foundPath == "" {
+	// Make sure the dependecy can be located in web_modules before trying to find file
+	if fileExists(namedPath) {
 		// If JS file was not found in the current directory, check nested directories.
 		findSubPathErr := filepath.WalkDir(namedPath, func(subPath string, subPathFileInfo fs.DirEntry, err error) error {
 			if err != nil {
@@ -242,7 +242,7 @@ func copyNpmModule(module string, gopackDir string) {
 	nodeModuleErr := filepath.WalkDir("node_modules/"+module, func(modulePath string, moduleFileInfo fs.DirEntry, err error) error {
 
 		if err != nil {
-			return fmt.Errorf("can't stat %s: %w", modulePath, err)
+			return fmt.Errorf("Can't crawl %s: %w", modulePath, err)
 		}
 		// Only get ESM supported files.
 		if !moduleFileInfo.IsDir() && filepath.Ext(modulePath) == ".mjs" {
