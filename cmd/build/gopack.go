@@ -46,29 +46,19 @@ func Gopack(buildPath string) {
 	// Start at the entry point for the app
 	runPack(buildPath, buildPath+"/spa/ejected/main.js")
 
-	// Go through every already compiled svelte component
-	/*
-		convertErr := filepath.WalkDir(buildPath+"/spa", func(convertPath string, convertFileInfo fs.DirEntry, err error) error {
-			if err != nil {
-				return fmt.Errorf("can't stat %s: %w", convertPath, err)
-			}
-			if convertFileInfo.IsDir() {
-				return nil
-			}
-			return runPack(buildPath, convertPath)
-		})
-		return convertErr
-	*/
 }
 
-func runPack(buildPath, convertPath string) error {
+func runPack(buildPath, convertPath string, alreadyConvertedFiles ...string) error {
 
-	fmt.Println(convertPath)
-	/*
-		if filepath.Ext(convertPath) != ".js" && filepath.Ext(convertPath) != ".mjs" {
-			return nil
+	if len(alreadyConvertedFiles) > 0 {
+		for _, convertedFile := range alreadyConvertedFiles {
+			if convertPath == convertedFile {
+				// Exit the function to avoid endless loops where files
+				// reference each other (like main.js and router.svelte)
+				return nil
+			}
 		}
-	*/
+	}
 
 	contentBytes, err := ioutil.ReadFile(convertPath)
 	if err != nil {
@@ -100,10 +90,25 @@ func runPack(buildPath, convertPath string) error {
 		pathStr = strings.Trim(pathStr, `'"`)
 		// Intialize the path that we are replacing.
 		var foundPath string
+
 		// Convert .svelte file extensions to .js so the browser can read them.
 		if filepath.Ext(pathStr) == ".svelte" {
 			// Declare found since path should be relative to the component it's referencing.
-			foundPath = strings.Replace(pathStr, ".svelte", ".js", 1)
+			pathStr = strings.Replace(pathStr, ".svelte", ".js", 1)
+		}
+
+		// Make relative pathStr a full path that we can find on the filesystem.
+		fullPathStr := path.Clean(path.Dir(convertPath) + "/" + pathStr)
+		// Check that it exists (catches both converted files and those already in .js format)
+		if fileExists(fullPathStr) {
+			fmt.Println("fullpath: " + fullPathStr)
+			fmt.Println("convertpath: " + convertPath)
+			// Set this as a found path.
+			foundPath = pathStr
+			// Add the current file to list of already converted files.
+			alreadyConvertedFiles = append(alreadyConvertedFiles, convertPath)
+			// Use fullPathStr recursively to find its imports.
+			runPack(buildPath, fullPathStr, alreadyConvertedFiles...)
 		}
 
 		// Make sure the import/export path doesn't start with a dot (.) or double dot (..)
@@ -121,10 +126,6 @@ func runPack(buildPath, convertPath string) error {
 		}
 
 		if foundPath != "" {
-			// Make relative foundPath and full that we can find on the filesystem.
-			fullFoundPath := path.Clean(path.Dir(convertPath) + "/" + foundPath)
-			// Use fullFoundPath recursively to find its imports.
-			runPack(buildPath, fullFoundPath)
 			// Remove "public" build dir from path.
 			replacePath := strings.Replace(foundPath, buildPath, "", 1)
 			// Wrap path in quotes.
@@ -134,7 +135,8 @@ func runPack(buildPath, convertPath string) error {
 			// Actually replace the path to the dependency in the source content.
 			contentBytes = bytes.ReplaceAll(contentBytes, staticStatement,
 				rePath.ReplaceAll(staticStatement, rePath.ReplaceAll(pathBytes, replacePathBytes)))
-
+		} else {
+			fmt.Printf("Import path '%s' not resolvable from file '%s'\n", pathStr, convertPath)
 		}
 	}
 	// Overwrite the old file with the new content that contains the updated import path.
@@ -200,6 +202,14 @@ func findJSFile(path string) string {
 	}
 
 	return foundPath
+}
+
+func fileExists(path string) bool {
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		// The path was found on the filesystem
+		return true
+	}
+	return false
 }
 
 func copyNpmModule(module string, gopackDir string) {
