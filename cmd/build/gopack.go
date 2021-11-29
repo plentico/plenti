@@ -98,6 +98,15 @@ func runPack(buildPath, convertPath string, alreadyConvertedFiles ...string) err
 			if fileExists(fullPathStr) {
 				// Set this as a found path
 				foundPath = pathStr
+			} else if strings.HasPrefix(convertPath, buildPath+"/spa/web_modules") {
+				// The relative import is coming from an npm module itself
+				// Get the module from npm
+				copyFile("node_modules"+strings.TrimPrefix(fullPathStr, buildPath+"/spa/web_modules"), fullPathStr)
+				// Check if it can be found after being copied from 'node_modules'
+				if fileExists(fullPathStr) {
+					// Set this as a found path
+					foundPath = pathStr
+				}
 			}
 		}
 
@@ -120,6 +129,11 @@ func runPack(buildPath, convertPath string, alreadyConvertedFiles ...string) err
 			// Add the current file to list of already converted files.
 			alreadyConvertedFiles = append(alreadyConvertedFiles, fullPathStr)
 			// Use fullPathStr recursively to find its imports.
+			fmt.Println("\nRunpack with:")
+			fmt.Println("convertpath: " + convertPath)
+			fmt.Println("fullpathstr: " + fullPathStr)
+			fmt.Println("foundpath: " + foundPath)
+			fmt.Println("pathstr: " + pathStr)
 			runPack(buildPath, fullPathStr, alreadyConvertedFiles...)
 		}
 
@@ -234,33 +248,39 @@ func copyNpmModule(module string, gopackDir string) {
 		}
 		// Only get ESM supported files.
 		if !moduleFileInfo.IsDir() && filepath.Ext(modulePath) == ".mjs" {
-			from, err := os.Open(modulePath)
-			if err != nil {
-				return fmt.Errorf("Could not open source .mjs %s file for copying: %w%s\n", modulePath, err, common.Caller())
-			}
-			defer from.Close()
-
 			// Remove "node_modules" from path and add "web_modules".
 			outPathFile := gopackDir + strings.Replace(modulePath, "node_modules", "", 1)
-
-			// Create any subdirectories need to write file to "web_modules" destination.
-			if err = os.MkdirAll(filepath.Dir(outPathFile), os.ModePerm); err != nil {
-				return fmt.Errorf("Could not create subdirectories %s: %w%s\n", filepath.Dir(modulePath), err, common.Caller())
-			}
-			to, err := os.Create(outPathFile)
-			if err != nil {
-				return fmt.Errorf("Could not create destination %s file for copying: %w%s\n", modulePath, err, common.Caller())
-			}
-			defer to.Close()
-
-			_, err = io.Copy(to, from)
-			if err != nil {
-				return fmt.Errorf("Could not copy .mjs  from source to destination: %w%s\n", err, common.Caller())
-			}
+			// Actually copy the file from source to destination.
+			copyFile(modulePath, outPathFile)
 		}
 		return nil
 	})
 	if nodeModuleErr != nil {
 		fmt.Printf("Could not get node module: %s\n", nodeModuleErr)
 	}
+}
+
+func copyFile(src string, dest string) {
+	from, err := os.Open(src)
+	if err != nil {
+		fmt.Printf("Could not open source .mjs '%s' file for copying: %s\n", src, err)
+	}
+	defer from.Close()
+
+	// Create any subdirectories need to write file to "web_modules" destination.
+	if err = os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
+		fmt.Printf("Could not create subdirectories '%s': %s\n", filepath.Dir(src), err)
+	}
+
+	to, err := os.Create(dest)
+	if err != nil {
+		fmt.Printf("Could not create destination %s file for copying: %s\n", src, err)
+	}
+	defer to.Close()
+
+	_, err = io.Copy(to, from)
+	if err != nil {
+		fmt.Printf("Could not copy '%s' (source) to %s (destination): %s\n", src, dest, err)
+	}
+
 }
