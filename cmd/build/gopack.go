@@ -115,21 +115,13 @@ func runPack(buildPath, convertPath string, alreadyConvertedFiles ...string) err
 			}
 		}
 
-		fmt.Println("fullpathstr: " + fullPathStr)
-		fmt.Println("foundpath: " + foundPath)
-		fmt.Println("pathstr: " + pathStr)
 		// Do not convert files that have already been converted to avoid loops.
-		//if len(alreadyConvertedFiles) == 0 || !alreadyConverted(convertPath, alreadyConvertedFiles) {
-		//if !alreadyConverted(convertPath, alreadyConvertedFiles) {
 		if !alreadyConverted(fullPathStr, alreadyConvertedFiles) {
-			fmt.Println("convertPath: " + convertPath)
 			// Add the current file to list of already converted files.
-			//alreadyConvertedFiles = append(alreadyConvertedFiles, convertPath)
 			alreadyConvertedFiles = append(alreadyConvertedFiles, fullPathStr)
 			// Use fullPathStr recursively to find its imports.
 			runPack(buildPath, fullPathStr, alreadyConvertedFiles...)
 		}
-		fmt.Println()
 
 		if foundPath != "" {
 			// Remove "public" build dir from path.
@@ -158,10 +150,8 @@ func alreadyConverted(convertPath string, alreadyConvertedFiles []string) bool {
 	// Check if there are already files that have been converted
 	if len(alreadyConvertedFiles) > 0 {
 		for _, convertedFile := range alreadyConvertedFiles {
-			fmt.Println("already converted: " + convertedFile)
 			// Compare the currently queued file with each already converted file
 			if convertPath == convertedFile {
-				fmt.Println("found convertpath: " + convertPath)
 				// Exit the function to avoid endless loops where files
 				// reference each other (like main.js and router.svelte)
 				return true
