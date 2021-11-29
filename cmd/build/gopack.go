@@ -37,31 +37,38 @@ var (
 )
 
 // Gopack ensures ESM support for NPM dependencies.
-func Gopack(buildPath string) error {
+func Gopack(buildPath string) {
 
 	defer Benchmark(time.Now(), "Running Gopack")
 
-	Log("\nRunning gopack to build esm support for npm dependencies:")
+	Log("\nRunning gopack to build esm support for npm dependencies")
+
+	// Start at the entry point for the app
+	runPack(buildPath, buildPath+"/spa/ejected/main.js")
 
 	// Go through every already compiled svelte component
-	convertErr := filepath.WalkDir(buildPath+"/spa", func(convertPath string, convertFileInfo fs.DirEntry, err error) error {
-		if err != nil {
-			return fmt.Errorf("can't stat %s: %w", convertPath, err)
-		}
-		if convertFileInfo.IsDir() {
-			return nil
-		}
-		return runPack(buildPath, convertPath)
-	})
-	return convertErr
-
+	/*
+		convertErr := filepath.WalkDir(buildPath+"/spa", func(convertPath string, convertFileInfo fs.DirEntry, err error) error {
+			if err != nil {
+				return fmt.Errorf("can't stat %s: %w", convertPath, err)
+			}
+			if convertFileInfo.IsDir() {
+				return nil
+			}
+			return runPack(buildPath, convertPath)
+		})
+		return convertErr
+	*/
 }
 
 func runPack(buildPath, convertPath string) error {
 
-	if filepath.Ext(convertPath) != ".js" && filepath.Ext(convertPath) != ".mjs" {
-		return nil
-	}
+	fmt.Println(convertPath)
+	/*
+		if filepath.Ext(convertPath) != ".js" && filepath.Ext(convertPath) != ".mjs" {
+			return nil
+		}
+	*/
 
 	contentBytes, err := ioutil.ReadFile(convertPath)
 	if err != nil {
@@ -81,34 +88,31 @@ func runPack(buildPath, convertPath string) error {
 	staticImportStatements := reStaticImportGoPk.FindAll(contentBytes, -1)
 	// Get all the export statements.
 	staticExportStatements := reStaticExportGoPk.FindAll(contentBytes, -1)
-	// Get all import and export statements.
+	// Combine import and export statements.
 	allStaticStatements := append(staticImportStatements, staticExportStatements...)
+	// Iterate through all static import and export statements.
 	for _, staticStatement := range allStaticStatements {
-
 		// Get path from the full import/export statement.
 		pathBytes := rePath.Find(staticStatement)
 		// Convert path to a string.
 		pathStr := string(pathBytes)
 		// Remove single or double quotes around path.
 		pathStr = strings.Trim(pathStr, `'"`)
-
 		// Intialize the path that we are replacing.
 		var foundPath string
-
 		// Convert .svelte file extensions to .js so the browser can read them.
 		if filepath.Ext(pathStr) == ".svelte" {
+			// Declare found since path should be relative to the component it's referencing.
 			foundPath = strings.Replace(pathStr, ".svelte", ".js", 1)
 		}
 
 		// Make sure the import/export path doesn't start with a dot (.) or double dot (..)
 		// and make sure that the path doesn't have a file extension.
 		if pathStr[:1] != "." && filepath.Ext(pathStr) == "" {
-
-			// Actually copy file from /node_modules to /spa/web_modules
+			// Copy the npm file from /node_modules to /spa/web_modules
 			copyNpmModule(pathStr, buildPath+"/spa/web_modules")
 			// Try to connect the path to the file that was copied
 			foundPath = checkNpmPath(buildPath, pathStr)
-
 			// Make absolute foundPath relative to the current file so it works with baseurls.
 			foundPath, err = filepath.Rel(path.Dir(convertPath), foundPath)
 			if err != nil {
@@ -117,6 +121,10 @@ func runPack(buildPath, convertPath string) error {
 		}
 
 		if foundPath != "" {
+			// Make relative foundPath and full that we can find on the filesystem.
+			fullFoundPath := path.Clean(path.Dir(convertPath) + "/" + foundPath)
+			// Use fullFoundPath recursively to find its imports.
+			runPack(buildPath, fullFoundPath)
 			// Remove "public" build dir from path.
 			replacePath := strings.Replace(foundPath, buildPath, "", 1)
 			// Wrap path in quotes.

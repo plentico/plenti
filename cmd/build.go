@@ -142,9 +142,7 @@ func Build() error {
 	}
 
 	// Run Gopack (custom Snowpack alternative) for ESM support.
-	if err = common.CheckErr(build.Gopack(buildPath)); err != nil {
-		return err
-	}
+	build.Gopack(buildPath)
 
 	// only relates to defer recover
 	return err
