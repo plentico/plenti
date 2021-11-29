@@ -50,16 +50,7 @@ func Gopack(buildPath string) {
 
 func runPack(buildPath, convertPath string, alreadyConvertedFiles ...string) error {
 
-	if len(alreadyConvertedFiles) > 0 {
-		for _, convertedFile := range alreadyConvertedFiles {
-			if convertPath == convertedFile {
-				// Exit the function to avoid endless loops where files
-				// reference each other (like main.js and router.svelte)
-				return nil
-			}
-		}
-	}
-
+	// Get the actual contents of the file we want to convert
 	contentBytes, err := ioutil.ReadFile(convertPath)
 	if err != nil {
 		return fmt.Errorf("Could not read file %s to convert to esm: %w%s\n", convertPath, err, common.Caller())
@@ -88,8 +79,10 @@ func runPack(buildPath, convertPath string, alreadyConvertedFiles ...string) err
 		pathStr := string(pathBytes)
 		// Remove single or double quotes around path.
 		pathStr = strings.Trim(pathStr, `'"`)
-		// Intialize the path that we are replacing.
+		// Intitialize the string that determines if we found the import path.
 		var foundPath string
+		// Initialize the full path of the import.
+		var fullPathStr string
 
 		// Convert .svelte file extensions to .js so the browser can read them.
 		if filepath.Ext(pathStr) == ".svelte" {
@@ -97,18 +90,15 @@ func runPack(buildPath, convertPath string, alreadyConvertedFiles ...string) err
 			pathStr = strings.Replace(pathStr, ".svelte", ".js", 1)
 		}
 
-		// Make relative pathStr a full path that we can find on the filesystem.
-		fullPathStr := path.Clean(path.Dir(convertPath) + "/" + pathStr)
-		// Check that it exists (catches both converted files and those already in .js format)
-		if fileExists(fullPathStr) {
-			fmt.Println("fullpath: " + fullPathStr)
-			fmt.Println("convertpath: " + convertPath)
-			// Set this as a found path.
-			foundPath = pathStr
-			// Add the current file to list of already converted files.
-			alreadyConvertedFiles = append(alreadyConvertedFiles, convertPath)
-			// Use fullPathStr recursively to find its imports.
-			runPack(buildPath, fullPathStr, alreadyConvertedFiles...)
+		// If relative import (catches both previously .svelte paths and those already in .js format)
+		if pathStr[:1] == "." {
+			// Make relative pathStr a full path that we can find on the filesystem.
+			fullPathStr = path.Clean(path.Dir(convertPath) + "/" + pathStr)
+			// Make sure we can find file in filesystem
+			if fileExists(fullPathStr) {
+				// Set this as a found path
+				foundPath = pathStr
+			}
 		}
 
 		// Make sure the import/export path doesn't start with a dot (.) or double dot (..)
@@ -117,13 +107,29 @@ func runPack(buildPath, convertPath string, alreadyConvertedFiles ...string) err
 			// Copy the npm file from /node_modules to /spa/web_modules
 			copyNpmModule(pathStr, buildPath+"/spa/web_modules")
 			// Try to connect the path to the file that was copied
-			foundPath = checkNpmPath(buildPath, pathStr)
+			fullPathStr = checkNpmPath(buildPath, pathStr)
 			// Make absolute foundPath relative to the current file so it works with baseurls.
-			foundPath, err = filepath.Rel(path.Dir(convertPath), foundPath)
+			foundPath, err = filepath.Rel(path.Dir(convertPath), fullPathStr)
 			if err != nil {
 				fmt.Printf("Could not make path to NPM dependency relative: %s", err)
 			}
 		}
+
+		fmt.Println("fullpathstr: " + fullPathStr)
+		fmt.Println("foundpath: " + foundPath)
+		fmt.Println("pathstr: " + pathStr)
+		// Do not convert files that have already been converted to avoid loops.
+		//if len(alreadyConvertedFiles) == 0 || !alreadyConverted(convertPath, alreadyConvertedFiles) {
+		//if !alreadyConverted(convertPath, alreadyConvertedFiles) {
+		if !alreadyConverted(fullPathStr, alreadyConvertedFiles) {
+			fmt.Println("convertPath: " + convertPath)
+			// Add the current file to list of already converted files.
+			//alreadyConvertedFiles = append(alreadyConvertedFiles, convertPath)
+			alreadyConvertedFiles = append(alreadyConvertedFiles, fullPathStr)
+			// Use fullPathStr recursively to find its imports.
+			runPack(buildPath, fullPathStr, alreadyConvertedFiles...)
+		}
+		fmt.Println()
 
 		if foundPath != "" {
 			// Remove "public" build dir from path.
@@ -146,6 +152,23 @@ func runPack(buildPath, convertPath string, alreadyConvertedFiles ...string) err
 	}
 	return nil
 
+}
+
+func alreadyConverted(convertPath string, alreadyConvertedFiles []string) bool {
+	// Check if there are already files that have been converted
+	if len(alreadyConvertedFiles) > 0 {
+		for _, convertedFile := range alreadyConvertedFiles {
+			fmt.Println("already converted: " + convertedFile)
+			// Compare the currently queued file with each already converted file
+			if convertPath == convertedFile {
+				fmt.Println("found convertpath: " + convertPath)
+				// Exit the function to avoid endless loops where files
+				// reference each other (like main.js and router.svelte)
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func checkNpmPath(buildPath, pathStr string) string {
