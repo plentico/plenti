@@ -118,7 +118,6 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 			return fmt.Errorf("Could not get layout %w from virtual theme\n", err)
 		}
 	} else {
-		//contentFilesErr := filepath.WalkDir("content", func(path string, info fs.DirEntry, err error) error {
 		if err := filepath.Walk("content", func(path string, info os.FileInfo, err error) error {
 			contentFileCounter, allContentStr, allContent, err = getContent(path, info, err, siteConfig, buildPath, contentJSPath, allContentStr, allContent, contentFileCounter)
 			if err != nil {
