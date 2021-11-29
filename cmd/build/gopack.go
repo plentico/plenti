@@ -50,6 +50,9 @@ func Gopack(buildPath string) {
 
 func runPack(buildPath, convertPath string, alreadyConvertedFiles ...string) error {
 
+	// Destination path for dependencies
+	gopackDir := buildPath + "/spa/web_modules"
+
 	// Get the actual contents of the file we want to convert
 	contentBytes, err := ioutil.ReadFile(convertPath)
 	if err != nil {
@@ -98,10 +101,10 @@ func runPack(buildPath, convertPath string, alreadyConvertedFiles ...string) err
 			if fileExists(fullPathStr) {
 				// Set this as a found path
 				foundPath = pathStr
-			} else if strings.HasPrefix(convertPath, buildPath+"/spa/web_modules") {
+			} else if strings.HasPrefix(convertPath, gopackDir) {
 				// The relative import is coming from an npm module itself
 				// Get the module from npm
-				copyFile("node_modules"+strings.TrimPrefix(fullPathStr, buildPath+"/spa/web_modules"), fullPathStr)
+				copyFile("node_modules"+strings.TrimPrefix(fullPathStr, gopackDir), fullPathStr)
 				// Check if it can be found after being copied from 'node_modules'
 				if fileExists(fullPathStr) {
 					// Set this as a found path
@@ -114,9 +117,9 @@ func runPack(buildPath, convertPath string, alreadyConvertedFiles ...string) err
 		// and make sure that the path doesn't have a file extension.
 		if pathStr[:1] != "." && filepath.Ext(pathStr) == "" {
 			// Copy the npm file from /node_modules to /spa/web_modules
-			copyNpmModule(pathStr, buildPath+"/spa/web_modules")
+			copyNpmModule(pathStr, gopackDir)
 			// Try to connect the path to the file that was copied
-			fullPathStr = checkNpmPath(buildPath, pathStr)
+			fullPathStr = checkNpmPath(pathStr, gopackDir)
 			// Make absolute foundPath relative to the current file so it works with baseurls.
 			foundPath, err = filepath.Rel(path.Dir(convertPath), fullPathStr)
 			if err != nil {
@@ -129,11 +132,6 @@ func runPack(buildPath, convertPath string, alreadyConvertedFiles ...string) err
 			// Add the current file to list of already converted files.
 			alreadyConvertedFiles = append(alreadyConvertedFiles, fullPathStr)
 			// Use fullPathStr recursively to find its imports.
-			fmt.Println("\nRunpack with:")
-			fmt.Println("convertpath: " + convertPath)
-			fmt.Println("fullpathstr: " + fullPathStr)
-			fmt.Println("foundpath: " + foundPath)
-			fmt.Println("pathstr: " + pathStr)
 			runPack(buildPath, fullPathStr, alreadyConvertedFiles...)
 		}
 
@@ -175,9 +173,9 @@ func alreadyConverted(convertPath string, alreadyConvertedFiles []string) bool {
 	return false
 }
 
-func checkNpmPath(buildPath, pathStr string) string {
+func checkNpmPath(pathStr string, gopackDir string) string {
 	// A named import/export is being used, look for this in "web_modules/" dir.
-	namedPath := buildPath + "/spa/web_modules/" + pathStr
+	namedPath := gopackDir + "/" + pathStr
 
 	// Check all files in the current directory first.
 	foundPath := findJSFile(namedPath)
