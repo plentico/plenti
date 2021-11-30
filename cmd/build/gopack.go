@@ -25,13 +25,14 @@ var (
 	// \n = newline
 	// {0,} = repeat any number of times
 	// \{ = just a closing curly bracket (escaped)
+	// ? = make quantifier non-greedy
 
 	// Match dynamic import statments, e.g. import("") or import('').
 	reDynamicImport = regexp.MustCompile(`import\((?:'|").*(?:'|")\)`)
 	// Find any import statement in the file (including multiline imports).
 	reStaticImportGoPk = regexp.MustCompile(`(?m)^import(\s)(.*from(.*);|((.*\n){0,})\}(\s)from(.*);)`)
 	// Find all export statements.
-	reStaticExportGoPk = regexp.MustCompile(`export(\s)(.*from(.*);|((.*\n){0,})\}(\s)from(.*);)`)
+	reStaticExportGoPk = regexp.MustCompile(`export(\s)(.*from(.*);|((.*\n){0,}?)\}(\s)from(.*);)`)
 	// Find the path specifically (part between single or double quotes).
 	rePath = regexp.MustCompile(`(?:'|").*(?:'|")`)
 )
@@ -95,6 +96,24 @@ func runPack(buildPath, convertPath string) error {
 			pathStr = strings.Replace(pathStr, ".svelte", ".js", 1)
 		}
 
+		if pathStr == "./interval.js" {
+			//fmt.Println(pathStr)
+			fmt.Println(string(staticStatement))
+		}
+		/*
+			if pathStr == "./millisecond.js" {
+				fmt.Println(pathStr)
+			}
+			if pathStr == "./second.js" {
+				fmt.Println(pathStr)
+			}
+			if pathStr == "./minute.js" {
+				fmt.Println(pathStr)
+			}
+			if pathStr == "./hour.js" {
+				fmt.Println(pathStr)
+			}
+		*/
 		// If relative import (catches both previously .svelte paths and those already in .js format)
 		if pathStr[:1] == "." {
 			// Make relative pathStr a full path that we can find on the filesystem.
