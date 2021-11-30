@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/fs"
 	"io/ioutil"
 	"os"
 	"path"
@@ -53,7 +52,6 @@ func Gopack(buildPath string) {
 
 func runPack(buildPath, convertPath string) error {
 
-	fmt.Println("convert path: " + convertPath)
 	// Destination path for dependencies
 	gopackDir := buildPath + "/spa/web_modules"
 
@@ -108,8 +106,6 @@ func runPack(buildPath, convertPath string) error {
 			} else if strings.HasPrefix(convertPath, gopackDir) {
 				// The relative import is coming from an npm module itself
 				// Get the module from npm
-				//fmt.Println(fullPathStr)
-				//fmt.Println(convertPath)
 				copyFile("node_modules"+strings.TrimPrefix(fullPathStr, gopackDir), fullPathStr)
 				// Check if it can be found after being copied from 'node_modules'
 				if pathExists(fullPathStr) {
@@ -124,31 +120,20 @@ func runPack(buildPath, convertPath string) error {
 		if pathStr[:1] != "." && filepath.Ext(pathStr) == "" {
 			// Copy the npm file from /node_modules to /spa/web_modules
 			fullPathStr = copyNpmModule(pathStr, gopackDir)
-			// Try to connect the path to the file that was copied
-			//fullPathStr = checkNpmPath(pathStr, gopackDir)
-			//fmt.Println("dest: " + dest)
-			//fmt.Println("fStr: " + fullPathStr)
-			//fmt.Println("computed: " + gopackDir + "/" + pathStr)
-			//fmt.Println()
-			// Make absolute foundPath relative to the current file so it works with baseurls.
-			fmt.Println("fps1: " + fullPathStr)
 			if pathExists(fullPathStr) {
+				// Make absolute path relative to the current file so it works with baseurls.
 				foundPath, err = filepath.Rel(path.Dir(convertPath), fullPathStr)
 				if err != nil {
 					fmt.Printf("Could not make path to NPM dependency relative: %s", err)
 				}
-				//fmt.Println(foundPath)
 			}
 		}
 
-		//fmt.Println(alreadyConvertedFiles)
 		// Do not convert files that have already been converted to avoid loops.
 		if !alreadyConverted(fullPathStr, alreadyConvertedFiles) {
-			//fmt.Println(fullPathStr)
 			// Add the current file to list of already converted files.
 			alreadyConvertedFiles = append(alreadyConvertedFiles, fullPathStr)
 			// Use fullPathStr recursively to find its imports.
-			fmt.Println("fps2: " + fullPathStr)
 			runPack(buildPath, fullPathStr)
 		}
 
@@ -188,62 +173,6 @@ func alreadyConverted(convertPath string, alreadyConvertedFiles []string) bool {
 		}
 	}
 	return false
-}
-
-func checkNpmPath(pathStr string, gopackDir string) string {
-	// A named import/export is being used, look for this in "web_modules/" dir.
-	namedPath := gopackDir + "/" + pathStr
-
-	// Check all files in the current directory first.
-	foundPath := findJSFile(namedPath)
-
-	// Make sure the dependecy can be located in web_modules before trying to find file
-	if pathExists(namedPath) {
-		// If JS file was not found in the current directory, check nested directories.
-		findSubPathErr := filepath.WalkDir(namedPath, func(subPath string, subPathFileInfo fs.DirEntry, err error) error {
-			if err != nil {
-				fmt.Printf("Can't walk path %s: %s\n", subPath, err)
-			}
-			// We've already checked all files, so look in next dir.
-			if subPathFileInfo.IsDir() {
-				// Check for any JS files at this dir level.
-				foundPath = findJSFile(subPath)
-				// Stop searching when a file is found
-				if foundPath != "" {
-					// Return a known error
-					return io.EOF
-				}
-
-			}
-			return nil
-		})
-		// Check for known error used to break out of walk
-		if findSubPathErr == io.EOF {
-			findSubPathErr = nil
-		}
-		// Check for real errors
-		if findSubPathErr != nil {
-			fmt.Printf("Could not find related .js file from named import: %s\n", findSubPathErr)
-		}
-	}
-	return foundPath
-}
-
-// Checks for a JS file in the directory given.
-func findJSFile(path string) string {
-
-	var foundPath string
-	files, err := os.ReadDir(path)
-	if err != nil {
-		fmt.Printf("Could not read files in dir '%s': %s\n", path, err)
-	}
-	for _, f := range files {
-		if filepath.Ext(f.Name()) == ".js" || filepath.Ext(f.Name()) == ".mjs" {
-			foundPath = path + "/" + f.Name()
-		}
-	}
-
-	return foundPath
 }
 
 func pathExists(path string) bool {
