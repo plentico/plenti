@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/plentico/plenti/common"
+	"github.com/plentico/plenti/readers"
 )
 
 var (
@@ -98,7 +99,7 @@ func runPack(buildPath, convertPath string, alreadyConvertedFiles ...string) err
 			// Make relative pathStr a full path that we can find on the filesystem.
 			fullPathStr = path.Clean(path.Dir(convertPath) + "/" + pathStr)
 			// Make sure we can find file in filesystem
-			if fileExists(fullPathStr) {
+			if pathExists(fullPathStr) {
 				// Set this as a found path
 				foundPath = pathStr
 			} else if strings.HasPrefix(convertPath, gopackDir) {
@@ -106,7 +107,7 @@ func runPack(buildPath, convertPath string, alreadyConvertedFiles ...string) err
 				// Get the module from npm
 				copyFile("node_modules"+strings.TrimPrefix(fullPathStr, gopackDir), fullPathStr)
 				// Check if it can be found after being copied from 'node_modules'
-				if fileExists(fullPathStr) {
+				if pathExists(fullPathStr) {
 					// Set this as a found path
 					foundPath = pathStr
 				}
@@ -181,7 +182,7 @@ func checkNpmPath(pathStr string, gopackDir string) string {
 	foundPath := findJSFile(namedPath)
 
 	// Make sure the dependecy can be located in web_modules before trying to find file
-	if fileExists(namedPath) {
+	if pathExists(namedPath) {
 		// If JS file was not found in the current directory, check nested directories.
 		findSubPathErr := filepath.WalkDir(namedPath, func(subPath string, subPathFileInfo fs.DirEntry, err error) error {
 			if err != nil {
@@ -229,7 +230,7 @@ func findJSFile(path string) string {
 	return foundPath
 }
 
-func fileExists(path string) bool {
+func pathExists(path string) bool {
 	if _, err := os.Stat(path); !os.IsNotExist(err) {
 		// The path was found on the filesystem
 		return true
@@ -238,8 +239,57 @@ func fileExists(path string) bool {
 }
 
 func copyNpmModule(module string, gopackDir string) {
+
+	modulePath := "node_modules/" + module
+
+	moduleConfigPath := modulePath + "/package.json"
+	if pathExists(moduleConfigPath) {
+		npmConfig := readers.GetNpmConfig(moduleConfigPath)
+		fmt.Println(npmConfig.Module)
+		/*
+			//fmt.Println(moduleConfigPath)
+			viper.New()
+			viper.SetConfigName("package")
+			viper.SetConfigType("json")
+			//viper.AddConfigPath(moduleConfigPath)
+			viper.AddConfigPath(modulePath)
+			if err := viper.ReadInConfig(); err != nil {
+				if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+					// Module's package.json file not found
+					fmt.Printf("Could not find package.json in %s: %s", modulePath, err)
+				} else {
+					// Config file was found but another error was produced
+					fmt.Printf("Found package.json in %s, but couldn't read: %s", modulePath, err)
+				}
+			}
+			// Check if module's package.json using ESM by default
+				if viper.IsSet("type") && viper.Get("type") == "module" {
+					// See where module specifies entry, usually './index'
+					entryPoint := viper.Get("main")
+					fmt.Println(module + "esm here")
+					copyEntryPoint(entryPoint, modulePath)
+				} else if viper.IsSet("module") {
+			if viper.IsSet("module") {
+				// This package uses commonjs by default and
+				// ships with .mjs files for ESM support
+				entryPoint := viper.Get("module")
+				//copyEntryPoint(entryPoint, modulePath)
+				// Convert interface{} to string
+				entryPointStr := fmt.Sprintf("%v", entryPoint)
+				fmt.Println(entryPointStr)
+				// Check if entrypoint value is missing file extension
+				if filepath.Ext(entryPointStr) == "" {
+					// Add the .js file extension
+					entryPointStr += ".js"
+				}
+				//fullEntryPointStr := path.Clean(modulePath + "/" + entryPointStr)
+				//fmt.Println(fullEntryPointStr)
+			}
+		*/
+	}
+
 	// Walk through all sub directories of each dependency declared.
-	nodeModuleErr := filepath.WalkDir("node_modules/"+module, func(modulePath string, moduleFileInfo fs.DirEntry, err error) error {
+	nodeModuleErr := filepath.WalkDir(modulePath, func(modulePath string, moduleFileInfo fs.DirEntry, err error) error {
 
 		if err != nil {
 			return fmt.Errorf("Can't crawl %s: %w", modulePath, err)
@@ -257,6 +307,23 @@ func copyNpmModule(module string, gopackDir string) {
 		fmt.Printf("Could not get node module: %s\n", nodeModuleErr)
 	}
 }
+
+/*
+func copyEntryPoint(entryPoint interface{}, modulePath string) {
+
+	// Convert interface{} to string
+	entryPointStr := fmt.Sprintf("%v", entryPoint)
+	fmt.Println(entryPointStr)
+	// Check if entrypoint value is missing file extension
+	if filepath.Ext(entryPointStr) == "" {
+		// Add the .js file extension
+		entryPointStr += ".js"
+	}
+	fullEntryPointStr := path.Clean(modulePath + "/" + entryPointStr)
+	fmt.Println(fullEntryPointStr)
+	//copyFile(fullentryPointStr)
+}
+*/
 
 func copyFile(src string, dest string) {
 	from, err := os.Open(src)
