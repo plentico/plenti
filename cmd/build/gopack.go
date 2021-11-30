@@ -37,6 +37,8 @@ var (
 	rePath = regexp.MustCompile(`(?:'|").*(?:'|")`)
 )
 
+var alreadyConvertedFiles []string
+
 // Gopack ensures ESM support for NPM dependencies.
 func Gopack(buildPath string) {
 
@@ -49,8 +51,9 @@ func Gopack(buildPath string) {
 
 }
 
-func runPack(buildPath, convertPath string, alreadyConvertedFiles ...string) error {
+func runPack(buildPath, convertPath string) error {
 
+	fmt.Println("convert path: " + convertPath)
 	// Destination path for dependencies
 	gopackDir := buildPath + "/spa/web_modules"
 
@@ -105,6 +108,8 @@ func runPack(buildPath, convertPath string, alreadyConvertedFiles ...string) err
 			} else if strings.HasPrefix(convertPath, gopackDir) {
 				// The relative import is coming from an npm module itself
 				// Get the module from npm
+				//fmt.Println(fullPathStr)
+				//fmt.Println(convertPath)
 				copyFile("node_modules"+strings.TrimPrefix(fullPathStr, gopackDir), fullPathStr)
 				// Check if it can be found after being copied from 'node_modules'
 				if pathExists(fullPathStr) {
@@ -118,22 +123,33 @@ func runPack(buildPath, convertPath string, alreadyConvertedFiles ...string) err
 		// and make sure that the path doesn't have a file extension.
 		if pathStr[:1] != "." && filepath.Ext(pathStr) == "" {
 			// Copy the npm file from /node_modules to /spa/web_modules
-			copyNpmModule(pathStr, gopackDir)
+			fullPathStr = copyNpmModule(pathStr, gopackDir)
 			// Try to connect the path to the file that was copied
-			fullPathStr = checkNpmPath(pathStr, gopackDir)
+			//fullPathStr = checkNpmPath(pathStr, gopackDir)
+			//fmt.Println("dest: " + dest)
+			//fmt.Println("fStr: " + fullPathStr)
+			//fmt.Println("computed: " + gopackDir + "/" + pathStr)
+			//fmt.Println()
 			// Make absolute foundPath relative to the current file so it works with baseurls.
-			foundPath, err = filepath.Rel(path.Dir(convertPath), fullPathStr)
-			if err != nil {
-				fmt.Printf("Could not make path to NPM dependency relative: %s", err)
+			fmt.Println("fps1: " + fullPathStr)
+			if pathExists(fullPathStr) {
+				foundPath, err = filepath.Rel(path.Dir(convertPath), fullPathStr)
+				if err != nil {
+					fmt.Printf("Could not make path to NPM dependency relative: %s", err)
+				}
+				//fmt.Println(foundPath)
 			}
 		}
 
+		//fmt.Println(alreadyConvertedFiles)
 		// Do not convert files that have already been converted to avoid loops.
 		if !alreadyConverted(fullPathStr, alreadyConvertedFiles) {
+			//fmt.Println(fullPathStr)
 			// Add the current file to list of already converted files.
 			alreadyConvertedFiles = append(alreadyConvertedFiles, fullPathStr)
 			// Use fullPathStr recursively to find its imports.
-			runPack(buildPath, fullPathStr, alreadyConvertedFiles...)
+			fmt.Println("fps2: " + fullPathStr)
+			runPack(buildPath, fullPathStr)
 		}
 
 		if foundPath != "" {
@@ -238,7 +254,7 @@ func pathExists(path string) bool {
 	return false
 }
 
-func copyNpmModule(module string, gopackDir string) {
+func copyNpmModule(module string, gopackDir string) string {
 
 	modulePath := "node_modules/" + module
 
@@ -254,30 +270,12 @@ func copyNpmModule(module string, gopackDir string) {
 			src := path.Clean(modulePath + "/" + entryPoint)
 			dest := gopackDir + strings.TrimPrefix(src, "node_modules")
 			copyFile(src, dest)
-		}
 
+			return dest
+		}
 	}
+	return ""
 
-	/*
-		// Walk through all sub directories of each dependency declared.
-		nodeModuleErr := filepath.WalkDir(modulePath, func(modulePath string, moduleFileInfo fs.DirEntry, err error) error {
-
-			if err != nil {
-				return fmt.Errorf("Can't crawl %s: %w", modulePath, err)
-			}
-			// Only get ESM supported files.
-			if !moduleFileInfo.IsDir() && filepath.Ext(modulePath) == ".mjs" {
-				// Remove "node_modules" from path and add "web_modules".
-				outPathFile := gopackDir + strings.Replace(modulePath, "node_modules", "", 1)
-				// Actually copy the file from source to destination.
-				copyFile(modulePath, outPathFile)
-			}
-			return nil
-		})
-		if nodeModuleErr != nil {
-			fmt.Printf("Could not get node module: %s\n", nodeModuleErr)
-		}
-	*/
 }
 
 func copyFile(src string, dest string) {
