@@ -245,85 +245,40 @@ func copyNpmModule(module string, gopackDir string) {
 	moduleConfigPath := modulePath + "/package.json"
 	if pathExists(moduleConfigPath) {
 		npmConfig := readers.GetNpmConfig(moduleConfigPath)
-		fmt.Println(npmConfig.Module)
-		/*
-			//fmt.Println(moduleConfigPath)
-			viper.New()
-			viper.SetConfigName("package")
-			viper.SetConfigType("json")
-			//viper.AddConfigPath(moduleConfigPath)
-			viper.AddConfigPath(modulePath)
-			if err := viper.ReadInConfig(); err != nil {
-				if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-					// Module's package.json file not found
-					fmt.Printf("Could not find package.json in %s: %s", modulePath, err)
-				} else {
-					// Config file was found but another error was produced
-					fmt.Printf("Found package.json in %s, but couldn't read: %s", modulePath, err)
-				}
+		if npmConfig.Module != "" {
+			entryPoint := npmConfig.Module
+			if filepath.Ext(entryPoint) == "" {
+				// Add the .js file extension
+				entryPoint += ".js"
 			}
-			// Check if module's package.json using ESM by default
-				if viper.IsSet("type") && viper.Get("type") == "module" {
-					// See where module specifies entry, usually './index'
-					entryPoint := viper.Get("main")
-					fmt.Println(module + "esm here")
-					copyEntryPoint(entryPoint, modulePath)
-				} else if viper.IsSet("module") {
-			if viper.IsSet("module") {
-				// This package uses commonjs by default and
-				// ships with .mjs files for ESM support
-				entryPoint := viper.Get("module")
-				//copyEntryPoint(entryPoint, modulePath)
-				// Convert interface{} to string
-				entryPointStr := fmt.Sprintf("%v", entryPoint)
-				fmt.Println(entryPointStr)
-				// Check if entrypoint value is missing file extension
-				if filepath.Ext(entryPointStr) == "" {
-					// Add the .js file extension
-					entryPointStr += ".js"
-				}
-				//fullEntryPointStr := path.Clean(modulePath + "/" + entryPointStr)
-				//fmt.Println(fullEntryPointStr)
+			src := path.Clean(modulePath + "/" + entryPoint)
+			dest := gopackDir + strings.TrimPrefix(src, "node_modules")
+			copyFile(src, dest)
+		}
+
+	}
+
+	/*
+		// Walk through all sub directories of each dependency declared.
+		nodeModuleErr := filepath.WalkDir(modulePath, func(modulePath string, moduleFileInfo fs.DirEntry, err error) error {
+
+			if err != nil {
+				return fmt.Errorf("Can't crawl %s: %w", modulePath, err)
 			}
-		*/
-	}
-
-	// Walk through all sub directories of each dependency declared.
-	nodeModuleErr := filepath.WalkDir(modulePath, func(modulePath string, moduleFileInfo fs.DirEntry, err error) error {
-
-		if err != nil {
-			return fmt.Errorf("Can't crawl %s: %w", modulePath, err)
+			// Only get ESM supported files.
+			if !moduleFileInfo.IsDir() && filepath.Ext(modulePath) == ".mjs" {
+				// Remove "node_modules" from path and add "web_modules".
+				outPathFile := gopackDir + strings.Replace(modulePath, "node_modules", "", 1)
+				// Actually copy the file from source to destination.
+				copyFile(modulePath, outPathFile)
+			}
+			return nil
+		})
+		if nodeModuleErr != nil {
+			fmt.Printf("Could not get node module: %s\n", nodeModuleErr)
 		}
-		// Only get ESM supported files.
-		if !moduleFileInfo.IsDir() && filepath.Ext(modulePath) == ".mjs" {
-			// Remove "node_modules" from path and add "web_modules".
-			outPathFile := gopackDir + strings.Replace(modulePath, "node_modules", "", 1)
-			// Actually copy the file from source to destination.
-			copyFile(modulePath, outPathFile)
-		}
-		return nil
-	})
-	if nodeModuleErr != nil {
-		fmt.Printf("Could not get node module: %s\n", nodeModuleErr)
-	}
+	*/
 }
-
-/*
-func copyEntryPoint(entryPoint interface{}, modulePath string) {
-
-	// Convert interface{} to string
-	entryPointStr := fmt.Sprintf("%v", entryPoint)
-	fmt.Println(entryPointStr)
-	// Check if entrypoint value is missing file extension
-	if filepath.Ext(entryPointStr) == "" {
-		// Add the .js file extension
-		entryPointStr += ".js"
-	}
-	fullEntryPointStr := path.Clean(modulePath + "/" + entryPointStr)
-	fmt.Println(fullEntryPointStr)
-	//copyFile(fullentryPointStr)
-}
-*/
 
 func copyFile(src string, dest string) {
 	from, err := os.Open(src)
