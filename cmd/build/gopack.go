@@ -42,6 +42,7 @@ var (
 )
 
 var alreadyConvertedFiles []string
+var alreadyCopiedModules []string
 
 // Gopack ensures ESM support for NPM dependencies.
 func Gopack(buildPath string) {
@@ -56,6 +57,8 @@ func Gopack(buildPath string) {
 }
 
 func runPack(buildPath, convertPath string) error {
+
+	internmap := false
 
 	// Destination path for dependencies
 	gopackDir := buildPath + "/spa/web_modules"
@@ -85,9 +88,6 @@ func runPack(buildPath, convertPath string) error {
 	allStaticStatements := append(append(staticImportStatements, staticExportStatements...), sideEffectImportStatements...)
 	// Iterate through all static import and export statements.
 	for _, staticStatement := range allStaticStatements {
-		if convertPath == "public/spa/web_modules/d3-transition/src/index.js" {
-			fmt.Println("\nstatic statement: " + string(staticStatement))
-		}
 		// Get path from the full import/export statement.
 		pathBytes := rePath.Find(staticStatement)
 		// Convert path to a string.
@@ -113,19 +113,15 @@ func runPack(buildPath, convertPath string) error {
 			if pathExists(fullPathStr) {
 				// Set this as a found path
 				foundPath = pathStr
+				// Check if the relative import is coming from an npm module itself
 			} else if strings.HasPrefix(convertPath, gopackDir) {
-				if convertPath == "public/spa/web_modules/d3-transition/src/index.js" {
-					fmt.Println("\n" + pathStr)
-				}
-				/*
-					if pathStr == "./selection/index.js" {
-						fmt.Println(fullPathStr)
-						fmt.Println(pathStr)
-					}
-				*/
-				// The relative import is coming from an npm module itself
+				// Change out of public/spa/web_modules and go into node_modules
+				modulePath := "node_modules" + strings.TrimPrefix(fullPathStr, gopackDir)
 				// Get the module from npm
-				copyFile("node_modules"+strings.TrimPrefix(fullPathStr, gopackDir), fullPathStr)
+				err = copyFile(modulePath, fullPathStr)
+				if err != nil {
+					fmt.Printf("Can't copy module for submodule: %s\n", err)
+				}
 				// Check if it can be found after being copied from 'node_modules'
 				if pathExists(fullPathStr) {
 					// Set this as a found path
@@ -138,7 +134,11 @@ func runPack(buildPath, convertPath string) error {
 		// and make sure that the path doesn't have a file extension.
 		if pathStr[:1] != "." && filepath.Ext(pathStr) == "" {
 			// Copy the npm file from /node_modules to /spa/web_modules
-			fullPathStr = copyNpmModule(pathStr, gopackDir)
+			fullPathStr, err = copyNpmModule(pathStr, gopackDir)
+			if err != nil {
+				fmt.Printf("Can't copy npm module: %s", err)
+				fmt.Println(convertPath)
+			}
 			if pathExists(fullPathStr) {
 				// Make absolute path relative to the current file so it works with baseurls.
 				foundPath, err = filepath.Rel(path.Dir(convertPath), fullPathStr)
@@ -157,6 +157,9 @@ func runPack(buildPath, convertPath string) error {
 		}
 
 		if foundPath != "" {
+			if foundPath == "internmap" {
+				fmt.Println(foundPath)
+			}
 			// Remove "public" build dir from path.
 			replacePath := strings.Replace(foundPath, buildPath, "", 1)
 			// Wrap path in quotes.
@@ -166,9 +169,21 @@ func runPack(buildPath, convertPath string) error {
 			// Actually replace the path to the dependency in the source content.
 			contentBytes = bytes.ReplaceAll(contentBytes, staticStatement,
 				rePath.ReplaceAll(staticStatement, rePath.ReplaceAll(pathBytes, replacePathBytes)))
+			if pathStr == "internmap" {
+				internmap = true
+				//fmt.Println(convertPath)
+				//fmt.Println(string(contentBytes))
+			}
 		} else {
 			fmt.Printf("Import path '%s' not resolvable from file '%s'\n", pathStr, convertPath)
 		}
+	}
+	if internmap {
+		//fmt.Println(convertPath)
+		//fmt.Println(string(contentBytes))
+	}
+	if strings.Contains(string(contentBytes), "from \"internmap\";") {
+		fmt.Println(convertPath)
 	}
 	// Overwrite the old file with the new content that contains the updated import path.
 	err = ioutil.WriteFile(convertPath, contentBytes, 0644)
@@ -202,7 +217,7 @@ func pathExists(path string) bool {
 	return false
 }
 
-func copyNpmModule(module string, gopackDir string) string {
+func copyNpmModule(module string, gopackDir string) (string, error) {
 
 	modulePath := "node_modules/" + module
 
@@ -217,36 +232,61 @@ func copyNpmModule(module string, gopackDir string) string {
 			}
 			src := path.Clean(modulePath + "/" + entryPoint)
 			dest := gopackDir + strings.TrimPrefix(src, "node_modules")
-			copyFile(src, dest)
+			if !pathExists(dest) {
+				err := copyFile(src, dest)
+				if err != nil {
+					return dest, fmt.Errorf("Can't copy top level module: %s\n", err)
+				}
+			}
 
-			return dest
+			return dest, nil
 		}
 	}
-	return ""
+	return "", nil
 
 }
 
-func copyFile(src string, dest string) {
+func copyFile(src string, dest string) error {
+
+	/*
+		if len(alreadyCopiedModules) > 0 {
+			for _, copiedModule := range alreadyCopiedModules {
+				fmt.Println(copiedModule)
+				if src == copiedModule {
+					return fmt.Errorf("This module has already been copied")
+				}
+			}
+		}
+		alreadyCopiedModules = append(alreadyCopiedModules, src)
+	*/
+
 	from, err := os.Open(src)
 	if err != nil {
-		fmt.Printf("Could not open source .mjs '%s' file for copying: %s\n", src, err)
+		return fmt.Errorf("Could not open source .mjs '%s' file for copying: %s\n", src, err)
 	}
 	defer from.Close()
 
 	// Create any subdirectories need to write file to "web_modules" destination.
 	if err = os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
-		fmt.Printf("Could not create subdirectories '%s': %s\n", filepath.Dir(src), err)
+		return fmt.Errorf("Could not create subdirectories '%s': %s\n", filepath.Dir(src), err)
 	}
 
 	to, err := os.Create(dest)
 	if err != nil {
-		fmt.Printf("Could not create destination %s file for copying: %s\n", src, err)
+		return fmt.Errorf("Could not create destination %s file for copying: %s\n", src, err)
 	}
 	defer to.Close()
 
+	/*
+		if strings.Contains(dest, "d3-array/src/index.js") {
+			return fmt.Errorf("Src is %s and Dest is %s", src, dest)
+		}
+	*/
+
 	_, err = io.Copy(to, from)
 	if err != nil {
-		fmt.Printf("Could not copy '%s' (source) to %s (destination): %s\n", src, dest, err)
+		return fmt.Errorf("Could not copy '%s' (source) to %s (destination): %s\n", src, dest, err)
 	}
+	return nil
 
 }
