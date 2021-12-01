@@ -42,7 +42,6 @@ var (
 )
 
 var alreadyConvertedFiles []string
-var alreadyCopiedModules []string
 
 // Gopack ensures ESM support for NPM dependencies.
 func Gopack(buildPath string) {
@@ -57,8 +56,6 @@ func Gopack(buildPath string) {
 }
 
 func runPack(buildPath, convertPath string) error {
-
-	internmap := false
 
 	// Destination path for dependencies
 	gopackDir := buildPath + "/spa/web_modules"
@@ -137,7 +134,6 @@ func runPack(buildPath, convertPath string) error {
 			fullPathStr, err = copyNpmModule(pathStr, gopackDir)
 			if err != nil {
 				fmt.Printf("Can't copy npm module: %s", err)
-				fmt.Println(convertPath)
 			}
 			if pathExists(fullPathStr) {
 				// Make absolute path relative to the current file so it works with baseurls.
@@ -157,9 +153,6 @@ func runPack(buildPath, convertPath string) error {
 		}
 
 		if foundPath != "" {
-			if foundPath == "internmap" {
-				fmt.Println(foundPath)
-			}
 			// Remove "public" build dir from path.
 			replacePath := strings.Replace(foundPath, buildPath, "", 1)
 			// Wrap path in quotes.
@@ -169,21 +162,9 @@ func runPack(buildPath, convertPath string) error {
 			// Actually replace the path to the dependency in the source content.
 			contentBytes = bytes.ReplaceAll(contentBytes, staticStatement,
 				rePath.ReplaceAll(staticStatement, rePath.ReplaceAll(pathBytes, replacePathBytes)))
-			if pathStr == "internmap" {
-				internmap = true
-				//fmt.Println(convertPath)
-				//fmt.Println(string(contentBytes))
-			}
 		} else {
 			fmt.Printf("Import path '%s' not resolvable from file '%s'\n", pathStr, convertPath)
 		}
-	}
-	if internmap {
-		//fmt.Println(convertPath)
-		//fmt.Println(string(contentBytes))
-	}
-	if strings.Contains(string(contentBytes), "from \"internmap\";") {
-		fmt.Println(convertPath)
 	}
 	// Overwrite the old file with the new content that contains the updated import path.
 	err = ioutil.WriteFile(convertPath, contentBytes, 0644)
@@ -248,18 +229,6 @@ func copyNpmModule(module string, gopackDir string) (string, error) {
 
 func copyFile(src string, dest string) error {
 
-	/*
-		if len(alreadyCopiedModules) > 0 {
-			for _, copiedModule := range alreadyCopiedModules {
-				fmt.Println(copiedModule)
-				if src == copiedModule {
-					return fmt.Errorf("This module has already been copied")
-				}
-			}
-		}
-		alreadyCopiedModules = append(alreadyCopiedModules, src)
-	*/
-
 	from, err := os.Open(src)
 	if err != nil {
 		return fmt.Errorf("Could not open source .mjs '%s' file for copying: %s\n", src, err)
@@ -276,12 +245,6 @@ func copyFile(src string, dest string) error {
 		return fmt.Errorf("Could not create destination %s file for copying: %s\n", src, err)
 	}
 	defer to.Close()
-
-	/*
-		if strings.Contains(dest, "d3-array/src/index.js") {
-			return fmt.Errorf("Src is %s and Dest is %s", src, dest)
-		}
-	*/
 
 	_, err = io.Copy(to, from)
 	if err != nil {
