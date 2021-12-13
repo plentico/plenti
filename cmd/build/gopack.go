@@ -41,8 +41,6 @@ var (
 	rePath = regexp.MustCompile(`(?:'|").*(?:'|")`)
 )
 
-var alreadyConvertedFiles []string
-
 // Gopack ensures ESM support for NPM dependencies.
 func Gopack(buildPath string) {
 
@@ -50,12 +48,15 @@ func Gopack(buildPath string) {
 
 	Log("\nRunning gopack to build esm support for npm dependencies")
 
+	// Clear web_modules from previous build.
+	var alreadyConvertedFiles []string
+
 	// Start at the entry point for the app
-	runPack(buildPath, buildPath+"/spa/ejected/main.js")
+	runPack(buildPath, buildPath+"/spa/ejected/main.js", alreadyConvertedFiles)
 
 }
 
-func runPack(buildPath, convertPath string) error {
+func runPack(buildPath, convertPath string, alreadyConvertedFiles []string) error {
 
 	// Destination path for dependencies
 	gopackDir := buildPath + "/spa/web_modules"
@@ -149,7 +150,7 @@ func runPack(buildPath, convertPath string) error {
 			// Add the current file to list of already converted files.
 			alreadyConvertedFiles = append(alreadyConvertedFiles, fullPathStr)
 			// Use fullPathStr recursively to find its imports.
-			runPack(buildPath, fullPathStr)
+			runPack(buildPath, fullPathStr, alreadyConvertedFiles)
 		}
 
 		if foundPath != "" {
