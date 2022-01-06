@@ -1,14 +1,14 @@
-<Html {content} {layout} {allContent} {allLayouts} {env} />
+<Html {path} {params} {content} {layout} {allContent} {allLayouts} {env} />
 
 <script>
   import Navaid from 'navaid';
   import Html from '../global/html.svelte';
   import { getContent } from './main.js';
 
-  export let uri, content, layout, allContent, allLayouts, env;
+  export let path, params, content, layout, allContent, allLayouts, env;
 
   function draw(m) {
-    content = getContent(uri); 
+    content = getContent(path); 
     if (content === undefined) {
       // Check if there is a 404 data source.
       content = getContent("/404");
@@ -27,7 +27,8 @@
   }
 
   function track(obj) {
-    uri = obj.state || obj.uri;
+    path = obj.state || obj.uri || location.pathname;
+    params = new URLSearchParams(location.search);
   }
 
   addEventListener('replacestate', track);
@@ -53,8 +54,5 @@
   });
 
   router.listen();
-
-  // Fix browser back button for initially loaded page.
-  router.route(uri, false);
 
 </script>

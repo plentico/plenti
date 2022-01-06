@@ -3,40 +3,41 @@ import allContent from './content.js';
 import * as allLayouts from './layouts.js';
 import { env } from './env.js';
 
-let uri = location.pathname;
+let path = location.pathname;
+let params = new URLSearchParams(location.search);
 let layout, content;
 
-const contentLookup = (uri, trailingSlash = "") => {
-  return allContent.find(content => content.path + trailingSlash == uri); 
+const contentLookup = (path, trailingSlash = "") => {
+  return allContent.find(content => content.path + trailingSlash == path); 
 }
 
-const makeRelativeUri = uri => { 
+const makeRelativePath = path => { 
   // If first character is a forward slash and we're not on the homepage,
   // remove it before doing the content lookup. Do this recursively in case
   // multiple forward slashes are at the beginning of the path.
-  return uri.charAt(0) === "/" && uri !== "/" ? makeRelativeUri(uri.substring(1)) : uri;
+  return path.charAt(0) === "/" && path !== "/" ? makeRelativePath(path.substring(1)) : path;
 }
 
-const makeRootRelativeUri = uri => { 
+const makeRootRelativePath = path => { 
   // Add a leading forward slash.
-  return "/" + uri;
+  return "/" + path;
 }
 
-export const getContent = uri => {
+export const getContent = path => {
   // Convert dot shorthand to slash when used for homepage links using base element.
-  uri = uri === "." ? "/" : uri;
+  path = path === "." ? "/" : path;
   // Remove baseurl from beginning of path if it exists.
-  uri = uri.replace(new RegExp('^\/?' + env.baseurl, 'i'),"");
+  path = path.replace(new RegExp('^\/?' + env.baseurl, 'i'),"");
   // Lookup content path with and without leading and trailing slashes.
-  return contentLookup(uri) ??
-         contentLookup(makeRelativeUri(uri)) ??
-         contentLookup(makeRootRelativeUri(uri)) ??
-         contentLookup(uri, "/") ??
-         contentLookup(makeRelativeUri(uri), "/") ??
-         contentLookup(makeRootRelativeUri(uri), "/")
+  return contentLookup(path) ??
+         contentLookup(makeRelativePath(path)) ??
+         contentLookup(makeRootRelativePath(path)) ??
+         contentLookup(path, "/") ??
+         contentLookup(makeRelativePath(path), "/") ??
+         contentLookup(makeRootRelativePath(path), "/")
 }
 
-content = getContent(uri);
+content = getContent(path);
 
 import('../content/' + content.type + '.js').then(r => {
   layout = r.default;
@@ -44,7 +45,8 @@ import('../content/' + content.type + '.js').then(r => {
     target: document,
     hydrate: true,
     props: {
-      uri: uri,
+      path: path,
+      params: params,
       layout: layout,
       content: content,
       allContent: allContent,
