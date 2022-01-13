@@ -162,12 +162,7 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string,
 	for _, namedImport := range namedImports {
 		// Get path only from static import statement.
 		importPath := reStaticImportPath.FindString(namedImport)
-		//fmt.Println(importPath)
-		// Convert multiline imports into one line so they can be processed.
-		singleLineNamedImport := strings.Replace(namedImport, "\n", "", -1)
-		// Remove repeating spaces.
-		singleLineNamedImport = strings.Join(strings.Fields(strings.TrimSpace(singleLineNamedImport)), " ")
-		importNameSlice := reStaticImportName.FindStringSubmatch(singleLineNamedImport)
+		importNameSlice := reStaticImportName.FindStringSubmatch(namedImport)
 		importNameStr := ""
 		var namedImportNameStrs []string
 		if len(importNameSlice) > 0 {
@@ -176,7 +171,6 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string,
 			// and import path should not have spaces (ignores CSS mapping: https://github.com/sveltejs/svelte/issues/3604).
 			if strings.Contains(importNameSlice[1], "{") && !strings.Contains(importPath, " ") {
 				namedImportNameStrs = makeNameList(importNameSlice)
-				//fmt.Println(namedImportNameStrs)
 			}
 		}
 		// Remove quotes around path.

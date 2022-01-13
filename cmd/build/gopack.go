@@ -153,7 +153,6 @@ func runPack(buildPath, convertPath string, alreadyConvertedFiles []string) erro
 			runPack(buildPath, fullPathStr, alreadyConvertedFiles)
 		}
 
-		fmt.Println("FoundPath = " + foundPath)
 		if foundPath != "" {
 			// Remove "public" build dir from path.
 			replacePath := strings.Replace(foundPath, buildPath, "", 1)
@@ -162,11 +161,6 @@ func runPack(buildPath, convertPath string, alreadyConvertedFiles []string) erro
 			// Convert string path to bytes.
 			replacePathBytes := []byte(replacePath)
 			// Actually replace the path to the dependency in the source content.
-			fmt.Println(string(staticStatement))
-			fmt.Println()
-			fmt.Println()
-			fmt.Println()
-			//fmt.Println(string(replacePathBytes))
 			contentBytes = bytes.ReplaceAll(contentBytes, staticStatement,
 				rePath.ReplaceAll(staticStatement, rePath.ReplaceAll(pathBytes, replacePathBytes)))
 		} else {
