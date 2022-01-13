@@ -142,25 +142,28 @@ func Client(buildPath string, defaultsEjectedFS embed.FS) error {
 		return err
 	}
 
-	if ThemeFs != nil {
-		if err := afero.Walk(ThemeFs, "layouts", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
-			compiledComponentCounter, allLayoutsStr, err = compileComponent(err, layoutPath, layoutFileInfo, buildPath, ctx, SSRctx, stylePath, allLayoutsStr, compiledComponentCounter)
-			if err != nil {
-				return err
+	templatePaths := [2]string{"layouts", "ejected/cms"}
+	for _, templatePath := range templatePaths {
+		if ThemeFs != nil {
+			if err := afero.Walk(ThemeFs, templatePath, func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
+				compiledComponentCounter, allLayoutsStr, err = compileComponent(err, layoutPath, layoutFileInfo, buildPath, ctx, SSRctx, stylePath, allLayoutsStr, compiledComponentCounter)
+				if err != nil {
+					return err
+				}
+				return nil
+			}); err != nil {
+				return fmt.Errorf("Could not get layout from virtual theme build: %w%s\n", err, common.Caller())
 			}
-			return nil
-		}); err != nil {
-			return fmt.Errorf("Could not get layout from virtual theme build: %w%s\n", err, common.Caller())
-		}
-	} else {
-		if err := filepath.Walk("layouts", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
-			compiledComponentCounter, allLayoutsStr, err = compileComponent(err, layoutPath, layoutFileInfo, buildPath, ctx, SSRctx, stylePath, allLayoutsStr, compiledComponentCounter)
-			if err != nil {
-				return err
+		} else {
+			if err := filepath.Walk(templatePath, func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
+				compiledComponentCounter, allLayoutsStr, err = compileComponent(err, layoutPath, layoutFileInfo, buildPath, ctx, SSRctx, stylePath, allLayoutsStr, compiledComponentCounter)
+				if err != nil {
+					return err
+				}
+				return nil
+			}); err != nil {
+				return fmt.Errorf("Could not get layout: %w%s\n", err, common.Caller())
 			}
-			return nil
-		}); err != nil {
-			return fmt.Errorf("Could not get layout: %w%s\n", err, common.Caller())
 		}
 	}
 
@@ -185,7 +188,7 @@ func compileComponent(err error, layoutPath string, layoutFileInfo os.FileInfo, 
 		return compiledComponentCounter, allLayoutsStr, fmt.Errorf("can't stat %s: %w", layoutPath, err)
 	}
 	// Create destination path.
-	destFile := buildPath + "/spa" + strings.TrimPrefix(layoutPath, "layouts")
+	destFile := buildPath + "/spa/" + strings.TrimPrefix(layoutPath, "layouts/")
 	// Make sure path is a directory
 	if layoutFileInfo.IsDir() {
 		// Create any sub directories need for filepath.
