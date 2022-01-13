@@ -32,7 +32,7 @@ var (
 	// Match dynamic import statments, e.g. import("") or import('').
 	reDynamicImport = regexp.MustCompile(`import\((?:'|").*(?:'|")\)`)
 	// Find any import statement in the file (including multiline imports).
-	reStaticImportGoPk = regexp.MustCompile(`(?m)^import(\s)(.*from(.*);|((.*\n){0,})\}(\s)from(.*);)`)
+	reStaticImportGoPk = regexp.MustCompile(`(?m)^import(\s)(.*from(.*);|((.*\n){0,}?)\}(\s)from(.*);)`)
 	// Find any 'side-effects only' imports (e.g. import './my-module.js';)
 	reSideEffectsImportGoPk = regexp.MustCompile(`(?m)^import(\s)('|")(.*?)('|");`)
 	// Find all export statements.
@@ -153,6 +153,7 @@ func runPack(buildPath, convertPath string, alreadyConvertedFiles []string) erro
 			runPack(buildPath, fullPathStr, alreadyConvertedFiles)
 		}
 
+		fmt.Println("FoundPath = " + foundPath)
 		if foundPath != "" {
 			// Remove "public" build dir from path.
 			replacePath := strings.Replace(foundPath, buildPath, "", 1)
@@ -161,6 +162,11 @@ func runPack(buildPath, convertPath string, alreadyConvertedFiles []string) erro
 			// Convert string path to bytes.
 			replacePathBytes := []byte(replacePath)
 			// Actually replace the path to the dependency in the source content.
+			fmt.Println(string(staticStatement))
+			fmt.Println()
+			fmt.Println()
+			fmt.Println()
+			//fmt.Println(string(replacePathBytes))
 			contentBytes = bytes.ReplaceAll(contentBytes, staticStatement,
 				rePath.ReplaceAll(staticStatement, rePath.ReplaceAll(pathBytes, replacePathBytes)))
 		} else {
