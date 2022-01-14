@@ -327,7 +327,15 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 
 func createProps(currentContent content, allContentStr string, env env) error {
 	componentSignature := "layouts_content_" + currentContent.contentType + "_svelte"
-	_, err := SSRctx.RunScript("var props = {content: "+currentContent.contentDetails+", layout: "+componentSignature+", allContent: "+allContentStr+", env: {local: "+env.local+", baseurl: '"+env.baseurl+"'}};", "create_ssr")
+	_, err := SSRctx.RunScript("var props = {content: "+currentContent.contentDetails+
+		", layout: "+componentSignature+
+		", allContent: "+allContentStr+
+		", env: {local: "+env.local+
+		", baseurl: '"+env.baseurl+
+		"', cms: { repo: '"+env.cms.repo+
+		"', redirectUrl: '"+env.cms.redirectUrl+
+		"', appId: '"+env.cms.appId+
+		"'}}};", "create_ssr")
 	if err != nil {
 		return fmt.Errorf("Could not create props: %w%s\n", err, common.Caller())
 	}

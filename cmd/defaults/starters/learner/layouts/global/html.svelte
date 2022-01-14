@@ -4,7 +4,7 @@
   import Footer from './footer.svelte';
   import { makeTitle } from '../scripts/make_title.svelte';
 
-  export let content, layout, allContent, allLayouts, env;
+  export let content, layout, allContent, allLayouts, env, user, login;
 </script>
 
 <html lang="en">
@@ -13,7 +13,7 @@
   <Nav />
   <main>
     <div class="container">
-      <svelte:component this={layout} {...content.fields} {content} {allContent} {allLayouts} />
+      <svelte:component this={layout} {...content.fields} {content} {allContent} {allLayouts} {login} />
       <br />
     </div>
   </main>

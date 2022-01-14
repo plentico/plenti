@@ -1,11 +1,16 @@
 <script context="module">
     import { session } from './session.svelte';
     import { storage } from './storage.svelte';
+    import { env } from '../env.js';
+
+    const repoUrl = env.cms.repo.replace("https://", "");
 
     const settings = {
-        "server": "gitlab.com",
-        "redirectUrl": "http://localhost:3000/admin/",
-        "appId": "6307e5b50e8631f9dc67ed2e982dc5f02159d84a4b7cbd054a9f76eb109e5990"
+        "gitService": repoUrl.split('/')[0],
+        "gitOrg": repoUrl.split('/')[1],
+        "gitRepo": repoUrl.split('/')[2],
+        "redirectUrl": env.cms.redirectUrl,
+        "appId": env.cms.appId
     };
 
     const generateString = () => {

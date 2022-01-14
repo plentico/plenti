@@ -118,7 +118,6 @@ func Client(buildPath string, defaultsEjectedFS embed.FS) error {
 		var componentStr string
 		// Remove the root folder since that doesn't get written to fs
 		path = strings.TrimPrefix(path, "defaults/")
-		fmt.Println(path)
 		// Check if the path has been ejected to the filesystem.
 		_, err = os.Stat(path)
 		// Check if the path has been ejected to the virtual filesystem for a theme build.
@@ -149,7 +148,6 @@ func Client(buildPath string, defaultsEjectedFS embed.FS) error {
 			componentStr = string(componentBytes)
 		}
 		destPath := buildPath + "/spa/" + strings.TrimSuffix(path, ".svelte") + ".js"
-		fmt.Println(destPath)
 		err = (compileSvelte(ctx, SSRctx, path, componentStr, destPath, stylePath))
 		if err != nil {
 			fmt.Printf("Could not compile '%s' Svelte component: %s", path, err)
