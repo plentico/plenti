@@ -20,6 +20,11 @@ type SiteConfig struct {
 		Port int `json:"port"`
 	} `json:"local"`
 	Routes map[string]string `json:"routes"`
+	CMS    struct {
+		Repo        string `json:"repo"`
+		RedirectUrl string `json:"redirect_url"`
+		AppId       string `json:"app_id"`
+	} `json:"cms"`
 }
 
 // ThemeOptions is the theme configuration information.

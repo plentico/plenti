@@ -206,20 +206,18 @@ func compileComponent(err error, layoutPath string, layoutFileInfo os.FileInfo, 
 	destFile := buildPath + "/spa/" + strings.TrimPrefix(layoutPath, "layouts/")
 	// If the file is in .svelte format, compile it to .js
 	if filepath.Ext(layoutPath) == ".svelte" {
-
 		// Replace .svelte file extension with .js.
 		destFile = strings.TrimSuffix(destFile, filepath.Ext(destFile)) + ".js"
-
+		// Get component file contents
 		component, err := getVirtualFileIfThemeBuild(layoutPath)
 		if err != nil {
 			return compiledComponentCounter, allLayoutsStr, fmt.Errorf("can't read component file: %s %w%s\n", layoutPath, err, common.Caller())
 		}
 		componentStr := string(component)
-
+		// Actually compile component
 		if err = compileSvelte(ctx, SSRctx, layoutPath, componentStr, destFile, stylePath); err != nil {
 			return compiledComponentCounter, allLayoutsStr, fmt.Errorf("%w%s\n", err, common.Caller())
 		}
-
 		// Create entry for layouts.js.
 		layoutSignature := strings.ReplaceAll(strings.ReplaceAll((layoutPath), "/", "_"), ".", "_")
 		// Remove layouts directory.
