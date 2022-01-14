@@ -6,9 +6,9 @@
     const repoUrl = env.cms.repo.replace("https://", "");
 
     const settings = {
-        "gitService": repoUrl.split('/')[0],
-        "gitOrg": repoUrl.split('/')[1],
-        "gitRepo": repoUrl.split('/')[2],
+        "provider": repoUrl.split('/')[0],
+        "group": repoUrl.split('/')[1],
+        "repo": repoUrl.split('/')[2],
         "redirectUrl": env.cms.redirectUrl,
         "appId": env.cms.appId
     };
@@ -38,8 +38,8 @@
         session.set('gitlab_code_verifier', codeVerifier);
         const codeChallenge = await hash(codeVerifier);
 
-        const { server, redirectUrl, appId } = settings;
-        window.location.href = "https://" + server + "/oauth/authorize"
+        const { provider, redirectUrl, appId } = settings;
+        window.location.href = "https://" + provider + "/oauth/authorize"
             + "?client_id=" + encodeURIComponent(appId) 
             + "&redirect_uri=" + encodeURIComponent(redirectUrl)
             + "&response_type=code"
@@ -49,9 +49,9 @@
     }
 
     export const requestAccessToken = async code => {
-        const { server, redirectUrl, appId } = settings;
+        const { provider, redirectUrl, appId } = settings;
         const codeVerifier = session.get('gitlab_code_verifier');
-        const response = await fetch("https://" + server + "/oauth/token"
+        const response = await fetch("https://" + provider + "/oauth/token"
             + "?client_id=" + encodeURIComponent(appId) 
             + "&code=" + encodeURIComponent(code) 
             + "&grant_type=authorization_code"
@@ -68,11 +68,12 @@
     }
 
     export const requestRefreshToken = async () => {
+        const { provider, redirectUrl, appId } = settings;
         const codeVerifier = session.get('code_verifier');
         if (!codeVerifier) {
             throw new Error("Code verifier not saved to session storage");
         }
-        const response = await fetch("https://" + server + "/oauth/token"
+        const response = await fetch("https://" + provider + "/oauth/token"
             + "?client_id=" + encodeURIComponent(appId)
             + "&refresh_token=" + encodeURIComponent(refreshToken)
             + "&grant_type=refresh_token"
