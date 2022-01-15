@@ -56,9 +56,9 @@
   router.listen();
 
   // Git-CMS
-  import { requestAuthCode, requestAccessToken, requestRefreshToken } from './cms/auth.svelte';
-  import { session } from './cms/session.svelte';
-  import { storage } from './cms/storage.svelte';
+  import { requestAuthCode, requestAccessToken, requestRefreshToken } from './cms/auth.js';
+  import { session } from './cms/session.js';
+  import { storage } from './cms/storage.js';
   import { onMount } from 'svelte';
 
   let user;
