@@ -4,12 +4,15 @@
   import Footer from './footer.svelte';
   import { makeTitle } from '../scripts/make_title.svelte';
 
-  export let content, layout, allContent, allLayouts, env, user, login;
+  export let content, layout, allContent, allLayouts, env, user, login, AdminMenu;
 </script>
 
 <html lang="en">
 <Head title={makeTitle(content.filename)} {env} />
 <body>
+  {#if user}
+      <svelte:component this={AdminMenu} />
+  {/if}
   <Nav />
   <main>
     <div class="container">

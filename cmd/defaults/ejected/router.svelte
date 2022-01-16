@@ -1,4 +1,4 @@
-<Html {path} {params} {content} {layout} {allContent} {allLayouts} {env} {user} login={requestAuthCode} />
+<Html {path} {params} {content} {layout} {allContent} {allLayouts} {env} {user} login={requestAuthCode} {AdminMenu} />
 
 <script>
   import Navaid from 'navaid';
@@ -60,6 +60,7 @@
   import { session } from './cms/session.js';
   import { storage } from './cms/storage.js';
   import { onMount } from 'svelte';
+  import AdminMenu from './cms/admin_menu.svelte';
 
   let user;
   onMount(async () => {
