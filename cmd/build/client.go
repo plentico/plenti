@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/fs"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -106,43 +105,59 @@ func Client(buildPath string, defaultsEjectedFS embed.FS) error {
 
 	}
 
-	routerPath := "ejected/router.svelte"
-	var componentStr string
-	// Check if the router has been ejected to the filesystem.
-	_, err = os.Stat(routerPath)
-	// Check if the router has been ejected to the virtual filesystem for a theme build.
-	if ThemeFs != nil {
-		_, err = ThemeFs.Stat(routerPath)
-	}
-	if err == nil {
-		// The router has been ejected to the filesystem.
-		component, err := getVirtualFileIfThemeBuild(routerPath)
+	// Compile Svelte components from ejectable core
+	fs.WalkDir(defaultsEjectedFS, "defaults/ejected", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			return fmt.Errorf("can't read component file: %s %w%s\n", routerPath, err, common.Caller())
+			return err
 		}
-		componentStr = string(component)
-	} else if os.IsNotExist(err) {
-		// The router has not been ejected, use the embedded defaults.
-		ejected, err := fs.Sub(defaultsEjectedFS, "defaults")
+		// Don't compile directories on non svelte files (.js files)
+		if d.IsDir() || !strings.HasSuffix(path, ".svelte") {
+			return nil
+		}
+		// Initialize var to hold actual component file contents
+		var componentStr string
+		// Remove the root folder since that doesn't get written to fs
+		path = strings.TrimPrefix(path, "defaults/")
+		// Check if the path has been ejected to the filesystem.
+		_, err = os.Stat(path)
+		// Check if the path has been ejected to the virtual filesystem for a theme build.
+		if ThemeFs != nil {
+			_, err = ThemeFs.Stat(path)
+		}
+		if err == nil {
+			// The file has been ejected to the filesystem.
+			component, err := getVirtualFileIfThemeBuild(path)
+			if err != nil {
+				return fmt.Errorf("can't read component file: %s %w%s\n", path, err, common.Caller())
+			}
+			componentStr = string(component)
+		} else if os.IsNotExist(err) {
+			// The file has not been ejected, use the embedded defaults.
+			nonEjectedFS, err := fs.Sub(defaultsEjectedFS, "defaults")
+			if err != nil {
+				common.CheckErr(fmt.Errorf("Unable to get non ejected defaults: %w", err))
+			}
+			component, err := nonEjectedFS.Open(path)
+			if err != nil {
+				fmt.Printf("Could not open '%s' embeded file: %s", path, err)
+			}
+			componentBytes, err := ioutil.ReadAll(component)
+			if err != nil {
+				fmt.Printf("Could not read '%s' embeded file: %s", path, err)
+			}
+			componentStr = string(componentBytes)
+		}
+		destPath := buildPath + "/spa/" + strings.TrimSuffix(path, ".svelte") + ".js"
+		err = (compileSvelte(ctx, SSRctx, path, componentStr, destPath, stylePath))
 		if err != nil {
-			common.CheckErr(fmt.Errorf("Unable to get ejected defaults: %w", err))
+			fmt.Printf("Could not compile '%s' Svelte component: %s", path, err)
 		}
-		routerComp, err := ejected.Open(routerPath)
-		if err != nil {
-			log.Fatal(err)
-		}
-		routerCompBytes, err := ioutil.ReadAll(routerComp)
-		if err != nil {
-			log.Fatal(err)
-		}
-		componentStr = string(routerCompBytes)
-	}
-	// Compile router separately since it's ejected from core.
-	if err = (compileSvelte(ctx, SSRctx, routerPath, componentStr, buildPath+"/spa/ejected/router.js", stylePath)); err != nil {
-		return err
-	}
+		return nil
+	})
 
+	// Check if using a theme
 	if ThemeFs != nil {
+		// A theme is being used, so compile the files from the virtual fs
 		if err := afero.Walk(ThemeFs, "layouts", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
 			compiledComponentCounter, allLayoutsStr, err = compileComponent(err, layoutPath, layoutFileInfo, buildPath, ctx, SSRctx, stylePath, allLayoutsStr, compiledComponentCounter)
 			if err != nil {
@@ -153,6 +168,7 @@ func Client(buildPath string, defaultsEjectedFS embed.FS) error {
 			return fmt.Errorf("Could not get layout from virtual theme build: %w%s\n", err, common.Caller())
 		}
 	} else {
+		// A theme is NOT being used, so compile the components from the root project
 		if err := filepath.Walk("layouts", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
 			compiledComponentCounter, allLayoutsStr, err = compileComponent(err, layoutPath, layoutFileInfo, buildPath, ctx, SSRctx, stylePath, allLayoutsStr, compiledComponentCounter)
 			if err != nil {
@@ -185,39 +201,29 @@ func compileComponent(err error, layoutPath string, layoutFileInfo os.FileInfo, 
 		return compiledComponentCounter, allLayoutsStr, fmt.Errorf("can't stat %s: %w", layoutPath, err)
 	}
 	// Create destination path.
-	destFile := buildPath + "/spa" + strings.TrimPrefix(layoutPath, "layouts")
-	// Make sure path is a directory
-	if layoutFileInfo.IsDir() {
-		// Create any sub directories need for filepath.
-		if err = os.MkdirAll(destFile, os.ModePerm); err != nil {
-			return compiledComponentCounter, allLayoutsStr, fmt.Errorf("can't make path: %s %w%s\n", layoutPath, err, common.Caller())
+	destFile := buildPath + "/spa/" + strings.TrimPrefix(layoutPath, "layouts/")
+	// If the file is in .svelte format, compile it to .js
+	if filepath.Ext(layoutPath) == ".svelte" {
+		// Replace .svelte file extension with .js.
+		destFile = strings.TrimSuffix(destFile, filepath.Ext(destFile)) + ".js"
+		// Get component file contents
+		component, err := getVirtualFileIfThemeBuild(layoutPath)
+		if err != nil {
+			return compiledComponentCounter, allLayoutsStr, fmt.Errorf("can't read component file: %s %w%s\n", layoutPath, err, common.Caller())
 		}
-	} else {
-		// If the file is in .svelte format, compile it to .js
-		if filepath.Ext(layoutPath) == ".svelte" {
-
-			// Replace .svelte file extension with .js.
-			destFile = strings.TrimSuffix(destFile, filepath.Ext(destFile)) + ".js"
-
-			component, err := getVirtualFileIfThemeBuild(layoutPath)
-			if err != nil {
-				return compiledComponentCounter, allLayoutsStr, fmt.Errorf("can't read component file: %s %w%s\n", layoutPath, err, common.Caller())
-			}
-			componentStr := string(component)
-
-			if err = compileSvelte(ctx, SSRctx, layoutPath, componentStr, destFile, stylePath); err != nil {
-				return compiledComponentCounter, allLayoutsStr, fmt.Errorf("%w%s\n", err, common.Caller())
-			}
-
-			// Create entry for layouts.js.
-			layoutSignature := strings.ReplaceAll(strings.ReplaceAll((layoutPath), "/", "_"), ".", "_")
-			// Remove layouts directory.
-			destLayoutPath := strings.TrimPrefix(layoutPath, "layouts/")
-			// Compose entry for layouts.js file.
-			allLayoutsStr = allLayoutsStr + "export {default as " + layoutSignature + "} from '../" + destLayoutPath + "';\n"
-			// Increment counter for each compiled component.
-			compiledComponentCounter++
+		componentStr := string(component)
+		// Actually compile component
+		if err = compileSvelte(ctx, SSRctx, layoutPath, componentStr, destFile, stylePath); err != nil {
+			return compiledComponentCounter, allLayoutsStr, fmt.Errorf("%w%s\n", err, common.Caller())
 		}
+		// Create entry for layouts.js.
+		layoutSignature := strings.ReplaceAll(strings.ReplaceAll((layoutPath), "/", "_"), ".", "_")
+		// Remove layouts directory.
+		destLayoutPath := strings.TrimPrefix(layoutPath, "layouts/")
+		// Compose entry for layouts.js file.
+		allLayoutsStr = allLayoutsStr + "export {default as " + layoutSignature + "} from '../" + destLayoutPath + "';\n"
+		// Increment counter for each compiled component.
+		compiledComponentCounter++
 	}
 	return compiledComponentCounter, allLayoutsStr, nil
 }

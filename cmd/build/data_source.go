@@ -57,6 +57,12 @@ type content struct {
 type env struct {
 	local   string
 	baseurl string
+	cms     cms
+}
+type cms struct {
+	repo        string
+	redirectUrl string
+	appId       string
 }
 
 // DataSource builds json list from "content/" directory.
@@ -72,10 +78,20 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 	env := env{
 		local:   strconv.FormatBool(Local),
 		baseurl: siteConfig.BaseURL,
+		cms: cms{
+			repo:        siteConfig.CMS.Repo,
+			redirectUrl: siteConfig.CMS.RedirectUrl,
+			appId:       siteConfig.CMS.AppId,
+		},
 	}
 
 	// Create env magic prop.
-	envStr := "export let env = { local: " + env.local + ", baseurl: '" + env.baseurl + "'};"
+	envStr := "export let env = { local: " + env.local +
+		", baseurl: '" + env.baseurl +
+		"', cms: { repo: '" + env.cms.repo +
+		"', redirectUrl: '" + env.cms.redirectUrl +
+		"', appId: '" + env.cms.appId +
+		"' } };"
 
 	// no dirs needed for mem
 	if common.UseMemFS {
@@ -311,7 +327,15 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 
 func createProps(currentContent content, allContentStr string, env env) error {
 	componentSignature := "layouts_content_" + currentContent.contentType + "_svelte"
-	_, err := SSRctx.RunScript("var props = {content: "+currentContent.contentDetails+", layout: "+componentSignature+", allContent: "+allContentStr+", env: {local: "+env.local+", baseurl: '"+env.baseurl+"'}};", "create_ssr")
+	_, err := SSRctx.RunScript("var props = {content: "+currentContent.contentDetails+
+		", layout: "+componentSignature+
+		", allContent: "+allContentStr+
+		", env: {local: "+env.local+
+		", baseurl: '"+env.baseurl+
+		"', cms: { repo: '"+env.cms.repo+
+		"', redirectUrl: '"+env.cms.redirectUrl+
+		"', appId: '"+env.cms.appId+
+		"'}}};", "create_ssr")
 	if err != nil {
 		return fmt.Errorf("Could not create props: %w%s\n", err, common.Caller())
 	}

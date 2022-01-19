@@ -39,6 +39,11 @@ var (
 func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string,
 	componentStr string, destFile string, stylePath string) error {
 
+	// Create any sub directories need for filepath.
+	if err := os.MkdirAll(filepath.Dir(destFile), os.ModePerm); err != nil {
+		return fmt.Errorf("can't make path: %s %w%s\n", layoutPath, err, common.Caller())
+	}
+
 	var layoutFD *common.FData
 
 	// will break router if no layout check and can't use HasPrefix as themes breaks that

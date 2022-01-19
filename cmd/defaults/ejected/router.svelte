@@ -1,4 +1,4 @@
-<Html {path} {params} {content} {layout} {allContent} {allLayouts} {env} />
+<Html {path} {params} {content} {layout} {allContent} {allLayouts} {env} {user} login={requestAuthCode} {AdminMenu} />
 
 <script>
   import Navaid from 'navaid';
@@ -54,5 +54,28 @@
   });
 
   router.listen();
+
+  // Git-CMS
+  import { requestAuthCode, requestAccessToken, requestRefreshToken } from './cms/auth.js';
+  import { session } from './cms/session.js';
+  import { storage } from './cms/storage.js';
+  import { onMount } from 'svelte';
+  import AdminMenu from './cms/admin_menu.svelte';
+
+  let user;
+  onMount(async () => {
+      user = storage.get('gitlab_tokens');
+  });
+
+  if (params 
+      && params.get('state') !== null
+      && params.get('state') === session.get('gitlab_state')
+      ) { 
+      requestAccessToken(params.get('code'));
+  }
+
+  if (user && Date.now() > (user.created_at + user.expires_in) * 1000) {
+      requestRefreshToken();
+  }
 
 </script>

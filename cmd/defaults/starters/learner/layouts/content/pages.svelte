@@ -1,5 +1,5 @@
 <script>
-  export let title, description, content;
+  export let title, description, content, cms, login;
   import Uses from "../components/source.svelte";
 </script>
 
@@ -10,6 +10,10 @@
     <p>{@html paragraph}</p>
   {/each}
 </div>
+
+{#if cms}
+  <p>Try it out: <button on:click={login}>Login</button></p>
+{/if}
 
 <Uses {content} />
 

@@ -35,9 +35,9 @@ updates that are made to the core files (these are normally applied
 automatically).`,
 	Run: func(cmd *cobra.Command, args []string) {
 		ejected, err := fs.Sub(defaultsEjectedFS, "defaults")
-
-		common.CheckErr(fmt.Errorf("Unable to get ejected defaults: %w", err))
-
+		if err != nil {
+			fmt.Printf("Unable to get ejected defaults: %s", err)
+		}
 		ejectableFiles := map[string][]byte{}
 		fs.WalkDir(ejected, ".", func(path string, d fs.DirEntry, err error) error {
 			if err != nil {

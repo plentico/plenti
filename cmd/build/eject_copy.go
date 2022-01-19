@@ -75,7 +75,12 @@ func EjectCopy(buildPath string, defaultsEjectedFS embed.FS) error {
 					return fmt.Errorf("Can't read ejected .js file: %w%s\n", err, common.Caller())
 				}
 			}
-			if err := ioutil.WriteFile(destPath+ejectPath, ejectedContent, os.ModePerm); err != nil {
+			destFile := destPath + ejectPath
+			// Create any sub directories need for filepath.
+			if err := os.MkdirAll(filepath.Dir(destFile), os.ModePerm); err != nil {
+				return fmt.Errorf("can't make folders for '%s': %w%s\n", destFile, err, common.Caller())
+			}
+			if err := ioutil.WriteFile(destFile, ejectedContent, os.ModePerm); err != nil {
 				return fmt.Errorf("Unable to write file: %w%s\n", err, common.Caller())
 			}
 
