@@ -35,11 +35,14 @@ var (
 	reStaticImportGoPk = regexp.MustCompile(`(?m)^import(\s)(.*from(.*);|((.*\n){0,}?)\}(\s)from(.*);)`)
 	// Find any 'side-effects only' imports (e.g. import './my-module.js';)
 	reSideEffectsImportGoPk = regexp.MustCompile(`(?m)^import(\s)('|")(.*?)('|");`)
-	// Find all export statements.
+	// Find all exported import statements (e.g. export { onDestroy, onMount } from './internal';)
 	reStaticExportGoPk = regexp.MustCompile(`export(\s)(.*from(.*);|((.*\n){0,}?)\}(\s)from(.*);)`)
 	// Find the path specifically (part between single or double quotes).
 	rePath = regexp.MustCompile(`(?:'|").*(?:'|")`)
 )
+
+// Initialize globally to keep track during recursion.
+var alreadyConvertedFiles []string
 
 // Gopack ensures ESM support for NPM dependencies.
 func Gopack(buildPath string) {
@@ -49,14 +52,14 @@ func Gopack(buildPath string) {
 	Log("\nRunning gopack to build esm support for npm dependencies")
 
 	// Clear web_modules from previous build.
-	var alreadyConvertedFiles []string
+	alreadyConvertedFiles = []string{}
 
 	// Start at the entry point for the app
-	runPack(buildPath, buildPath+"/spa/ejected/main.js", alreadyConvertedFiles)
+	runPack(buildPath, buildPath+"/spa/ejected/main.js")
 
 }
 
-func runPack(buildPath, convertPath string, alreadyConvertedFiles []string) error {
+func runPack(buildPath, convertPath string) error {
 
 	// Destination path for dependencies
 	gopackDir := buildPath + "/spa/web_modules"
@@ -78,7 +81,7 @@ func runPack(buildPath, convertPath string, alreadyConvertedFiles []string) erro
 
 	// Get all the import statements.
 	staticImportStatements := reStaticImportGoPk.FindAll(contentBytes, -1)
-	// Get all the export statements.
+	// Get all the exported import statements.
 	staticExportStatements := reStaticExportGoPk.FindAll(contentBytes, -1)
 	// Get all the side-effects only static import statements
 	sideEffectImportStatements := reSideEffectsImportGoPk.FindAll(contentBytes, -1)
@@ -107,12 +110,34 @@ func runPack(buildPath, convertPath string, alreadyConvertedFiles []string) erro
 		if pathStr[:1] == "." {
 			// Make relative pathStr a full path that we can find on the filesystem.
 			fullPathStr = path.Clean(path.Dir(convertPath) + "/" + pathStr)
-			// Make sure we can find file in filesystem
-			if pathExists(fullPathStr) {
+
+			if filepath.Ext(fullPathStr) == "" {
+				// The path is a directory
+				// Assume npm module since imports from Plenti project should be complete and not need package.json resolution
+				modulePath := "node_modules" + strings.TrimPrefix(fullPathStr, gopackDir)
+				// Try to get the package.json and locate the appropriate file
+				entryPoint, err := getModuleEntrypoint(modulePath)
+				if err != nil {
+					fmt.Printf("Could not get entrypoint: %s", err)
+				}
+
+				src := path.Join(modulePath, entryPoint)
+				dest := path.Join(fullPathStr, entryPoint)
+				// Get the module from npm if we haven't already
+				if !pathExists(dest) {
+					err = copyFile(src, dest)
+					if err != nil {
+						fmt.Printf("Can't copy module for submodule: %s\n", err)
+					}
+				}
+				// path.Join remove proceeding ./ from path so we need to retain either ./ or ../ when adding the entryPoint
+				foundPath = strings.Split(pathStr, "/")[0] + "/" + path.Join(pathStr, entryPoint)
+			} else if pathExists(fullPathStr) {
+				// We found the file in filesystem
 				// Set this as a found path
 				foundPath = pathStr
-				// Check if the relative import is coming from an npm module itself
 			} else if strings.HasPrefix(convertPath, gopackDir) {
+				// The relative import is coming from a web_module itself
 				// Change out of public/spa/web_modules and go into node_modules
 				modulePath := "node_modules" + strings.TrimPrefix(fullPathStr, gopackDir)
 				// Get the module from npm
@@ -150,7 +175,7 @@ func runPack(buildPath, convertPath string, alreadyConvertedFiles []string) erro
 			// Add the current file to list of already converted files.
 			alreadyConvertedFiles = append(alreadyConvertedFiles, fullPathStr)
 			// Use fullPathStr recursively to find its imports.
-			runPack(buildPath, fullPathStr, alreadyConvertedFiles)
+			runPack(buildPath, fullPathStr)
 		}
 
 		if foundPath != "" {
@@ -203,6 +228,25 @@ func copyNpmModule(module string, gopackDir string) (string, error) {
 
 	modulePath := "node_modules/" + module
 
+	entryPoint, err := getModuleEntrypoint(modulePath)
+	if err != nil {
+		return "", err
+	}
+
+	src := path.Clean(modulePath + "/" + entryPoint)
+	dest := gopackDir + strings.TrimPrefix(src, "node_modules")
+	if !pathExists(dest) {
+		err := copyFile(src, dest)
+		if err != nil {
+			return dest, fmt.Errorf("Can't copy top level module: %s\n", err)
+		}
+	}
+
+	return dest, nil
+
+}
+
+func getModuleEntrypoint(modulePath string) (string, error) {
 	moduleConfigPath := modulePath + "/package.json"
 	if pathExists(moduleConfigPath) {
 		npmConfig := readers.GetNpmConfig(moduleConfigPath)
@@ -212,20 +256,11 @@ func copyNpmModule(module string, gopackDir string) (string, error) {
 				// Add the .js file extension
 				entryPoint += ".js"
 			}
-			src := path.Clean(modulePath + "/" + entryPoint)
-			dest := gopackDir + strings.TrimPrefix(src, "node_modules")
-			if !pathExists(dest) {
-				err := copyFile(src, dest)
-				if err != nil {
-					return dest, fmt.Errorf("Can't copy top level module: %s\n", err)
-				}
-			}
-
-			return dest, nil
+			return entryPoint, nil
 		}
+		return "", fmt.Errorf("Module not set in npm config file: %s", moduleConfigPath)
 	}
-	return "", nil
-
+	return "", fmt.Errorf("Could not get moduleConfigPath: %s", moduleConfigPath)
 }
 
 func copyFile(src string, dest string) error {
