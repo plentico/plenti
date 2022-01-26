@@ -359,6 +359,8 @@ func createHTML(currentContent content) error {
 	renderedHTMLStr := renderedHTML.String()
 	// Convert the string to byte array that can be written to file system.
 	htmlBytes := []byte(renderedHTMLStr)
+	// Inject <!DOCTYPE html>
+	htmlBytes = bytes.Replace(htmlBytes, []byte("<html"), []byte("<!DOCTYPE html><html"), 1)
 	if Doreload {
 		// Inject live-reload script (stored in ejected core).
 		htmlBytes = bytes.Replace(htmlBytes, []byte("</body>"), []byte("<script type='text/javascript' src='/spa/ejected/live-reload.js'></script></body>"), 1)

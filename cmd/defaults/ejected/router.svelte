@@ -64,18 +64,24 @@
 
   let user;
   onMount(async () => {
-      user = storage.get('gitlab_tokens');
+    user = storage.get('gitlab_tokens');
   });
 
   if (params 
-      && params.get('state') !== null
-      && params.get('state') === session.get('gitlab_state')
-      ) { 
-      requestAccessToken(params.get('code'));
+    && params.get('state') !== null
+    && params.get('state') === session.get('gitlab_state')
+    ) { 
+    requestAccessToken(params.get('code'));
   }
 
   if (user && Date.now() > (user.created_at + user.expires_in) * 1000) {
-      requestRefreshToken();
+    requestRefreshToken();
   }
+
+  // Inject <!DOCTYPE html>
+  onMount(async () => {
+    let doctype = document.implementation.createDocumentType('html', '', '');
+    document.doctype ? document.replaceChild(doctype, document.doctype) : document.insertBefore(doctype, document.childNodes[0]);
+  });
 
 </script>
