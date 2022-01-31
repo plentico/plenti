@@ -76,6 +76,8 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string,
 
 	}
 
+	// Escape backticks so svelte doesn't try to compile a partial component string
+	componentStr = strings.ReplaceAll(componentStr, "`", "\\`")
 	// Compile component with Svelte.
 	_, err := ctx.RunScript("var { js, css } = svelte.compile(`"+componentStr+"`, {css: false, hydratable: true});", "compile_svelte")
 	if err != nil {
