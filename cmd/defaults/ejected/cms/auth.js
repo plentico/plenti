@@ -1,22 +1,70 @@
-import { session } from './session.js';
-import { storage } from './storage.js';
+import { readable } from 'svelte/store';
+import { createSessionStore } from './session.svelte';
+import { createDataStore } from './storage.svelte';
 import { env } from '../env.js';
 
-const repoUrl = env.cms.repo.replace("https://", "");
+const repoUrl = new URL(env.cms.repo);
 
 const settings = {
-    "provider": repoUrl.split('/')[0],
-    "group": repoUrl.split('/')[1],
-    "repo": repoUrl.split('/')[2],
-    "redirectUrl": env.cms.redirectUrl,
-    "appId": env.cms.appId
+    server: repoUrl.origin,
+    group: repoUrl.pathname.split('/')[1],
+    repository: repoUrl.pathname.split('/')[2],
+    redirectUrl: env.cms.redirectUrl,
+    appId: env.cms.appId
 };
+
+const tokenStore = createDataStore('gitlab_tokens');
+let tokens, isExpired;
+tokenStore.subscribe(value => {
+    tokens = value;
+    isExpired = tokens && Date.now() > (tokens.created_at + tokens.expires_in) * 1000;
+});
+
+const codeVerifierStore = createDataStore('gitlab_code_verifier');
+let codeVerifier;
+codeVerifierStore.subscribe(value => codeVerifier = value);
+
+const stateStore = createSessionStore('gitlab_state');
+let state;
+stateStore.subscribe(value => state = value);
+
+const getUser = () => ({
+    isBeingAuthenticated: Boolean(state) || (tokens && isExpired),
+    isAuthenticated: tokens && !isExpired,
+
+    finishAuthentication(params) {
+        if (params && state && params.get('state') === state) {
+            stateStore.set(null);
+            history.replaceState(null, '', location.pathname);
+            return requestAccessToken(params.get('code'));
+        }
+
+        if (tokens && isExpired) {
+            return requestRefreshToken();
+        }
+
+        throw new Error('Invalid parameters or state');
+    },
+
+    login() {
+        return requestAuthCode();
+    },
+
+    logout() {
+        tokenStore.set(null);
+        codeVerifierStore.set(null);
+    },
+});
+export const user = readable(getUser(), set => {
+    tokenStore.subscribe(() => set(getUser()));
+    stateStore.subscribe(() => set(getUser()));
+});
 
 const generateString = () => {
     const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-.';
     const randomValues = Array.from(crypto.getRandomValues(new Uint8Array(128)));
     return randomValues.map(val => chars[val % chars.length]).join('');
-}
+};
 
 const hash = async text => {
     const encoder = new TextEncoder();
@@ -27,30 +75,26 @@ const hash = async text => {
         .split('=')[0]
         .replace(/\+/g, '-')
         .replace(/\//g, '_');
-}
+};
 
-export const requestAuthCode = async () => {
-    const state = generateString();
-    session.set('gitlab_state', state);
-
-    const codeVerifier = generateString();
-    session.set('gitlab_code_verifier', codeVerifier);
+const requestAuthCode = async () => {
+    stateStore.set(generateString());
+    codeVerifierStore.set(generateString());
     const codeChallenge = await hash(codeVerifier);
 
-    const { provider, redirectUrl, appId } = settings;
-    window.location.href = "https://" + provider + "/oauth/authorize"
+    const { server, redirectUrl, appId } = settings;
+    window.location.href = server + "/oauth/authorize"
         + "?client_id=" + encodeURIComponent(appId) 
         + "&redirect_uri=" + encodeURIComponent(redirectUrl)
         + "&response_type=code"
         + "&state=" + encodeURIComponent(state) 
         + "&code_challenge=" + encodeURIComponent(codeChallenge) 
         + "&code_challenge_method=S256";    
-}
+};
 
-export const requestAccessToken = async code => {
-    const { provider, redirectUrl, appId } = settings;
-    const codeVerifier = session.get('gitlab_code_verifier');
-    const response = await fetch("https://" + provider + "/oauth/token"
+const requestAccessToken = async code => {
+    const { server, redirectUrl, appId } = settings;
+    const response = await fetch(server + "/oauth/token"
         + "?client_id=" + encodeURIComponent(appId) 
         + "&code=" + encodeURIComponent(code) 
         + "&grant_type=authorization_code"
@@ -62,27 +106,25 @@ export const requestAccessToken = async code => {
     if (tokens.error) {
         throw new Error(tokens.error_description);
     }
-    storage.set('gitlab_tokens', tokens);
-    location.href = location.pathname;
-}
+    tokenStore.set(tokens);
+};
 
-export const requestRefreshToken = async () => {
-    const { provider, redirectUrl, appId } = settings;
-    const codeVerifier = session.get('code_verifier');
+const requestRefreshToken = async () => {
+    const { server, redirectUrl, appId } = settings;
     if (!codeVerifier) {
         throw new Error("Code verifier not saved to session storage");
     }
-    const response = await fetch("https://" + provider + "/oauth/token"
+    const response = await fetch(server + "/oauth/token"
         + "?client_id=" + encodeURIComponent(appId)
-        + "&refresh_token=" + encodeURIComponent(refreshToken)
+        + "&refresh_token=" + encodeURIComponent(tokens.refresh_token)
         + "&grant_type=refresh_token"
         + "&redirect_uri=" + encodeURIComponent(redirectUrl)
         + "&code_verifier=" + encodeURIComponent(codeVerifier),
         { method: 'POST' }
     );
-    const tokens = await response.json();
-    if (tokens.error) {
-        throw new Error(tokens.error_description);
+    const refreshedTokens = await response.json();
+    if (refreshedTokens.error) {
+        throw new Error(refreshedTokens.error_description);
     }
-    storage.set('gitlab_tokens', tokens);
-}
+    tokenStore.set(refreshedTokens);
+};

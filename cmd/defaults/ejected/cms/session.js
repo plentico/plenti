@@ -1,30 +1,23 @@
-class SessionStore {
-    prefixKey(key) {
-        key = key.toUpperCase();
-        key = "PLENTI_CMS_" + key;
-        return key;
-    }
+import { writable } from 'svelte/store';
 
-    /**
-     * @param {string} key
-     */
-    get(key) {
-        key = this.prefixKey(key);
-        const value = sessionStorage.getItem(key);
-        if (value)
-            return JSON.parse(value);
-        else
-            return null;
-    }
+/**
+ * @param key Item key in snake_case
+ * @returns Writable store that is saved to session storage
+ */
+export function createSessionStore(key) {
+    key = key.toUpperCase();
+    key = "PLENTI_CMS_" + key;
+    
+    let value = sessionStorage.getItem(key);
+    if (value)
+        value = JSON.parse(value);
+    else
+        value = null;
 
-    /**
-     * @param {string} key
-     * @param {any} value
-     */
-    set(key, value) {
-        key = this.prefixKey(key);
+    const store = writable(value);
+    store.subscribe(value => {
         sessionStorage.setItem(key, JSON.stringify(value));
-    }
-};
+    });
 
-export const session = new SessionStore();
+    return store;
+}
