@@ -1,5 +1,6 @@
 <script>
     import { onMount } from 'svelte';
+    import { publish } from './publish.js';
 
     export let content;
 
@@ -26,6 +27,12 @@
     $: if (editor && !editor.hasFocus()) {
         editor.setValue(JSON.stringify(content.fields, undefined, 4));
     }
+
+    function onSubmit() {
+        const { type, filename } = content;
+        const filePath = 'content/' + type + '/' + filename;
+        publish(filePath, JSON.stringify(content.fields, undefined, '\t'));
+    }
 </script>
 
 <style>
@@ -51,6 +58,7 @@
     <link rel="stylesheet" href="https://unpkg.com/codemirror@5.65.1/lib/codemirror.css">
 </svelte:head>
 
-<form on:submit|preventDefault>
+<form on:submit|preventDefault={onSubmit}>
     <div class="editor-container" bind:this={container}></div>
+    <button type="submit">Publish</button>
 </form>
