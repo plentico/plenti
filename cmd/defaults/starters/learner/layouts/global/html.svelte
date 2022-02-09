@@ -4,7 +4,7 @@
   import Footer from './footer.svelte';
   import { makeTitle } from '../scripts/make_title.svelte';
 
-  export let content, layout, allContent, allLayouts, env, user, AdminMenu;
+  export let content, layout, allContent, allLayouts, env, user, AdminMenu, ContentEditor;
 </script>
 
 <html lang="en">
@@ -16,6 +16,9 @@
   <Nav />
   <main>
     <div class="container">
+      {#if user && $user.isAuthenticated}
+        <svelte:component this={ContentEditor} bind:content={content} />
+      {/if}
       <svelte:component this={layout} {...content.fields} {content} {allContent} {allLayouts} {user} />
       <br />
     </div>
