@@ -29,10 +29,10 @@ export async function publish(file, content) {
         '/repository/commits';
     const headers = {
         'Content-Type': 'application/json',
-        'PRIVATE-TOKEN': currentUser.tokens.access_token,
+        'Authorization': `Bearer ${currentUser.tokens.access_token}`,
     };
     const payload = {
-        branch: 'test',
+        branch: 'master',
         commit_message: 'Update content',
         actions: [
             {
