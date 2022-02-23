@@ -33,7 +33,9 @@
     let failed = false;
     async function onSubmit() {
         const { type, filename } = content;
-        const filePath = 'content/' + type + '/' + filename;
+        const filePath = 'content/' +
+            (type != 'index' ? type + '/' : '') +
+            filename;
 
         sending = true;
         sent = false;
