@@ -28,10 +28,26 @@
         editor.setValue(JSON.stringify(content.fields, undefined, 4));
     }
 
-    function onSubmit() {
+    let sending = false;
+    let sent = false;
+    let failed = false;
+    async function onSubmit() {
         const { type, filename } = content;
         const filePath = 'content/' + type + '/' + filename;
-        publish(filePath, JSON.stringify(content.fields, undefined, '\t'));
+
+        sending = true;
+        sent = false;
+        failed = false;
+
+        try {
+            await publish(filePath, JSON.stringify(content.fields, undefined, '\t'));
+            sending = false;
+            sent = true;
+        } catch (error) {
+            sending = false;
+            failed = true;
+            throw error;
+        }
     }
 </script>
 
@@ -60,5 +76,8 @@
 
 <form on:submit|preventDefault={onSubmit}>
     <div class="editor-container" bind:this={container}></div>
-    <button type="submit">Publish</button>
+    <button type="submit" disabled={sending}>Publish</button>
+    {#if sending}Sending...{/if}
+    {#if failed}Could not commit the changes.{/if}
+    {#if sent}Changes committed.{/if}
 </form>
