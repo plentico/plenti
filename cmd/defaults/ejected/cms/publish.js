@@ -32,7 +32,7 @@ export async function publish(file, content) {
         'Authorization': `Bearer ${currentUser.tokens.access_token}`,
     };
     const payload = {
-        branch: 'master',
+        branch: env.cms.branch,
         commit_message: 'Update content',
         actions: [
             {

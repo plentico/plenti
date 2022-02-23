@@ -11,6 +11,7 @@
 	"cms": {
 		"repo": "https://gitlab.com/YourGroup/YourRepo",
 		"redirect_url": "http://localhost:3000/admin/",
-		"app_id": ""
+		"app_id": "",
+		"branch": "main"
 	}
 }
