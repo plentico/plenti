@@ -63,6 +63,7 @@ type cms struct {
 	repo        string
 	redirectUrl string
 	appId       string
+	branch      string
 }
 
 // DataSource builds json list from "content/" directory.
@@ -82,6 +83,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 			repo:        siteConfig.CMS.Repo,
 			redirectUrl: siteConfig.CMS.RedirectUrl,
 			appId:       siteConfig.CMS.AppId,
+			branch:      siteConfig.CMS.Branch,
 		},
 	}
 
@@ -91,6 +93,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 		"', cms: { repo: '" + env.cms.repo +
 		"', redirectUrl: '" + env.cms.redirectUrl +
 		"', appId: '" + env.cms.appId +
+		"', branch: '" + env.cms.branch +
 		"' } };"
 
 	// no dirs needed for mem
@@ -335,6 +338,7 @@ func createProps(currentContent content, allContentStr string, env env) error {
 		"', cms: { repo: '"+env.cms.repo+
 		"', redirectUrl: '"+env.cms.redirectUrl+
 		"', appId: '"+env.cms.appId+
+		"', branch: '"+env.cms.branch+
 		"'}}};", "create_ssr")
 	if err != nil {
 		return fmt.Errorf("Could not create props: %w%s\n", err, common.Caller())

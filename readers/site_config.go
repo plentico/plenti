@@ -24,6 +24,7 @@ type SiteConfig struct {
 		Repo        string `json:"repo"`
 		RedirectUrl string `json:"redirect_url"`
 		AppId       string `json:"app_id"`
+		Branch      string `json:"branch"`
 	} `json:"cms"`
 }
 

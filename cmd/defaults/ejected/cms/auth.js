@@ -31,6 +31,7 @@ stateStore.subscribe(value => state = value);
 const getUser = () => ({
     isBeingAuthenticated: Boolean(state) || (tokens && isExpired),
     isAuthenticated: tokens && !isExpired,
+    tokens,
 
     finishAuthentication(params) {
         if (params && state && params.get('state') === state) {
