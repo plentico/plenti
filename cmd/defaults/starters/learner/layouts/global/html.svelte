@@ -13,14 +13,14 @@
   {#if user && $user.isAuthenticated}
       <svelte:component this={AdminMenu} {user} bind:content={content} />
   {/if}
-  <Nav />
   <main>
+    <Nav />
     <div class="container">
       <svelte:component this={layout} {...content.fields} {content} {allContent} {allLayouts} {user} />
       <br />
     </div>
+    <Footer {allContent} />
   </main>
-  <Footer {allContent} />
 </body>
 </html>
 
@@ -51,13 +51,13 @@
     --base: rgb(245, 245, 245);
     --base-dark: rgb(17, 17, 17);
   }
-  :global(main a) {
+  .container :global(a) {
     position: relative;
     text-decoration: none;
     color: var(--base-dark);
     padding-bottom: 5px;
   }
-  :global(main a:before) {
+  .container :global(a:before) {
     content: "";
     width: 100%;
     height: 100%;
@@ -71,7 +71,7 @@
     transform-origin: left bottom;
     transition: width .1s ease-out;
   }
-  :global(main a:hover:before) {
+  .container :global(a:hover:before) {
     width: 0;
     transition-duration: .15s;
   }

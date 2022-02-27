@@ -19,12 +19,21 @@
     Home
   </a>
   <a href="." on:click|preventDefault={toggleEditor}>
+    {#if showEditor}
+    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-eye" width="30" height="30" viewBox="0 0 24 24" stroke-width="2" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="2" />
+      <path d="M22 12c-2.667 4.667 -6 7 -10 7s-7.333 -2.333 -10 -7c2.667 -4.667 6 -7 10 -7s7.333 2.333 10 7" />
+    </svg>
+    View
+    {:else}
     <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-pencil" width="30" height="30" viewBox="0 0 24 24" stroke-width="2" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
       <path d="M4 20h4l10.5 -10.5a1.5 1.5 0 0 0 -4 -4l-10.5 10.5v4" />
       <line x1="13.5" y1="6.5" x2="17.5" y2="10.5" />
     </svg>
     Edit
+    {/if}
   </a>
   <span class="gap"></span>
   <a href=".">
@@ -57,7 +66,9 @@
 </nav>
 
 {#if showEditor}
-  <JSONEditor bind:content={content} />
+  <div class="sidenav">
+    <JSONEditor bind:content={content} />
+  </div>
 {/if}
 
 <style>
@@ -88,5 +99,20 @@
     }
     .gap {
       flex-grow: 1;
+    }
+    .sidenav {
+      height: 100%;
+      width: 500px;
+      position: fixed;
+      z-index: 1;
+      top: 0;
+      left: 0;
+      background-color: white;
+      overflow-x: hidden;
+      padding-top: 40px;
+      transition: 0.5s;
+    }
+    .sidenav + :global(main) {
+        margin-left: 500px;
     }
 </style>

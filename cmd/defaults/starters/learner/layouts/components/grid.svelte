@@ -18,7 +18,7 @@
     grid-column-gap: 10px;
     grid-row-gap: 10px;
   }
-  .grid-item {
+  .grid .grid-item {
     display: flex;
     flex-grow: 1;
     height: 200px;
