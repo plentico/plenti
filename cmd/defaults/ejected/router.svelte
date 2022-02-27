@@ -1,4 +1,4 @@
-<Html {path} {params} {content} {layout} {allContent} {allLayouts} {env} {user} {AdminMenu} {ContentEditor} />
+<Html {path} {params} {content} {layout} {allContent} {allLayouts} {env} {user} {AdminMenu} />
 
 <script>
   import Navaid from 'navaid';
@@ -57,7 +57,6 @@
 
   // Git-CMS
   import AdminMenu from './cms/admin_menu.svelte';
-  import ContentEditor from './cms/content_editor.svelte';
   import { user } from './cms/auth.js';
   if ($user.isBeingAuthenticated) { 
       $user.finishAuthentication(params);

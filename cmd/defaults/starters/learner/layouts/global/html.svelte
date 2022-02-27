@@ -4,21 +4,18 @@
   import Footer from './footer.svelte';
   import { makeTitle } from '../scripts/make_title.svelte';
 
-  export let content, layout, allContent, allLayouts, env, user, AdminMenu, ContentEditor;
+  export let content, layout, allContent, allLayouts, env, user, AdminMenu;
 </script>
 
 <html lang="en">
 <Head title={makeTitle(content.filename)} {env} />
 <body>
   {#if user && $user.isAuthenticated}
-      <svelte:component this={AdminMenu} {user} />
+      <svelte:component this={AdminMenu} {user} bind:content={content} />
   {/if}
   <Nav />
   <main>
     <div class="container">
-      {#if user && $user.isAuthenticated}
-        <svelte:component this={ContentEditor} bind:content={content} />
-      {/if}
       <svelte:component this={layout} {...content.fields} {content} {allContent} {allLayouts} {user} />
       <br />
     </div>

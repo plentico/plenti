@@ -44,7 +44,7 @@ const getUser = () => ({
             return requestRefreshToken();
         }
 
-        throw new Error('Invalid parameters or state');
+        console.error('Invalid parameters or state');
     },
 
     login() {

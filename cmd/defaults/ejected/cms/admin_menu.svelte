@@ -1,21 +1,92 @@
 <script>
-    export let user;
+    export let user, content;
+    import JSONEditor from "./json_editor.svelte";
+
+    let showEditor = false;
+    const toggleEditor = () => {
+        showEditor = showEditor ? false : true;
+    }
 </script>
+
+<div class="spacer"></div>
 <nav>
-    <a href="." id="home"><svg alt="home" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="20px" viewBox="0 0 547.596 547.596" style="enable-background:new 0 0 547.596 547.596;" xml:space="preserve"><g><path d="M540.76,254.788L294.506,38.216c-11.475-10.098-30.064-10.098-41.386,0L6.943,254.788,c-11.475,10.098-8.415,18.284,6.885,18.284h75.964v221.773c0,12.087,9.945,22.108,22.108,22.108h92.947V371.067,c0-12.087,9.945-22.108,22.109-22.108h93.865c12.239,0,22.108,9.792,22.108,22.108v145.886h92.947,c12.24,0,22.108-9.945,22.108-22.108v-221.85h75.965C549.021,272.995,552.081,264.886,540.76,254.788z"/></g></svg></a>
-    <a href="." on:click|preventDefault={$user.logout}><svg alt="logout" width="20" height="20" version="1.1" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="m0 4.6222v10.623c0 1.1129 0.7143 2.2258 1.8367 2.6304l5.1021 1.9223c0.3061 0.1011 0.6122 0.2023 1.0204 0.2023 0.5102 0 1.1224-0.2023 1.6326-0.5058 0.2041-0.2024 0.5102-0.4047 0.6123-0.6071h3.8775c1.5306 0 2.8572-1.214 2.8572-2.8327v-1.0117c0-0.4047-0.30613-0.8094-0.81633-0.8094-0.51021 0-0.81633 0.3035-0.81633 0.8094v1.0117c0 0.7082-0.61224 1.214-1.2245 1.214h-3.3673v-14.568h3.3673c0.71429 0 1.2245 0.50585 1.2245 1.214v1.0117c0 0.40468 0.30612 0.80936 0.81633 0.80936 0.5102 0 0.81633-0.40468 0.81633-0.80936v-1.0117c0-1.5176-1.2245-2.8328-2.8572-2.8328h-3.8775c-0.2041-0.20234-0.4082-0.40468-0.6123-0.60702-0.8163-0.50585-1.7347-0.60702-2.653-0.30351l-5.1021 1.9222c-1.0204 0.30351-1.8367 1.4164-1.8367 2.5292z" /><path d="m17.143 12.817c0.20408 0 0.40816-0.1011 0.5102-0.2023l2.0408-2.0234c0.10204-0.1012 0.10204-0.2023 0.20408-0.2023 0-0.1012 0.10204-0.2024 0.10204-0.3035 0-0.1012 0-0.2024-0.10204-0.3035 0-0.1012-0.10204-0.2024-0.20408-0.2024l-2.0408-2.0234c-0.30612-0.30351-0.81633-0.30351-1.1224 0s-0.30612 0.80938 0 1.1129l0.71429 0.7082h-4.1837c-0.40816 0-0.81632 0.3035-0.81632 0.8093 0 0.5059 0.40816 0.6071 0.81632 0.6071h4.2857l-0.71429 0.7081c-0.30612 0.3035-0.30612 0.8094 0 1.1129 0.10204 0.1012 0.30613 0.2023 0.51021 0.2023z" /></svg></a>
+  <a href="." id="home">
+    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home-2" width="30" height="30" viewBox="0 0 24 24" stroke-width="2" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <polyline points="5 12 3 12 12 3 21 12 19 12" />
+      <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+    </svg>
+    Home
+  </a>
+  <a href="." on:click|preventDefault={toggleEditor}>
+    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-pencil" width="30" height="30" viewBox="0 0 24 24" stroke-width="2" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <path d="M4 20h4l10.5 -10.5a1.5 1.5 0 0 0 -4 -4l-10.5 10.5v4" />
+      <line x1="13.5" y1="6.5" x2="17.5" y2="10.5" />
+    </svg>
+    Edit
+  </a>
+  <span class="gap"></span>
+  <a href=".">
+    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-circle-plus" width="30" height="30" viewBox="0 0 24 24" stroke-width="2" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <line x1="9" y1="12" x2="15" y2="12" />
+      <line x1="12" y1="9" x2="12" y2="15" />
+    </svg>
+    Add
+  </a>
+  <a href=".">
+    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-photo" width="30" height="30" viewBox="0 0 24 24" stroke-width="2" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <line x1="15" y1="8" x2="15.01" y2="8" />
+      <rect x="4" y="4" width="16" height="16" rx="3" />
+      <path d="M4 15l4 -4a3 5 0 0 1 3 0l5 5" />
+      <path d="M14 14l1 -1a3 5 0 0 1 3 0l2 2" />
+    </svg>
+    Media
+  </a>
+  <a href="." on:click|preventDefault={$user.logout}>
+    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-logout" width="30" height="30" viewBox="0 0 24 24" stroke-width="2" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <path d="M14 8v-2a2 2 0 0 0 -2 -2h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2 -2v-2" />
+      <path d="M7 12h14l-3 -3m0 6l3 -3" />
+    </svg>
+    Logout
+  </a>
 </nav>
 
+{#if showEditor}
+  <JSONEditor bind:content={content} />
+{/if}
+
 <style>
+    .spacer {
+        padding: 20px;
+    }
     nav {
-        background-color: #464646;
-        padding: 10px;
+        background-color: white;
         display: flex;
+        box-shadow: 0px 2px 3px var(--base);
+        position: fixed;
+        width: 100%;
+        z-index: 10;
     }
     svg {
-        fill: white;
+        margin-right: 5px;
     }
-    #home {
-        flex: 1;
+    a {
+      align-items: center;
+      display: flex;
+      text-decoration: none;
+      color: black;
+      flex-grow: 0;
+      margin: 5px 10px;
+    }
+    a:last-of-type {
+      flex: initial;
+    }
+    .gap {
+      flex-grow: 1;
     }
 </style>
