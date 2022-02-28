@@ -1,10 +1,15 @@
 <script>
     export let user, content;
     import JSONEditor from "./json_editor.svelte";
+    import VisualEditor from "./visual_editor.svelte";
 
     let showEditor = false;
     const toggleEditor = () => {
         showEditor = showEditor ? false : true;
+    }
+    let active = "visual";
+    const setActive = selected => {
+      active = selected;
     }
 </script>
 
@@ -67,7 +72,30 @@
 
 {#if showEditor}
   <div class="sidenav">
-    <JSONEditor bind:content={content} />
+    <div class="selectors">
+      <div class="selector {active === 'visual' ? 'active' : ''}" on:click={() => setActive('visual')}>
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-table" width="30" height="30" viewBox="0 0 24 24" stroke-width="1.5" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+          <rect x="4" y="4" width="16" height="16" rx="2" />
+          <line x1="4" y1="10" x2="20" y2="10" />
+          <line x1="10" y1="4" x2="10" y2="20" />
+        </svg>
+        <span>Visual</span>
+      </div>
+      <div class="selector {active === 'code' ? 'active' : ''}" on:click={() => setActive('code')}>
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-braces" width="30" height="30" viewBox="0 0 24 24" stroke-width="1.5" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+          <path d="M7 4a2 2 0 0 0 -2 2v3a2 3 0 0 1 -2 3a2 3 0 0 1 2 3v3a2 2 0 0 0 2 2" />
+          <path d="M17 4a2 2 0 0 1 2 2v3a2 3 0 0 0 2 3a2 3 0 0 0 -2 3v3a2 2 0 0 1 -2 2" />
+        </svg>
+        <span>Code</span>
+      </div>
+    </div>
+    {#if active === 'code'}
+      <JSONEditor bind:content={content} />
+    {:else}
+      <VisualEditor bind:content={content} />
+    {/if}
   </div>
 {/if}
 
@@ -114,5 +142,22 @@
     }
     .sidenav + :global(main) {
         margin-left: 500px;
+    }
+    .selectors {
+      display: flex;
+    }
+    .selector {
+      display: flex;
+      flex-grow: 1;
+      flex-basis: 0;
+      align-items: center;
+      justify-content: center;
+      padding: 5px;
+      border: 1px solid gainsboro;
+      background-color: whitesmoke;
+      cursor: pointer;
+    }
+    .selector.active {
+      background-color: white;
     }
 </style>

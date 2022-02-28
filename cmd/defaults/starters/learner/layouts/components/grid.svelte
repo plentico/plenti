@@ -28,6 +28,7 @@
     font-weight: bold;
     border-radius: 5px;
     color: white;
+    text-align: center;
   }
   a::before {
     content: none;
