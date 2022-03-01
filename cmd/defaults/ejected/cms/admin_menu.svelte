@@ -106,7 +106,7 @@
     nav {
         background-color: white;
         display: flex;
-        box-shadow: 0px 2px 3px var(--base);
+        box-shadow: 0px 1px 2px rgb(207 207 207);
         position: fixed;
         width: 100%;
         z-index: 10;
@@ -139,6 +139,7 @@
       overflow-x: hidden;
       padding-top: 40px;
       transition: 0.5s;
+      box-shadow: 1px 0px 2px rgb(207 207 207);
     }
     .sidenav + :global(main) {
         margin-left: 500px;
