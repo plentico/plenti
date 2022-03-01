@@ -135,7 +135,7 @@
       z-index: 1;
       top: 0;
       left: 0;
-      background-color: white;
+      background-color: whitesmoke;
       overflow-x: hidden;
       padding-top: 40px;
       transition: 0.5s;
