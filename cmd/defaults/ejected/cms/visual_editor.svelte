@@ -19,12 +19,6 @@
     label {
         display: block;
     }
-    input[type=text] {
-        height: 30px;
-        padding: 0 7px;
-        border: 1px solid gainsboro;
-        border-radius: 3px;
-    }
     .field {
         margin-bottom: 20px;
     }
