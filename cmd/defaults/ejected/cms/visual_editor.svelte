@@ -7,7 +7,7 @@
     {#each Object.entries(content.fields) as [label, field]}
         <div class="field">
             <label for="{label}">{label}</label>
-            <DynamicFormInput {field} {label} bind:content={content} />
+            <DynamicFormInput bind:field={content.fields[label]} {label} />
         </div>
     {/each}
 </form>
