@@ -1,4 +1,4 @@
-<Html {path} {params} {content} {layout} {allContent} {allLayouts} {env} {user} {AdminMenu} />
+<Html {path} {params} {content} {layout} {allContent} {allLayouts} {env} {user} {adminMenu} />
 
 <script>
   import Navaid from 'navaid';
@@ -56,10 +56,10 @@
   router.listen();
 
   // Git-CMS
-  import AdminMenu from './cms/admin_menu.svelte';
+  import adminMenu from './cms/admin_menu.svelte';
   import { user } from './cms/auth.js';
   if ($user.isBeingAuthenticated) { 
-      $user.finishAuthentication(params);
+    $user.finishAuthentication(params);
   }
 
 </script>

@@ -1,8 +1,7 @@
-import { user } from './auth.js';
+import { user, repoUrl } from './auth.js';
 import { env } from '../env.js';
 
-const repositoryUrl = new URL(env.cms.repo);
-const apiBaseUrl = `${repositoryUrl.origin}/api/v4`;
+const apiBaseUrl = `${repoUrl.origin}/api/v4`;
 
 // Keep track of current user and promise it's availability.
 let currentUser;
@@ -23,7 +22,7 @@ export async function publish(file, content) {
         throw new Error('Authentication required');
     }
 
-    const id = repositoryUrl.pathname.slice(1);
+    const id = repoUrl.pathname.slice(1);
     const url = `${apiBaseUrl}` +
         `/projects/${encodeURIComponent(id)}` +
         '/repository/commits';

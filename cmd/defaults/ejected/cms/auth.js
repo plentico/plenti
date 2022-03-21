@@ -3,7 +3,7 @@ import { createSessionStore } from './session.svelte';
 import { createDataStore } from './storage.svelte';
 import { env } from '../env.js';
 
-const repoUrl = new URL(env.cms.repo);
+export const repoUrl = env.cms.repo ? new URL(env.cms.repo) : new URL("https://gitlab.com");
 
 const settings = {
     server: repoUrl.origin,
