@@ -130,8 +130,12 @@ func runPack(buildPath, convertPath string) error {
 						fmt.Printf("Can't copy module for submodule: %s\n", err)
 					}
 				}
-				// path.Join remove proceeding ./ from path so we need to retain either ./ or ../ when adding the entryPoint
-				foundPath = strings.Split(pathStr, "/")[0] + "/" + path.Join(pathStr, entryPoint)
+				// path.Join removes proceeding ./ from path so we need to retain it manually when adding the entryPoint
+				fixCurrentDir := ""
+				if strings.Split(pathStr, "/")[0] == "." {
+					fixCurrentDir = strings.Split(pathStr, "/")[0] + "/"
+				}
+				foundPath = fixCurrentDir + path.Join(pathStr, entryPoint)
 			} else if pathExists(fullPathStr) {
 				// We found the file in filesystem
 				// Set this as a found path
