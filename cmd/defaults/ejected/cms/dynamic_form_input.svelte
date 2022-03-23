@@ -1,5 +1,34 @@
 <script>
     export let field, label;
+
+    let isDate = date => (new Date(date) !== "Invalid Date") && !isNaN(new Date(date));
+    //let makeDate = date => new Date(date).toISOString().split('T')[0];
+    //let ogfield;
+    let makeDate = date => {
+        //ogfield = field;
+        //field = new Date(date).toISOString().split('T')[0];
+        //console.log(field);
+        //return field;
+        return new Date(date).toISOString().split('T')[0];
+    }
+    let bindDate = date => {
+        console.log(date);
+        //field = makeDate(date);
+        //let y = new Date(ogfield);
+        //let x = new Intl.DateTimeFormat('en-US');
+        //field = x.format(y);
+        //field = date.format(date);
+        field = formatDate(new Date(date), 'mm/dd/yy');
+    }
+    function formatDate(date, format) {
+        const map = {
+            mm: date.getMonth() + 1,
+            dd: date.getDate(),
+            yy: date.getFullYear().toString().slice(-2),
+            yyyy: date.getFullYear()
+        }
+        return format.replace(/mm|dd|yy|yyy/gi, matched => map[matched])
+    }
 </script>
 
 {#if field === null}
@@ -7,7 +36,11 @@
 {:else if field === undefined}
     <div>{field} is undefined</div>
 {:else if field.constructor === "".constructor}
-    {#if field.length < 50}
+    {#if isDate(field)}
+        <!-- {makeDate(field) || ""}-->
+        <!-- <input type="date" bind:value={field} on:input={resetDate} /> -->
+        <input type="date" value={makeDate(field)} on:input={date => bindDate(date.target.value)} />
+    {:else if field.length < 50}
         <input id="{label}" type="text" bind:value={field} />
     {:else}
         <textarea id="{label}" rows="5" bind:value={field}></textarea>
