@@ -2,33 +2,42 @@
     export let field, label;
 
     let isDate = date => (new Date(date) !== "Invalid Date") && !isNaN(new Date(date));
-    //let makeDate = date => new Date(date).toISOString().split('T')[0];
-    //let ogfield;
-    let makeDate = date => {
-        //ogfield = field;
-        //field = new Date(date).toISOString().split('T')[0];
-        //console.log(field);
-        //return field;
-        return new Date(date).toISOString().split('T')[0];
-    }
+    let makeDate = date => new Date(date).toISOString().split('T')[0];
     let bindDate = date => {
-        console.log(date);
-        //field = makeDate(date);
-        //let y = new Date(ogfield);
-        //let x = new Intl.DateTimeFormat('en-US');
-        //field = x.format(y);
-        //field = date.format(date);
-        field = formatDate(new Date(date), 'mm/dd/yy');
+        //console.log(date);
+        //field = formatDate(new Date(date), 'mm/dd/yyyy');
+        //field = date;
+        field = formatDate(date, field);
     }
+    let formatDate = (date, format) => {
+        console.log('date = ' + date);
+        let parts = date.split('-');
+        let year = parts[0];
+        let month = parts[1];
+        let day = parts[2];
+
+        let months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        let monthsFull = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+        console.log('og date = ' + format);
+        //let re = new RegExp("^(0[1-9]|1[0-2])\/(0[1-9]|1\d|2\d|3[01])\/(19|20)([0-9][0-9])");
+        //let re = new RegExp("^(0[1-9]|1[0-2])/(0[1-9]|1[0-9]|2[0-9]|3[0-1])/(19|20)([0-9][0-9])");
+        let re = new RegExp("^(0?[1-9]|1[0-2])/(0?[1-9]|1[0-9]|2[0-9]|3[0-1])/(19|20)([0-9][0-9])");
+        if (re.test(format)) {
+            return month + '/' + day + '/' + year;
+        }
+        return date;
+    }
+    /*
     function formatDate(date, format) {
         const map = {
             mm: date.getMonth() + 1,
-            dd: date.getDate(),
+            dd: date.getDate() + 1,
             yy: date.getFullYear().toString().slice(-2),
             yyyy: date.getFullYear()
         }
         return format.replace(/mm|dd|yy|yyy/gi, matched => map[matched])
-    }
+    }*/
 </script>
 
 {#if field === null}
@@ -37,8 +46,6 @@
     <div>{field} is undefined</div>
 {:else if field.constructor === "".constructor}
     {#if isDate(field)}
-        <!-- {makeDate(field) || ""}-->
-        <!-- <input type="date" bind:value={field} on:input={resetDate} /> -->
         <input type="date" value={makeDate(field)} on:input={date => bindDate(date.target.value)} />
     {:else if field.length < 50}
         <input id="{label}" type="text" bind:value={field} />
