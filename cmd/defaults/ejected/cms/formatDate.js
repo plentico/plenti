@@ -48,12 +48,12 @@ export const formatDate = (date, format) => {
         return month + '-' + day + '-' + year.slice(-2);
     }
     // June 7, 2008
-    re = new RegExp("^January|February|March|April|May|June|July|August|September|October|November|December, (0?[1-9]|1[0-9]|2[0-9]|3[0-1]) ([0-9][0-9][0-9][0-9])");
+    re = new RegExp("^January|February|March|April|May|June|July|August|September|October|November|December, (0?[1-9]|1[0-9]|2[0-9]|3[0-1]) ([0-9][0-9][0-9][0-9])", "i");
     if (re.test(format)) {
         return monthsFull[month - 1] + ' ' + Number(day) + ', ' + year;
     }
     // Jun 7, 2008
-    re = new RegExp("^Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec, (0?[1-9]|1[0-9]|2[0-9]|3[0-1]) ([0-9][0-9][0-9][0-9])");
+    re = new RegExp("^Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec, (0?[1-9]|1[0-9]|2[0-9]|3[0-1]) ([0-9][0-9][0-9][0-9])", "i");
     if (re.test(format)) {
         return months[month - 1] + ' ' + Number(day) + ', ' + year;
     }
