@@ -4,9 +4,6 @@
     let isDate = date => (new Date(date) !== "Invalid Date") && !isNaN(new Date(date));
     let makeDate = date => new Date(date).toISOString().split('T')[0];
     let bindDate = date => {
-        //console.log(date);
-        //field = formatDate(new Date(date), 'mm/dd/yyyy');
-        //field = date;
         field = formatDate(date, field);
     }
     let formatDate = (date, format) => {
@@ -19,25 +16,24 @@
         let months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         let monthsFull = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-        console.log('og date = ' + format);
-        //let re = new RegExp("^(0[1-9]|1[0-2])\/(0[1-9]|1\d|2\d|3[01])\/(19|20)([0-9][0-9])");
-        //let re = new RegExp("^(0[1-9]|1[0-2])/(0[1-9]|1[0-9]|2[0-9]|3[0-1])/(19|20)([0-9][0-9])");
-        let re = new RegExp("^(0?[1-9]|1[0-2])/(0?[1-9]|1[0-9]|2[0-9]|3[0-1])/(19|20)([0-9][0-9])");
+        // 6/7/2008
+        let re = new RegExp("^(0?[1-9]|1[0-2])/(0?[1-9]|1[0-9]|2[0-9]|3[0-1])/(00-99)?([0-9][0-9])");
+        if (re.test(format)) {
+            return Number(month) + '/' + Number(day) + '/' + year;
+        }
+        // 06/07/2008
+        re = new RegExp("^(0[1-9]|1[0-2])/(0[1-9]|1[0-9]|2[0-9]|3[0-1])/(00-99)([0-9][0-9])");
         if (re.test(format)) {
             return month + '/' + day + '/' + year;
         }
+        // June 7, 2008
+        re = new RegExp("^Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec, (0?[1-9]|1[0-9]|2[0-9]|3[0-1]) (00-99)?([0-9][0-9])");
+        if (re.test(format)) {
+            return months[month - 1] + ' ' + day + ', ' + year;
+        }
+        // Can't find format
         return date;
     }
-    /*
-    function formatDate(date, format) {
-        const map = {
-            mm: date.getMonth() + 1,
-            dd: date.getDate() + 1,
-            yy: date.getFullYear().toString().slice(-2),
-            yyyy: date.getFullYear()
-        }
-        return format.replace(/mm|dd|yy|yyy/gi, matched => map[matched])
-    }*/
 </script>
 
 {#if field === null}
