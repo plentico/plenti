@@ -13,7 +13,7 @@ export const formatDate = (date, format) => {
         return Number(month) + '/' + Number(day) + '/' + year;
     }
     // 6/7/08
-    re = new RegExp("^([1-9]|1[0-2])/([1-9]|1[0-9]|2[0-9]|3[0-1])/([0-9][0-9][0-9][0-9])");
+    re = new RegExp("^([1-9]|1[0-2])/([1-9]|1[0-9]|2[0-9]|3[0-1])/([0-9][0-9])");
     if (re.test(format)) {
         return Number(month) + '/' + Number(day) + '/' + year.slice(-2);
     }
@@ -23,7 +23,7 @@ export const formatDate = (date, format) => {
         return Number(month) + '-' + Number(day) + '-' + year;
     }
     // 6-7-08
-    re = new RegExp("^([1-9]|1[0-2])-([1-9]|1[0-9]|2[0-9]|3[0-1])-([0-9][0-9][0-9][0-9])");
+    re = new RegExp("^([1-9]|1[0-2])-([1-9]|1[0-9]|2[0-9]|3[0-1])-([0-9][0-9])");
     if (re.test(format)) {
         return Number(month) + '-' + Number(day) + '-' + year.slice(-2);
     }
@@ -33,7 +33,7 @@ export const formatDate = (date, format) => {
         return month + '/' + day + '/' + year;
     }
     // 06/07/08
-    re = new RegExp("^(0[1-9]|1[0-2])/(0[1-9]|1[0-9]|2[0-9]|3[0-1])/([0-9][0-9][0-9][0-9])");
+    re = new RegExp("^(0[1-9]|1[0-2])/(0[1-9]|1[0-9]|2[0-9]|3[0-1])/([0-9][0-9])");
     if (re.test(format)) {
         return month + '/' + day + '/' + year.slice(-2);
     }
@@ -43,7 +43,7 @@ export const formatDate = (date, format) => {
         return month + '-' + day + '-' + year;
     }
     // 06-07-08
-    re = new RegExp("^(0[1-9]|1[0-2])-(0[1-9]|1[0-9]|2[0-9]|3[0-1])-([0-9][0-9][0-9][0-9])");
+    re = new RegExp("^(0[1-9]|1[0-2])-(0[1-9]|1[0-9]|2[0-9]|3[0-1])-([0-9][0-9])");
     if (re.test(format)) {
         return month + '-' + day + '-' + year.slice(-2);
     }
