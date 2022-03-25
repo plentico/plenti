@@ -2,9 +2,9 @@
     import { formatDate } from './formatDate.js';
     export let field, label;
 
-    let isDate = date => (new Date(date) !== "Invalid Date") && !isNaN(new Date(date));
-    let makeDate = date => new Date(date).toISOString().split('T')[0];
-    let bindDate = date => {
+    const isDate = date => (new Date(date) !== "Invalid Date") && !isNaN(new Date(date));
+    const makeDate = date => new Date(date).toISOString().split('T')[0];
+    const bindDate = date => {
         field = formatDate(date, field);
     }
 </script>

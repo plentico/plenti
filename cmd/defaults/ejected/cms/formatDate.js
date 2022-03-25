@@ -4,6 +4,8 @@ export const formatDate = (date, format) => {
     let month = parts[1];
     let day = parts[2];
 
+    let days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    let daysFull = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
     let months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     let monthsFull = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -46,6 +48,13 @@ export const formatDate = (date, format) => {
     re = new RegExp("^(0[1-9]|1[0-2])-(0[1-9]|1[0-9]|2[0-9]|3[0-1])-([0-9][0-9])");
     if (re.test(format)) {
         return month + '-' + day + '-' + year.slice(-2);
+    }
+    // Saturday, Jun 7, 2008
+    re = new RegExp("^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),? Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec, (0?[1-9]|1[0-9]|2[0-9]|3[0-1]) ([0-9][0-9][0-9][0-9])", "i");
+    if (re.test(format)) {
+        let dayOfWeek = new Date(date).getDay();
+        console.log(dayOfWeek);
+        return daysFull[dayOfWeek] + ', ' + months[month - 1] + ' ' + Number(day) + ', ' + year;
     }
     // June 7, 2008
     re = new RegExp("^January|February|March|April|May|June|July|August|September|October|November|December, (0?[1-9]|1[0-9]|2[0-9]|3[0-1]) ([0-9][0-9][0-9][0-9])", "i");
