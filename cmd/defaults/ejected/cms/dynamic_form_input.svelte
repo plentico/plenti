@@ -22,22 +22,25 @@
 {:else if field.constructor === true.constructor}
     <input id="{label}" type="checkbox" bind:checked={field} /><span>{field}</span>
 {:else if field.constructor === [].constructor}
+    {#each field as value, key}
+        <svelte:self bind:field={field[key]} {label} />
+    {/each}
+{:else if field.constructor === ({}).constructor}
     <fieldset>
-        <legend>{label}</legend>
-        {#each field as value, key}
-            <svelte:self bind:field={field[key]} {label} />
+        <!-- <legend>{label}</legend> -->
+        {#each Object.entries(field) as [key, value]}
+            <div>
+                <label for={key}>{key}</label>
+                <svelte:self bind:field={field[key]} label={key} />
+            </div>
         {/each}
     </fieldset>
-{:else if field.constructor === ({}).constructor}
-    {#each Object.entries(field) as [key, value]}
-        <div>
-            <label>{key}</label>
-            <svelte:self bind:field={field[key]} {label} />
-        </div>
-    {/each}
 {/if}
 
 <style>
+    label {
+        display: block;
+    }
     input[type=text] {
         height: 30px;
         padding: 0 7px;
