@@ -12,45 +12,21 @@ export const formatDate = (date, format) => {
     let months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     let monthsFull = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-    // 6/7/2008
-    let re = new RegExp("^([1-9]|1[0-2])/([1-9]|1[0-9]|2[0-9]|3[0-1])/([0-9][0-9][0-9][0-9])$");
+    /**
+     * 6/7/2008
+     * 6/7/08
+     * 6-7-2008
+     * 6-7-08
+     * 6.7.2008
+     * 6.7.08
+     */
+    let re = new RegExp("^(0?[1-9]|1[0-2])(/|-|\.)(0?[1-9]|1[0-9]|2[0-9]|3[0-1])(/|-|\.)(([0-9][0-9])?[0-9][0-9])$");
     if (re.test(format)) {
-        return Number(month) + '/' + Number(day) + '/' + year;
-    }
-    // 6/7/08
-    re = new RegExp("^([1-9]|1[0-2])/([1-9]|1[0-9]|2[0-9]|3[0-1])/([0-9][0-9])$");
-    if (re.test(format)) {
-        return Number(month) + '/' + Number(day) + '/' + year.slice(-2);
-    }
-    // 6-7-2008
-    re = new RegExp("^([1-9]|1[0-2])-([1-9]|1[0-9]|2[0-9]|3[0-1])-([0-9][0-9][0-9][0-9])$");
-    if (re.test(format)) {
-        return Number(month) + '-' + Number(day) + '-' + year;
-    }
-    // 6-7-08
-    re = new RegExp("^([1-9]|1[0-2])-([1-9]|1[0-9]|2[0-9]|3[0-1])-([0-9][0-9])$");
-    if (re.test(format)) {
-        return Number(month) + '-' + Number(day) + '-' + year.slice(-2);
-    }
-    // 06/07/2008
-    re = new RegExp("^(0[1-9]|1[0-2])/(0[1-9]|1[0-9]|2[0-9]|3[0-1])/([0-9][0-9][0-9][0-9])$");
-    if (re.test(format)) {
-        return month + '/' + day + '/' + year;
-    }
-    // 06/07/08
-    re = new RegExp("^(0[1-9]|1[0-2])/(0[1-9]|1[0-9]|2[0-9]|3[0-1])/([0-9][0-9])$");
-    if (re.test(format)) {
-        return month + '/' + day + '/' + year.slice(-2);
-    }
-    // 06-07-2008
-    re = new RegExp("^(0[1-9]|1[0-2])-(0[1-9]|1[0-9]|2[0-9]|3[0-1])-([0-9][0-9][0-9][0-9])$");
-    if (re.test(format)) {
-        return month + '-' + day + '-' + year;
-    }
-    // 06-07-08
-    re = new RegExp("^(0[1-9]|1[0-2])-(0[1-9]|1[0-9]|2[0-9]|3[0-1])-([0-9][0-9])$");
-    if (re.test(format)) {
-        return month + '-' + day + '-' + year.slice(-2);
+        let replacements = format.match(re);
+        let delimeter = replacements[2];
+        let yearFull = replacements[6];
+        year = yearFull !== undefined ? year : year.slice(-2);
+        return Number(month) + delimeter + Number(day) + delimeter + year;
     }
     // Saturday, June 7, 2008
     re = new RegExp("^\\b(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\\b, \\b(January|February|March|April|May|June|July|August|September|October|November|December)\\b (0?[1-9]|1[0-9]|2[0-9]|3[0-1]), ([0-9][0-9][0-9][0-9])$", "i");
