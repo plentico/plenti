@@ -1,5 +1,5 @@
 <script>
-	export let title, intro, components, content, allContent;
+	export let title, intro, blog, source, content, allContent;
 	import Grid from '../components/grid.svelte';
 	import Uses from "../components/source.svelte";
 	import Pager from "../components/pager.svelte";
@@ -21,11 +21,15 @@
 	{/each}
 </section>
 
-<div>
-	<h3>Recent blog posts:</h3>
-	<Grid items={allPosts} {postRangeLow} {postRangeHigh} />
-	<br />
-</div>
-<Pager {currentPage} {totalPages} />
+{#if blog}
+	<div>
+		<h3>Recent blog posts:</h3>
+		<Grid items={allPosts} {postRangeLow} {postRangeHigh} />
+		<br />
+	</div>
+	<Pager {currentPage} {totalPages} />	
+{/if}
 
-<Uses {content} />
+{#if source}
+	<Uses {content} {source} />	
+{/if}

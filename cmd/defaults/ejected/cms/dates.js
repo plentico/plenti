@@ -35,15 +35,16 @@ export const formatDate = (date, format) => {
      * 
      * (with or without commas and case insensitive)
      */
-    re = new RegExp("^\\b((Monday|Mon)|(Tuesday|Tue)|(Wednesday|Wed)|(Thursday|Thu)|(Friday|Fri)|(Saturday|Sat)|(Sunday|Sun))\\b(,?) \\b((January|Jan)|(February|Feb)|(March|Mar)|(April|Apr)|May|(June|Jun)|(July|Jul)|(August|Aug)|(September|Sep)|(October|Oct)|(November|Nov)|(December|Dec))\\b (0?[1-9]|1[0-9]|2[0-9]|3[0-1])(,?) ([0-9][0-9][0-9][0-9])$", "i");
+    re = new RegExp("^(\\b((Monday|Mon)|(Tuesday|Tue)|(Wednesday|Wed)|(Thursday|Thu)|(Friday|Fri)|(Saturday|Sat)|(Sunday|Sun))\\b(,?) )?\\b((January|Jan)|(February|Feb)|(March|Mar)|(April|Apr)|May|(June|Jun)|(July|Jul)|(August|Aug)|(September|Sep)|(October|Oct)|(November|Nov)|(December|Dec))\\b (0?[1-9]|1[0-9]|2[0-9]|3[0-1])(,?) ([0-9][0-9][0-9][0-9])$", "i");
     if (re.test(format)) {
         let replacements = format.match(re);
-        let delimeterDayOfWeek = replacements[9] !== undefined ? replacements[9] : '';
+        let delimeterDayOfWeek = replacements[10] !== undefined ? replacements[10] : '';
         let dayPos = new Date(date).getDay();
-        let dayOfWeek = replacements[1].length > 3 ? daysFull[dayPos] : days[dayPos];
-        let monthName = replacements[10].length > 3 ? monthsFull[month -1] : months[month -1];
-        let delimeterDay = replacements[23] !== undefined ? replacements[23] : '';
-        return dayOfWeek + delimeterDayOfWeek + ' ' + monthName + ' ' + Number(day) + delimeterDay + ' ' + year;
+        let dayOfWeek = replacements[2] === undefined ? '' : replacements[2].length > 3 ? daysFull[dayPos] : days[dayPos];
+        let space = dayOfWeek ? ' ' : '';
+        let monthName = replacements[11] === undefined ? '' : replacements[11].length > 3 ? monthsFull[month -1] : months[month -1];
+        let delimeterDay = replacements[24] !== undefined ? replacements[24] : '';
+        return dayOfWeek + delimeterDayOfWeek + space + monthName + ' ' + Number(day) + delimeterDay + ' ' + year;
     }
     // Can't find format
     return date;

@@ -13,6 +13,10 @@
 			"name": "block"
 		}
 	],
+    "source": {
+        "layout": true,
+        "content": true
+    },
     "author": "Jim Fisk",
     "date": "12/9/2020"
 }

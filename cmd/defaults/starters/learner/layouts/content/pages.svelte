@@ -1,5 +1,5 @@
 <script>
-  export let title, description, content, cms, user;
+  export let title, description, source, content, cms, user;
   import Uses from "../components/source.svelte";
 </script>
 
@@ -15,6 +15,8 @@
   <p>Try it out: <button on:click={$user.login}>Login</button></p>
 {/if}
 
-<Uses {content} />
+{#if source}
+  <Uses {content} {source} />
+{/if}
 
 <p><a href=".">Back home</a></p>

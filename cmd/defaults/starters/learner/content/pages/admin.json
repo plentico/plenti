@@ -6,5 +6,9 @@
 		"If you want things to move faster, please consider showing <a href='https://github.com/sponsors/plentico' target='blank' rel='noopener noreferrer'>your support</a>. Thanks!"
 	],
 	"cms": true,
+	"source": {
+		"layout": true,
+		"content": true
+	},
 	"author": "Jim Fisk"
 }

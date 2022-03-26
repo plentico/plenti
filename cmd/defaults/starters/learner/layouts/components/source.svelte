@@ -1,5 +1,5 @@
 <script>
-  export let content;
+  export let content, source;
 
   let templateEl;
   let contentEl;
@@ -18,21 +18,25 @@
   }
 </script>
 
-<div>
-  <span>Template:</span>
-  <pre>
-    <code bind:this={templateEl} class:selected="{copied === templateEl}">layouts/content/{content.type}.svelte</code>
-    <button on:click={() => copy(templateEl)}>{copied === templateEl ? 'copied' : 'copy'}</button>
-  </pre>
-</div>
+{#if source.layout}
+  <div>
+    <span>Layout:</span>
+    <pre>
+      <code bind:this={templateEl} class:selected="{copied === templateEl}">layouts/content/{content.type}.svelte</code>
+      <button on:click={() => copy(templateEl)}>{copied === templateEl ? 'copied' : 'copy'}</button>
+    </pre>
+  </div>  
+{/if}
 
-<div>
-  <span>Content:</span>
-  <pre>
-    <code bind:this={contentEl} class:selected="{copied === contentEl}">content/{content.type === 'index' ? '' : content.type + '/'}{content.filename}</code>
-    <button on:click={() => copy(contentEl)}>{copied === contentEl ? 'copied' : 'copy'}</button>
-  </pre>
-</div>
+{#if source.content}
+  <div>
+    <span>Content:</span>
+    <pre>
+      <code bind:this={contentEl} class:selected="{copied === contentEl}">content/{content.type === 'index' ? '' : content.type + '/'}{content.filename}</code>
+      <button on:click={() => copy(contentEl)}>{copied === contentEl ? 'copied' : 'copy'}</button>
+    </pre>
+  </div>
+{/if}
 
 <style>
   div {

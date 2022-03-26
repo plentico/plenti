@@ -1,5 +1,5 @@
 <script>
-	export let title, body, author, date, store, content;
+	export let title, body, author, date, store, source, content;
   import Uses from "../components/source.svelte";
 
   // Svelte store example:
@@ -37,6 +37,8 @@
 	{/each}
 {/if}
 
-<Uses {content} />
+{#if source}
+  <Uses {content} {source} />
+{/if}
 
 <p><a href=".">Back home</a></p>
