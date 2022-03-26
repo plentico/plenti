@@ -6,7 +6,6 @@ export const formatDate = (date, format) => {
     let month = parts[1];
     let day = parts[2];
 
-    let dayOfWeek;
     let days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
     let daysFull = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
     let months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -28,39 +27,23 @@ export const formatDate = (date, format) => {
         year = yearFull !== undefined ? year : year.slice(-2);
         return Number(month) + delimeter + Number(day) + delimeter + year;
     }
-    // Saturday, June 7, 2008
-    re = new RegExp("^\\b(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\\b, \\b(January|February|March|April|May|June|July|August|September|October|November|December)\\b (0?[1-9]|1[0-9]|2[0-9]|3[0-1]), ([0-9][0-9][0-9][0-9])$", "i");
+    /**
+     * Saturday, June 7, 2008
+     * Saturday, Jun 7, 2008
+     * Sat, June 7, 2008
+     * Sat, Jun 7, 2008
+     * 
+     * (with or without commas and case insensitive)
+     */
+    re = new RegExp("^\\b((Monday|Mon)|(Tuesday|Tue)|(Wednesday|Wed)|(Thursday|Thu)|(Friday|Fri)|(Saturday|Sat)|(Sunday|Sun))\\b(,?) \\b((January|Jan)|(February|Feb)|(March|Mar)|(April|Apr)|May|(June|Jun)|(July|Jul)|(August|Aug)|(September|Sep)|(October|Oct)|(November|Nov)|(December|Dec))\\b (0?[1-9]|1[0-9]|2[0-9]|3[0-1])(,?) ([0-9][0-9][0-9][0-9])$", "i");
     if (re.test(format)) {
-        dayOfWeek = new Date(date).getDay();
-        return daysFull[dayOfWeek] + ', ' + monthsFull[month - 1] + ' ' + Number(day) + ', ' + year;
-    }
-    // Saturday, Jun 7, 2008
-    re = new RegExp("^\\b(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\\b, \\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\b (0?[1-9]|1[0-9]|2[0-9]|3[0-1]), ([0-9][0-9][0-9][0-9])$", "i");
-    if (re.test(format)) {
-        dayOfWeek = new Date(date).getDay();
-        return daysFull[dayOfWeek] + ', ' + months[month - 1] + ' ' + Number(day) + ', ' + year;
-    }
-    // Sat, June 7, 2008
-    re = new RegExp("^\\b(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\\b, \\b(January|February|March|April|May|June|July|August|September|October|November|December)\\b (0?[1-9]|1[0-9]|2[0-9]|3[0-1]), ([0-9][0-9][0-9][0-9])$", "i");
-    if (re.test(format)) {
-        dayOfWeek = new Date(date).getDay();
-        return days[dayOfWeek] + ', ' + monthsFull[month - 1] + ' ' + Number(day) + ', ' + year;
-    }
-    // Sat, Jun 7, 2008
-    re = new RegExp("^\\b(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\\b, \\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\b (0?[1-9]|1[0-9]|2[0-9]|3[0-1]), ([0-9][0-9][0-9][0-9])$", "i");
-    if (re.test(format)) {
-        dayOfWeek = new Date(date).getDay();
-        return days[dayOfWeek] + ', ' + months[month - 1] + ' ' + Number(day) + ', ' + year;
-    }
-    // June 7, 2008
-    re = new RegExp("^\\b(January|February|March|April|May|June|July|August|September|October|November|December)\\b (0?[1-9]|1[0-9]|2[0-9]|3[0-1]), ([0-9][0-9][0-9][0-9])$", "i");
-    if (re.test(format)) {
-        return monthsFull[month - 1] + ' ' + Number(day) + ', ' + year;
-    }
-    // Jun 7, 2008
-    re = new RegExp("^\\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\b (0?[1-9]|1[0-9]|2[0-9]|3[0-1]), ([0-9][0-9][0-9][0-9])$", "i");
-    if (re.test(format)) {
-        return months[month - 1] + ' ' + Number(day) + ', ' + year;
+        let replacements = format.match(re);
+        let delimeterDayOfWeek = replacements[9] !== undefined ? replacements[9] : '';
+        let dayPos = new Date(date).getDay();
+        let dayOfWeek = replacements[1].length > 3 ? daysFull[dayPos] : days[dayPos];
+        let monthName = replacements[10].length > 3 ? monthsFull[month -1] : months[month -1];
+        let delimeterDay = replacements[23] !== undefined ? replacements[23] : '';
+        return dayOfWeek + delimeterDayOfWeek + ' ' + monthName + ' ' + Number(day) + delimeterDay + ' ' + year;
     }
     // Can't find format
     return date;
