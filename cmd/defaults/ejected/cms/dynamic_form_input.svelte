@@ -91,7 +91,7 @@
             on:touchmove={function(ev) {ev.stopPropagation(); drag(ev.touches[0].clientY);}}
             on:mouseup={function(ev) {ev.stopPropagation(); release(ev);}}
             on:touchend={function(ev) {ev.stopPropagation(); release(ev.touches[0]);}}>
-    {#each field as value, key (value)}
+    {#each field as value, key (value.constructor === ({}).constructor ? value[Object.keys(value)[0]] : value)}
             <div 
                 id={(grabbed && key == grabbed.dataset.id) ? "grabbed" : ""}
                 class="item"
