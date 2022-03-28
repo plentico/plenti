@@ -7,6 +7,7 @@
     }
 
 
+    import {flip} from "svelte/animate";
     export let removesItems = true;
     let ghost;
     let grabbed;
@@ -90,7 +91,7 @@
             on:touchmove={function(ev) {ev.stopPropagation(); drag(ev.touches[0].clientY);}}
             on:mouseup={function(ev) {ev.stopPropagation(); release(ev);}}
             on:touchend={function(ev) {ev.stopPropagation(); release(ev.touches[0]);}}>
-    {#each field as value, key}
+    {#each field as value, key (value)}
             <div 
                 id={(grabbed && key == grabbed.dataset.id) ? "grabbed" : ""}
                 class="item"
@@ -101,6 +102,7 @@
                 on:touchstart={function(ev) {grab(ev.touches[0].clientY, this);}}
                 on:mouseenter={function(ev) {ev.stopPropagation(); dragEnter(ev, ev.target);}}
                 on:touchmove={function(ev) {ev.stopPropagation(); ev.preventDefault(); touchEnter(ev.touches[0]);}}
+                animate:flip|local={{duration: 200}}
                 >
                 <div class="buttons">
                     <button 
