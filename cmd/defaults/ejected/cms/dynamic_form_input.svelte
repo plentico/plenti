@@ -9,6 +9,7 @@
 
     import {flip} from "svelte/animate";
     export let removesItems = true;
+    let compID;
     let ghost;
     let grabbed;
     let lastTarget;
@@ -91,12 +92,12 @@
             on:touchmove={function(ev) {ev.stopPropagation(); drag(ev.touches[0].clientY);}}
             on:mouseup={function(ev) {ev.stopPropagation(); release(ev);}}
             on:touchend={function(ev) {ev.stopPropagation(); release(ev.touches[0]);}}>
-    {#each field as value, key (value.constructor === ({}).constructor ? value[Object.keys(value)[0]] : value)}
+    {#each field as value, key (compID = value.constructor === ({}).constructor ? value[Object.keys(value)[0]] : value)}
             <div 
-                id={(grabbed && key == grabbed.dataset.id) ? "grabbed" : ""}
+                id={(grabbed && compID == grabbed.dataset.id) ? "grabbed" : ""}
                 class="item"
                 data-index={key}
-                data-id={key}
+                data-id={compID}
                 data-grabY="0"
                 on:mousedown={function(ev) {grab(ev.clientY, this);}}
                 on:touchstart={function(ev) {grab(ev.touches[0].clientY, this);}}
