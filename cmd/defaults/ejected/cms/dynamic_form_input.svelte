@@ -104,17 +104,30 @@
     {#each field as value, key (compID = value.constructor === ({}).constructor ? value[Object.keys(value)[0]] : value)}
             <div 
                 id={(grabbed && compID == grabbed.dataset.id) ? "grabbed" : ""}
-                class="item-wrapper"
                 data-index={key}
                 data-id={compID}
                 data-grabY="0"
-                on:mousedown={function(ev) {grab(ev.clientY, this);}}
-                on:touchstart={function(ev) {grab(ev.touches[0].clientY, this);}}
-                on:mouseenter={function(ev) {ev.stopPropagation(); dragEnter(ev, ev.target);}}
-                on:touchmove={function(ev) {ev.stopPropagation(); ev.preventDefault(); touchEnter(ev.touches[0]);}}
+                class="item-wrapper"
                 animate:flip|local={{duration: 200}}
-                >
+            >
             <div class="item">
+                <div
+                    class="grip"
+                    on:mousedown={function(ev) {grab(ev.clientY, this.closest(".item-wrapper"));}}
+                    on:touchstart={function(ev) {grab(ev.touches[0].clientY, this.closest(".item-wrapper"));}}
+                    on:mouseenter={function(ev) {ev.stopPropagation(); dragEnter(ev, ev.target.closest(".item-wrapper"));}}
+                    on:touchmove={function(ev) {ev.stopPropagation(); ev.preventDefault(); touchEnter(ev.touches[0]);}}
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-grip-horizontal" width="30" height="30" viewBox="0 0 24 24" stroke-width="1.5" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <circle cx="5" cy="9" r="1" />
+                        <circle cx="5" cy="15" r="1" />
+                        <circle cx="12" cy="9" r="1" />
+                        <circle cx="12" cy="15" r="1" />
+                        <circle cx="19" cy="9" r="1" />
+                        <circle cx="19" cy="15" r="1" />
+                    </svg>
+                </div>
                 <div class="buttons">
                     <button 
                         class="up" 
@@ -200,7 +213,6 @@
         position: relative;
     }
     .list {
-        cursor: grab;
         z-index: 5;
         display: flex;
         flex-direction: column;
@@ -227,6 +239,12 @@
     }
     .item > * {
         margin: auto;
+    }
+    .grip {
+        margin: 0 0 0 5px;
+        display: flex;
+        align-items: center;
+        cursor: grab;
     }
     .buttons {
         width: 32px;
