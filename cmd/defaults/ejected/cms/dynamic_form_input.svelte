@@ -6,7 +6,16 @@
         field = formatDate(date, field);
     }
 
+    // Accordion
+    import {slide} from "svelte/transition";
+    let isOpen = false
+    let openKey;
+    const accordion = (currentlyOpen, key) => {
+        openKey = key;
+        isOpen = currentlyOpen ? false : true;
+    }
 
+    // Drag and drop
     import {flip} from "svelte/animate";
     export let removesItems = true;
     let compID;
@@ -39,7 +48,7 @@
     function touchEnter(ev) {       
         drag(ev.clientY);
         // trigger dragEnter the first time the cursor moves over a list item
-        let target = document.elementFromPoint(ev.clientX, ev.clientY).closest(".item");
+        let target = document.elementFromPoint(ev.clientX, ev.clientY).closest(".item-wrapper");
         if (target && target != lastTarget) {
             lastTarget = target;
             dragEnter(ev, target);
@@ -47,7 +56,7 @@
     }
     function dragEnter(ev, target) {
         // swap items in data
-        if (grabbed && target != grabbed && target.classList.contains("item")) {
+        if (grabbed && target != grabbed && target.classList.contains("item-wrapper")) {
             moveItem(parseInt(grabbed.dataset.index), parseInt(target.dataset.index));
         }
     }
@@ -95,7 +104,7 @@
     {#each field as value, key (compID = value.constructor === ({}).constructor ? value[Object.keys(value)[0]] : value)}
             <div 
                 id={(grabbed && compID == grabbed.dataset.id) ? "grabbed" : ""}
-                class="item"
+                class="item-wrapper"
                 data-index={key}
                 data-id={compID}
                 data-grabY="0"
@@ -105,6 +114,7 @@
                 on:touchmove={function(ev) {ev.stopPropagation(); ev.preventDefault(); touchEnter(ev.touches[0]);}}
                 animate:flip|local={{duration: 200}}
                 >
+            <div class="item">
                 <div class="buttons">
                     <button 
                         class="up" 
@@ -131,6 +141,17 @@
                     {/if}
                 </div>
 
+                <div class="buttons">
+                    {#if isOpen && openKey === key}
+                        <button on:click|preventDefault={() => accordion(isOpen, key)}>
+                            Close
+                        </button>
+                    {:else}
+                        <button on:click|preventDefault={() => accordion(isOpen, key)}>
+                            Open
+                        </button>
+                    {/if}
+                </div>
                 <div class="buttons delete">
                     {#if removesItems}
                         <button
@@ -139,6 +160,12 @@
                         </button>
                     {/if}
                 </div>
+            </div>
+            {#if isOpen && openKey === key}
+                <div transition:slide={{ duration: 300 }}>
+                    <svelte:self bind:field={field[key]} {label} />
+                </div>
+            {/if}
             </div>
     {/each}
         </div>
@@ -178,12 +205,15 @@
         display: flex;
         flex-direction: column;
     }
+    .item-wrapper {
+        background-color: gainsboro;
+        margin-bottom: 0.5em;
+    }
     .item {
         box-sizing: border-box;
         display: inline-flex;
         width: 100%;
         min-height: 2em;
-        margin-bottom: 0.5em;
         background-color: white;
         border: 1px solid rgb(190, 190, 190);
         border-radius: 2px;
