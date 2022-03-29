@@ -10,8 +10,8 @@
     import {slide} from "svelte/transition";
     let isOpen = false
     let openKey;
-    const accordion = (currentlyOpen, key) => {
-        openKey = key;
+    const accordion = (currentlyOpen, compID) => {
+        openKey = compID;
         isOpen = currentlyOpen ? false : true;
     }
 
@@ -143,7 +143,7 @@
                     </button>
                 </div>
 
-                <div class="content" on:click|preventDefault={() => accordion(isOpen, key)}>
+                <div class="content" on:click|preventDefault={accordion(isOpen, compID)}>
                     {#if value.constructor === "".constructor}
                         {value.replace(/<[^>]*>?/gm, '').slice(0, 20).concat('...')}
                     {:else if value.constructor === ({}).constructor}
@@ -155,17 +155,6 @@
                 </div>
 
                 <div class="buttons">
-                    {#if isOpen && openKey === key}
-                        <button on:click|preventDefault={() => accordion(isOpen, key)}>
-                            Close
-                        </button>
-                    {:else}
-                        <button on:click|preventDefault={() => accordion(isOpen, key)}>
-                            Open
-                        </button>
-                    {/if}
-                </div>
-                <div class="buttons">
                     {#if removesItems}
                         <button
                             on:click|preventDefault={() => removeItem(value)}>
@@ -174,7 +163,7 @@
                     {/if}
                 </div>
             </div>
-            {#if isOpen && openKey === key}
+            {#if isOpen && openKey === compID}
                 <div transition:slide={{ duration: 300 }}>
                     <svelte:self bind:field={field[key]} {label} />
                 </div>
