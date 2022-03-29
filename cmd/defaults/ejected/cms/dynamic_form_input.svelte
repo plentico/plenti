@@ -143,7 +143,7 @@
                     </button>
                 </div>
 
-                <div class="content">
+                <div class="content" on:click|preventDefault={() => accordion(isOpen, key)}>
                     {#if value.constructor === "".constructor}
                         {value.replace(/<[^>]*>?/gm, '').slice(0, 20).concat('...')}
                     {:else if value.constructor === ({}).constructor}
@@ -165,7 +165,7 @@
                         </button>
                     {/if}
                 </div>
-                <div class="buttons delete">
+                <div class="buttons">
                     {#if removesItems}
                         <button
                             on:click|preventDefault={() => removeItem(value)}>
@@ -237,11 +237,18 @@
     .item:not(#grabbed):not(#ghost) {
         z-index: 10;
     }
-    .item > * {
+    .item > .buttons {
         margin: auto;
     }
+    .content {
+        cursor: pointer;
+        display: flex;
+        flex-grow: 1;
+        align-items: center;
+        justify-content: center;
+    }
     .grip {
-        margin: 0 0 0 5px;
+        margin-left: 5px;
         display: flex;
         align-items: center;
         cursor: grab;
@@ -255,7 +262,6 @@
     }
     .buttons button {
         cursor: pointer;
-        width: 18px;
         height: 18px;
         margin: 0 auto;
         padding: 0;
@@ -264,9 +270,6 @@
     }
     .buttons button:focus {
         border: 1px solid black;
-    }
-    .delete {
-        width: 32px;
     }
     #grabbed {
         opacity: 0.0;
