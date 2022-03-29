@@ -8,9 +8,10 @@
 
     // Accordion
     import {slide} from "svelte/transition";
-    let isOpen = false
+    let isOpen = false;
     let openKey;
     const accordion = (currentlyOpen, compID) => {
+        console.log(compID);
         openKey = compID;
         isOpen = currentlyOpen ? false : true;
     }
@@ -101,7 +102,7 @@
             on:touchmove={function(ev) {ev.stopPropagation(); drag(ev.touches[0].clientY);}}
             on:mouseup={function(ev) {ev.stopPropagation(); release(ev);}}
             on:touchend={function(ev) {ev.stopPropagation(); release(ev.touches[0]);}}>
-    {#each field as value, key (compID = value.constructor === ({}).constructor ? value[Object.keys(value)[0]] : value)}
+    {#each field as value, key (compID = isOpen ? key : value.constructor === ({}).constructor ? value[Object.keys(value)[0]] : value)}
             <div 
                 id={(grabbed && compID == grabbed.dataset.id) ? "grabbed" : ""}
                 data-index={key}
@@ -143,7 +144,7 @@
                     </button>
                 </div>
 
-                <div class="content" on:click|preventDefault={accordion(isOpen, compID)}>
+                <div class="content" on:click|preventDefault={accordion(isOpen, key)}>
                     {#if value.constructor === "".constructor}
                         {value.replace(/<[^>]*>?/gm, '').slice(0, 20).concat('...')}
                     {:else if value.constructor === ({}).constructor}
@@ -163,7 +164,7 @@
                     {/if}
                 </div>
             </div>
-            {#if isOpen && openKey === compID}
+            {#if isOpen && openKey === key}
                 <div transition:slide={{ duration: 300 }}>
                     <svelte:self bind:field={field[key]} {label} />
                 </div>
