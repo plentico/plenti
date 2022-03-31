@@ -11,9 +11,14 @@
     let isOpen = false;
     let openKey;
     const accordion = (currentlyOpen, compID) => {
-        console.log(compID);
         openKey = compID;
-        isOpen = currentlyOpen ? false : true;
+        const slowClose = () => {
+            setTimeout(() => {
+                isOpen = false;
+                console.log(isOpen);
+            }, 300);
+        }
+        isOpen = currentlyOpen ? slowClose() : true;
     }
 
     // Drag and drop
@@ -146,12 +151,12 @@
 
                 <div class="content" on:click|preventDefault={accordion(isOpen, key)}>
                     {#if value.constructor === "".constructor}
-                        {value.replace(/<[^>]*>?/gm, '').slice(0, 20).concat('...')}
+                        {value.replace(/<[^>]*>?/gm, '').slice(0, 20).concat(value.length > 20 ? '...' : '')}
                     {:else if value.constructor === ({}).constructor}
                         <!-- TODO: Obj value might not be a string, handle other cases? -->
-                        {Object.keys(value)}: {Object.values(value)}
+                        {Object.values(value)[0].constructor === "".constructor ? Object.values(value)[0].replace(/<[^>]*>?/gm, '').slice(0, 20).concat(value.length > 20 ? '...' : '') : Object.keys(value)[0]}
                     {:else}
-                        I'm comp {key}
+                        Component {key}
                     {/if}
                 </div>
 
@@ -194,7 +199,12 @@
         padding: 0 7px;
         border: 1px solid gainsboro;
         border-radius: 3px;
-        min-width: 80%;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    textarea {
+        box-sizing: border-box;
+        width: 100%;
     }
 
 

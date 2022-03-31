@@ -57,7 +57,7 @@
     color: var(--base-dark);
     padding-bottom: 5px;
   }
-  .container :global(a:before) {
+  .container :global(p a:before) {
     content: "";
     width: 100%;
     height: 100%;

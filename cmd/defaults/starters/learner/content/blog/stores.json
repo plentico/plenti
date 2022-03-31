@@ -1,5 +1,7 @@
 {
     "title": "Svelte writable stores example",
+    "author": "Jim Fisk",
+    "date": "8/25/2020",
     "body": [
         "Here's a basic counter implementation using Svelte Writable Stores"
     ],
@@ -7,7 +9,5 @@
         "layout": true,
         "content": true
     },
-    "store": true,
-    "author": "Jim Fisk",
-    "date": "8/25/2020"
+    "store": true
 }

@@ -21,7 +21,8 @@
   .grid .grid-item {
     display: flex;
     flex-grow: 1;
-    height: 200px;
+    height: 180px;
+    padding: 10px;
     align-items: center;
     justify-content: center;
     background: var(--primary);

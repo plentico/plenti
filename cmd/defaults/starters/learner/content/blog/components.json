@@ -1,5 +1,7 @@
 {
     "title": "Dynamic components example",
+    "author": "Jim Fisk",
+    "date": "12/9/2020",
     "body": [
         "The <a href=\"https://plenti.co/docs/alllayouts\">allLayouts</a> helper object holds references to all svelte templates on your site.",
         "This allows you to load components from your JSON data source without explicitly importing them.",
@@ -16,7 +18,5 @@
     "source": {
         "layout": true,
         "content": true
-    },
-    "author": "Jim Fisk",
-    "date": "12/9/2020"
+    }
 }
