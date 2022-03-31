@@ -8,17 +8,15 @@
 
     // Accordion
     import {slide} from "svelte/transition";
-    let isOpen = false;
-    let openKey;
-    const accordion = (currentlyOpen, compID) => {
-        openKey = compID;
-        const slowClose = () => {
-            setTimeout(() => {
-                isOpen = false;
-                console.log(isOpen);
-            }, 300);
+    let openKeys = [];
+    const accordion = newKey => {
+        if (openKeys.includes(newKey)) {
+            // Remove key
+            openKeys = openKeys.filter(key => key !== newKey);
+        } else {
+            // Add key
+            openKeys = [...openKeys, newKey];
         }
-        isOpen = currentlyOpen ? slowClose() : true;
     }
 
     // Drag and drop
@@ -107,7 +105,7 @@
             on:touchmove={function(ev) {ev.stopPropagation(); drag(ev.touches[0].clientY);}}
             on:mouseup={function(ev) {ev.stopPropagation(); release(ev);}}
             on:touchend={function(ev) {ev.stopPropagation(); release(ev.touches[0]);}}>
-    {#each field as value, key (compID = isOpen ? key : value.constructor === ({}).constructor ? value[Object.keys(value)[0]] : value)}
+    {#each field as value, key (compID = openKeys.length > 0 ? key : value.constructor === ({}).constructor ? value[Object.keys(value)[0]] : value)}
             <div 
                 id={(grabbed && compID == grabbed.dataset.id) ? "grabbed" : ""}
                 data-index={key}
@@ -149,11 +147,10 @@
                     </button>
                 </div>
 
-                <div class="content" on:click|preventDefault={accordion(isOpen, key)}>
+                <div class="content" on:click|preventDefault={accordion(key)}>
                     {#if value.constructor === "".constructor}
                         {value.replace(/<[^>]*>?/gm, '').slice(0, 20).concat(value.length > 20 ? '...' : '')}
                     {:else if value.constructor === ({}).constructor}
-                        <!-- TODO: Obj value might not be a string, handle other cases? -->
                         {Object.values(value)[0].constructor === "".constructor ? Object.values(value)[0].replace(/<[^>]*>?/gm, '').slice(0, 20).concat(value.length > 20 ? '...' : '') : Object.keys(value)[0]}
                     {:else}
                         Component {key}
@@ -169,7 +166,7 @@
                     {/if}
                 </div>
             </div>
-            {#if isOpen && openKey === key}
+            {#if openKeys.includes(key)}
                 <div transition:slide={{ duration: 300 }}>
                     <svelte:self bind:field={field[key]} {label} />
                 </div>
