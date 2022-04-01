@@ -112,7 +112,7 @@
                 data-id={compID}
                 data-grabY="0"
                 class="item-wrapper"
-                animate:flip|local={{duration: 200}}
+                animate:flip|local={{duration: openKeys.length > 0 ? null : 200}}
             >
             <div class="item">
                 <div
