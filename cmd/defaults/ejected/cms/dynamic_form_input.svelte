@@ -8,14 +8,21 @@
 
     // Accordion
     import {slide} from "svelte/transition";
+    let isOpen = false;
     let openKeys = [];
     const accordion = newKey => {
+        if (openKeys.length === 1 && openKeys.includes(newKey)) {
+            setTimeout(() => {
+                isOpen = false;
+            }, 300);
+        }
         if (openKeys.includes(newKey)) {
             // Remove key
             openKeys = openKeys.filter(key => key !== newKey);
         } else {
             // Add key
             openKeys = [...openKeys, newKey];
+            isOpen = true;
         }
     }
 
@@ -105,14 +112,14 @@
             on:touchmove={function(ev) {ev.stopPropagation(); drag(ev.touches[0].clientY);}}
             on:mouseup={function(ev) {ev.stopPropagation(); release(ev);}}
             on:touchend={function(ev) {ev.stopPropagation(); release(ev.touches[0]);}}>
-    {#each field as value, key (compID = openKeys.length > 0 ? key : value.constructor === ({}).constructor ? value[Object.keys(value)[0]] : value)}
+    {#each field as value, key (compID = isOpen ? key : value.constructor === ({}).constructor ? value[Object.keys(value)[0]] : value)}
             <div 
                 id={(grabbed && compID == grabbed.dataset.id) ? "grabbed" : ""}
                 data-index={key}
                 data-id={compID}
                 data-grabY="0"
                 class="item-wrapper"
-                animate:flip|local={{duration: openKeys.length > 0 ? null : 200}}
+                animate:flip|local={{duration: isOpen ? null : 200}}
             >
             <div class="item">
                 <div
