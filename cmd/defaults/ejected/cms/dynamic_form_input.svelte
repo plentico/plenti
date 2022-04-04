@@ -36,7 +36,7 @@
     let mouseY = 0; // pointer y coordinate within client
     let offsetY = 0; // y distance from top of grabbed element to pointer
     let layerY = 0; // distance from top of list to top of client
-    function grab(clientY, element) {
+    const grab = (clientY, element) => {
         // modify grabbed element
         grabbed = element;
         grabbed.dataset.grabY = clientY;
@@ -48,15 +48,14 @@
         drag(clientY);
     }
     // drag handler updates cursor position
-    function drag(clientY) {
+    const drag = clientY => {
         if (grabbed) {
             mouseY = clientY;
             layerY = ghost.parentNode.getBoundingClientRect().y;
         }
     }
     // touchEnter handler emulates the mouseenter event for touch input
-    // (more or less)
-    function touchEnter(ev) {       
+    const touchEnter = ev => {       
         drag(ev.clientY);
         // trigger dragEnter the first time the cursor moves over a list item
         let target = document.elementFromPoint(ev.clientX, ev.clientY).closest(".item-wrapper");
@@ -65,19 +64,19 @@
             dragEnter(ev, target);
         }
     }
-    function dragEnter(ev, target) {
-        // swap items in data
+    const dragEnter = (ev, target) => {
+        // swap items
         if (grabbed && target != grabbed && target.classList.contains("item-wrapper")) {
             moveItem(parseInt(grabbed.dataset.index), parseInt(target.dataset.index));
         }
     }
-    // does the actual moving of items in data
-    function moveItem(from, to) {
+    // does the actual moving of items
+    const moveItem = (from, to) => {
         let temp = field[from];
         field[from] = field[to];
         field[to] = temp;
     }
-    function release(ev) {
+    const release = ev => {
         grabbed = null;
     }
     const removeItem = val => {
@@ -112,7 +111,7 @@
             on:touchmove={function(ev) {ev.stopPropagation(); drag(ev.touches[0].clientY);}}
             on:mouseup={function(ev) {ev.stopPropagation(); release(ev);}}
             on:touchend={function(ev) {ev.stopPropagation(); release(ev.touches[0]);}}>
-    {#each field as value, key (compID = isOpen ? key : value.constructor === ({}).constructor ? value[Object.keys(value)[0]] : value)}
+        {#each field as value, key (compID = isOpen ? key : value.constructor === ({}).constructor ? value[Object.keys(value)[0]] : value)}
             <div 
                 id={(grabbed && compID == grabbed.dataset.id) ? "grabbed" : ""}
                 data-index={key}
@@ -179,7 +178,7 @@
                 </div>
             {/if}
             </div>
-    {/each}
+        {/each}
         </div>
     </main>
 {:else if field.constructor === ({}).constructor}
@@ -210,9 +209,6 @@
         box-sizing: border-box;
         width: 100%;
     }
-
-
-
     main {
         position: relative;
     }
