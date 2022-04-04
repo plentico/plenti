@@ -123,6 +123,10 @@ func runPack(buildPath, convertPath string) error {
 
 				src := path.Join(modulePath, entryPoint)
 				dest := path.Join(fullPathStr, entryPoint)
+
+				// Set to actual file instead of parent folder
+				fullPathStr = dest
+
 				// Get the module from npm if we haven't already
 				if !pathExists(dest) {
 					err = copyFile(src, dest)
