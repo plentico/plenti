@@ -1,6 +1,7 @@
 <script>
     export let content;
     import DynamicFormInput from './dynamic_form_input.svelte';
+    import Save from './save.svelte';
 </script>
 
 <form>
@@ -11,6 +12,7 @@
         </div>
     {/each}
 </form>
+<Save {content} />
 
 <style>
     form {

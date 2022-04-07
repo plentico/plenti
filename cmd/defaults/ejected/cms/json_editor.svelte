@@ -1,6 +1,6 @@
 <script>
     import { onMount } from 'svelte';
-    import { publish } from './publish.js';
+    import Save from './save.svelte';
 
     export let content;
 
@@ -27,59 +27,23 @@
     $: if (editor && !editor.hasFocus()) {
         editor.setValue(JSON.stringify(content.fields, undefined, 4));
     }
-
-    let sending = false;
-    let sent = false;
-    let failed = false;
-    async function onSubmit() {
-        const { type, filename } = content;
-        const filePath = 'content/' +
-            (type != 'index' ? type + '/' : '') +
-            filename;
-
-        sending = true;
-        sent = false;
-        failed = false;
-
-        try {
-            await publish(filePath, JSON.stringify(content.fields, undefined, '\t'));
-            sending = false;
-            sent = true;
-        } catch (error) {
-            sending = false;
-            failed = true;
-            throw error;
-        }
-    }
 </script>
-
-<style>
-    form {
-        border-bottom: 1px solid #ccc;
-        padding-top: .75rem;
-        padding-bottom: .75rem;
-    }
-
-    .editor-container {
-        border: 1px solid #ccc;
-        margin-bottom: .75rem;
-    }
-
-    .editor-container :global(.CodeMirror) {
-        height: auto;
-        max-height: 250px;
-    }
-
-</style>
 
 <svelte:head>
     <link rel="stylesheet" href="https://unpkg.com/codemirror@5.65.1/lib/codemirror.css">
 </svelte:head>
 
-<form on:submit|preventDefault={onSubmit}>
-    <div class="editor-container" bind:this={container}></div>
-    <button type="submit" disabled={sending}>Publish</button>
-    {#if sending}Sending...{/if}
-    {#if failed}Could not commit the changes.{/if}
-    {#if sent}Changes committed.{/if}
-</form>
+<div class="editor-container" bind:this={container}></div>
+
+<Save {content} />
+
+<style>
+    .editor-container {
+        border: 1px solid #ccc;
+        margin-bottom: .75rem;
+    }
+    .editor-container :global(.CodeMirror) {
+        height: auto;
+        max-height: 250px;
+    }
+</style>
