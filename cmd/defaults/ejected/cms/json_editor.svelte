@@ -33,11 +33,15 @@
     <link rel="stylesheet" href="https://unpkg.com/codemirror@5.65.1/lib/codemirror.css">
 </svelte:head>
 
-<div class="editor-container" bind:this={container}></div>
-
-<Save {content} />
+<form>
+    <div class="editor-container" bind:this={container}></div>
+    <Save {content} />
+</form>
 
 <style>
+    form {
+        padding: 20px;
+    }
     .editor-container {
         border: 1px solid #ccc;
         margin-bottom: .75rem;

@@ -2,42 +2,54 @@
     export let content;
     import { publish } from './publish.js';
 
-    let sending = false;
-    let sent = false;
-    let failed = false;
+    let status;
     async function onSubmit() {
         const { type, filename } = content;
-        const filePath = 'content/' +
-            (type != 'index' ? type + '/' : '') +
-            filename;
-
-        sending = true;
-        sent = false;
-        failed = false;
-
+        const filePath = 'content/' + (type != 'index' ? type + '/' : '') + filename;
+        status = "sending";
         try {
             await publish(filePath, JSON.stringify(content.fields, undefined, '\t'));
-            sending = false;
-            sent = true;
+            status = "sent";
+            resetStatus();
         } catch (error) {
-            sending = false;
-            failed = true;
+            status = "failed";
+            resetStatus();
             throw error;
         }
     }
+    const resetStatus = () => {
+        setTimeout(() => {
+            status = "";
+        }, 700);
+    }
 </script>
 
-<form on:submit|preventDefault={onSubmit}>
-    <button type="submit" disabled={sending}>Publish</button>
-    {#if sending}Sending...{/if}
-    {#if failed}Could not commit the changes.{/if}
-    {#if sent}Changes committed.{/if}
-</form>
+<button 
+    on:click|preventDefault={onSubmit}
+    type="submit"
+    disabled={status}
+>
+{#if status == "sending"}
+    Sending...
+{:else if status == "failed"}
+    Could not commit the changes.
+{:else if status == "sent"}
+    Changes committed.
+{:else}
+    Publish
+{/if}
+</button>
 
 <style>
-    form {
-        border-bottom: 1px solid #ccc;
-        padding-top: .75rem;
-        padding-bottom: .75rem;
+    button {
+        background-color: #1c7fc7;
+        border: none;
+        border-radius: 6px;
+        color: #fff;
+        cursor: pointer;
+        font-weight: bold;
+        line-height: 21px;
+        padding: 10px;
+        width: 100%;
     }
 </style>
