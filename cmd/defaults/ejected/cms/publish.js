@@ -32,7 +32,7 @@ export async function publish(file, content) {
     };
     const payload = {
         branch: env.cms.branch,
-        commit_message: 'Update content',
+        commit_message: 'Update ' + file,
         actions: [
             {
                 action: 'update',
