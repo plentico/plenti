@@ -48,6 +48,5 @@
     }
     .editor-container :global(.CodeMirror) {
         height: auto;
-        max-height: 250px;
     }
 </style>

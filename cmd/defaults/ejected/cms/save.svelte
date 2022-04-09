@@ -5,11 +5,9 @@
 
     let status;
     async function onSubmit() {
-        const { type, filename } = content;
-        const filePath = 'content/' + (type != 'index' ? type + '/' : '') + filename;
         status = "sending";
         try {
-            await publish(filePath, JSON.stringify(content.fields, undefined, '\t'));
+            await publish(content.filepath, JSON.stringify(content.fields, undefined, '\t'));
             status = "sent";
             resetStatus();
         } catch (error) {

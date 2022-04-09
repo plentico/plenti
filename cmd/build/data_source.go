@@ -46,6 +46,7 @@ type content struct {
 	contentPath      string
 	contentDest      string
 	contentDetails   string
+	contentFilepath  string
 	contentFilename  string
 	contentFields    string
 	contentPagerDest string
@@ -198,6 +199,7 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 		return contentFileCounter, allContentStr, allContent, fmt.Errorf("can't stat %s: %w", path, err)
 	}
 	if !info.IsDir() {
+		filePath := path
 		// Get individual path arguments.
 		parts := strings.Split(path, "/")
 		contentType := parts[1]
@@ -293,8 +295,9 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 
 			contentDetailsStr := "{\n" +
 				"\"pager\": 1,\n" +
-				"\"path\": \"" + path + "\",\n" +
 				"\"type\": \"" + contentType + "\",\n" +
+				"\"path\": \"" + path + "\",\n" +
+				"\"filepath\": \"" + filePath + "\",\n" +
 				"\"filename\": \"" + fileName + "\",\n" +
 				"\"fields\": " + fileContentStr + "\n}"
 
@@ -313,6 +316,7 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 				contentPath:      path,
 				contentDest:      destPath,
 				contentDetails:   encodedContentDetails,
+				contentFilepath:  filePath,
 				contentFilename:  fileName,
 				contentFields:    encodeString(fileContentStr),
 				contentPagerDest: pagerDestPath,
@@ -453,8 +457,9 @@ func incrementPager(paginationVars []string, currentContent content, contentJSPa
 		// Add current page number to the content source so it can be pulled in as the current page.
 		newContent.contentDetails = "{\n" +
 			"\"pager\": " + pageNums + ",\n" +
-			"\"path\": \"" + newContent.contentPath + "\",\n" +
 			"\"type\": \"" + newContent.contentType + "\",\n" +
+			"\"path\": \"" + newContent.contentPath + "\",\n" +
+			"\"filepath\": \"" + newContent.contentFilepath + "\",\n" +
 			"\"filename\": \"" + newContent.contentFilename + "\",\n" +
 			"\"fields\": " + newContent.contentFields + "\n}"
 
