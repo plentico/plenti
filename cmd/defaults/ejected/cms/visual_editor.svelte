@@ -11,7 +11,7 @@
             <DynamicFormInput bind:field={content.fields[label]} {label} />
         </div>
     {/each}
-    <Save {content} />
+    <Save bind:content={content} />
 </form>
 
 <style>

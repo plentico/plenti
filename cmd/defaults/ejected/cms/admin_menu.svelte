@@ -130,7 +130,7 @@
       flex-grow: 1;
     }
     .sidenav {
-      height: 100%;
+      height: calc(100% - 40px);
       width: 500px;
       position: fixed;
       z-index: 1;

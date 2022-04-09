@@ -35,7 +35,7 @@
 
 <form>
     <div class="editor-container" bind:this={container}></div>
-    <Save {content} />
+    <Save bind:content={content} />
 </form>
 
 <style>
