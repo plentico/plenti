@@ -1,8 +1,13 @@
 <script>
     export let user, content;
     import JSONEditor from "./json_editor.svelte";
+    import MediaBrowser from "./media_browser.svelte";
     import VisualEditor from "./visual_editor.svelte";
 
+    let showMedia = false;
+    const toggleMedia = () => {
+        showMedia = showMedia ? false : true;
+    }
     let showEditor = false;
     const toggleEditor = () => {
         showEditor = showEditor ? false : true;
@@ -50,7 +55,7 @@
     </svg>
     Add
   </a>
-  <a href=".">
+  <a href="." on:click|preventDefault={toggleMedia}>
     <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-photo" width="30" height="30" viewBox="0 0 24 24" stroke-width="2" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
       <line x1="15" y1="8" x2="15.01" y2="8" />
@@ -99,6 +104,12 @@
   </div>
 {/if}
 
+{#if showMedia}
+  <div class="sidenav right">
+    <MediaBrowser />
+  </div>
+{/if}
+
 <style>
     .spacer {
         padding: 20px;
@@ -143,7 +154,17 @@
       box-shadow: 1px 0px 2px rgb(207 207 207);
     }
     .sidenav + :global(main) {
-        margin-left: 500px;
+      margin-left: 500px;
+    }
+    .sidenav.right {
+      width: 660px;
+      left: initial;
+      right: 0;
+      box-shadow: -1px 2px 0px rgb(207 207 207);
+    }
+    .sidenav.right + :global(main) {
+      margin-left: initial;
+      margin-right: 660px;
     }
     .selectors {
       display: flex;
