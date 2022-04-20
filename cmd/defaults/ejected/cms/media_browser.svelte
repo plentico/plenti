@@ -29,16 +29,16 @@
         } else {
             enabledFilters = [...enabledFilters, filter];
         }
-        allFiles = allFiles;
+        allFiles = allFiles; // Force #each loop in template to rerender
     }
     const applyFilters = allFiles => {
         if (enabledFilters.length > 0) {
-            let fileList;
+            let fileList = [];
             enabledFilters.forEach(filter => {
-                fileList = allFiles.filter(linkPath => {
+                fileList = [...fileList, ...allFiles.filter(linkPath => {
                     let parts = linkPath.split("/");
                     return parts.includes(filter);
-                });
+                })];
             });
             return fileList;
         } else {
