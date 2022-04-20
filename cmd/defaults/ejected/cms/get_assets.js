@@ -4,9 +4,6 @@ export const getAssets = dir => {
     .then(data => {
         let parser = new DOMParser();
         let doc = parser.parseFromString(data, 'text/html');
-        return {
-          links: doc.querySelectorAll('a'),
-          images: doc.querySelectorAll('img')
-        }
+        return doc.querySelectorAll('a');
     });
 }

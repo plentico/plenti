@@ -3,10 +3,10 @@
     import { env } from '../env.js';
 
     let assetsDir = env.baseurl ? 'assets/' : '/assets/';
-    let [links, images] = [new Promise(() => {}), new Promise(() => {})];
+    let links = new Promise(() => {});
     let allFiles = [];
     const readDir = async (dir) => {
-        ({ links, images } = await getAssets(dir));
+        links = await getAssets(dir);
         links.forEach(link => {
             let linkPath = dir + link.innerHTML;
             if (linkPath.includes('.')) {
@@ -25,7 +25,11 @@
 {:then _}
     {#each allFiles as link}
         <div class="media">
-            <img src={link} />
+            {#if link.endsWith('.pdf')}
+                <embed src="{link}" type="application/pdf">
+            {:else}
+                <img src={link} />
+            {/if}
         </div>
     {/each}  
 {/await}
@@ -47,7 +51,7 @@
         align-items: center;
         justify-content: center;
     }
-    img {
+    img, embed {
         max-width: 200px;
     }
 </style>
