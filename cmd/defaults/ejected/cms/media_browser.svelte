@@ -22,11 +22,28 @@
     }
     readDir(assetsDir);
 
-    const limit = filter => {
-        allFiles = allFiles.filter(linkPath => {
-            let parts = linkPath.split("/");
-            return parts.includes(filter);
-        });
+    let enabledFilters = [];
+    const toggleFilter = filter => {
+        if (enabledFilters.includes(filter)) {
+            enabledFilters = enabledFilters.filter(f => f !== filter);
+        } else {
+            enabledFilters = [...enabledFilters, filter];
+        }
+        allFiles = allFiles;
+    }
+    const applyFilters = allFiles => {
+        if (enabledFilters.length > 0) {
+            let fileList;
+            enabledFilters.forEach(filter => {
+                fileList = allFiles.filter(linkPath => {
+                    let parts = linkPath.split("/");
+                    return parts.includes(filter);
+                });
+            });
+            return fileList;
+        } else {
+            return allFiles;
+        }
     }
 </script>
 
@@ -36,11 +53,11 @@
 {:then _}
     <div class="filters">
     {#each filters as filter}
-        <div on:click={limit(filter)} class="filter">{filter}</div>
+        <div on:click={toggleFilter(filter)} class="filter{enabledFilters.includes(filter) ? ' active' : ''}">{filter}</div>
     {/each}
     </div>
     <div class="media-browser">
-    {#each allFiles as link}
+    {#each applyFilters(allFiles) as link}
         <div class="media">
             {#if link.endsWith('.pdf')}
                 <embed src="{link}" type="application/pdf">
@@ -76,6 +93,8 @@
     }
     .filters {
         padding: 10px 0;
+        display: flex;
+        gap: 10px;
     }
     .filter {
         border-radius: 5px;
@@ -83,5 +102,9 @@
         padding: 2px 10px;
         border: 1px solid;
         cursor: pointer;
+    }
+    .filter.active {
+        background-color: gray;
+        color: white;
     }
 </style>
