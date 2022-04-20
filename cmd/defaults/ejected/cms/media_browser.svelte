@@ -1,19 +1,31 @@
 <script>
-    import { getLinks } from './get_media.js';
+    import { getAssets } from './get_assets.js';
     import { env } from '../env.js';
 
-    let assetsDir = env.baseurl ? 'assets' : '/assets';
-    let links = getLinks(assetsDir);
-    console.log(links);
+    let assetsDir = env.baseurl ? 'assets/' : '/assets/';
+    let [links, images] = [new Promise(() => {}), new Promise(() => {})];
+    let allFiles = [];
+    const readDir = async (dir) => {
+        ({ links, images } = await getAssets(dir));
+        links.forEach(link => {
+            let linkPath = dir + link.innerHTML;
+            if (linkPath.includes('.')) {
+                allFiles = [...allFiles, linkPath];
+            } else {
+                readDir(linkPath);
+            }
+        });
+    }
+    readDir(assetsDir);
 </script>
 
 <div class="media-browser">
 {#await links}
     Loading...    
-{:then links} 
-    {#each links as link}
+{:then _}
+    {#each allFiles as link}
         <div class="media">
-            <img src={assetsDir + "/" + link.childNodes[0].data} />
+            <img src={link} />
         </div>
     {/each}  
 {/await}
