@@ -42,7 +42,7 @@
             enabledFilters.forEach(filter => {
                 fileList = [...fileList, ...allFiles.filter(linkPath => {
                     let parts = linkPath.split("/");
-                    return parts.includes(filter);
+                    return parts.includes(filter) && !fileList.includes(linkPath);
                 })];
             });
             return fileList;
