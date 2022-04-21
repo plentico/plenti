@@ -53,33 +53,35 @@
 </script>
 
 <div class="media-wrapper">
-{#await links}
-    Loading...    
-{:then _}
-    <div class="filters">
-        {#each filters as filter}
-            <div on:click={toggleFilter(filter)} class="filter{enabledFilters.includes(filter) ? ' active' : ''}">{filter}</div>
-        {/each}
-        <div on:click={() => toggleFilter(false)} class="close">
-            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-x" width="30" height="30" viewBox="0 0 24 24" stroke-width="1.5" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-        </div>
-    </div>
-    <div class="media-browser">
-    {#each applyFilters(allFiles) as link}
-        <div class="media">
-            {#if link.endsWith('.pdf')}
-                <embed src="{link}" type="application/pdf">
-            {:else}
-                <img src={link} />
+    {#await links}
+        Loading...    
+    {:then _}
+        <div class="filters">
+            {#each filters as filter}
+                <div on:click={toggleFilter(filter)} class="filter{enabledFilters.includes(filter) ? ' active' : ''}">{filter}</div>
+            {/each}
+            {#if enabledFilters.length > 0}
+                <div on:click={() => toggleFilter(false)} class="close">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-x" width="20" height="20" viewBox="5 5 14 14" stroke-width="1.5" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </div>
             {/if}
         </div>
-    {/each}
-    </div>
-{/await}
+        <div class="media-browser">
+        {#each applyFilters(allFiles) as link}
+            <div class="media">
+                {#if link.endsWith('.pdf')}
+                    <embed src="{link}" type="application/pdf">
+                {:else}
+                    <img src={link} />
+                {/if}
+            </div>
+        {/each}
+        </div>
+    {/await}
 </div>
 
 <style>
@@ -104,7 +106,7 @@
         max-width: 200px;
     }
     .filters {
-        padding: 3px 10px;
+        padding: 6px 10px;
         margin-bottom: 10px;
         display: flex;
         gap: 10px;
