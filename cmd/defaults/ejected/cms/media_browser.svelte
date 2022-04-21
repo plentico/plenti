@@ -24,10 +24,15 @@
 
     let enabledFilters = [];
     const toggleFilter = filter => {
-        if (enabledFilters.includes(filter)) {
-            enabledFilters = enabledFilters.filter(f => f !== filter);
+        console.log('fire');
+        if (!filter) {
+            enabledFilters = [];
         } else {
-            enabledFilters = [...enabledFilters, filter];
+            if (enabledFilters.includes(filter)) {
+                enabledFilters = enabledFilters.filter(f => f !== filter);
+            } else {
+                enabledFilters = [...enabledFilters, filter];
+            }
         }
         allFiles = allFiles; // Force #each loop in template to rerender
     }
@@ -52,9 +57,16 @@
     Loading...    
 {:then _}
     <div class="filters">
-    {#each filters as filter}
-        <div on:click={toggleFilter(filter)} class="filter{enabledFilters.includes(filter) ? ' active' : ''}">{filter}</div>
-    {/each}
+        {#each filters as filter}
+            <div on:click={toggleFilter(filter)} class="filter{enabledFilters.includes(filter) ? ' active' : ''}">{filter}</div>
+        {/each}
+        <div on:click={() => toggleFilter(false)} class="close">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-x" width="30" height="30" viewBox="0 0 24 24" stroke-width="1.5" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+        </div>
     </div>
     <div class="media-browser">
     {#each applyFilters(allFiles) as link}
@@ -92,9 +104,13 @@
         max-width: 200px;
     }
     .filters {
-        padding: 10px 0;
+        padding: 3px 10px;
+        margin-bottom: 10px;
         display: flex;
         gap: 10px;
+        background: gainsboro;
+        border-radius: 5px;
+        align-items: center;
     }
     .filter {
         border-radius: 5px;
@@ -106,5 +122,10 @@
     .filter.active {
         background-color: gray;
         color: white;
+    }
+    .close {
+        cursor: pointer;
+        margin-left: auto;
+        display: flex;
     }
 </style>
