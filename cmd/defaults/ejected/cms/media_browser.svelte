@@ -106,23 +106,26 @@
         max-width: 200px;
     }
     .filters {
-        padding: 6px 10px;
         margin-bottom: 10px;
         display: flex;
         gap: 10px;
-        background: gainsboro;
         border-radius: 5px;
         align-items: center;
+        flex-wrap: wrap;
     }
     .filter {
-        border-radius: 5px;
+        border-radius: 6px;
         display: inline-block;
-        padding: 2px 10px;
-        border: 1px solid;
+        padding: 4px 10px;
         cursor: pointer;
+        font-weight: bold;
+        background-color: transparent;
+        border: 2px solid #1c7fc7;
+        color: #1c7fc7;
+        font-size: .8rem;
     }
     .filter.active {
-        background-color: gray;
+        background-color: #1c7fc7;
         color: white;
     }
     .close {
