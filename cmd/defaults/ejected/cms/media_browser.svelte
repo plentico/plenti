@@ -24,7 +24,6 @@
 
     let enabledFilters = [];
     const toggleFilter = filter => {
-        console.log('fire');
         if (!filter) {
             enabledFilters = [];
         } else {
@@ -56,10 +55,12 @@
     {#await links}
         Loading...    
     {:then _}
-        <div class="filters">
+        <div class="filters-wrapper">
+            <div class="filters">
             {#each filters as filter}
                 <div on:click={toggleFilter(filter)} class="filter{enabledFilters.includes(filter) ? ' active' : ''}">{filter}</div>
             {/each}
+            </div>
             {#if enabledFilters.length > 0}
                 <div on:click={() => toggleFilter(false)} class="close">
                     <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-x" width="20" height="20" viewBox="5 5 14 14" stroke-width="1.5" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -103,7 +104,12 @@
         justify-content: center;
     }
     img, embed {
-        max-width: 200px;
+        min-width: 200px;
+        min-height: 150px;
+        object-fit: cover;
+    }
+    .filters-wrapper {
+        display: flex;
     }
     .filters {
         margin-bottom: 10px;
@@ -130,6 +136,7 @@
     }
     .close {
         cursor: pointer;
+        padding: 5px 0;
         margin-left: auto;
         display: flex;
     }
