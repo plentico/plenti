@@ -1,9 +1,14 @@
-<label class="file">
-  <input type="file" id="file" aria-label="File browser">
-  <span class="file-custom"></span>
-</label>
+<div class="upload-wrapper">
+    <label class="file">
+    <input type="file" id="file" aria-label="File browser">
+    <span class="file-custom"></span>
+    </label>
+</div>
 
 <style>
+    .upload-wrapper {
+        padding: 20px;
+    }
     .file {
         position: relative;
         display: inline-block;
@@ -21,7 +26,6 @@
         right: 0;
         left: 0;
         z-index: 5;
-        height: 2.5rem;
         padding: 0.5rem 1rem;
         line-height: 1.5;
         color: #555;
@@ -42,7 +46,6 @@
         z-index: 6;
         display: block;
         content: "Browse";
-        height: 2.5rem;
         padding: 0.5rem 1rem;
         line-height: 1.5;
         color: #555;
