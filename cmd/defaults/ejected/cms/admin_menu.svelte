@@ -7,15 +7,20 @@
 
     let showMedia = false;
     const toggleMedia = () => {
-        showMedia = showMedia ? false : true;
+        showMedia = !showMedia;
     }
+    let activeMedia = "upload";
+    const setActiveMedia = selected => {
+      activeMedia = selected;
+    }
+
     let showEditor = false;
     const toggleEditor = () => {
-        showEditor = showEditor ? false : true;
+        showEditor = !showEditor;
     }
-    let active = "visual";
-    const setActive = selected => {
-      active = selected;
+    let activeEditor = "visual";
+    const setActiveEditor = selected => {
+      activeEditor = selected;
     }
 </script>
 
@@ -79,7 +84,7 @@
 {#if showEditor}
   <div class="sidenav">
     <div class="selectors">
-      <div class="selector {active === 'visual' ? 'active' : ''}" on:click={() => setActive('visual')}>
+      <div class="selector {activeEditor === 'visual' ? 'active' : ''}" on:click={() => setActiveEditor('visual')}>
         <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-table" width="30" height="30" viewBox="0 0 24 24" stroke-width="1.5" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
           <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
           <rect x="4" y="4" width="16" height="16" rx="2" />
@@ -88,7 +93,7 @@
         </svg>
         <span>Visual</span>
       </div>
-      <div class="selector {active === 'code' ? 'active' : ''}" on:click={() => setActive('code')}>
+      <div class="selector {activeEditor === 'code' ? 'active' : ''}" on:click={() => setActiveEditor('code')}>
         <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-braces" width="30" height="30" viewBox="0 0 24 24" stroke-width="1.5" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
           <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
           <path d="M7 4a2 2 0 0 0 -2 2v3a2 3 0 0 1 -2 3a2 3 0 0 1 2 3v3a2 2 0 0 0 2 2" />
@@ -97,7 +102,7 @@
         <span>Code</span>
       </div>
     </div>
-    {#if active === 'code'}
+    {#if activeEditor === 'code'}
       <JSONEditor bind:content={content} />
     {:else}
       <VisualEditor bind:content={content} />
@@ -108,7 +113,7 @@
 {#if showMedia}
   <div class="sidenav right">
     <div class="selectors">
-      <div class="selector {active === 'visual' ? 'active' : ''}" on:click={() => setActive('visual')}>
+      <div class="selector {activeMedia === 'upload' ? 'active' : ''}" on:click={() => setActiveMedia('upload')}>
         <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-upload" width="30" height="30" viewBox="0 0 24 24" stroke-width="1.5" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
           <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
           <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" />
@@ -117,7 +122,7 @@
         </svg>
         <span>Upload</span>
       </div>
-      <div class="selector {active === 'code' ? 'active' : ''}" on:click={() => setActive('code')}>
+      <div class="selector {activeMedia === 'library' ? 'active' : ''}" on:click={() => setActiveMedia('library')}>
         <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-layout-grid" width="30" height="30" viewBox="0 0 24 24" stroke-width="1.5" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
           <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
           <rect x="4" y="4" width="6" height="6" rx="1" />
@@ -128,7 +133,7 @@
         <span>Library</span>
       </div>
     </div>
-    {#if active === 'code'}
+    {#if activeMedia === 'library'}
       <MediaBrowser />
     {:else}
       <FileUpload />
