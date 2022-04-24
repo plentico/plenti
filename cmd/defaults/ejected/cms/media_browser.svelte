@@ -49,6 +49,11 @@
             return allFiles;
         }
     }
+
+    const isImage = link => {
+        let extensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg', '.avif', '.apng'];
+        return extensions.includes(link.substr(link.lastIndexOf('.')));
+    }
 </script>
 
 <div class="media-wrapper">
@@ -73,13 +78,15 @@
         </div>
         <div class="media-browser">
         {#each applyFilters(allFiles) as link}
-            <div class="media">
-                {#if link.endsWith('.pdf')}
+            {#if link.endsWith('.pdf')}
+                <div class="media">
                     <embed src="{link}" type="application/pdf">
-                {:else}
+                </div>
+            {:else if isImage(link)}
+                <div class="media">
                     <img src={link} />
-                {/if}
-            </div>
+                </div>
+            {/if}
         {/each}
         </div>
     {/await}
@@ -102,6 +109,8 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        flex-basis: 150px;
+        flex-grow: 1;
     }
     img, embed {
         min-width: 200px;
