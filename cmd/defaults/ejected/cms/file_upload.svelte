@@ -1,10 +1,14 @@
 <script>
+    import MediaGrid from './media_grid.svelte';
+
     let thumbnails = [];
     const getThumbnail = file => {
+        console.log(file.name);
         let reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = e => {
             thumbnails = [...thumbnails, e.target.result];
+            console.log(e.target.result);
         };
     }
     const selectFile = files => {
@@ -33,9 +37,7 @@
 
 <div class="upload-wrapper">
     {#if thumbnails.length > 0}
-        {#each thumbnails as thumbnail}
-            <img src="{thumbnail}" />    
-        {/each}
+        <MediaGrid files={thumbnails} />
     {:else}
         <div class="drop{drag ? ' active' : ''}"
             on:dragenter={toggleDrag} 
@@ -122,8 +124,5 @@
     }
     .file-custom:after {
         content: "Choose file...";
-    }
-    img {
-        max-width: 200px;
     }
 </style>

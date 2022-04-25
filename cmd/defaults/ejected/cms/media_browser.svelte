@@ -1,6 +1,7 @@
 <script>
     import { getAssets } from './get_assets.js';
     import { env } from '../env.js';
+    import MediaGrid from './media_grid.svelte';
 
     let assetsDir = env.baseurl ? 'assets/' : '/assets/';
     let links = new Promise(() => {});
@@ -49,11 +50,6 @@
             return allFiles;
         }
     }
-
-    const isImage = link => {
-        let extensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg', '.avif', '.apng'];
-        return extensions.includes(link.substr(link.lastIndexOf('.')));
-    }
 </script>
 
 <div class="media-wrapper">
@@ -76,44 +72,13 @@
                 </div>
             {/if}
         </div>
-        <div class="media-browser">
-        {#each applyFilters(allFiles) as link}
-            {#if link.endsWith('.pdf')}
-                <div class="media">
-                    <embed src="{link}" type="application/pdf">
-                </div>
-            {:else if isImage(link)}
-                <div class="media">
-                    <img src={link} />
-                </div>
-            {/if}
-        {/each}
-        </div>
+        <MediaGrid files={applyFilters(allFiles)} />
     {/await}
 </div>
 
 <style>
     .media-wrapper {
         padding: 20px;
-    }
-    .media-browser {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 10px;
-    }
-    .media {
-        width: 200px;
-        height: 150px;
-        overflow: hidden;
-        background-color: gainsboro;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    img, embed {
-        min-width: 200px;
-        min-height: 150px;
-        object-fit: cover;
     }
     .filters-wrapper {
         display: flex;
