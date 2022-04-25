@@ -1,8 +1,26 @@
+<script>
+    let thumbnail;
+    const selectFile =(e)=>{
+        let image = e.target.files[0];
+        let reader = new FileReader();
+        reader.readAsDataURL(image);
+        reader.onload = e => {
+            thumbnail = e.target.result
+        };
+    }
+</script>
+
 <div class="upload-wrapper">
-    <label class="file">
-    <input type="file" id="file" aria-label="File browser">
-    <span class="file-custom"></span>
-    </label>
+    {#if thumbnail}
+        <img src="{thumbnail}" />
+    {:else}
+        <div on:click={(e)=>selectFile(e)} on:change={(e)=>selectFile(e)}>
+            <label class="file">
+            <input type="file" id="file" aria-label="File browser">
+            <span class="file-custom"></span>
+            </label>
+        </div>
+    {/if}
 </div>
 
 <style>
@@ -55,5 +73,8 @@
     }
     .file-custom:after {
         content: "Choose file...";
+    }
+    img {
+        max-width: 200px;
     }
 </style>
