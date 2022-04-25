@@ -1,22 +1,16 @@
 <script>
-    let thumbnail;
-    const selectFile =(e)=>{
-        console.log('drop');
-        //let image = e.target.files[0];
-        let image = e;
+    let thumbnails = [];
+    const selectFile = image => {
         let reader = new FileReader();
         reader.readAsDataURL(image);
         reader.onload = e => {
-            thumbnail = e.target.result
+            thumbnails = [...thumbnails, e.target.result];
         };
     }
 
     let drag;
-    const handleDragEnter = () => {
-        drag = true;
-    }
-    const handleDragLeave = () => {
-        drag = false;
+    const toggleDrag = () => {
+        drag = !drag;
     }
     const handleDrop = ev => {
         if (ev.dataTransfer.items) {
@@ -26,7 +20,6 @@
                 if (ev.dataTransfer.items[i].kind === 'file') {
                     var file = ev.dataTransfer.items[i].getAsFile();
                     selectFile(file);
-                    console.log('... file[' + i + '].name = ' + file.name);
                 }
             }
         }
@@ -34,12 +27,14 @@
 </script>
 
 <div class="upload-wrapper">
-    {#if thumbnail}
-        <img src="{thumbnail}" />
+    {#if thumbnails.length > 0}
+        {#each thumbnails as thumbnail}
+            <img src="{thumbnail}" />    
+        {/each}
     {:else}
         <div class="drop{drag ? ' active' : ''}"
-            on:dragenter={handleDragEnter} 
-            on:dragleave={handleDragLeave}  
+            on:dragenter={toggleDrag} 
+            on:dragleave={toggleDrag}  
             on:drop|preventDefault={event => handleDrop(event)} 
             on:dragover|preventDefault
             on:change={event => selectFile(event)}
