@@ -14,6 +14,18 @@
     {#if thumbnail}
         <img src="{thumbnail}" />
     {:else}
+        <div class="drop">
+            <div class="drop-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-cloud-upload" width="44" height="44" viewBox="0 0 24 24" stroke-width="1.5" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M7 18a4.6 4.4 0 0 1 0 -9a5 4.5 0 0 1 11 2h1a3.5 3.5 0 0 1 0 7h-1" />
+                    <polyline points="9 15 12 12 15 15" />
+                    <line x1="12" y1="12" x2="12" y2="21" />
+                </svg>
+            </div>
+            <div class="drop-text">Drag a file here to upload</div>
+        </div>
+        <div class="or">Or</div>
         <div on:click={(e)=>selectFile(e)} on:change={(e)=>selectFile(e)}>
             <label class="file">
             <input type="file" id="file" aria-label="File browser">
@@ -26,6 +38,22 @@
 <style>
     .upload-wrapper {
         padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: 100%;
+    }
+    .drop {
+        width: 100%;
+        height: 40%;
+        justify-content: center;
+        border: 2px dashed;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .or {
+        margin: 20px;
     }
     .file {
         position: relative;
