@@ -97,8 +97,8 @@
         padding: 20px;
     }
     .media-browser {
-        display: flex;
-        flex-wrap: wrap;
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
         gap: 10px;
     }
     .media {
@@ -109,8 +109,6 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        flex-basis: 150px;
-        flex-grow: 1;
     }
     img, embed {
         min-width: 200px;
