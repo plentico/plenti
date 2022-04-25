@@ -1,12 +1,35 @@
 <script>
     let thumbnail;
     const selectFile =(e)=>{
-        let image = e.target.files[0];
+        console.log('drop');
+        //let image = e.target.files[0];
+        let image = e;
         let reader = new FileReader();
         reader.readAsDataURL(image);
         reader.onload = e => {
             thumbnail = e.target.result
         };
+    }
+
+    let drag;
+    const handleDragEnter = () => {
+        drag = true;
+    }
+    const handleDragLeave = () => {
+        drag = false;
+    }
+    const handleDrop = ev => {
+        if (ev.dataTransfer.items) {
+            // Use DataTransferItemList interface to access the file(s)
+            for (var i = 0; i < ev.dataTransfer.items.length; i++) {
+                // If dropped items aren't files, reject them
+                if (ev.dataTransfer.items[i].kind === 'file') {
+                    var file = ev.dataTransfer.items[i].getAsFile();
+                    selectFile(file);
+                    console.log('... file[' + i + '].name = ' + file.name);
+                }
+            }
+        }
     }
 </script>
 
@@ -14,7 +37,13 @@
     {#if thumbnail}
         <img src="{thumbnail}" />
     {:else}
-        <div class="drop">
+        <div class="drop{drag ? ' active' : ''}"
+            on:dragenter={handleDragEnter} 
+            on:dragleave={handleDragLeave}  
+            on:drop|preventDefault={event => handleDrop(event)} 
+            on:dragover|preventDefault
+            on:change={event => selectFile(event)}
+        >
             <div class="drop-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-cloud-upload" width="44" height="44" viewBox="0 0 24 24" stroke-width="1.5" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -26,7 +55,7 @@
             <div class="drop-text">Drag a file here to upload</div>
         </div>
         <div class="or">Or</div>
-        <div on:click={(e)=>selectFile(e)} on:change={(e)=>selectFile(e)}>
+        <div on:click={(e)=>selectFile(e.target.files[0])} on:change={(e)=>selectFile(e.target.files[0])}>
             <label class="file">
                 <input type="file" aria-label="File browser">
                 <span class="file-custom"></span>
@@ -51,6 +80,10 @@
         display: flex;
         flex-direction: column;
         align-items: center;
+    }
+    .drop.active {
+        border-color: #1c7fc7;
+        background-color: gainsboro;
     }
     .or {
         margin: 20px;
