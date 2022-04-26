@@ -35,14 +35,26 @@
             }
         }
     }
+
+    let selectedMedia = [];
+    const removeSelectedMedia = () => {
+        selectedMedia.forEach(file => {
+            thumbnails = thumbnails.filter(f => f !== file);
+            selectedMedia = [];
+        });
+    }
 </script>
 
 <div class="upload-wrapper">
     {#if thumbnails.length > 0}
-        <MediaGrid files={thumbnails} />
+        <MediaGrid files={thumbnails} bind:selectedMedia={selectedMedia} />
         <Buttons>
             <Save file="/assets/test.png" contents={thumbnails[0]} action="create" />
-            <button on:click|preventDefault="{() => thumbnails=[]}">Discard upload</button>
+            {#if selectedMedia.length > 0}
+                <button on:click|preventDefault="{removeSelectedMedia}">Discard selected</button> 
+            {:else}
+                <button on:click|preventDefault="{() => thumbnails=[]}">Discard all</button>
+            {/if}
         </Buttons>
     {:else}
         <div class="drop{drag ? ' active' : ''}"
