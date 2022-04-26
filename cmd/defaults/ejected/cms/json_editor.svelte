@@ -38,7 +38,7 @@
 <form>
     <div class="editor-container" bind:this={container}></div>
     <Buttons>
-        <Save file={content.filepath} content={JSON.stringify(content.fields, undefined, '\t')} />
+        <Save file={content.filepath} content={JSON.stringify(content.fields, undefined, '\t')} action="update" />
         <Reset />
     </Buttons>
 </form>

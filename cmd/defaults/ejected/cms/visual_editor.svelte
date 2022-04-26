@@ -14,7 +14,7 @@
         </div>
     {/each}
     <Buttons>
-        <Save file={content.filepath} contents={JSON.stringify(content.fields, undefined, '\t')} />
+        <Save file={content.filepath} contents={JSON.stringify(content.fields, undefined, '\t')} action="update" />
         <Reset />
     </Buttons>
 </form>

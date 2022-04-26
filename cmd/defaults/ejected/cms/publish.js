@@ -12,11 +12,16 @@ const userAvailable = new Promise(resolve => {
     });
 });
 
+const capitalizeFirstLetter = string => {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
 /**
  * @param {string} file
- * @param {string} content
+ * @param {string} contents
+ * @param {string} action
  */
-export async function publish(file, content) {
+export async function publish(file, contents, action) {
     await userAvailable;
     if (!currentUser.isAuthenticated) {
         throw new Error('Authentication required');
@@ -32,12 +37,12 @@ export async function publish(file, content) {
     };
     const payload = {
         branch: env.cms.branch,
-        commit_message: 'Update ' + file,
+        commit_message: capitalizeFirstLetter(action) + ' ' + file,
         actions: [
             {
-                action: 'update',
+                action: action,
                 file_path: file,
-                content,
+                contents,
             },
         ],
     };

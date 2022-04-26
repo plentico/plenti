@@ -1,12 +1,12 @@
 <script>
-    export let file, contents;
+    export let file, contents, action;
     import { publish } from '../publish.js';
 
     let status;
     async function onSubmit() {
         status = "sending";
         try {
-            await publish(file, contents);
+            await publish(file, contents, action);
             status = "sent";
             resetStatus();
         } catch (error) {
