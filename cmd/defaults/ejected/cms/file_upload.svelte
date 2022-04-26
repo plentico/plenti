@@ -1,5 +1,6 @@
 <script>
     import MediaGrid from './media_grid.svelte';
+    import Buttons from './buttons/buttons.svelte';
     import Save from './buttons/save.svelte';
 
     let thumbnails = [];
@@ -39,7 +40,10 @@
 <div class="upload-wrapper">
     {#if thumbnails.length > 0}
         <MediaGrid files={thumbnails} />
-        <Save file="/assets/test.png" contents={thumbnails[0]} action="create" />
+        <Buttons>
+            <Save file="/assets/test.png" contents={thumbnails[0]} action="create" />
+            <button on:click|preventDefault="{() => thumbnails=[]}">Discard upload</button>
+        </Buttons>
     {:else}
         <div class="drop{drag ? ' active' : ''}"
             on:dragenter={toggleDrag} 

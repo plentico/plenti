@@ -37,17 +37,3 @@
         Publish
     {/if}
 </button>
-
-<style>
-    button {
-        background-color: #1c7fc7;
-        border: none;
-        border-radius: 6px;
-        color: #fff;
-        cursor: pointer;
-        font-weight: bold;
-        line-height: 21px;
-        padding: 10px;
-        width: 100%;
-    }
-</style>

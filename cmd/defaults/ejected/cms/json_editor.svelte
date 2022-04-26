@@ -2,7 +2,6 @@
     import { onMount } from 'svelte';
     import Buttons from './buttons/buttons.svelte';
     import Save from './buttons/save.svelte';
-    import Reset from './buttons/reset.svelte';
 
     export let content;
 
@@ -39,7 +38,7 @@
     <div class="editor-container" bind:this={container}></div>
     <Buttons>
         <Save file={content.filepath} content={JSON.stringify(content.fields, undefined, '\t')} action="update" />
-        <Reset />
+        <button>Reset</button>
     </Buttons>
 </form>
 
