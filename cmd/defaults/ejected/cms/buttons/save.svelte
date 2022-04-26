@@ -1,13 +1,12 @@
 <script>
-    export let content;
-    import { publish } from './publish.js';
-    import originalContent from '../content.js';
+    export let file, contents;
+    import { publish } from '../publish.js';
 
     let status;
     async function onSubmit() {
         status = "sending";
         try {
-            await publish(content.filepath, JSON.stringify(content.fields, undefined, '\t'));
+            await publish(file, contents);
             status = "sent";
             resetStatus();
         } catch (error) {
@@ -21,19 +20,13 @@
             status = "";
         }, 700);
     }
-
-    const resetContent = () => {
-        //console.log(originalContent); TODO: This is broken
-        content = originalContent.find(current => current.filename == content.filename);
-    }
 </script>
 
-<div class="buttons">
-    <button 
-        on:click|preventDefault={onSubmit}
-        type="submit"
-        disabled={status}
-    >
+<button 
+    on:click|preventDefault={onSubmit}
+    type="submit"
+    disabled={status}
+>
     {#if status == "sending"}
         Sending...
     {:else if status == "failed"}
@@ -43,20 +36,9 @@
     {:else}
         Publish
     {/if}
-    </button>
-    <button
-        class="reset"
-        on:click|preventDefault={resetContent}
-    >
-        Reset
-    </button>
-</div>
+</button>
 
 <style>
-    .buttons {
-        display: flex;
-        gap: 20px;
-    }
     button {
         background-color: #1c7fc7;
         border: none;
@@ -67,10 +49,5 @@
         line-height: 21px;
         padding: 10px;
         width: 100%;
-    }
-    .reset {
-        background-color: transparent;
-        border: 2px solid #1c7fc7;
-        color: #1c7fc7;
     }
 </style>

@@ -6,22 +6,20 @@
         return extensions.includes(file.substr(file.lastIndexOf('.') + 1)) || reImage.test(file);
     }
     const isPDF = file => {
-        let rePDF = new RegExp("^data:application\/(?:pdf)(?:;charset=utf-8)?;base64,(?:[A-Za-z0-9]|[+/])+={0,2}");
-        return file.endsWith('.pdf') || rePDF.test(file);
-
+        let extensions = ['pdf', 'msword'];
+        let rePDF = new RegExp("^data:application\/(?:" + extensions.join("|") +")(?:;charset=utf-8)?;base64,(?:[A-Za-z0-9]|[+/])+={0,2}");
+        return extensions.includes(file.substr(file.lastIndexOf('.') + 1)) || rePDF.test(file);
     }
 </script>
 <div class="media-browser">
     {#each files as file}
-        {#if isPDF(file)}
-            <div class="media">
-                <embed src="{file}" type="application/pdf">
-            </div>
-        {:else if isImage(file)}
-            <div class="media">
+        <div class="media">
+            {#if isPDF(file)}
+                <embed src="{file}" type="application/pdf" />
+            {:else if isImage(file)}
                 <img src={file} />
-            </div>
-        {/if}
+            {/if}
+        </div>
     {/each}
 </div>
 

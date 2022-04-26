@@ -1,7 +1,9 @@
 <script>
     export let content;
     import DynamicFormInput from './dynamic_form_input.svelte';
-    import Save from './save.svelte';
+    import Buttons from './buttons/buttons.svelte';
+    import Save from './buttons/save.svelte';
+    import Reset from './buttons/reset.svelte';
 </script>
 
 <form>
@@ -11,7 +13,10 @@
             <DynamicFormInput bind:field={content.fields[label]} {label} />
         </div>
     {/each}
-    <Save bind:content={content} />
+    <Buttons>
+        <Save file={content.filepath} contents={JSON.stringify(content.fields, undefined, '\t')} />
+        <Reset />
+    </Buttons>
 </form>
 
 <style>
