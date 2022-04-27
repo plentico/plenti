@@ -42,7 +42,8 @@ export async function publish(file, contents, action) {
             {
                 action: action,
                 file_path: file,
-                contents,
+                encoding: "base64",
+                content: contents,
             },
         ],
     };
