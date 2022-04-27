@@ -18,6 +18,7 @@
     const resetStatus = () => {
         setTimeout(() => {
             status = "";
+            mediaList = [];
         }, 700);
     }
 </script>

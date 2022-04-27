@@ -52,7 +52,7 @@
     {#if mediaList.length > 0}
         <MediaGrid files={getThumbnails(mediaList)} bind:selectedMedia={selectedMedia} />
         <Buttons>
-            <Save {mediaList} action="create" encoding="base64" />
+            <Save bind:mediaList={mediaList} action="create" encoding="base64" />
             {#if selectedMedia.length > 0}
                 <button on:click|preventDefault="{removeSelectedMedia}">Discard selected</button> 
             {:else}
