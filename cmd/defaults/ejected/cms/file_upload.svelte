@@ -3,14 +3,21 @@
     import Buttons from './buttons/buttons.svelte';
     import Save from './buttons/save.svelte';
 
+    const makeDataStr = base64Str => {
+        return base64Str.replace('data:image/png;base64,', '');
+    }
+
     let thumbnails = [];
+    let mediaList = [];
     const getThumbnail = file => {
-        //console.log(file.name);
         let reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = e => {
             thumbnails = [...thumbnails, e.target.result];
-            //console.log(e.target.result);
+            mediaList = [...mediaList, {
+                file: "assets/" + file.name,
+                contents: makeDataStr(e.target.result)
+            }];
         };
     }
     const selectFile = files => {
@@ -43,17 +50,13 @@
             selectedMedia = [];
         });
     }
-
-    const makeDataStr = base64Str => {
-        return base64Str.replace('data:image/png;base64,', '');
-    }
 </script>
 
 <div class="upload-wrapper">
     {#if thumbnails.length > 0}
         <MediaGrid files={thumbnails} bind:selectedMedia={selectedMedia} />
         <Buttons>
-            <Save file="/assets/test4.png" contents={makeDataStr(thumbnails[0])} action="create" />
+            <Save {mediaList} action="create" encoding="base64" />
             {#if selectedMedia.length > 0}
                 <button on:click|preventDefault="{removeSelectedMedia}">Discard selected</button> 
             {:else}

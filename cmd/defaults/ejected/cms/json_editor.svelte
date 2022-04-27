@@ -37,7 +37,7 @@
 <form>
     <div class="editor-container" bind:this={container}></div>
     <Buttons>
-        <Save file={content.filepath} content={JSON.stringify(content.fields, undefined, '\t')} action="update" />
+        <Save mediaList={[{file: content.filepath, contents: JSON.stringify(content.fields, undefined, '\t')}]} action="update" encoding="text" />
         <button>Reset</button>
     </Buttons>
 </form>

@@ -1,19 +1,21 @@
 <script>
-    export let file, contents, action;
+    export let mediaList, action, encoding;
     import { publish } from '../publish.js';
 
     let status;
     async function onSubmit() {
         status = "sending";
-        try {
-            await publish(file, contents, action);
-            status = "sent";
-            resetStatus();
-        } catch (error) {
-            status = "failed";
-            resetStatus();
-            throw error;
-        }
+        mediaList.forEach(async mediaItem => { 
+            try {
+                await publish(mediaItem.file, mediaItem.contents, action, encoding);
+                status = "sent";
+                resetStatus();
+            } catch (error) {
+                status = "failed";
+                resetStatus();
+                throw error;
+            }
+        });
     }
     const resetStatus = () => {
         setTimeout(() => {

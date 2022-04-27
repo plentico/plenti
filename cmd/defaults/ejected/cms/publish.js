@@ -21,7 +21,7 @@ const capitalizeFirstLetter = string => {
  * @param {string} contents
  * @param {string} action
  */
-export async function publish(file, contents, action) {
+export async function publish(file, contents, action, encoding) {
     await userAvailable;
     if (!currentUser.isAuthenticated) {
         throw new Error('Authentication required');
@@ -42,7 +42,7 @@ export async function publish(file, contents, action) {
             {
                 action: action,
                 file_path: file,
-                encoding: "base64",
+                encoding: encoding,
                 content: contents,
             },
         ],
