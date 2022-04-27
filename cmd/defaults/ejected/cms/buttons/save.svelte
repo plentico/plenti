@@ -5,17 +5,15 @@
     let status;
     async function onSubmit() {
         status = "sending";
-        mediaList.forEach(async mediaItem => { 
-            try {
-                await publish(mediaItem.file, mediaItem.contents, action, encoding);
-                status = "sent";
-                resetStatus();
-            } catch (error) {
-                status = "failed";
-                resetStatus();
-                throw error;
-            }
-        });
+        try {
+            await publish(mediaList, action, encoding);
+            status = "sent";
+            resetStatus();
+        } catch (error) {
+            status = "failed";
+            resetStatus();
+            throw error;
+        }
     }
     const resetStatus = () => {
         setTimeout(() => {

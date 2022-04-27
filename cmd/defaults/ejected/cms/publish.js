@@ -21,7 +21,7 @@ const capitalizeFirstLetter = string => {
  * @param {string} contents
  * @param {string} action
  */
-export async function publish(file, contents, action, encoding) {
+export async function publish(mediaList, action, encoding) {
     await userAvailable;
     if (!currentUser.isAuthenticated) {
         throw new Error('Authentication required');
@@ -35,17 +35,20 @@ export async function publish(file, contents, action, encoding) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${currentUser.tokens.access_token}`,
     };
+
+    let actions = [];
+    mediaList.forEach(mediaItem => {
+        actions.push({
+            action: action,
+            file_path: mediaItem.file,
+            encoding: encoding,
+            content: mediaItem.contents,
+        });
+    });
     const payload = {
         branch: env.cms.branch,
-        commit_message: capitalizeFirstLetter(action) + ' ' + file,
-        actions: [
-            {
-                action: action,
-                file_path: file,
-                encoding: encoding,
-                content: contents,
-            },
-        ],
+        commit_message: capitalizeFirstLetter(action) + ' ' + mediaList[0].file,
+        actions: actions,
     };
 
     const response = await fetch(url, {
