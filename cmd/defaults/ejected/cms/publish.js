@@ -45,9 +45,12 @@ export async function publish(mediaList, action, encoding) {
             content: mediaItem.contents,
         });
     });
+
+    let message = capitalizeFirstLetter(action) + ' ' + (mediaList.length > 1 ? mediaList.length + ' files' : mediaList[0].file);
+
     const payload = {
         branch: env.cms.branch,
-        commit_message: capitalizeFirstLetter(action) + ' ' + mediaList[0].file,
+        commit_message: message,
         actions: actions,
     };
 
