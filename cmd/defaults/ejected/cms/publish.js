@@ -36,13 +36,15 @@ export async function publish(mediaList, action, encoding) {
         'Authorization': `Bearer ${currentUser.tokens.access_token}`,
     };
 
+    const makeDataStr = base64Str => base64Str.split(',')[1];
+
     let actions = [];
     mediaList.forEach(mediaItem => {
         actions.push({
             action: action,
             file_path: mediaItem.file,
             encoding: encoding,
-            content: mediaItem.contents,
+            content: encoding === "base64" ? makeDataStr(mediaItem.contents) : mediaItem.contents,
         });
     });
 

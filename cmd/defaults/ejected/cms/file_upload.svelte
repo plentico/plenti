@@ -3,26 +3,20 @@
     import Buttons from './buttons/buttons.svelte';
     import Save from './buttons/save.svelte';
 
-    const makeDataStr = base64Str => {
-        return base64Str.replace('data:image/png;base64,', '');
-    }
-
-    let thumbnails = [];
     let mediaList = [];
-    const getThumbnail = file => {
+    const createMediaList = file => {
         let reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = e => {
-            thumbnails = [...thumbnails, e.target.result];
             mediaList = [...mediaList, {
                 file: "assets/" + file.name,
-                contents: makeDataStr(e.target.result)
+                contents: e.target.result
             }];
         };
     }
     const selectFile = files => {
         Array.from(files).forEach(file => {
-            getThumbnail(file);
+            createMediaList(file);
         });
     }
 
@@ -37,7 +31,7 @@
                 // If dropped items aren't files, reject them
                 if (ev.dataTransfer.items[i].kind === 'file') {
                     let file = ev.dataTransfer.items[i].getAsFile();
-                    getThumbnail(file);
+                    createMediaList(file);
                 }
             }
         }
@@ -46,21 +40,23 @@
     let selectedMedia = [];
     const removeSelectedMedia = () => {
         selectedMedia.forEach(file => {
-            thumbnails = thumbnails.filter(f => f !== file);
+            mediaList = mediaList.filter(i => i.contents !== file);
             selectedMedia = [];
         });
     }
+
+    const getThumbnails = mediaList => mediaList.map(i => i.contents);
 </script>
 
 <div class="upload-wrapper">
-    {#if thumbnails.length > 0}
-        <MediaGrid files={thumbnails} bind:selectedMedia={selectedMedia} />
+    {#if mediaList.length > 0}
+        <MediaGrid files={getThumbnails(mediaList)} bind:selectedMedia={selectedMedia} />
         <Buttons>
             <Save {mediaList} action="create" encoding="base64" />
             {#if selectedMedia.length > 0}
                 <button on:click|preventDefault="{removeSelectedMedia}">Discard selected</button> 
             {:else}
-                <button on:click|preventDefault="{() => thumbnails=[]}">Discard all</button>
+                <button on:click|preventDefault="{() => mediaList=[]}">Discard all</button>
             {/if}
         </Buttons>
     {:else}

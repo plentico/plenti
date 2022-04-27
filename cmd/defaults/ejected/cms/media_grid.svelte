@@ -46,6 +46,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        border: 2px solid black;
     }
     .media.selected {
         border: 2px solid #1c7fc7;
