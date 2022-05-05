@@ -1,9 +1,11 @@
 package build
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/fs"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -87,6 +89,9 @@ func copyAssetsFromProject(assetsDir string, buildPath string, copiedSourceCount
 		return 0, fmt.Errorf("%s does not exist: %w", assetsDir, err)
 	}
 
+	// Index of copied assets to list them in media browser
+	var index []string
+
 	err := filepath.WalkDir(assetsDir, func(assetPath string, assetFileInfo fs.DirEntry, err error) error {
 		if err != nil {
 			return fmt.Errorf("can't stat %s: %w", assetPath, err)
@@ -133,11 +138,26 @@ func copyAssetsFromProject(assetsDir string, buildPath string, copiedSourceCount
 
 		}
 
+		index = append(index, assetPath)
 		copiedSourceCounter++
 		return nil
 	})
 	if err != nil {
 		return 0, fmt.Errorf("Could not get asset file: %w%s\n", err, common.Caller())
 	}
+
+	result, err := json.MarshalIndent(index, "", "\t")
+	if err != nil {
+		return copiedSourceCounter, fmt.Errorf("Unable to marshal JSON: %w%s", err, common.Caller())
+	}
+	err = os.MkdirAll(buildPath+"/spa/assets", os.ModePerm)
+	if err != nil {
+		return copiedSourceCounter, fmt.Errorf("Unable to create folder for asset index: %w%s\n", err, common.Caller())
+	}
+	err = ioutil.WriteFile(buildPath+"/spa/assets/index.json", result, os.ModePerm)
+	if err != nil {
+		return copiedSourceCounter, fmt.Errorf("Unable to write to asset index file: %w%s\n", err, common.Caller())
+	}
+
 	return copiedSourceCounter, nil
 }
