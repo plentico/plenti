@@ -1,69 +1,66 @@
 <script>
-    import { getAssets } from './get_assets.js';
-    import { env } from '../env.js';
+    import { getAssets, baseUrl } from './get_assets.js';
     import MediaGrid from './media_grid.svelte';
 
-    let assetsDir = env.baseurl ? 'assets/' : '/assets/';
-    let links = new Promise(() => {});
-    let allFiles = [];
+    let assets = [];
     let filters = [];
-    const readDir = async (dir) => {
-        links = await getAssets(dir);
-        links.forEach(link => {
-            let linkPath = dir + link.innerHTML;
-            if (linkPath.includes('.')) {
-                allFiles = [...allFiles, linkPath];
-            } else {
-                let filter = link.innerHTML;
-                filter = filter.endsWith('/') ? filter.slice(0, -1) : filter;
-                filters = [...filters, filter];
-                readDir(linkPath);
-            }
-        });
-    }
-    readDir(assetsDir);
-
     let enabledFilters = [];
-    const toggleFilter = filter => {
-        if (!filter) {
-            enabledFilters = [];
-        } else {
-            if (enabledFilters.includes(filter)) {
-                enabledFilters = enabledFilters.filter(f => f !== filter);
-            } else {
-                enabledFilters = [...enabledFilters, filter];
-            }
+
+    async function loadIndex() {
+        assets = await getAssets();
+        for (const asset of assets) {
+            const folders = asset
+                .split('/')
+                // Remove first (assets folder) and last (filename) elements.
+                .slice(1, -1);
+            filters.push(...folders);
         }
-        allFiles = allFiles; // Force #each loop in template to rerender
+
+        // Force update for filters
+        filters = filters;
     }
-    const applyFilters = allFiles => {
-        if (enabledFilters.length > 0) {
-            let fileList = [];
-            enabledFilters.forEach(filter => {
-                fileList = [...fileList, ...allFiles.filter(linkPath => {
-                    let parts = linkPath.split("/");
-                    return parts.includes(filter) && !fileList.includes(linkPath);
-                })];
-            });
-            return fileList;
+
+    function toggleFilter(filter) {
+        if (enabledFilters.includes(filter)) {
+            enabledFilters = enabledFilters.filter(current => current != filter);
         } else {
-            return allFiles;
+            enabledFilters.push(filter);
+
+            // Force update for enabled filters
+            enabledFilters = enabledFilters;
         }
     }
+
+    function clearFilters() {
+        enabledFilters = [];
+    }
+
+    // Filter assets
+    let filteredAssets;
+    $: filteredAssets = assets
+            .filter(asset => 
+                enabledFilters.length == 0 ||
+                asset
+                    .split('/')
+                    // Remove first (assets folder) and last (filename) elements.
+                    .slice(1, -1)
+                    .some(folder => enabledFilters.includes(folder))
+            )
+            .map(asset => baseUrl + '/' + asset);
 </script>
 
 <div class="media-wrapper">
-    {#await links}
+    {#await loadIndex()}
         Loading...    
     {:then _}
         <div class="filters-wrapper">
             <div class="filters">
             {#each filters as filter}
-                <div on:click={toggleFilter(filter)} class="filter{enabledFilters.includes(filter) ? ' active' : ''}">{filter}</div>
+                <div on:click={() => toggleFilter(filter)} class="filter{enabledFilters.includes(filter) ? ' active' : ''}">{filter}</div>
             {/each}
             </div>
             {#if enabledFilters.length > 0}
-                <div on:click={() => toggleFilter(false)} class="close">
+                <div on:click={clearFilters} class="close">
                     <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-x" width="20" height="20" viewBox="5 5 14 14" stroke-width="1.5" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
                         <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                         <line x1="18" y1="6" x2="6" y2="18" />
@@ -72,7 +69,7 @@
                 </div>
             {/if}
         </div>
-        <MediaGrid files={applyFilters(allFiles)} />
+        <MediaGrid files={filteredAssets} />
     {/await}
 </div>
 
