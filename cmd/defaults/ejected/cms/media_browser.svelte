@@ -9,11 +9,13 @@
     async function loadIndex() {
         assets = await getAssets();
         for (const asset of assets) {
-            const folders = asset
-                .split('/')
-                // Remove first (assets folder) and last (filename) elements.
-                .slice(1, -1);
-            filters.push(...folders);
+            // Remove first (assets folder) and last (filename) elements.
+            const folders = asset.split('/').slice(1, -1);
+            for (const folder of folders) {
+                if (!filters.includes(folder)) {
+                    filters.push(folder);
+                }
+            }
         }
 
         // Force update for filters

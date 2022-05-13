@@ -110,7 +110,7 @@ func Client(buildPath string, defaultsEjectedFS embed.FS) error {
 		if err != nil {
 			return err
 		}
-		// Don't compile directories on non svelte files (.js files)
+		// Don't compile directories or non svelte files (.js files)
 		if d.IsDir() || !strings.HasSuffix(path, ".svelte") {
 			return nil
 		}
