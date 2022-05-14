@@ -150,11 +150,8 @@ func copyAssetsFromProject(assetsDir string, buildPath string, copiedSourceCount
 	if err != nil {
 		return copiedSourceCounter, fmt.Errorf("Unable to marshal JSON: %w%s", err, common.Caller())
 	}
-	err = os.MkdirAll(buildPath+"/spa/assets", os.ModePerm)
-	if err != nil {
-		return copiedSourceCounter, fmt.Errorf("Unable to create folder for asset index: %w%s\n", err, common.Caller())
-	}
-	err = ioutil.WriteFile(buildPath+"/spa/assets/index.json", result, os.ModePerm)
+	result = append(append([]byte("export let assets = "), result...), []byte(";")...)
+	err = ioutil.WriteFile(buildPath+"/spa/ejected/cms/assets.js", result, os.ModePerm)
 	if err != nil {
 		return copiedSourceCounter, fmt.Errorf("Unable to write to asset index file: %w%s\n", err, common.Caller())
 	}
