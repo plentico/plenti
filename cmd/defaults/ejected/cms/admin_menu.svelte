@@ -111,33 +111,35 @@
 {/if}
 
 {#if showMedia}
-  <div class="sidenav right">
-    <div class="selectors">
-      <div class="selector {activeMedia === 'upload' ? 'active' : ''}" on:click={() => setActiveMedia('upload')}>
-        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-upload" width="30" height="30" viewBox="0 0 24 24" stroke-width="1.5" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
-          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-          <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" />
-          <polyline points="7 9 12 4 17 9" />
-          <line x1="12" y1="4" x2="12" y2="16" />
-        </svg>
-        <span>Upload</span>
+  <div class="modal-wrapper" on:click={toggleMedia}>
+    <div class="modal" on:click|stopPropagation>
+      <div class="selectors">
+        <div class="selector {activeMedia === 'upload' ? 'active' : ''}" on:click={() => setActiveMedia('upload')}>
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-upload" width="30" height="30" viewBox="0 0 24 24" stroke-width="1.5" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" />
+            <polyline points="7 9 12 4 17 9" />
+            <line x1="12" y1="4" x2="12" y2="16" />
+          </svg>
+          <span>Upload</span>
+        </div>
+        <div class="selector {activeMedia === 'library' ? 'active' : ''}" on:click={() => setActiveMedia('library')}>
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-layout-grid" width="30" height="30" viewBox="0 0 24 24" stroke-width="1.5" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <rect x="4" y="4" width="6" height="6" rx="1" />
+            <rect x="14" y="4" width="6" height="6" rx="1" />
+            <rect x="4" y="14" width="6" height="6" rx="1" />
+            <rect x="14" y="14" width="6" height="6" rx="1" />
+          </svg>
+          <span>Library</span>
+        </div>
       </div>
-      <div class="selector {activeMedia === 'library' ? 'active' : ''}" on:click={() => setActiveMedia('library')}>
-        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-layout-grid" width="30" height="30" viewBox="0 0 24 24" stroke-width="1.5" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
-          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-          <rect x="4" y="4" width="6" height="6" rx="1" />
-          <rect x="14" y="4" width="6" height="6" rx="1" />
-          <rect x="4" y="14" width="6" height="6" rx="1" />
-          <rect x="14" y="14" width="6" height="6" rx="1" />
-        </svg>
-        <span>Library</span>
-      </div>
+      {#if activeMedia === 'library'}
+        <MediaBrowser />
+      {:else}
+        <FileUpload />
+      {/if}
     </div>
-    {#if activeMedia === 'library'}
-      <MediaBrowser />
-    {:else}
-      <FileUpload />
-    {/if}
   </div>
 {/if}
 
@@ -187,16 +189,6 @@
     .sidenav + :global(main) {
       margin-left: 500px;
     }
-    .sidenav.right {
-      width: 660px;
-      left: initial;
-      right: 0;
-      box-shadow: -1px 2px 0px rgb(207 207 207);
-    }
-    .sidenav.right + :global(main) {
-      margin-left: initial;
-      margin-right: 660px;
-    }
     .selectors {
       display: flex;
     }
@@ -213,5 +205,29 @@
     }
     .selector.active {
       background-color: white;
+    }
+    .modal-wrapper {
+      z-index: 99999;
+      position: fixed;
+      inset: 0px;
+      display: flex;
+      -webkit-box-pack: center;
+      justify-content: center;
+      -webkit-box-align: center;
+      align-items: center;
+      transition: background-color 0.2s ease 0s, opacity 0.2s ease 0s;
+      background-color: rgba(0, 0, 0, 0.6);
+    }
+    .modal {
+      box-shadow: rgb(68 74 87 / 15%) 0px 4px 12px 0px, rgb(68 74 87 / 25%) 0px 1px 3px 0px;
+      background-color: rgb(255, 255, 255);
+      border-radius: 5px;
+      height: 80%;
+      width: 80%;
+      max-width: 1200px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
 </style>
