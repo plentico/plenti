@@ -112,6 +112,13 @@
 
 {#if showMedia}
   <div class="modal-wrapper" on:click={toggleMedia}>
+    <div class="modal-close">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-x" width="35" height="35" viewBox="5 5 14 14" stroke-width="1.5" stroke="white" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+    </div>
     <div class="modal" on:click|stopPropagation>
       <div class="selectors">
         <div class="selector {activeMedia === 'upload' ? 'active' : ''}" on:click={() => setActiveMedia('upload')}>
@@ -229,5 +236,11 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
+    }
+    .modal-close {
+      cursor: pointer;
+      position: absolute;
+      top: 0;
+      right: 0;
     }
 </style>

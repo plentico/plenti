@@ -34,12 +34,14 @@
 <style>
     .media-browser {
         display: grid;
-        grid-template-columns: 1fr 1fr 1fr 1fr;
+        grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
         gap: 10px;
         margin-bottom: 20px;
+        overflow-y: scroll;
+        height: 100%;
     }
     .media {
-        width: 200px;
+        width: 194px;
         height: 150px;
         overflow: hidden;
         background-color: gainsboro;

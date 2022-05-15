@@ -71,7 +71,7 @@
 <style>
     .media-wrapper {
         padding: 20px;
-        overflow-y: scroll;
+        overflow: hidden;
     }
     .filters-wrapper {
         display: flex;
