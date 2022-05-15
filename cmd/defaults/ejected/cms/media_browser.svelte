@@ -2,9 +2,11 @@
     import { env } from '../env.js';
     import { assets } from './assets.js';
     import MediaGrid from './media_grid.svelte';
+    import Buttons from './buttons/buttons.svelte';
 
     let filters = [];
     let enabledFilters = [];
+    let selectedMedia = [];
 
     for (const asset of assets) {
         // Remove first (assets folder) and last (filename) elements.
@@ -65,19 +67,23 @@
             </div>
         {/if}
     </div>
-    <MediaGrid files={filteredAssets} />
+    <MediaGrid files={filteredAssets} bind:selectedMedia={selectedMedia} />
 </div>
+{#if selectedMedia.length > 0} 
+    <Buttons>
+        <button>Download selected</button> 
+    </Buttons>
+{/if}
 
 <style>
     .media-wrapper {
-        padding: 20px;
+        margin: 20px 0;
         overflow: hidden;
     }
     .filters-wrapper {
         display: flex;
     }
     .filters {
-        margin-bottom: 10px;
         display: flex;
         gap: 10px;
         border-radius: 5px;

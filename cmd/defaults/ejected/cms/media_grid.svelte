@@ -36,9 +36,9 @@
         display: grid;
         grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
         gap: 10px;
-        margin-bottom: 20px;
         overflow-y: scroll;
         height: 100%;
+        margin: 20px 0;
     }
     .media {
         width: 190px;
