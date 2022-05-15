@@ -41,7 +41,7 @@
         height: 100%;
     }
     .media {
-        width: 194px;
+        width: 190px;
         height: 150px;
         overflow: hidden;
         background-color: gainsboro;

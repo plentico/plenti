@@ -7,6 +7,7 @@
         display: flex;
         gap: 20px;
         width: 100%;
+        margin-bottom: 20px;
     }
     .buttons :global(button) {
         background-color: #1c7fc7;

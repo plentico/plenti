@@ -88,12 +88,13 @@
 
 <style>
     .upload-wrapper {
-        padding: 20px;
+        padding: 20px 0;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         height: 100%;
+        box-sizing: border-box;
     }
     .drop {
         width: 100%;
