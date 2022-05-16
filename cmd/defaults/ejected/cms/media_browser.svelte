@@ -15,26 +15,23 @@
         const folders = asset.split('/').slice(1, -1);
         for (const folder of folders) {
             if (!filters.includes(folder)) {
-                filters.push(folder);
+                // Add filter and force update
+                filters = [...filters, folder];
             }
         }
     }
 
-    // Force update for filters
-    filters = filters;
-
-    function toggleFilter(filter) {
+    const toggleFilter = filter => {
         if (enabledFilters.includes(filter)) {
+            // Remove filter
             enabledFilters = enabledFilters.filter(current => current != filter);
         } else {
-            enabledFilters.push(filter);
-
-            // Force update for enabled filters
-            enabledFilters = enabledFilters;
+            // Add filter and force update for enabled filters
+            enabledFilters = [...enabledFilters, filter];
         }
     }
 
-    function clearFilters() {
+    const clearFilters = () => {
         enabledFilters = [];
     }
 
@@ -59,6 +56,12 @@
             a.click();
         });
     }
+
+    const removeAssets = () => {
+        selectedMedia.forEach(m => {
+            filteredAssets = filteredAssets.filter(i => i != m);
+        });
+    }
 </script>
 
 <div class="media-wrapper">
@@ -81,10 +84,11 @@
     <MediaGrid files={filteredAssets} bind:selectedMedia={selectedMedia} />
 </div>
 {#if selectedMedia.length > 0} 
-    {console.log(selectedMedia)}
     <ButtonWrapper>
         <button on:click={downloadFiles}>Download selected</button> 
-        <Button bind:mediaList={selectedMedia} buttonText="Delete Selected Media" action="delete" encoding="text" />
+        <div class="delete-wrapper" on:click={removeAssets}>
+            <Button bind:mediaList={selectedMedia} buttonText="Delete Selected Media" action="delete" encoding="text" />
+        </div>
     </ButtonWrapper>
 {/if}
 
