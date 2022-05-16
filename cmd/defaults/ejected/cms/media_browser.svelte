@@ -57,10 +57,16 @@
         });
     }
 
+    // Create objects that can be used by GitLab API
+    $: mediaList = selectedMedia.map(i => {
+        return {file: i, contents: null};
+    });
+
     const removeAssets = () => {
         selectedMedia.forEach(m => {
             filteredAssets = filteredAssets.filter(i => i != m);
         });
+        selectedMedia = [];
     }
 </script>
 
@@ -87,7 +93,7 @@
     <ButtonWrapper>
         <button on:click={downloadFiles}>Download selected</button> 
         <div class="delete-wrapper" on:click={removeAssets}>
-            <Button bind:mediaList={selectedMedia} buttonText="Delete Selected Media" action="delete" encoding="text" />
+            <Button bind:mediaList={mediaList} buttonText="Delete Selected Media" action="delete" encoding="text" />
         </div>
     </ButtonWrapper>
 {/if}
