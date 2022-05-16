@@ -48,6 +48,15 @@
                     .some(folder => enabledFilters.includes(folder))
             )
             .map(asset => env.baseurl + '/' + asset);
+
+    const downloadFiles = () => {
+        selectedMedia.forEach(mediaFile => {
+            const a = document.createElement('a');
+            a.setAttribute( 'href', mediaFile );
+            a.setAttribute( 'download', mediaFile.substring(mediaFile.lastIndexOf('/')+1) );
+            a.click();
+        });
+    }
 </script>
 
 <div class="media-wrapper">
@@ -71,7 +80,7 @@
 </div>
 {#if selectedMedia.length > 0} 
     <Buttons>
-        <button>Download selected</button> 
+        <button on:click={downloadFiles}>Download selected</button> 
     </Buttons>
 {/if}
 
