@@ -1,7 +1,7 @@
 <script>
     import MediaGrid from './media_grid.svelte';
-    import Buttons from './buttons/buttons.svelte';
-    import Save from './buttons/save.svelte';
+    import ButtonWrapper from './button_wrapper.svelte';
+    import Button from './button.svelte';
 
     let mediaList = [];
     const createMediaList = file => {
@@ -51,14 +51,14 @@
 <div class="upload-wrapper">
     {#if mediaList.length > 0}
         <MediaGrid files={getThumbnails(mediaList)} bind:selectedMedia={selectedMedia} />
-        <Buttons>
-            <Save bind:mediaList={mediaList} action="create" encoding="base64" />
+        <ButtonWrapper>
+            <Button bind:mediaList={mediaList} buttonText="Save Media" action="create" encoding="base64" />
             {#if selectedMedia.length > 0}
                 <button on:click|preventDefault="{removeSelectedMedia}">Discard selected</button> 
             {:else}
                 <button on:click|preventDefault="{() => mediaList=[]}">Discard all</button>
             {/if}
-        </Buttons>
+        </ButtonWrapper>
     {:else}
         <div class="drop{drag ? ' active' : ''}"
             on:dragenter={toggleDrag} 

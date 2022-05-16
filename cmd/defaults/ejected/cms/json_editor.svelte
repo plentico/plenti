@@ -1,7 +1,7 @@
 <script>
     import { onMount } from 'svelte';
-    import Buttons from './buttons/buttons.svelte';
-    import Save from './buttons/save.svelte';
+    import ButtonWrapper from './button_wrapper.svelte';
+    import Button from './button.svelte';
 
     export let content;
 
@@ -36,10 +36,10 @@
 
 <form>
     <div class="editor-container" bind:this={container}></div>
-    <Buttons>
-        <Save mediaList={[{file: content.filepath, contents: JSON.stringify(content.fields, undefined, '\t')}]} action="update" encoding="text" />
+    <ButtonWrapper>
+        <Button mediaList={[{file: content.filepath, contents: JSON.stringify(content.fields, undefined, '\t')}]} buttonText="Publish" action="update" encoding="text" />
         <button>Reset</button>
-    </Buttons>
+    </ButtonWrapper>
 </form>
 
 <style>

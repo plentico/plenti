@@ -1,9 +1,9 @@
 <script>
-    export let mediaList, action, encoding;
-    import { publish } from '../publish.js';
+    export let mediaList, buttonText, action, encoding;
+    import { publish } from './publish.js';
 
     let status;
-    async function onSubmit() {
+    const onSubmit = async () => {
         status = "sending";
         try {
             await publish(mediaList, action, encoding);
@@ -35,6 +35,6 @@
     {:else if status == "sent"}
         Changes committed.
     {:else}
-        Publish
+        {buttonText}
     {/if}
 </button>

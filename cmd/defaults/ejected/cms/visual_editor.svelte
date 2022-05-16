@@ -1,8 +1,8 @@
 <script>
     export let content;
     import DynamicFormInput from './dynamic_form_input.svelte';
-    import Buttons from './buttons/buttons.svelte';
-    import Save from './buttons/save.svelte';
+    import ButtonWrapper from './button_wrapper.svelte';
+    import Button from './button.svelte';
 </script>
 
 <form>
@@ -12,10 +12,10 @@
             <DynamicFormInput bind:field={content.fields[label]} {label} />
         </div>
     {/each}
-    <Buttons>
-        <Save mediaList={[{file: content.filepath, contents: JSON.stringify(content.fields, undefined, '\t')}]} action="update" encoding="text" />
+    <ButtonWrapper>
+        <Button mediaList={[{file: content.filepath, contents: JSON.stringify(content.fields, undefined, '\t')}]} buttonText="Publish" action="update" encoding="text" />
         <button>Reset</button>
-    </Buttons>
+    </ButtonWrapper>
 </form>
 
 <style>

@@ -2,7 +2,8 @@
     import { env } from '../env.js';
     import { assets } from './assets.js';
     import MediaGrid from './media_grid.svelte';
-    import Buttons from './buttons/buttons.svelte';
+    import ButtonWrapper from './button_wrapper.svelte';
+    import Button from './button.svelte';
 
     let filters = [];
     let enabledFilters = [];
@@ -79,9 +80,10 @@
     <MediaGrid files={filteredAssets} bind:selectedMedia={selectedMedia} />
 </div>
 {#if selectedMedia.length > 0} 
-    <Buttons>
+    <ButtonWrapper>
         <button on:click={downloadFiles}>Download selected</button> 
-    </Buttons>
+        <Button bind:mediaList={selectedMedia} buttonText="Delete Selected Media" action="delete" encoding="base64" />
+    </ButtonWrapper>
 {/if}
 
 <style>
