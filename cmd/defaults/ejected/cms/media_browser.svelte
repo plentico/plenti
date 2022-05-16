@@ -5,6 +5,7 @@
     import ButtonWrapper from './button_wrapper.svelte';
     import Button from './button.svelte';
 
+    let baseUrl = env.local ? '' : env.baseurl + '/';
     let filters = [];
     let enabledFilters = [];
     let selectedMedia = [];
@@ -48,7 +49,7 @@
                     .slice(1, -1)
                     .some(folder => enabledFilters.includes(folder))
             )
-            .map(asset => env.baseurl + '/' + asset);
+            .map(asset => baseUrl + asset);
 
     const downloadFiles = () => {
         selectedMedia.forEach(mediaFile => {
