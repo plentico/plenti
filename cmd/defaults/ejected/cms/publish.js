@@ -42,9 +42,9 @@ export async function publish(mediaList, action, encoding) {
     mediaList.forEach(mediaItem => {
         actions.push({
             action: action,
-            file_path: mediaItem.file,
+            file_path: action === "delete" ? mediaItem : mediaItem.file,
             encoding: encoding,
-            content: encoding === "base64" ? makeDataStr(mediaItem.contents) : mediaItem.contents,
+            content: action === "delete" ? null : encoding === "base64" ? makeDataStr(mediaItem.contents) : mediaItem.contents,
         });
     });
 

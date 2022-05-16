@@ -81,9 +81,10 @@
     <MediaGrid files={filteredAssets} bind:selectedMedia={selectedMedia} />
 </div>
 {#if selectedMedia.length > 0} 
+    {console.log(selectedMedia)}
     <ButtonWrapper>
         <button on:click={downloadFiles}>Download selected</button> 
-        <Button bind:mediaList={selectedMedia} buttonText="Delete Selected Media" action="delete" encoding="base64" />
+        <Button bind:mediaList={selectedMedia} buttonText="Delete Selected Media" action="delete" encoding="text" />
     </ButtonWrapper>
 {/if}
 
