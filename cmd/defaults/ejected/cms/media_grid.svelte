@@ -27,6 +27,12 @@
             {:else if isImage(file)}
                 <img src={file} />
             {/if}
+            {#if selectedMedia.includes(file)}
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-check" width="65" height="65" viewBox="0 0 24 24" stroke-width="2.5" stroke="#1c7fc7" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M5 12l5 5l10 -10" />
+            </svg>
+            {/if}
         </div>
     {/each}
 </div>
@@ -52,6 +58,14 @@
     }
     .media.selected {
         border: 2px solid #1c7fc7;
+        position: relative;
+        background-color: black;
+    }
+    .media.selected img {
+        opacity: 0.5;
+    }
+    .icon-tabler-check {
+        position: absolute;
     }
     img, embed {
         min-width: 200px;
