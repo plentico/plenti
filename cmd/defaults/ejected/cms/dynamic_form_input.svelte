@@ -94,7 +94,7 @@
     {:else if field.length < 50}
         <input id="{label}" type="text" bind:value={field} />
     {:else}
-        <textarea id="{label}" rows="5" bind:value={field}></textarea>
+        <div id="{label}" class="textarea" contenteditable=true bind:innerHTML={field}></div>
     {/if}
 {:else if field.constructor === true.constructor}
     <input id="{label}" type="checkbox" bind:checked={field} /><span>{field}</span>
@@ -205,9 +205,14 @@
         width: 100%;
         box-sizing: border-box;
     }
-    textarea {
-        box-sizing: border-box;
-        width: 100%;
+    .textarea {
+        background: white;
+        border: 1px solid gainsboro;
+        resize: vertical;
+        overflow: auto;
+        padding: 7px;
+        font-family: sans-serif;
+        font-size: small;
     }
     main {
         position: relative;
