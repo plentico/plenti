@@ -1,10 +1,10 @@
 <script>
     import { env } from '../env.js';
-    import { assets } from './assets.js';
     import MediaGrid from './media_grid.svelte';
     import ButtonWrapper from './button_wrapper.svelte';
     import Button from './button.svelte';
 
+    export let assets;
     let baseUrl = env.local ? '' : env.baseurl + '/';
     let filters = [];
     let enabledFilters = [];
@@ -36,7 +36,6 @@
     }
 
     // Filter assets
-    let filteredAssets;
     $: filteredAssets = assets
             .filter(asset => 
                 enabledFilters.length == 0 ||
@@ -64,7 +63,7 @@
 
     const removeAssets = () => {
         selectedMedia.forEach(m => {
-            filteredAssets = filteredAssets.filter(i => i != m);
+            assets = assets.filter(i => i != m);
         });
         selectedMedia = [];
     }

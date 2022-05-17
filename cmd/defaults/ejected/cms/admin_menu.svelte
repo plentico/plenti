@@ -4,6 +4,9 @@
     import MediaBrowser from "./media_browser.svelte";
     import FileUpload from "./file_upload.svelte";
     import VisualEditor from "./visual_editor.svelte";
+    import allAssets from './assets.js';
+
+    let assets = allAssets;
 
     let showMedia = false;
     const toggleMedia = () => {
@@ -142,7 +145,7 @@
         </div>
       </div>
       {#if activeMedia === 'library'}
-        <MediaBrowser />
+        <MediaBrowser bind:assets={assets} />
       {:else}
         <FileUpload />
       {/if}
