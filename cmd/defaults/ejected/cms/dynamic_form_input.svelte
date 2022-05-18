@@ -82,6 +82,24 @@
     const removeItem = val => {
         field = field.filter(i => i !== val);
     }
+
+    const wrapText = type => {
+        //let element = document.createElement(type);
+        let startEl = '<' + type + '>';
+        let endEl = '</' + type + '>';
+        if (document.getSelection) {
+            let selection = document.getSelection();
+            field = field.replace(selection, startEl + selection + endEl);
+            /*
+            if (selection.rangeCount) {
+                let range = selection.getRangeAt(0).cloneRange();
+                range.surroundContents(element);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
+            */
+        }
+    }
 </script>
 
 {#if field === null}
@@ -94,6 +112,17 @@
     {:else if field.length < 50}
         <input id="{label}" type="text" bind:value={field} />
     {:else}
+        <div class="editor">
+            <button on:click|preventDefault={() => wrapText("strong")} title="Bold the selected text">
+                <b>B</b>
+            </button>
+            <button on:click|preventDefault={() => wrapText("em")} title="Italicize the selected text">
+                <i>I</i>
+            </button>
+            <button on:click|preventDefault={() => wrapText("u")} title="Underline the selected text">
+                <u>U</u>
+            </button>
+        </div>
         <div id="{label}" class="textarea" contenteditable=true bind:innerHTML={field}></div>
     {/if}
 {:else if field.constructor === true.constructor}
@@ -204,6 +233,18 @@
         border-radius: 3px;
         width: 100%;
         box-sizing: border-box;
+    }
+    .editor {
+        display: flex;
+    }
+    .editor button {
+        background: transparent;
+        border: transparent;
+        padding: 8px;
+        cursor: pointer;
+    }
+    .editor button:hover {
+        background: gray;
     }
     .textarea {
         background: white;
