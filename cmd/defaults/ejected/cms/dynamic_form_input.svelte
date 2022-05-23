@@ -83,45 +83,7 @@
         field = field.filter(i => i !== val);
     }
 
-    let allSel = [];
-    let add = true;
-    let editor;
-    const wrapText = type => {
-        let startEl = '<' + type + '>';
-        let endEl = '</' + type + '>';
-        let sel = document.getSelection();
-        let selText = sel.toString();
-        
-        add = true;
-        
-        let range = sel.getRangeAt(0);
-        let cursorStart = range.startOffset;
-        let cursorEnd = range.endOffset;
-        console.log(cursorStart);
-        console.log(cursorEnd);
-
-        allSel.forEach((s, index, object) => {
-            if (selText.includes(s.unwrapped)
-                && s.wrapped.includes(startEl)
-                && s.wrapped.includes(endEl)) {
-                    console.log('Remove wrap');
-                    field = field.replace(s.wrapped, s.unwrapped);
-                    editor.focus();
-                    object.splice(index, 1);
-                    add = false;
-            }
-        });
-
-        console.log(allSel);
-        console.log(add);
-        if (add) {
-            console.log('Add wrap');
-            let wrappedSel = startEl + sel + endEl;
-            field = field.replace(sel, wrappedSel);
-            editor.focus();
-            allSel = [...allSel, {wrapped: wrappedSel, unwrapped: selText}];
-        }
-    }
+    let textarea;
 </script>
 
 {#if field === null}
@@ -135,17 +97,17 @@
         <input id="{label}" type="text" bind:value={field} />
     {:else}
         <div class="editor">
-            <button on:click|preventDefault={() => wrapText("strong")} title="Bold the selected text">
+            <button on:click={textarea.focus()} on:click|preventDefault={() => document.execCommand("bold")} title="Bold the selected text">
                 <b>B</b>
             </button>
-            <button on:click|preventDefault={() => wrapText("em")} title="Italicize the selected text">
+            <button on:click={textarea.focus()} on:click|preventDefault={() => document.execCommand("italic")} title="Italicize the selected text">
                 <i>I</i>
             </button>
-            <button on:click|preventDefault={() => wrapText("u")} title="Underline the selected text">
+            <button on:click={textarea.focus()} on:click|preventDefault={() => document.execCommand("underline")} title="Underline the selected text">
                 <u>U</u>
             </button>
         </div>
-        <div id="{label}" class="textarea" contenteditable=true bind:innerHTML={field} bind:this={editor}></div>
+        <div id="{label}" class="textarea" contenteditable=true bind:innerHTML={field} bind:this={textarea}></div>
     {/if}
 {:else if field.constructor === true.constructor}
     <input id="{label}" type="checkbox" bind:checked={field} /><span>{field}</span>
