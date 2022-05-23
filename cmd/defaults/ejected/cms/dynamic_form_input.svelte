@@ -83,21 +83,34 @@
         field = field.filter(i => i !== val);
     }
 
+    let allSel = [];
+    let add = true;
     const wrapText = type => {
-        //let element = document.createElement(type);
         let startEl = '<' + type + '>';
         let endEl = '</' + type + '>';
-        if (document.getSelection) {
-            let selection = document.getSelection();
-            field = field.replace(selection, startEl + selection + endEl);
-            /*
-            if (selection.rangeCount) {
-                let range = selection.getRangeAt(0).cloneRange();
-                range.surroundContents(element);
-                selection.removeAllRanges();
-                selection.addRange(range);
+        let sel = document.getSelection();
+        let selText = sel.toString();
+        
+        add = true;
+
+        allSel.forEach((s, index, object) => {
+            if (selText.includes(s.unwrapped)
+                && s.wrapped.includes(startEl)
+                && s.wrapped.includes(endEl)) {
+                console.log('Remove wrap');
+                field = field.replace(s.wrapped, s.unwrapped);
+                object.splice(index, 1);
+                add = false;
             }
-            */
+        });
+
+        console.log(allSel);
+        console.log(add);
+        if (add) {
+            console.log('Add wrap');
+            let wrappedSel = startEl + sel + endEl;
+            field = field.replace(sel, wrappedSel);
+            allSel = [...allSel, {wrapped: wrappedSel, unwrapped: selText}];
         }
     }
 </script>
