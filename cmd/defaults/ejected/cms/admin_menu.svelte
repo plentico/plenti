@@ -25,6 +25,15 @@
     const setActiveEditor = selected => {
       activeEditor = selected;
     }
+
+    const horizontalSlide = () => {
+      return 	{
+        delay: 0,
+        duration: 100,
+        css: t =>
+          'width: ' + t * 500 + 'px;'
+      };
+    }
 </script>
 
 <div class="spacer"></div>
@@ -84,8 +93,9 @@
   </a>
 </nav>
 
+<div class={showEditor ? "sidenav-wrapper" : ""}>
 {#if showEditor}
-  <div class="sidenav">
+  <div transition:horizontalSlide|local class={showEditor ? "sidenav" : ""}>
     <div class="selectors">
       <div class="selector {activeEditor === 'visual' ? 'active' : ''}" on:click={() => setActiveEditor('visual')}>
         <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-table" width="30" height="30" viewBox="0 0 24 24" stroke-width="1.5" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -112,6 +122,7 @@
     {/if}
   </div>
 {/if}
+</div>
 
 {#if showMedia}
   <div class="modal-wrapper" on:click={toggleMedia}>
@@ -196,7 +207,14 @@
       transition: 0.5s;
       box-shadow: 1px 0px 2px rgb(207 207 207);
     }
-    .sidenav + :global(main) {
+    :global(body > div),
+    :global(body > section),
+    :global(body > main) {
+      transition: margin-left .1s ease-in-out;
+    }
+    .sidenav-wrapper + :global(div),
+    .sidenav-wrapper + :global(section),
+    .sidenav-wrapper + :global(main) {
       margin-left: 500px;
     }
     .selectors {
