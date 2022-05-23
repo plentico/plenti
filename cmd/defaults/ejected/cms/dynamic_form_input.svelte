@@ -85,6 +85,7 @@
 
     let allSel = [];
     let add = true;
+    let editor;
     const wrapText = type => {
         let startEl = '<' + type + '>';
         let endEl = '</' + type + '>';
@@ -92,15 +93,22 @@
         let selText = sel.toString();
         
         add = true;
+        
+        let range = sel.getRangeAt(0);
+        let cursorStart = range.startOffset;
+        let cursorEnd = range.endOffset;
+        console.log(cursorStart);
+        console.log(cursorEnd);
 
         allSel.forEach((s, index, object) => {
             if (selText.includes(s.unwrapped)
                 && s.wrapped.includes(startEl)
                 && s.wrapped.includes(endEl)) {
-                console.log('Remove wrap');
-                field = field.replace(s.wrapped, s.unwrapped);
-                object.splice(index, 1);
-                add = false;
+                    console.log('Remove wrap');
+                    field = field.replace(s.wrapped, s.unwrapped);
+                    editor.focus();
+                    object.splice(index, 1);
+                    add = false;
             }
         });
 
@@ -110,6 +118,7 @@
             console.log('Add wrap');
             let wrappedSel = startEl + sel + endEl;
             field = field.replace(sel, wrappedSel);
+            editor.focus();
             allSel = [...allSel, {wrapped: wrappedSel, unwrapped: selText}];
         }
     }
@@ -136,7 +145,7 @@
                 <u>U</u>
             </button>
         </div>
-        <div id="{label}" class="textarea" contenteditable=true bind:innerHTML={field}></div>
+        <div id="{label}" class="textarea" contenteditable=true bind:innerHTML={field} bind:this={editor}></div>
     {/if}
 {:else if field.constructor === true.constructor}
     <input id="{label}" type="checkbox" bind:checked={field} /><span>{field}</span>
