@@ -106,6 +106,27 @@
             <button on:click={textarea.focus()} on:click|preventDefault={() => document.execCommand("underline")} title="Underline the selected text">
                 <u>U</u>
             </button>
+            <div class="spacer"></div>
+            <button on:click={textarea.focus()} on:click|preventDefault={() => document.execCommand("insertUnorderedList")}>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-list-numbers-MODIFIED" width="20" height="20" viewBox="0 0 24 24" stroke-width="1.5" stroke="black" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M11 6h9" />
+                    <path d="M11 12h9" />
+                    <path d="M12 18h8" />
+                    <circle cx="5" r="2" cy="7"></circle>
+                    <circle cx="5" r="2" cy="17"></circle>
+                </svg>
+            </button>
+            <button on:click={textarea.focus()} on:click|preventDefault={() => document.execCommand("insertOrderedList")}>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-list-numbers" width="20" height="20" viewBox="0 0 24 24" stroke-width="1.5" stroke="black" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M11 6h9" />
+                    <path d="M11 12h9" />
+                    <path d="M12 18h8" />
+                    <path d="M4 16a2 2 0 1 1 4 0c0 .591 -.5 1 -1 1.5l-3 2.5h4" />
+                    <path d="M6 10v-6l-2 2" />
+                </svg>
+            </button>
         </div>
         <div id="{label}" class="textarea" contenteditable=true bind:innerHTML={field} bind:this={textarea}></div>
     {/if}
@@ -229,6 +250,15 @@
     }
     .editor button:hover {
         background: gray;
+    }
+    .editor svg {
+        display: flex;
+        align-content: center;
+    }
+    .spacer {
+        width: 1px;
+        background: #777;
+        margin: 5px 10px;
     }
     .textarea {
         background: white;
