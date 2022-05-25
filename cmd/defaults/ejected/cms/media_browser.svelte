@@ -5,7 +5,7 @@
     import Button from './button.svelte';
 
     export let assets;
-    let baseUrl = env.local ? '' : env.baseurl + '/';
+    let baseUrl = env.local ? '/' : env.baseurl;
     let filters = [];
     let enabledFilters = [];
     let selectedMedia = [];
