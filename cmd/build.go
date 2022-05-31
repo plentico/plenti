@@ -23,6 +23,9 @@ var VerboseFlag bool
 // BenchmarkFlag provides users with build speed statistics to help identify bottlenecks.
 var BenchmarkFlag bool
 
+// MinifyFlag condenses the JavaScript output so it runs faster in the browser.
+var MinifyFlag bool
+
 func setBuildDir(siteConfig readers.SiteConfig) string {
 	buildDir := siteConfig.BuildDir
 	// Check if directory is overridden by flag.
@@ -52,6 +55,7 @@ func Build() error {
 
 	build.CheckVerboseFlag(VerboseFlag)
 	build.CheckBenchmarkFlag(BenchmarkFlag)
+	build.CheckMinifyFlag(MinifyFlag)
 	var err error
 	// Handle panic when someone tries building outside of a valid Plenti site.
 	defer func() {
@@ -164,4 +168,5 @@ func init() {
 	buildCmd.Flags().StringVarP(&OutputDirFlag, "output", "o", "", "change name of the public build directory")
 	buildCmd.Flags().BoolVarP(&VerboseFlag, "verbose", "v", false, "show log messages")
 	buildCmd.Flags().BoolVarP(&BenchmarkFlag, "benchmark", "b", false, "display build time statistics")
+	buildCmd.Flags().BoolVarP(&MinifyFlag, "minify", "m", true, "minify JS output for faster performance")
 }
