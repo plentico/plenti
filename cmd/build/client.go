@@ -3,6 +3,7 @@ package build
 import (
 	"embed"
 	"fmt"
+	"io"
 	"io/fs"
 	"io/ioutil"
 	"os"
@@ -159,6 +160,13 @@ func Client(buildPath string, defaultsEjectedFS embed.FS) error {
 	if ThemeFs != nil {
 		// A theme is being used, so compile the files from the virtual fs
 		if err := afero.Walk(ThemeFs, "layouts", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
+			if layoutFileInfo.IsDir() {
+				return nil
+			}
+			err = copyNonSvelteFiles(layoutPath, buildPath)
+			if err != nil {
+				return err
+			}
 			compiledComponentCounter, allLayoutsStr, err = compileComponent(err, layoutPath, layoutFileInfo, buildPath, ctx, SSRctx, stylePath, allLayoutsStr, compiledComponentCounter)
 			if err != nil {
 				return err
@@ -170,6 +178,13 @@ func Client(buildPath string, defaultsEjectedFS embed.FS) error {
 	} else {
 		// A theme is NOT being used, so compile the components from the root project
 		if err := filepath.Walk("layouts", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
+			if layoutFileInfo.IsDir() {
+				return nil
+			}
+			err = copyNonSvelteFiles(layoutPath, buildPath)
+			if err != nil {
+				return err
+			}
 			compiledComponentCounter, allLayoutsStr, err = compileComponent(err, layoutPath, layoutFileInfo, buildPath, ctx, SSRctx, stylePath, allLayoutsStr, compiledComponentCounter)
 			if err != nil {
 				return err
@@ -193,6 +208,34 @@ func Client(buildPath string, defaultsEjectedFS embed.FS) error {
 	}
 
 	Log("Number of components compiled: " + strconv.Itoa(compiledComponentCounter))
+	return nil
+}
+
+func copyNonSvelteFiles(layoutPath string, buildPath string) error {
+	if filepath.Ext(layoutPath) != ".svelte" {
+		from, err := os.Open(layoutPath)
+		if err != nil {
+			return fmt.Errorf("Could not open non-svelte layout %s for copying: %w%s\n", layoutPath, err, common.Caller())
+		}
+		defer from.Close()
+
+		destPath := buildPath + "/spa/" + strings.TrimPrefix(layoutPath, "layouts/")
+		// Create any sub directories need for filepath.
+		if err := os.MkdirAll(filepath.Dir(destPath), os.ModePerm); err != nil {
+			return fmt.Errorf("can't make folders for '%s': %w%s\n", destPath, err, common.Caller())
+		}
+
+		to, err := os.Create(destPath)
+		if err != nil {
+			return fmt.Errorf("Could not create non-svelte layout destination %s for copying: %w%s\n", destPath, err, common.Caller())
+		}
+		defer to.Close()
+
+		_, err = io.Copy(to, from)
+		if err != nil {
+			return fmt.Errorf("Could not copy non-svelte layout from source %s to destination: %w%s\n", layoutPath, err, common.Caller())
+		}
+	}
 	return nil
 }
 
