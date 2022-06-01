@@ -43,6 +43,10 @@ func AssetsCopy(buildPath string) error {
 }
 
 func copyAssetsFromTheme(assetsDir string, buildPath string, copiedSourceCounter int) (int, error) {
+
+	// Index of copied assets to list them in media browser
+	var index []string
+
 	if err := afero.Walk(ThemeFs, assetsDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -74,11 +78,18 @@ func copyAssetsFromTheme(assetsDir string, buildPath string, copiedSourceCounter
 
 		}
 
+		index = append(index, path)
 		copiedSourceCounter++
 		return nil
 	}); err != nil {
 		return 0, fmt.Errorf("Could not get asset file from virtual theme build: %w%s\n", err, common.Caller())
 	}
+
+	err := createAssetsIndex(buildPath, index)
+	if err != nil {
+		return copiedSourceCounter, err
+	}
+
 	return copiedSourceCounter, nil
 }
 
@@ -146,15 +157,23 @@ func copyAssetsFromProject(assetsDir string, buildPath string, copiedSourceCount
 		return 0, fmt.Errorf("Could not get asset file: %w%s\n", err, common.Caller())
 	}
 
+	err = createAssetsIndex(buildPath, index)
+	if err != nil {
+		return copiedSourceCounter, err
+	}
+
+	return copiedSourceCounter, nil
+}
+
+func createAssetsIndex(buildPath string, index []string) error {
 	result, err := json.MarshalIndent(index, "", "\t")
 	if err != nil {
-		return copiedSourceCounter, fmt.Errorf("Unable to marshal JSON: %w%s", err, common.Caller())
+		return fmt.Errorf("Unable to marshal JSON: %w%s", err, common.Caller())
 	}
 	result = append(append([]byte("let allAssets = "), result...), []byte(";\nexport default allAssets;")...)
 	err = ioutil.WriteFile(buildPath+"/spa/ejected/cms/assets.js", result, os.ModePerm)
 	if err != nil {
-		return copiedSourceCounter, fmt.Errorf("Unable to write to asset index file: %w%s\n", err, common.Caller())
+		return fmt.Errorf("Unable to write to asset index file: %w%s\n", err, common.Caller())
 	}
-
-	return copiedSourceCounter, nil
+	return nil
 }
