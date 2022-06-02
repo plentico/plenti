@@ -125,6 +125,8 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 	allContentStr := "["
 	// Store each content file in array we can iterate over for creating static html.
 	allContent := []content{}
+	// Start the string that will be used for allBlueprints object.
+	allBlueprintsStr := "const allBlueprints = ["
 
 	// Go through all sub directories in "content/" folder.
 	if ThemeFs != nil {
@@ -132,7 +134,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 			if info.IsDir() {
 				return nil
 			}
-			contentFileCounter, allContentStr, allContent, err = getContent(path, info, err, siteConfig, buildPath, contentJSPath, allContentStr, allContent, contentFileCounter)
+			contentFileCounter, allContentStr, allContent, allBlueprintsStr, err = getContent(path, info, err, siteConfig, buildPath, contentJSPath, allContentStr, allContent, contentFileCounter, allBlueprintsStr)
 			if err != nil {
 				return err
 			}
@@ -145,7 +147,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 			if info.IsDir() {
 				return nil
 			}
-			contentFileCounter, allContentStr, allContent, err = getContent(path, info, err, siteConfig, buildPath, contentJSPath, allContentStr, allContent, contentFileCounter)
+			contentFileCounter, allContentStr, allContent, allBlueprintsStr, err = getContent(path, info, err, siteConfig, buildPath, contentJSPath, allContentStr, allContent, contentFileCounter, allBlueprintsStr)
 			if err != nil {
 				return err
 			}
@@ -157,6 +159,12 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 
 	// End the string that will be used in allContent object.
 	allContentStr = strings.TrimSuffix(allContentStr, ",") + "]"
+	// End the string that will be used in allBlueprints object.
+	allBlueprintsStr = strings.TrimSuffix(allBlueprintsStr, ",") + "];\n\nexport default allBlueprints;"
+	err := writeContentJS(buildPath+"/spa/ejected/blueprints.js", allBlueprintsStr)
+	if err != nil {
+		fmt.Println("Could not write blueprints.js file")
+	}
 
 	for _, currentContent := range allContent {
 
@@ -200,10 +208,10 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 
 func getContent(path string, info os.FileInfo, err error, siteConfig readers.SiteConfig,
 	buildPath string, contentJSPath string, allContentStr string, allContent []content,
-	contentFileCounter int) (int, string, []content, error) {
+	contentFileCounter int, allBlueprintsStr string) (int, string, []content, string, error) {
 
 	if err != nil {
-		return contentFileCounter, allContentStr, allContent, fmt.Errorf("can't stat %s: %w", path, err)
+		return contentFileCounter, allContentStr, allContent, allBlueprintsStr, fmt.Errorf("can't stat %s: %w", path, err)
 	}
 
 	filePath, contentType, fileName := getFileInfo(path)
@@ -211,75 +219,74 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 	// Don't process hidden files, like .DS_Store
 	if fileName[:1] == "." {
 		// Skip silently so we don't stop the build or clutter the terminal
-		return contentFileCounter, allContentStr, allContent, nil
+		return contentFileCounter, allContentStr, allContent, allBlueprintsStr, nil
 	}
 
-	// Don't add _blueprint.json or other special named files starting with underscores.
-	if fileName[:1] != "_" {
+	// Get the contents of the file.
+	fileContentBytes, err := getVirtualFileIfThemeBuild(path)
+	if err != nil {
+		return contentFileCounter, allContentStr, allContent, allBlueprintsStr, fmt.Errorf("file: %s %w%s\n", path, err, common.Caller())
+	}
+	fileContentStr := string(fileContentBytes)
 
-		// Get the contents of the file.
-		fileContentBytes, err := getVirtualFileIfThemeBuild(path)
-		if err != nil {
-			return contentFileCounter, allContentStr, allContent, fmt.Errorf("file: %s %w%s\n", path, err, common.Caller())
-		}
-		fileContentStr := string(fileContentBytes)
+	// Convert path to a route the browser can understand
+	path = makeWebPath(path, fileName)
 
-		// Convert path to a route the browser can understand
-		path = makeWebPath(path, fileName)
+	// Remove the extension (if it exists) from single types since the filename = the type name.
+	contentType = strings.TrimSuffix(contentType, filepath.Ext(contentType))
 
-		// Remove the extension (if it exists) from single types since the filename = the type name.
-		contentType = strings.TrimSuffix(contentType, filepath.Ext(contentType))
+	// Get field key/values from content source.
+	typeFields := readers.GetTypeFields(fileContentBytes)
+	// Setup regex to find field name.
+	reField := regexp.MustCompile(`:fields\((.*?)\)`)
+	// Check for path overrides from plenti.json config file.
+	for configContentType, slug := range siteConfig.Routes {
+		if configContentType == contentType {
+			// Replace :filename.
+			slug = strings.Replace(slug, ":filename", strings.TrimSuffix(fileName, filepath.Ext(fileName)), -1)
 
-		// Get field key/values from content source.
-		typeFields := readers.GetTypeFields(fileContentBytes)
-		// Setup regex to find field name.
-		reField := regexp.MustCompile(`:fields\((.*?)\)`)
-		// Check for path overrides from plenti.json config file.
-		for configContentType, slug := range siteConfig.Routes {
-			if configContentType == contentType {
-				// Replace :filename.
-				slug = strings.Replace(slug, ":filename", strings.TrimSuffix(fileName, filepath.Ext(fileName)), -1)
-
-				// Replace :fields().
-				fieldReplacements := reField.FindAllStringSubmatch(slug, -1)
-				// Loop through all :fields() replacements found in config file.
-				for _, replacement := range fieldReplacements {
-					// Loop through all top level keys found in content source file.
-					for field, fieldValue := range typeFields.Fields {
-						// Check if field name in the replacement pattern is found in data source.
-						if replacement[1] == field {
-							// Use the field value in the path.
-							slug = strings.ReplaceAll(slug, replacement[0], fieldValue)
-						}
+			// Replace :fields().
+			fieldReplacements := reField.FindAllStringSubmatch(slug, -1)
+			// Loop through all :fields() replacements found in config file.
+			for _, replacement := range fieldReplacements {
+				// Loop through all top level keys found in content source file.
+				for field, fieldValue := range typeFields.Fields {
+					// Check if field name in the replacement pattern is found in data source.
+					if replacement[1] == field {
+						// Use the field value in the path.
+						slug = strings.ReplaceAll(slug, replacement[0], fieldValue)
 					}
 				}
-				path = slug
 			}
+			path = slug
 		}
+	}
 
-		// Initialize vars for path with replacement patterns still intact.
-		var pagerPath string
-		var pagerDestPath string
-		// If there is a /:paginate() replacement found.
-		if rePaginate.MatchString(path) {
-			// Save path before slugifying to preserve pagination.
-			pagerPath = path
-			// Get Destination path before slugifying to preserve pagination.
-			pagerDestPath = buildPath + "/" + path + "/index.html"
-			// Remove /:pagination()
-			path = rePaginate.ReplaceAllString(path, "")
-		}
+	// Initialize vars for path with replacement patterns still intact.
+	var pagerPath string
+	var pagerDestPath string
+	// If there is a /:paginate() replacement found.
+	if rePaginate.MatchString(path) {
+		// Save path before slugifying to preserve pagination.
+		pagerPath = path
+		// Get Destination path before slugifying to preserve pagination.
+		pagerDestPath = buildPath + "/" + path + "/index.html"
+		// Remove /:pagination()
+		path = rePaginate.ReplaceAllString(path, "")
+	}
 
-		// Slugify output using reSlugify regex defined above.
-		path = strings.Trim(reSlugify.ReplaceAllString(strings.ToLower(path), "-"), "-")
+	// Slugify output using reSlugify regex defined above.
+	path = strings.Trim(reSlugify.ReplaceAllString(strings.ToLower(path), "-"), "-")
 
-		path = fixBlankPaths(path)
+	path = fixBlankPaths(path)
 
-		path = removeExtraSlashes(path)
+	path = removeExtraSlashes(path)
 
-		destPath := buildPath + "/" + path + "/index.html"
+	destPath := buildPath + "/" + path + "/index.html"
 
-		contentDetailsStr := "{\n" +
+	// Don't add _blueprint.json or other special named files starting with underscores.
+	if fileName[:1] == "_" {
+		blueprintDetailsStr := "{\n" +
 			"\"pager\": 1,\n" +
 			"\"type\": \"" + contentType + "\",\n" +
 			"\"path\": \"" + path + "\",\n" +
@@ -287,35 +294,49 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 			"\"filename\": \"" + fileName + "\",\n" +
 			"\"fields\": " + fileContentStr + "\n}"
 
-		// Write to the content.js client data source file.
-		if err = writeContentJS(contentJSPath, contentDetailsStr+","); err != nil {
-			return contentFileCounter, allContentStr, allContent, fmt.Errorf("file: %s %w%s\n", contentJSPath, err, common.Caller())
-		}
-
 		// Remove newlines, tabs, and extra space.
-		encodedContentDetails := encodeString(contentDetailsStr)
+		encodedBlueprintDetails := encodeString(blueprintDetailsStr)
 		// Add info for being referenced in allContent object.
-		allContentStr = allContentStr + encodedContentDetails + ","
+		allBlueprintsStr = allBlueprintsStr + encodedBlueprintDetails + ","
 
-		content := content{
-			contentType:      contentType,
-			contentPath:      path,
-			contentDest:      destPath,
-			contentDetails:   encodedContentDetails,
-			contentFilepath:  filePath,
-			contentFilename:  fileName,
-			contentFields:    encodeString(fileContentStr),
-			contentPagerDest: pagerDestPath,
-			contentPagerPath: pagerPath,
-		}
-		allContent = append(allContent, content)
-
-		// Increment counter for logging purposes.
-		contentFileCounter++
-
+		return contentFileCounter, allContentStr, allContent, allBlueprintsStr, nil
 	}
 
-	return contentFileCounter, allContentStr, allContent, nil
+	contentDetailsStr := "{\n" +
+		"\"pager\": 1,\n" +
+		"\"type\": \"" + contentType + "\",\n" +
+		"\"path\": \"" + path + "\",\n" +
+		"\"filepath\": \"" + filePath + "\",\n" +
+		"\"filename\": \"" + fileName + "\",\n" +
+		"\"fields\": " + fileContentStr + "\n}"
+
+	// Write to the content.js client data source file.
+	if err = writeContentJS(contentJSPath, contentDetailsStr+","); err != nil {
+		return contentFileCounter, allContentStr, allContent, allBlueprintsStr, fmt.Errorf("file: %s %w%s\n", contentJSPath, err, common.Caller())
+	}
+
+	// Remove newlines, tabs, and extra space.
+	encodedContentDetails := encodeString(contentDetailsStr)
+	// Add info for being referenced in allContent object.
+	allContentStr = allContentStr + encodedContentDetails + ","
+
+	content := content{
+		contentType:      contentType,
+		contentPath:      path,
+		contentDest:      destPath,
+		contentDetails:   encodedContentDetails,
+		contentFilepath:  filePath,
+		contentFilename:  fileName,
+		contentFields:    encodeString(fileContentStr),
+		contentPagerDest: pagerDestPath,
+		contentPagerPath: pagerPath,
+	}
+	allContent = append(allContent, content)
+
+	// Increment counter for logging purposes.
+	contentFileCounter++
+
+	return contentFileCounter, allContentStr, allContent, allBlueprintsStr, nil
 }
 
 func getFileInfo(path string) (string, string, string) {
