@@ -3,6 +3,8 @@
     import ButtonWrapper from './button_wrapper.svelte';
     import Button from './button.svelte';
 
+    export let assets;
+
     let mediaList = [];
     const createMediaList = file => {
         let reader = new FileReader();
@@ -46,13 +48,21 @@
     }
 
     const getThumbnails = mediaList => mediaList.map(i => i.contents);
+
+    const addUploadToLibrary = () => {
+        mediaList.forEach(m => {
+            assets = [...assets, m.contents];
+        });
+    }
 </script>
 
 <div class="upload-wrapper">
     {#if mediaList.length > 0}
         <MediaGrid files={getThumbnails(mediaList)} bind:selectedMedia={selectedMedia} />
         <ButtonWrapper>
-            <Button bind:mediaList={mediaList} buttonText="Save Media" action="create" encoding="base64" />
+            <div on:click={addUploadToLibrary}>
+                <Button bind:mediaList={mediaList} buttonText="Save Media" action="create" encoding="base64" />
+            </div>
             {#if selectedMedia.length > 0}
                 <button on:click|preventDefault="{removeSelectedMedia}">Discard selected</button> 
             {:else}

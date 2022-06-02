@@ -127,7 +127,7 @@
       {#if activeMedia === 'library'}
         <MediaBrowser bind:assets={assets} />
       {:else}
-        <FileUpload />
+        <FileUpload bind:assets={assets} />
       {/if}
     </div>
   </div>

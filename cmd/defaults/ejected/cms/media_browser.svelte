@@ -10,13 +10,21 @@
     let enabledFilters = [];
     let selectedMedia = [];
 
+    const isDataImage = asset => {
+        let extensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'avif', 'apng'];
+        let reImage = new RegExp("^data:image\/(?:" + extensions.join("|") + ")(?:;charset=utf-8)?;base64,(?:[A-Za-z0-9]|[+/])+={0,2}");
+        return reImage.test(asset);
+    }
+
     for (const asset of assets) {
-        // Remove first (assets folder) and last (filename) elements.
-        const folders = asset.split('/').slice(1, -1);
-        for (const folder of folders) {
-            if (!filters.includes(folder)) {
-                // Add filter and force update
-                filters = [...filters, folder];
+        if (!isDataImage(asset)) {
+            // Remove first (assets folder) and last (filename) elements.
+            const folders = asset.split('/').slice(1, -1);
+            for (const folder of folders) {
+                if (!filters.includes(folder)) {
+                    // Add filter and force update
+                    filters = [...filters, folder];
+                }
             }
         }
     }
@@ -45,7 +53,7 @@
                     .slice(1, -1)
                     .some(folder => enabledFilters.includes(folder))
             )
-            .map(asset => baseUrl + asset);
+            .map(asset => isDataImage(asset) ? asset : baseUrl + asset);
 
     const downloadFiles = () => {
         selectedMedia.forEach(mediaFile => {
