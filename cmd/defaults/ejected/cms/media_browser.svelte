@@ -1,11 +1,9 @@
 <script>
-    import { env } from '../env.js';
     import MediaGrid from './media_grid.svelte';
     import ButtonWrapper from './button_wrapper.svelte';
     import Button from './button.svelte';
 
     export let assets;
-    let baseUrl = env.local ? '/' : env.baseurl;
     let filters = [];
     let enabledFilters = [];
     let selectedMedia = [];
@@ -45,15 +43,16 @@
 
     // Filter assets
     $: filteredAssets = assets
-            .filter(asset => 
-                enabledFilters.length == 0 ||
-                asset
-                    .split('/')
-                    // Remove first (assets folder) and last (filename) elements.
-                    .slice(1, -1)
-                    .some(folder => enabledFilters.includes(folder))
-            )
-            //.map(asset => isDataImage(asset) ? asset : baseUrl + asset);
+        .filter(asset => 
+            // Show all if no filters selected
+            enabledFilters.length == 0 ||
+            // Or make sure the folder is in the filepath for the asset
+            asset
+                .split('/')
+                // Remove first (assets folder) and last (filename) elements.
+                .slice(1, -1)
+                .some(folder => enabledFilters.includes(folder))
+        );
 
     const downloadFiles = () => {
         selectedMedia.forEach(mediaFile => {
@@ -71,11 +70,7 @@
 
     const removeAssets = () => {
         selectedMedia.forEach(m => {
-            assets = assets.filter(i => {
-                console.log(m);
-                console.log(i);
-                return i != m
-            });
+            assets = assets.filter(i => i != m);
         });
         selectedMedia = [];
     }
