@@ -97,7 +97,8 @@ func doTypeContentPath(typeName string) error {
 	if err := os.MkdirAll(typeContentPath, os.ModePerm); err != nil {
 		return fmt.Errorf("Can't create type named \"%s\": %w%s\n", typeName, err, common.Caller())
 	}
-	if _, err := os.OpenFile(typeContentPath+"/_blueprint.json", os.O_RDONLY|os.O_CREATE, os.ModePerm); err != nil {
+	err := createJSONFile(typeContentPath + "/_blueprint.json")
+	if err != nil {
 		return fmt.Errorf("Can't create _blueprint.json for type \"%s\": %w%s\n", typeName, err, common.Caller())
 	}
 	return nil
@@ -114,19 +115,23 @@ func singleTypeProcess(typeName string) error {
 
 	fmt.Printf("Creating new single type content source: %s\n", singleTypePath)
 
-	f, err := os.OpenFile(singleTypePath, os.O_RDWR|os.O_CREATE, os.ModePerm)
-
+	err = createJSONFile(singleTypePath)
 	if err != nil {
-		errorMsg := fmt.Errorf("Can't create single type named \"%s\": %w%s\n", typeName, err, common.Caller())
-		fmt.Println(errorMsg)
-		return errorMsg
+		return fmt.Errorf("Can't create single type content source for: \"%s\": %w%s\n", typeName, err, common.Caller())
+	}
+
+	return nil
+}
+
+func createJSONFile(filePath string) error {
+	f, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("Can't create file: \"%s\": %w%s\n", filePath, err, common.Caller())
 	}
 
 	_, err = f.Write([]byte("{}"))
 	if err != nil {
-		err = fmt.Errorf("Can't add empty curly brackets to single type named \"%s\": %w%s\n", typeName, err, common.Caller())
-		fmt.Println(err)
-		return err
+		return fmt.Errorf("Can't add empty curly brackets to file: \"%s\": %w%s\n", filePath, err, common.Caller())
 	}
 	// can be non-nil error
 	return f.Close()

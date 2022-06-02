@@ -4,6 +4,7 @@
     import MediaBrowser from "./media_browser.svelte";
     import FileUpload from "./file_upload.svelte";
     import VisualEditor from "./visual_editor.svelte";
+    import AddContent from "./add_content.svelte";
     import allAssets from './assets.js';
     import { env } from '../env.js';
 
@@ -26,6 +27,11 @@
     let activeEditor = "visual";
     const setActiveEditor = selected => {
       activeEditor = selected;
+    }
+
+    let showAdd = false;
+    const toggleAdd = () => {
+        showAdd = !showAdd;
     }
 
     const horizontalSlide = () => {
@@ -66,7 +72,7 @@
     {/if}
   </a>
   <span class="gap"></span>
-  <a href=".">
+  <a href="." on:click|preventDefault={toggleAdd}>
     <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-circle-plus" width="30" height="30" viewBox="0 0 24 24" stroke-width="2" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
       <circle cx="12" cy="12" r="9" />
@@ -133,6 +139,22 @@
       {/if}
     </div>
   </div>
+{/if}
+
+{#if showAdd}
+  <div class="modal-wrapper" on:click={toggleAdd}>
+    <div class="modal-close">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-x" width="35" height="35" viewBox="5 5 14 14" stroke-width="1.5" stroke="white" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+    </div>
+    <div class="modal" on:click|stopPropagation>
+      <AddContent />
+    </div>
+  </div>
+  
 {/if}
 
 <div class={showEditor ? "sidenav-wrapper" : ""}>
