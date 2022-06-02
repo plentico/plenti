@@ -5,8 +5,10 @@
     import FileUpload from "./file_upload.svelte";
     import VisualEditor from "./visual_editor.svelte";
     import allAssets from './assets.js';
+    import { env } from '../env.js';
 
-    let assets = allAssets;
+    let baseUrl = env.local ? '/' : env.baseurl;
+    let assets = allAssets.map(asset => baseUrl + asset);
 
     let showMedia = false;
     const toggleMedia = () => {

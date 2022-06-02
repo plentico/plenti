@@ -53,7 +53,7 @@
                     .slice(1, -1)
                     .some(folder => enabledFilters.includes(folder))
             )
-            .map(asset => isDataImage(asset) ? asset : baseUrl + asset);
+            //.map(asset => isDataImage(asset) ? asset : baseUrl + asset);
 
     const downloadFiles = () => {
         selectedMedia.forEach(mediaFile => {
@@ -71,7 +71,11 @@
 
     const removeAssets = () => {
         selectedMedia.forEach(m => {
-            assets = assets.filter(i => i != m);
+            assets = assets.filter(i => {
+                console.log(m);
+                console.log(i);
+                return i != m
+            });
         });
         selectedMedia = [];
     }
