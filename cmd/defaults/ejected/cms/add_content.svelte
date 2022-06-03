@@ -2,9 +2,24 @@
     import blueprints from '../blueprints.js';
     import ButtonWrapper from './button_wrapper.svelte';
 
+    let filename = "";
+
     let selectedType;
     const setType = type => {
         selectedType = type;
+    }
+
+    let validationErrors = [];
+    const validateFilename = () => {
+        // Reset errors before rechecking
+        validationErrors = [];
+
+        if (filename.length == 0) {
+            validationErrors = [...validationErrors, "Empty filename is not allowed"];
+        }
+        if (filename.indexOf(' ') >= 0) {
+            validationErrors = [...validationErrors, "Spaces not allowed in filename"];
+        }
     }
 
 </script>
@@ -13,11 +28,18 @@
     <h1>Set filename for content:</h1>
     <div class="filename">
         <span>content/{selectedType}/</span>
-        <input placeholder="filename" />
+        <input placeholder="filename" bind:value={filename} class="{validationErrors.length > 0 ? 'error' : ''}" />
         <span>.json</span>
     </div>
+    {#if validationErrors}
+        <ul class="errors">
+        {#each validationErrors as error}
+            <li>{error}</li>
+        {/each}
+        </ul>
+    {/if}
     <ButtonWrapper>
-        <button class="button">Save</button>
+        <button class="button" on:click={validateFilename}>Set Filename</button>
         <button class="button" on:click={() => setType(null)}>Go back</button>
     </ButtonWrapper>
 {:else}
@@ -62,7 +84,13 @@
         padding: 0 5px;
         width: 55%;
     }
+    input.error {
+        background-color: #ffc0c0;
+    }
     .button {
         margin: 25px 0;
+    }
+    .errors {
+        color: red;
     }
 </style>
