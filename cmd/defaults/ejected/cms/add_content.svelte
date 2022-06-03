@@ -18,6 +18,7 @@
     </div>
     <ButtonWrapper>
         <button class="button">Save</button>
+        <button class="button" on:click={() => setType(null)}>Go back</button>
     </ButtonWrapper>
 {:else}
 <h1>Add content of type:</h1>
@@ -34,6 +35,7 @@
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 10px;
+        margin-bottom: 25px;
     }
     .blueprint {
         border-radius: 6px;
@@ -50,6 +52,15 @@
     .blueprint:hover {
         background-color: #1c7fc7;
         color: white;
+    }
+    .filename input {
+        background: #ededed;
+        border: none;
+        border-bottom: 3px solid;
+        line-height: 2rem;
+        font-size: 1.5rem;
+        padding: 0 5px;
+        width: 55%;
     }
     .button {
         margin: 25px 0;
