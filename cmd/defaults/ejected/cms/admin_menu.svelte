@@ -150,7 +150,7 @@
             <line x1="6" y1="6" x2="18" y2="18" />
         </svg>
     </div>
-    <div class="modal" on:click|stopPropagation>
+    <div class="modal small" on:click|stopPropagation>
       <AddContent />
     </div>
   </div>
@@ -281,6 +281,10 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
+    }
+    .modal.small {
+      width: 40%;
+      height: auto;
     }
     .modal-close {
       cursor: pointer;

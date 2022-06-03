@@ -1,31 +1,57 @@
 <script>
     import blueprints from '../blueprints.js';
+    import ButtonWrapper from './button_wrapper.svelte';
+
+    let selectedType;
+    const setType = type => {
+        selectedType = type;
+    }
+
 </script>
 
+{#if selectedType}
+    <h1>Set filename for content:</h1>
+    <div class="filename">
+        <span>content/{selectedType}/</span>
+        <input placeholder="filename" />
+        <span>.json</span>
+    </div>
+    <ButtonWrapper>
+        <button class="button">Save</button>
+    </ButtonWrapper>
+{:else}
 <h1>Add content of type:</h1>
 
 <div class="blueprints">
     {#each blueprints as blueprint}
-        <div class="blueprint">{blueprint.type}</div>
+        <button on:click={() => setType(blueprint.type)} class="blueprint">{blueprint.type}</button>
     {/each}
 </div>
+{/if}
 
 <style>
     .blueprints {
         display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 40px;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
     }
     .blueprint {
-        background-color: #1c7fc7;
-        color: white;
         border-radius: 6px;
-        min-height: 100px;
+        min-height: 50px;
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: bold;
-        font-size: 1.25rem;
         cursor: pointer;
+        border: 2px solid #1c7fc7;
+        color: #1c7fc7;
+        background-color: transparent;
+    }
+    .blueprint:hover {
+        background-color: #1c7fc7;
+        color: white;
+    }
+    .button {
+        margin: 25px 0;
     }
 </style>
