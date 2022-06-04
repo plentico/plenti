@@ -2,6 +2,7 @@
     import blueprints from '../blueprints.js';
     import ButtonWrapper from './button_wrapper.svelte';
 
+    export let showAdd;
     let filename = "";
 
     let selectedType;
@@ -61,6 +62,12 @@
         }
         if (filename.indexOf('<') >= 0 || filename.indexOf('>') >= 0) {
             validationErrors = [...validationErrors, "No opening or closing angle brackets < > allowed in filename"];
+        }
+
+        // No errors, redirect to "add" page
+        if (validationErrors.length === 0) {
+            window.history.pushState('', '', '/add/' + selectedType);
+            showAdd = false; 
         }
     }
 
