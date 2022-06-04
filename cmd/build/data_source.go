@@ -294,10 +294,7 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 			"\"filename\": \"" + fileName + "\",\n" +
 			"\"fields\": " + fileContentStr + "\n}"
 
-		// Remove newlines, tabs, and extra space.
-		encodedBlueprintDetails := encodeString(blueprintDetailsStr)
-		// Add info for being referenced in allContent object.
-		allBlueprintsStr = allBlueprintsStr + encodedBlueprintDetails + ","
+		allBlueprintsStr = allBlueprintsStr + blueprintDetailsStr + ","
 
 		return contentFileCounter, allContentStr, allContent, allBlueprintsStr, nil
 	}

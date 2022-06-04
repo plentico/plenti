@@ -53,13 +53,25 @@
     });
   });
 
-  router.listen();
-
   // Git-CMS
   import adminMenu from './cms/admin_menu.svelte';
   import { user } from './cms/auth.js';
+  import allBlueprints from './blueprints.js';
   if ($user.isBeingAuthenticated) { 
     $user.finishAuthentication(params);
   }
+
+  if ($user.isAuthenticated) {
+    allBlueprints.forEach(blueprint => {
+      router.on((env.local ? '' : env.baseurl) + "add/" + blueprint.type, () => {
+        import('../content/' + blueprint.type + '.js').then(m => {
+          content = blueprint;
+          layout = m.default;
+        }).catch(handle404);
+      });
+    });
+  }
+
+  router.listen();
 
 </script>
