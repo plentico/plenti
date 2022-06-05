@@ -2,7 +2,7 @@
     import blueprints from '../blueprints.js';
     import ButtonWrapper from './button_wrapper.svelte';
 
-    export let showAdd;
+    export let showAdd, showEditor;
     let filename = "";
 
     let selectedType;
@@ -68,6 +68,7 @@
         if (validationErrors.length === 0) {
             window.history.pushState('', '', '/add/' + selectedType);
             showAdd = false; 
+            showEditor = true;
         }
     }
 
