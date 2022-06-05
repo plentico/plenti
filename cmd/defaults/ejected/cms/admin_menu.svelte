@@ -10,6 +10,7 @@
 
     let baseUrl = env.local ? '/' : env.baseurl;
     let assets = allAssets.map(asset => baseUrl + asset);
+    let blueprintFilename = "";
 
     let showMedia = false;
     const toggleMedia = () => {
@@ -151,7 +152,7 @@
         </svg>
     </div>
     <div class="modal small" on:click|stopPropagation>
-      <AddContent bind:showAdd bind:showEditor bind:content />
+      <AddContent bind:showAdd bind:showEditor bind:content bind:filename={blueprintFilename} />
     </div>
   </div>
   
@@ -182,7 +183,7 @@
     {#if activeEditor === 'code'}
       <JSONEditor bind:content />
     {:else}
-      <VisualEditor bind:content />
+      <VisualEditor bind:content {blueprintFilename} />
     {/if}
   </div>
 {/if}
