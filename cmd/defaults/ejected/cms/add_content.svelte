@@ -2,7 +2,7 @@
     import blueprints from '../blueprints.js';
     import ButtonWrapper from './button_wrapper.svelte';
 
-    export let showAdd, showEditor;
+    export let showAdd, showEditor, content;
     let filename = "";
 
     let selectedType;
@@ -66,6 +66,7 @@
 
         // No errors, redirect to "add" page
         if (validationErrors.length === 0) {
+            content.filepath = content.filepath.replace("_blueprint.json", filename + ".json");
             window.history.pushState('', '', '/add/' + selectedType);
             showAdd = false; 
             showEditor = true;
@@ -75,7 +76,7 @@
 </script>
 
 {#if selectedType}
-    <h1>Set filename for content:</h1>
+    <h1>Set {selectedType} filename:</h1>
     <div class="filename">
         <span>content/{selectedType}/</span>
         <input placeholder="filename" bind:value={filename} class="{validationErrors.length > 0 ? 'error' : ''}" />

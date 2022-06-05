@@ -133,9 +133,9 @@
         </div>
       </div>
       {#if activeMedia === 'library'}
-        <MediaBrowser bind:assets={assets} />
+        <MediaBrowser bind:assets />
       {:else}
-        <FileUpload bind:assets={assets} />
+        <FileUpload bind:assets />
       {/if}
     </div>
   </div>
@@ -151,7 +151,7 @@
         </svg>
     </div>
     <div class="modal small" on:click|stopPropagation>
-      <AddContent bind:showAdd bind:showEditor />
+      <AddContent bind:showAdd bind:showEditor bind:content />
     </div>
   </div>
   
@@ -180,9 +180,9 @@
       </div>
     </div>
     {#if activeEditor === 'code'}
-      <JSONEditor bind:content={content} />
+      <JSONEditor bind:content />
     {:else}
-      <VisualEditor bind:content={content} />
+      <VisualEditor bind:content />
     {/if}
   </div>
 {/if}
