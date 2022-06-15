@@ -53,6 +53,25 @@
     });
   });
 
+  router.listen();
+
+  const navigateHashLocation = () => {
+    if (location.hash.startsWith('#add/') && $user.isAuthenticated) {
+      const [type, filename] = location.hash.substring('#add/'.length).split('/');
+      const blueprint = allBlueprints.find(blueprint => blueprint.type == type);
+      if (type && filename && blueprint) {
+        import('../content/' + type + '.js').then(m => {
+            content = blueprint;
+            content.filepath = content.filepath.replace('_blueprint.json', filename + '.json');
+            layout = m.default;
+        }).catch(handle404);
+      }
+    }
+  };
+  window.addEventListener('hashchange', navigateHashLocation);
+  navigateHashLocation();
+
+
   // Git-CMS
   import adminMenu from './cms/admin_menu.svelte';
   import { user } from './cms/auth.js';
@@ -60,18 +79,4 @@
   if ($user.isBeingAuthenticated) { 
     $user.finishAuthentication(params);
   }
-
-  if ($user.isAuthenticated) {
-    allBlueprints.forEach(blueprint => {
-      router.on((env.local ? '' : env.baseurl) + "add/" + blueprint.type, () => {
-        import('../content/' + blueprint.type + '.js').then(m => {
-          content = blueprint;
-          layout = m.default;
-        }).catch(handle404);
-      });
-    });
-  }
-
-  router.listen();
-
 </script>

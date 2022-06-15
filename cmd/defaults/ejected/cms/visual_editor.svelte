@@ -16,9 +16,7 @@
         <Button
             mediaList={[
                 {
-                    file: content.filename === '_blueprint.json' ?
-                        content.filepath.replace("_blueprint.json", blueprintFilename + ".json") :
-                        content.filepath,
+                    file: content.filepath,
                     contents: JSON.stringify(content.fields, undefined, '\t'),
                 },
             ]}

@@ -66,8 +66,7 @@
 
         // No errors, redirect to "add" page
         if (validationErrors.length === 0) {
-            //content.filepath = content.filepath.replace("_blueprint.json", filename + ".json");
-            window.history.pushState('', '', '/add/' + selectedType);
+            location.hash = '#add/' + selectedType + '/' + filename;
             showAdd = false; 
             showEditor = true;
         }
