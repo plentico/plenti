@@ -13,7 +13,18 @@
         </div>
     {/each}
     <ButtonWrapper>
-        <Button mediaList={[{file: content.filename === '_blueprint.json' ? content.filepath.replace("_blueprint.json", blueprintFilename + ".json") : content.filepath, contents: JSON.stringify(content.fields, undefined, '\t')}]} buttonText="Publish" action="{content.filename === '_blueprint.json' ? 'create' : 'update'}" encoding="text" />
+        <Button
+            mediaList={[
+                {
+                    file: content.filename === '_blueprint.json' ?
+                        content.filepath.replace("_blueprint.json", blueprintFilename + ".json") :
+                        content.filepath,
+                    contents: JSON.stringify(content.fields, undefined, '\t'),
+                },
+            ]}
+            buttonText="Publish"
+            action="{content.filename === '_blueprint.json' ? 'create' : 'update'}"
+            encoding="text" />
         <button>Reset</button>
     </ButtonWrapper>
 </form>
