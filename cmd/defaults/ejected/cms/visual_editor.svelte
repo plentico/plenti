@@ -21,7 +21,7 @@
                 },
             ]}
             buttonText="Publish"
-            action="{content.filename === '_blueprint.json' ? 'create' : 'update'}"
+            action={content.isNew ? 'create' : 'update'}
             encoding="text" />
         <button>Reset</button>
     </ButtonWrapper>

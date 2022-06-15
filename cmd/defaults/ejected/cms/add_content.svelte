@@ -66,6 +66,7 @@
 
         // No errors, redirect to "add" page
         if (validationErrors.length === 0) {
+            history.pushState(null, '', '/');
             location.hash = '#add/' + selectedType + '/' + filename;
             showAdd = false; 
             showEditor = true;
