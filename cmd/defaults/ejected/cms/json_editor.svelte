@@ -37,7 +37,16 @@
 <form>
     <div class="editor-container" bind:this={container}></div>
     <ButtonWrapper>
-        <Button mediaList={[{file: content.filepath, contents: JSON.stringify(content.fields, undefined, '\t')}]} buttonText="Publish" action="update" encoding="text" />
+        <Button
+            mediaList={[
+                {
+                    file: content.filepath,
+                    contents: JSON.stringify(content.fields, undefined, '\t')
+                }
+            ]}
+            buttonText="Publish"
+            action={content.isNew ? 'create' : 'update'}
+            encoding="text" />
         <button>Reset</button>
     </ButtonWrapper>
 </form>

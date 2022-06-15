@@ -53,6 +53,60 @@
     });
   });
 
+  router.listen();
+
+  const deepClone = (value) => {
+    if (value instanceof Array) {
+      const clone = [];
+      for (const element of value) {
+        clone.push(deepClone(element));
+      }
+      return clone;
+    } else if (typeof value === 'object') {
+      const clone = {};
+      for (const key in value) {
+        clone[key] = deepClone(value[key]);
+      }
+      return clone;
+    } else {
+      return value;
+    }
+  };
+
+  const navigateHashLocation = () => {
+    if (location.pathname != '/') {
+      return;
+    }
+
+    if (location.hash.startsWith('#add/') && $user.isAuthenticated) {
+      const [type, filename] = location.hash.substring('#add/'.length).split('/');
+      const blueprint = allBlueprints.find(blueprint => blueprint.type == type);
+      const existingPage = allContent.find(content =>
+        content.type == type &&
+        content.filename == filename + '.json'
+      );
+
+      if (type && filename && blueprint) {
+        import('../content/' + type + '.js').then(m => {
+          if (existingPage) {
+            history.replaceState(null, '', existingPage.path);
+            content = existingPage;
+            layout = m.default;
+          } else {
+            content = deepClone(blueprint);
+            content.isNew = true;
+            content.filename = filename + '.json';
+            content.filepath = content.filepath.replace('_blueprint.json', filename + '.json');
+            layout = m.default;
+          }
+        }).catch(handle404);
+      }
+    }
+  };
+  window.addEventListener('hashchange', navigateHashLocation);
+  navigateHashLocation();
+
+
   // Git-CMS
   import adminMenu from './cms/admin_menu.svelte';
   import { user } from './cms/auth.js';
@@ -60,18 +114,4 @@
   if ($user.isBeingAuthenticated) { 
     $user.finishAuthentication(params);
   }
-
-  if ($user.isAuthenticated) {
-    allBlueprints.forEach(blueprint => {
-      router.on((env.local ? '' : env.baseurl) + "add/" + blueprint.type, () => {
-        import('../content/' + blueprint.type + '.js').then(m => {
-          content = blueprint;
-          layout = m.default;
-        }).catch(handle404);
-      });
-    });
-  }
-
-  router.listen();
-
 </script>
