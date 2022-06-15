@@ -55,13 +55,31 @@
 
   router.listen();
 
+  const deepClone = (value) => {
+    if (value instanceof Array) {
+      const clone = [];
+      for (const element of value) {
+        clone.push(deepClone(element));
+      }
+      return clone;
+    } else if (typeof value === 'object') {
+      const clone = {};
+      for (const key in value) {
+        clone[key] = deepClone(value[key]);
+      }
+      return clone;
+    } else {
+      return value;
+    }
+  };
+
   const navigateHashLocation = () => {
     if (location.hash.startsWith('#add/') && $user.isAuthenticated) {
       const [type, filename] = location.hash.substring('#add/'.length).split('/');
       const blueprint = allBlueprints.find(blueprint => blueprint.type == type);
       if (type && filename && blueprint) {
         import('../content/' + type + '.js').then(m => {
-            content = blueprint;
+            content = deepClone(blueprint);
             content.filepath = content.filepath.replace('_blueprint.json', filename + '.json');
             layout = m.default;
         }).catch(handle404);
