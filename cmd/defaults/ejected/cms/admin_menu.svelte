@@ -31,9 +31,6 @@
     }
 
     let showAdd = false;
-    const toggleAdd = () => {
-        showAdd = !showAdd;
-    }
 
     const horizontalSlide = () => {
       return 	{
@@ -73,7 +70,7 @@
     {/if}
   </a>
   <span class="gap"></span>
-  <a href="." on:click|preventDefault={toggleAdd}>
+  <a href="." on:click|preventDefault={() => { blueprintFilename = ""; showAdd = true; }}>
     <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-circle-plus" width="30" height="30" viewBox="0 0 24 24" stroke-width="2" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
       <circle cx="12" cy="12" r="9" />
@@ -143,7 +140,7 @@
 {/if}
 
 {#if showAdd}
-  <div class="modal-wrapper" on:click={toggleAdd}>
+  <div class="modal-wrapper" on:click={() => { showAdd = false; }}>
     <div class="modal-close">
         <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-x" width="35" height="35" viewBox="5 5 14 14" stroke-width="1.5" stroke="white" fill="none" stroke-linecap="round" stroke-linejoin="round">
             <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
