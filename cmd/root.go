@@ -16,16 +16,16 @@ var cfgFile string
 
 var versionFlag bool
 
-//go:embed defaults/ejected/*
+//go:embed all:defaults/ejected/*
 var defaultsEjectedFS embed.FS
 
-//go:embed defaults/node_modules/*
+//go:embed all:defaults/node_modules/*
 var defaultsNodeModulesFS embed.FS
 
-//go:embed defaults/starters/bare/*
+//go:embed all:defaults/starters/bare/*
 var defaultsBareFS embed.FS
 
-//go:embed defaults/starters/learner/*
+//go:embed all:defaults/starters/learner/*
 var defaultsLearnerFS embed.FS
 
 // Version gets replaced by git tag referenced in -ldflags on build.

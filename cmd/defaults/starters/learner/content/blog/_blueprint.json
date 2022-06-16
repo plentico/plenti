@@ -1,6 +1,6 @@
 {
-    "title": "text",
-    "body": ["text"],
-    "author": "text",
-    "date": "date"
+    "title": "Blog post title",
+    "body": ["Placeholder body text"],
+    "author": "Your name",
+    "date": "1/1/2022"
 }
