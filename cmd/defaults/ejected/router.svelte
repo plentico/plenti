@@ -45,16 +45,6 @@
       });
   }
 
-  const router = Navaid('/', handle404);
-
-  allContent.forEach(content => {
-    router.on((env.local ? '' : env.baseurl) + content.path, () => {
-      import('../content/' + content.type + '.js').then(draw).catch(handle404);
-    });
-  });
-
-  router.listen();
-
   const deepClone = (value) => {
     if (value instanceof Array) {
       const clone = [];
@@ -73,9 +63,12 @@
     }
   };
 
+  /**
+   * @return {boolean} true if hash location found and navigated, false otherwise.
+   */
   const navigateHashLocation = () => {
     if (location.pathname != '/') {
-      return;
+      return false;
     }
 
     if (location.hash.startsWith('#add/') && $user.isAuthenticated) {
@@ -100,12 +93,29 @@
             layout = m.default;
           }
         }).catch(handle404);
+        return true;
+      } else {
+        // Page type not found or filename not specified.
+        handle404();
+        return true;
       }
     }
-  };
-  window.addEventListener('hashchange', navigateHashLocation);
-  navigateHashLocation();
 
+    return false;
+  };
+
+  const router = Navaid('/', handle404);
+  allContent.forEach(content => {
+    router.on((env.local ? '' : env.baseurl) + content.path, () => {
+      // Override with hash location if one is found.
+      if (navigateHashLocation()) {
+        return;
+      }
+
+      import('../content/' + content.type + '.js').then(draw).catch(handle404);
+    });
+  });
+  router.listen();
 
   // Git-CMS
   import adminMenu from './cms/admin_menu.svelte';
