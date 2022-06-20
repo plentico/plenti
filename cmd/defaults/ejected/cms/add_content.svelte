@@ -1,6 +1,7 @@
 <script>
     import blueprints from '../blueprints.js';
     import ButtonWrapper from './button_wrapper.svelte';
+    import { validateFilename } from './validate_filename.js';
 
     export let showAdd, showEditor, content, filename;
     //export let filename = "";
@@ -11,59 +12,8 @@
     }
 
     let validationErrors = [];
-    const validateFilename = () => {
-        // Reset errors before rechecking
-        validationErrors = [];
-
-        if (filename.length == 0) {
-            validationErrors = [...validationErrors, "Empty filename is not allowed"];
-        }
-        if (filename.indexOf(' ') >= 0) {
-            validationErrors = [...validationErrors, "Spaces not allowed in filename"];
-        }
-        if (filename.indexOf('~') >= 0) {
-            validationErrors = [...validationErrors, "No tilde (~) allowed in filename"];
-        }
-        if (filename.indexOf('`') >= 0) {
-            validationErrors = [...validationErrors, "No backtick (`) allowed in filename"];
-        }
-        if (filename.indexOf('!') >= 0) {
-            validationErrors = [...validationErrors, "No exclamation points (!) allowed in filename"];
-        }
-        if (filename.indexOf('@') >= 0) {
-            validationErrors = [...validationErrors, "No at symbols (@) allowed in filename"];
-        }
-        if (filename.indexOf('#') >= 0) {
-            validationErrors = [...validationErrors, "No pound symbols (#) allowed in filename"];
-        }
-        if (filename.indexOf('$') >= 0) {
-            validationErrors = [...validationErrors, "No dollar signs ($) allowed in filename"];
-        }
-        if (filename.indexOf('%') >= 0) {
-            validationErrors = [...validationErrors, "No percentage symbols (%) allowed in filename"];
-        }
-        if (filename.indexOf('^') >= 0) {
-            validationErrors = [...validationErrors, "No carrot symbol (^) allowed in filename"];
-        }
-        if (filename.indexOf('&') >= 0) {
-            validationErrors = [...validationErrors, "No ampersands (&) allowed in filename"];
-        }
-        if (filename.indexOf('*') >= 0) {
-            validationErrors = [...validationErrors, "No star symbols (*) allowed in filename"];
-        }
-        if (filename.indexOf('(') >= 0 || filename.indexOf(')') >= 0) {
-            validationErrors = [...validationErrors, "No opening or closing round brackets ( ) allowed in filename"];
-        }
-        if (filename.indexOf('{') >= 0 || filename.indexOf('}') >= 0) {
-            validationErrors = [...validationErrors, "No opening or closing curly brackets { } allowed in filename"];
-        }
-        if (filename.indexOf('[') >= 0 || filename.indexOf(']') >= 0) {
-            validationErrors = [...validationErrors, "No opening or closing square brackets [ ] allowed in filename"];
-        }
-        if (filename.indexOf('<') >= 0 || filename.indexOf('>') >= 0) {
-            validationErrors = [...validationErrors, "No opening or closing angle brackets < > allowed in filename"];
-        }
-
+    const checkFilename = () => {
+        validationErrors = validateFilename(filename);
         // No errors, redirect to "add" page
         if (validationErrors.length === 0) {
             history.pushState(null, '', '/#add/' + selectedType + '/' + filename);
@@ -89,7 +39,7 @@
         </ul>
     {/if}
     <ButtonWrapper>
-        <button class="button" on:click={validateFilename}>Set Filename</button>
+        <button class="button" on:click={checkFilename}>Set Filename</button>
         <button class="button" on:click={() => setType(null)}>Go back</button>
     </ButtonWrapper>
 {:else}
