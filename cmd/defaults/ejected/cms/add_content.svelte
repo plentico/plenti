@@ -1,10 +1,10 @@
 <script>
     import blueprints from '../blueprints.js';
     import ButtonWrapper from './button_wrapper.svelte';
-    import { validateFilename } from './validate_filename.js';
+    import validateFilename from './validate_filename.js';
 
-    export let showAdd, showEditor, content, filename;
-    //export let filename = "";
+    export let showAdd, showEditor;
+    let filename = "";
 
     let selectedType;
     const setType = type => {

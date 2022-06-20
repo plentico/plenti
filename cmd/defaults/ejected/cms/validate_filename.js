@@ -1,7 +1,6 @@
 const validateFilename = filename => {
     
-    // Reset errors before rechecking
-    validationErrors = [];
+    let validationErrors = [];
 
     if (filename.length == 0) {
         validationErrors = [...validationErrors, "Empty filename is not allowed"];

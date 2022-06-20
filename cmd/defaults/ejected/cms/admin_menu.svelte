@@ -10,7 +10,6 @@
 
     let baseUrl = env.local ? '/' : env.baseurl;
     let assets = allAssets.map(asset => baseUrl + asset);
-    let blueprintFilename = "";
 
     let showMedia = false;
     const toggleMedia = () => {
@@ -70,7 +69,7 @@
     {/if}
   </a>
   <span class="gap"></span>
-  <a href="." on:click|preventDefault={() => { blueprintFilename = ""; showAdd = true; }}>
+  <a href="." on:click|preventDefault={() => { showAdd = true; }}>
     <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-circle-plus" width="30" height="30" viewBox="0 0 24 24" stroke-width="2" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
       <circle cx="12" cy="12" r="9" />
@@ -149,7 +148,7 @@
         </svg>
     </div>
     <div class="modal small" on:click|stopPropagation>
-      <AddContent bind:showAdd bind:showEditor bind:content bind:filename={blueprintFilename} />
+      <AddContent bind:showAdd bind:showEditor bind:content />
     </div>
   </div>
   
@@ -180,7 +179,7 @@
     {#if activeEditor === 'code'}
       <JSONEditor bind:content />
     {:else}
-      <VisualEditor bind:content {blueprintFilename} />
+      <VisualEditor bind:content />
     {/if}
   </div>
 {/if}

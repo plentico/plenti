@@ -1,5 +1,5 @@
 <script>
-    export let content, blueprintFilename;
+    export let content;
     import DynamicFormInput from './dynamic_form_input.svelte';
     import ButtonWrapper from './button_wrapper.svelte';
     import Button from './button.svelte';
