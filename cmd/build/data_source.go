@@ -140,7 +140,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 			}
 			return nil
 		}); err != nil {
-			return fmt.Errorf("Could not get layout %w from virtual theme\n", err)
+			return fmt.Errorf("\nCould not get all content from virtual theme %w", err)
 		}
 	} else {
 		if err := filepath.Walk("content", func(path string, info os.FileInfo, err error) error {
@@ -153,7 +153,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 			}
 			return nil
 		}); err != nil {
-			return fmt.Errorf("Could not get layout %w from project\n", err)
+			return fmt.Errorf("\nCould not get all content from project %w", err)
 		}
 	}
 
@@ -236,7 +236,11 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 	contentType = strings.TrimSuffix(contentType, filepath.Ext(contentType))
 
 	// Get field key/values from content source.
-	typeFields := readers.GetTypeFields(fileContentBytes)
+	typeFields, err := readers.GetTypeFields(fileContentBytes)
+	if err != nil {
+		return contentFileCounter, allBlueprintsStr, allContent, allBlueprintsStr, fmt.Errorf("\nError getting content from %s %w", path, err)
+	}
+
 	// Setup regex to find field name.
 	reField := regexp.MustCompile(`:fields\((.*?)\)`)
 	// Check for path overrides from plenti.json config file.

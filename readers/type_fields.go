@@ -11,7 +11,7 @@ type ContentType struct {
 }
 
 // GetTypeFields reads the key/values for an individual content type JSON file.
-func GetTypeFields(typeFileContents []byte) ContentType {
+func GetTypeFields(typeFileContents []byte) (ContentType, error) {
 
 	var contentType ContentType
 	contentType.Fields = map[string]string{}
@@ -21,7 +21,7 @@ func GetTypeFields(typeFileContents []byte) ContentType {
 	// Put JSON key/values into the map of unknown primitives.
 	err := json.Unmarshal(typeFileContents, &unknownValues)
 	if err != nil {
-		fmt.Printf("Unable to read content type source file: %s\n", err)
+		return contentType, fmt.Errorf("\nUnable to read content because: %w", err)
 	}
 	for field, unknownValue := range unknownValues {
 		// isString will be set to true if the value is a string (vs array, obj, etc).
@@ -32,5 +32,5 @@ func GetTypeFields(typeFileContents []byte) ContentType {
 		}
 	}
 
-	return contentType
+	return contentType, nil
 }
