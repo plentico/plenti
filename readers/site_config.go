@@ -35,12 +35,21 @@ type ThemeOptions struct {
 	Exclude []string `json:"exclude,omitempty"`
 }
 
+// Create global var since cmd.ConfigFileFlag is a circular dependency.
+var configFilePath string
+
+// CheckConfigFileFlag sets global var to --config flag value (or defaults to plenti.json).
+func CheckConfigFileFlag(flag string) {
+	// If --config flag is passed by user, this will be set to its value.
+	configFilePath = flag
+}
+
 // GetSiteConfig reads the site's configuration file values.
 func GetSiteConfig(basePath string) (SiteConfig, string) {
 
 	var siteConfig SiteConfig
 
-	configPath := basePath + "/plenti.json"
+	configPath := basePath + "/" + configFilePath
 
 	// Read site config file from the project
 	configFile, _ := ioutil.ReadFile(configPath)

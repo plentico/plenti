@@ -63,9 +63,6 @@ var serveCmd = &cobra.Command{
 		s.Color("blue")
 		s.Start()
 
-		// Get settings from config file.
-		siteConfig, _ := readers.GetSiteConfig(".")
-
 		// Always set as Local when using serve command
 		build.Local = true
 
@@ -74,6 +71,9 @@ var serveCmd = &cobra.Command{
 			// Run build command before starting server
 			buildCmd.Run(cmd, args)
 		}
+
+		// Get settings from config file.
+		siteConfig, _ := readers.GetSiteConfig(".")
 
 		// Check flags and config for directory to build to
 		buildDir := setBuildDir(siteConfig)
@@ -150,6 +150,7 @@ func init() {
 	serveCmd.Flags().BoolVarP(&MinifyFlag, "minify", "m", true, "minify JS output for faster performance")
 	serveCmd.Flags().BoolVarP(&SSLFlag, "ssl", "s", false, "ssl/tls encryption to serve localhost over https")
 	serveCmd.Flags().BoolVarP(&build.Doreload, "live-reload", "L", false, "Enable live reload")
+	serveCmd.Flags().StringVarP(&ConfigFileFlag, "config", "c", "plenti.json", "use a custom sitewide configuration file")
 	//serveCmd.Flags().BoolVarP(&common.UseMemFS, "in-memory", "M", false, "Use in memory filesystem")
 }
 
