@@ -79,7 +79,8 @@ func Build() error {
 	buildDir := setBuildDir(siteConfig)
 
 	// Add core NPM dependencies if node_module folder doesn't already exist.
-	if err = common.CheckErr(build.NpmDefaults(defaultsNodeModulesFS)); err != nil {
+	err = build.NpmDefaults(defaultsNodeModulesFS)
+	if err = common.CheckErr(err); err != nil {
 		return err
 	}
 	// TODO: ^ only adds node_modules to root project.
@@ -98,7 +99,8 @@ func Build() error {
 		}
 
 		// Merge the current project files with the theme.
-		if err = common.CheckErr(build.ThemesMerge(buildDir)); err != nil {
+		err = build.ThemesMerge(buildDir)
+		if err = common.CheckErr(err); err != nil {
 			return err
 		}
 
@@ -129,12 +131,14 @@ func Build() error {
 	build.Log("Creating '" + buildDir + "' build directory")
 
 	// Directly copy .js that don't need compiling to the build dir.
-	if err = common.CheckErr(build.EjectCopy(buildPath, defaultsEjectedFS)); err != nil {
+	err = build.EjectCopy(buildPath, defaultsEjectedFS)
+	if err = common.CheckErr(err); err != nil {
 		return err
 	}
 
 	// Directly copy static assets to the build dir.
-	if err = common.CheckErr(build.AssetsCopy(buildPath)); err != nil {
+	err = build.AssetsCopy(buildPath)
+	if err = common.CheckErr(err); err != nil {
 		return err
 	}
 
