@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"runtime/debug"
@@ -80,8 +81,8 @@ func Build() error {
 
 	// Add core NPM dependencies if node_module folder doesn't already exist.
 	err = build.NpmDefaults(defaultsNodeModulesFS)
-	if err = common.CheckErr(err); err != nil {
-		return err
+	if err != nil {
+		log.Fatal("\nError in NpmDefaults build step", err)
 	}
 	// TODO: ^ only adds node_modules to root project.
 	// We should think of a way to honor theme dependecies,
@@ -94,14 +95,14 @@ func Build() error {
 		themeOptions := siteConfig.ThemeConfig[theme]
 		// Recursively copy all nested themes to a temp folder for building.
 		err = build.ThemesCopy("themes/"+theme, themeOptions)
-		if err = common.CheckErr(err); err != nil {
-			return err
+		if err != nil {
+			log.Fatal("\nError in ThemesCopy build step", err)
 		}
 
 		// Merge the current project files with the theme.
 		err = build.ThemesMerge(buildDir)
-		if err = common.CheckErr(err); err != nil {
-			return err
+		if err != nil {
+			log.Fatal("\nError in ThemesMerge build step", err)
 		}
 
 	}
@@ -132,26 +133,26 @@ func Build() error {
 
 	// Directly copy .js that don't need compiling to the build dir.
 	err = build.EjectCopy(buildPath, defaultsEjectedFS)
-	if err = common.CheckErr(err); err != nil {
-		return err
+	if err != nil {
+		log.Fatal("\nError in EjectCopy build step", err)
 	}
 
 	// Directly copy static assets to the build dir.
 	err = build.AssetsCopy(buildPath)
-	if err = common.CheckErr(err); err != nil {
-		return err
+	if err != nil {
+		log.Fatal("\nError in AssetsCopy build step", err)
 	}
 
 	// Prep the client SPA.
 	err = build.Client(buildPath, defaultsEjectedFS)
-	if err = common.CheckErr(err); err != nil {
-		return err
+	if err != nil {
+		log.Fatal("\nError in Client build step", err)
 	}
 
 	// Build JSON from "content/" directory.
 	err = build.DataSource(buildPath, siteConfig)
-	if err = common.CheckErr(err); err != nil {
-		return err
+	if err != nil {
+		log.Fatal("\nError in DataSource build step", err)
 	}
 
 	// Run Gopack (custom Snowpack alternative) for ESM support.

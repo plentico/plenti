@@ -173,7 +173,7 @@ func Client(buildPath string, defaultsEjectedFS embed.FS) error {
 			}
 			return nil
 		}); err != nil {
-			return fmt.Errorf("Could not get layout from virtual theme build: %w%s\n", err, common.Caller())
+			return fmt.Errorf("\nCould not get layout from virtual theme build %w", err)
 		}
 	} else {
 		// A theme is NOT being used, so compile the components from the root project
@@ -191,7 +191,7 @@ func Client(buildPath string, defaultsEjectedFS embed.FS) error {
 			}
 			return nil
 		}); err != nil {
-			return fmt.Errorf("Could not get layout: %w%s\n", err, common.Caller())
+			return fmt.Errorf("\nCould not get all layouts %w", err)
 		}
 	}
 
