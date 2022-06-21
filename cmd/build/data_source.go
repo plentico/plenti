@@ -238,7 +238,7 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 	// Get field key/values from content source.
 	typeFields, err := readers.GetTypeFields(fileContentBytes)
 	if err != nil {
-		return contentFileCounter, allBlueprintsStr, allContent, allBlueprintsStr, fmt.Errorf("\nError getting content from %s %w", path, err)
+		return contentFileCounter, allBlueprintsStr, allContent, allBlueprintsStr, fmt.Errorf("\nError getting content from %s %w", filePath, err)
 	}
 
 	// Setup regex to find field name.
