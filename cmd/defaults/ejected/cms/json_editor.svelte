@@ -44,10 +44,19 @@
                     contents: JSON.stringify(content.fields, undefined, '\t')
                 }
             ]}
-            buttonText="Publish"
+            buttonText="Save"
             action={content.isNew ? 'create' : 'update'}
             encoding="text" />
-        <button>Reset</button>
+        <Button
+            commitList={[
+                {
+                    file: content.filepath,
+                    contents: JSON.stringify(content.fields, undefined, '\t')
+                }
+            ]}
+            buttonText="Delete"
+            action={'delete'}
+            encoding="text" />
     </ButtonWrapper>
 </form>
 

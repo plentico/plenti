@@ -62,7 +62,9 @@ export async function publish(commitList, action, encoding) {
         body: JSON.stringify(payload),
     });
     if (response.ok) {
-        console.log('Successfully published!');
+        if (action === 'delete') {
+            history.pushState(null, '', env.baseurl && !env.local ? env.baseurl : '/');
+        }
     } else {
         const { error, message } = await response.json();
         throw new Error(`Publish failed: ${error || message}`);
