@@ -1,12 +1,12 @@
 <script>
-    export let mediaList, buttonText, action, encoding;
+    export let commitList, buttonText, action, encoding;
     import { publish } from './publish.js';
 
     let status;
     const onSubmit = async () => {
         status = "sending";
         try {
-            await publish(mediaList, action, encoding);
+            await publish(commitList, action, encoding);
             status = "sent";
             resetStatus();
         } catch (error) {
@@ -18,7 +18,7 @@
     const resetStatus = () => {
         setTimeout(() => {
             status = "";
-            mediaList = [];
+            commitList = [];
         }, 700);
     }
 </script>

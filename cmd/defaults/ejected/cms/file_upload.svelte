@@ -61,7 +61,7 @@
         <MediaGrid files={getThumbnails(mediaList)} bind:selectedMedia={selectedMedia} />
         <ButtonWrapper>
             <div on:click={addUploadToLibrary}>
-                <Button bind:mediaList={mediaList} buttonText="Save Media" action="create" encoding="base64" />
+                <Button bind:commitList={mediaList} buttonText="Save Media" action="create" encoding="base64" />
             </div>
             {#if selectedMedia.length > 0}
                 <button on:click|preventDefault="{removeSelectedMedia}">Discard selected</button> 

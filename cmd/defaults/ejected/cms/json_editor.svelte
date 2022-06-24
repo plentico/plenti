@@ -38,7 +38,7 @@
     <div class="editor-container" bind:this={container}></div>
     <ButtonWrapper>
         <Button
-            mediaList={[
+            commitList={[
                 {
                     file: content.filepath,
                     contents: JSON.stringify(content.fields, undefined, '\t')

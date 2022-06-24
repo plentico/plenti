@@ -21,7 +21,7 @@ const capitalizeFirstLetter = string => {
  * @param {string} contents
  * @param {string} action
  */
-export async function publish(mediaList, action, encoding) {
+export async function publish(commitList, action, encoding) {
     await userAvailable;
     if (!currentUser.isAuthenticated) {
         throw new Error('Authentication required');
@@ -39,16 +39,16 @@ export async function publish(mediaList, action, encoding) {
     const makeDataStr = base64Str => base64Str.split(',')[1];
 
     let actions = [];
-    mediaList.forEach(mediaItem => {
+    commitList.forEach(commitItem => {
         actions.push({
             action: action,
-            file_path: mediaItem.file,
+            file_path: commitItem.file,
             encoding: encoding,
-            content: encoding === "base64" ? makeDataStr(mediaItem.contents) : mediaItem.contents,
+            content: encoding === "base64" ? makeDataStr(commitItem.contents) : commitItem.contents,
         });
     });
 
-    let message = capitalizeFirstLetter(action) + ' ' + (mediaList.length > 1 ? mediaList.length + ' files' : mediaList[0].file);
+    let message = capitalizeFirstLetter(action) + ' ' + (commitList.length > 1 ? commitList.length + ' files' : commitList[0].file);
 
     const payload = {
         branch: env.cms.branch,

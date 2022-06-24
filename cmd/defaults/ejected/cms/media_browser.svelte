@@ -99,7 +99,7 @@
     <ButtonWrapper>
         <button on:click={downloadFiles}>Download selected</button> 
         <div class="delete-wrapper" on:click={removeAssets}>
-            <Button bind:mediaList={mediaList} buttonText="Delete Selected Media" action="delete" encoding="text" />
+            <Button bind:commitList={mediaList} buttonText="Delete Selected Media" action="delete" encoding="text" />
         </div>
     </ButtonWrapper>
 {/if}

@@ -14,7 +14,7 @@
     {/each}
     <ButtonWrapper>
         <Button
-            mediaList={[
+            commitList={[
                 {
                     file: content.filepath,
                     contents: JSON.stringify(content.fields, undefined, '\t'),
