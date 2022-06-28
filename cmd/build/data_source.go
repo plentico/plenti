@@ -168,12 +168,14 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 
 	for _, currentContent := range allContent {
 
-		if err := createProps(currentContent, allContentStr, env); err != nil {
-			return err
+		err := createProps(currentContent, allContentStr, env)
+		if err != nil {
+			return fmt.Errorf("\nCan't create props for %s %w", currentContent.contentFilepath, err)
 		}
 
-		if err := createHTML(currentContent); err != nil {
-			return err
+		err = createHTML(currentContent)
+		if err != nil {
+			return fmt.Errorf("\nCan't create HTML for %s %w", currentContent.contentFilepath, err)
 		}
 
 		allPaginatedContent, err := paginate(currentContent, contentJSPath)
@@ -399,13 +401,12 @@ func createProps(currentContent content, allContentStr string, env env) error {
 		"', branch: '"+env.cms.branch+
 		"'}}};", "create_ssr")
 	if err != nil {
-		return fmt.Errorf("Could not create props: %w%s\n", err, common.Caller())
+		return fmt.Errorf("\nCould not create props for %s: %w", componentSignature, err)
 	}
 	// Render the HTML with props needed for the current content.
 	_, err = SSRctx.RunScript("var { html, css: staticCss} = layouts_global_html_svelte.render(props);", "create_ssr")
 	if err != nil {
-		return fmt.Errorf("Can't render htmlComponent: %w%s\n", err, common.Caller())
-
+		return fmt.Errorf("\nCan't render htmlComponent for %s: %w", componentSignature, err)
 	}
 	return nil
 }
