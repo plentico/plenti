@@ -60,7 +60,6 @@ func Build() error {
 	build.CheckVerboseFlag(VerboseFlag)
 	build.CheckBenchmarkFlag(BenchmarkFlag)
 	build.CheckMinifyFlag(MinifyFlag)
-	readers.CheckConfigFileFlag(ConfigFileFlag)
 
 	var err error
 	// Handle panic when someone tries building outside of a valid Plenti site.
@@ -156,7 +155,10 @@ func Build() error {
 	}
 
 	// Run Gopack (custom Snowpack alternative) for ESM support.
-	build.Gopack(buildPath)
+	err = build.Gopack(buildPath)
+	if err != nil {
+		log.Fatal("\nError in Gopack build step", err)
+	}
 
 	// only relates to defer recover
 	return err

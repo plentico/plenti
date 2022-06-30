@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/plentico/plenti/common"
+	"github.com/plentico/plenti/readers"
 
 	"github.com/spf13/cobra"
 )
@@ -104,4 +105,5 @@ func initConfig() {
 			fmt.Println("Using config file:", viper.ConfigFileUsed())
 		}
 	*/
+	readers.CheckConfigFileFlag(ConfigFileFlag)
 }

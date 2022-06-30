@@ -48,6 +48,9 @@ To use https://plenti.co as a theme for example, run: plenti new theme git@githu
 		// Set the directory to clone code into.
 		themeDir := "themes/" + repoName
 
+		// If the theme already exists, remove it.
+		os.RemoveAll(themeDir)
+
 		// Clone the theme.
 		repo := addTheme(themeDir, url, repoName)
 		// Get the hash the represents the version of the theme.

@@ -56,7 +56,7 @@ func CheckMinifyFlag(flag bool) {
 var alreadyConvertedFiles []string
 
 // Gopack ensures ESM support for NPM dependencies.
-func Gopack(buildPath string) {
+func Gopack(buildPath string) error {
 
 	defer Benchmark(time.Now(), "Running Gopack")
 
@@ -66,8 +66,12 @@ func Gopack(buildPath string) {
 	alreadyConvertedFiles = []string{}
 
 	// Start at the entry point for the app
-	runPack(buildPath, buildPath+"/spa/ejected/main.js")
+	err := runPack(buildPath, buildPath+"/spa/ejected/main.js")
+	if err != nil {
+		return err
+	}
 
+	return nil
 }
 
 func runPack(buildPath, convertPath string) error {
@@ -78,7 +82,7 @@ func runPack(buildPath, convertPath string) error {
 	// Get the actual contents of the file we want to convert
 	contentBytes, err := ioutil.ReadFile(convertPath)
 	if err != nil {
-		return fmt.Errorf("Could not read file %s to convert to esm: %w%s\n", convertPath, err, common.Caller())
+		return fmt.Errorf("\nCould not read file %s to convert to esm\n%w", convertPath, err)
 	}
 
 	// Created byte array of all dynamic imports in the current file.
@@ -194,7 +198,10 @@ func runPack(buildPath, convertPath string) error {
 			// Add the current file to list of already converted files.
 			alreadyConvertedFiles = append(alreadyConvertedFiles, fullPathStr)
 			// Use fullPathStr recursively to find its imports.
-			runPack(buildPath, fullPathStr)
+			err = runPack(buildPath, fullPathStr)
+			if err != nil {
+				return fmt.Errorf("\nCan't runPack on %s %w", fullPathStr, err)
+			}
 		}
 
 		if foundPath != "" {
@@ -208,7 +215,7 @@ func runPack(buildPath, convertPath string) error {
 			contentBytes = bytes.ReplaceAll(contentBytes, staticStatement,
 				rePath.ReplaceAll(staticStatement, rePath.ReplaceAll(pathBytes, replacePathBytes)))
 		} else {
-			fmt.Printf("Import path '%s' not resolvable from file '%s'\n", pathStr, convertPath)
+			return fmt.Errorf("\nImport path '%s' not resolvable from file '%s'\n", pathStr, convertPath)
 		}
 	}
 	if minifyFlag {
