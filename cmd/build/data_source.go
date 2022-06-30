@@ -401,12 +401,12 @@ func createProps(currentContent content, allContentStr string, env env) error {
 		"', branch: '"+env.cms.branch+
 		"'}}};", "create_ssr")
 	if err != nil {
-		return fmt.Errorf("\nCould not create props for %s: %w", componentSignature, err)
+		return fmt.Errorf("\nCould not create props for %s\n%+v", componentSignature, err)
 	}
 	// Render the HTML with props needed for the current content.
 	_, err = SSRctx.RunScript("var { html, css: staticCss} = layouts_global_html_svelte.render(props);", "create_ssr")
 	if err != nil {
-		return fmt.Errorf("\nCan't render htmlComponent for %s: %w", componentSignature, err)
+		return fmt.Errorf("\nCan't render htmlComponent for %s\n%+v", componentSignature, err)
 	}
 	return nil
 }
