@@ -1,5 +1,6 @@
 <script>
     import { isDate, makeDate, formatDate } from './dates.js';
+    import { isAsset } from './assets_checker.js';
     export let field, label;
 
     const bindDate = date => {
@@ -99,6 +100,17 @@
             linkOptions = "target='_blank' rel='noreferrer noopener'";
         }
     }
+
+    let editingAssets = []
+    const editAsset = (assetField) => {
+        if (editingAssets.includes(assetField)) {
+            // Remove asset from editing
+            editingAssets = editingAssets.filter(asset => asset !== assetField);
+        } else {
+            // Add asset to editing
+            editingAssets = [...editingAssets, assetField];
+        }
+    }
 </script>
 
 {#if field === null}
@@ -108,6 +120,14 @@
 {:else if field.constructor === "".constructor}
     {#if isDate(field)}
         <input type="date" value={makeDate(field)} on:input={date => bindDate(date.target.value)} />
+    {:else if isAsset(field)}
+        {#if editingAssets.includes(field)}
+            <input id="{label}" type="text" bind:value={field} /> 
+            <div on:click={editAsset(field)}>View</div>
+        {:else}
+            <img src="{field}" class="thumbnail" />
+            <div on:click={editAsset(field)}>Edit</div>
+        {/if}
     {:else if field.length < 50}
         <input id="{label}" type="text" bind:value={field} />
     {:else}
@@ -392,5 +412,8 @@
     #ghost.haunting {
         z-index: 20;
         opacity: 1.0;
+    }
+    .thumbnail {
+        max-width: 100px;
     }
 </style>
