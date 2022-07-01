@@ -62,7 +62,7 @@ func ThemesCopy(theme string, themeOptions readers.ThemeOptions) error {
 
 		// Check if the current directory is in the excluded list.
 		for _, excluded := range excludedFiles {
-			if themeFileInfo.IsDir() && themeFileInfo.Name() == excluded {
+			if themeFileInfo.IsDir() && strings.TrimPrefix(themeFilePath, theme+"/") == excluded {
 				return filepath.SkipDir
 			}
 			if !themeFileInfo.IsDir() && themeFileInfo.Name() == excluded {
