@@ -2,20 +2,15 @@
     import MediaGrid from './media_grid.svelte';
     import ButtonWrapper from './button_wrapper.svelte';
     import Button from './button.svelte';
+    import { isImage } from './assets_checker.js';
 
     export let assets;
     let filters = [];
     let enabledFilters = [];
     let selectedMedia = [];
 
-    const isDataImage = asset => {
-        let extensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'avif', 'apng'];
-        let reImage = new RegExp("^data:image\/(?:" + extensions.join("|") + ")(?:;charset=utf-8)?;base64,(?:[A-Za-z0-9]|[+/])+={0,2}");
-        return reImage.test(asset);
-    }
-
     for (const asset of assets) {
-        if (!isDataImage(asset)) {
+        if (!isImage(asset)) {
             // Remove first (assets folder) and last (filename) elements.
             const folders = asset.split('/').slice(1, -1);
             for (const folder of folders) {
