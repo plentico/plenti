@@ -179,7 +179,7 @@
     {#if activeEditor === 'code'}
       <JSONEditor bind:content />
     {:else}
-      <VisualEditor bind:content />
+      <VisualEditor bind:content bind:showMedia />
     {/if}
   </div>
 {/if}
