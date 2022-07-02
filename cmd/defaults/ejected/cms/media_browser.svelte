@@ -4,7 +4,7 @@
     import Button from './button.svelte';
     import { isImage } from './assets_checker.js';
 
-    export let assets;
+    export let assets, changingAsset, showMedia;
     let filters = [];
     let enabledFilters = [];
     let selectedMedia = [];
@@ -88,7 +88,7 @@
             </div>
         {/if}
     </div>
-    <MediaGrid files={filteredAssets} bind:selectedMedia={selectedMedia} />
+    <MediaGrid files={filteredAssets} bind:selectedMedia={selectedMedia} bind:changingAsset bind:showMedia />
 </div>
 {#if selectedMedia.length > 0} 
     <ButtonWrapper>

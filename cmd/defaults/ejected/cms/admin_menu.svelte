@@ -39,6 +39,8 @@
           'width: ' + t * 500 + 'px;'
       };
     }
+
+    let changingAsset = "";
 </script>
 
 <div class="spacer"></div>
@@ -130,7 +132,7 @@
         </div>
       </div>
       {#if activeMedia === 'library'}
-        <MediaBrowser bind:assets />
+        <MediaBrowser bind:assets bind:changingAsset bind:showMedia />
       {:else}
         <FileUpload bind:assets />
       {/if}
@@ -179,7 +181,7 @@
     {#if activeEditor === 'code'}
       <JSONEditor bind:content />
     {:else}
-      <VisualEditor bind:content bind:showMedia />
+      <VisualEditor bind:content bind:showMedia bind:changingAsset />
     {/if}
   </div>
 {/if}

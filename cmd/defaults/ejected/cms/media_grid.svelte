@@ -1,9 +1,13 @@
 <script>
     import { isImage, isDoc } from './assets_checker.js';
-    export let files;
+    export let files, changingAsset, showMedia;
     export let selectedMedia = [];
 
     const selectMedia = file => {
+        if (changingAsset !== "") {
+            changingAsset = file;
+            showMedia = false;
+        }
         if (selectedMedia.includes(file)) {
             selectedMedia = selectedMedia.filter(m => m !== file);
         } else {

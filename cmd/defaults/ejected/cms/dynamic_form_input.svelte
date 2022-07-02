@@ -1,7 +1,7 @@
 <script>
     import { isDate, makeDate, formatDate } from './dates.js';
     import { isAsset } from './assets_checker.js';
-    export let field, label, showMedia;
+    export let field, label, showMedia, changingAsset;
 
     const bindDate = date => {
         field = formatDate(date, field);
@@ -102,8 +102,8 @@
     }
 
     let tempAssetPath;
-    let editingAssets = []
-    const editAsset = (assetField) => {
+    let editingAssets = [];
+    const editAsset = assetField => {
         if (editingAssets.includes(assetField)) {
             // Remove asset from editing
             editingAssets = editingAssets.filter(asset => asset !== assetField);
@@ -113,6 +113,17 @@
             // Add asset to editing
             editingAssets = [...editingAssets, assetField];
             tempAssetPath = assetField;
+        }
+    }
+
+    let originalAsset;
+    const swapAsset = assetField => {
+        originalAsset = assetField;
+        changingAsset = assetField;
+    }
+    $: if (changingAsset) {
+        if (field === originalAsset) {
+            field = changingAsset;
         }
     }
 </script>
@@ -131,7 +142,7 @@
         {:else}
             <img src="{field}" class="thumbnail" />
             <div on:click={editAsset(field)}>Edit</div>
-            <div on:click={() => showMedia = true}>Change</div>
+            <div on:click={() => showMedia = true} on:click={() => swapAsset(field)}>Change</div>
         {/if}
     {:else if field.length < 50}
         <input id="{label}" type="text" bind:value={field} />
