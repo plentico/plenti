@@ -139,7 +139,7 @@
     {:else if isAsset(field)}
         {#if editingAssets.includes(field)}
             <input id="{label}" type="text" bind:value={tempAssetPath} /> 
-            <div on:click={editAsset(field)}>View</div>
+            <div on:click={editAsset}>View</div>
         {:else}
             <img src="{field}" class="thumbnail" />
             <div on:click={editAsset}>Edit</div>
@@ -289,7 +289,7 @@
             </div>
             {#if openKeys.includes(key)}
                 <div transition:slide={{ duration: 300 }}>
-                    <svelte:self bind:field={field[key]} {label} />
+                    <svelte:self bind:field={field[key]} {label} bind:showMedia bind:changingAsset />
                 </div>
             {/if}
             </div>
@@ -302,7 +302,7 @@
         {#each Object.entries(field) as [key, value]}
             <div>
                 <label for={key}>{key}</label>
-                <svelte:self bind:field={field[key]} label={key} />
+                <svelte:self bind:field={field[key]} label={key} bind:showMedia bind:changingAsset />
             </div>
         {/each}
     </fieldset>
