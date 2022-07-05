@@ -103,23 +103,24 @@
 
     let tempAssetPath;
     let editingAssets = [];
-    const editAsset = assetField => {
-        if (editingAssets.includes(assetField)) {
+    const editAsset = () => {
+        if (editingAssets.includes(field)) {
             // Remove asset from editing
-            editingAssets = editingAssets.filter(asset => asset !== assetField);
+            editingAssets = editingAssets.filter(asset => asset !== field);
             field = tempAssetPath;
             tempAssetPath = "";
         } else {
             // Add asset to editing
-            editingAssets = [...editingAssets, assetField];
-            tempAssetPath = assetField;
+            editingAssets = [...editingAssets, field];
+            tempAssetPath = field;
         }
     }
 
     let originalAsset;
-    const swapAsset = assetField => {
-        originalAsset = assetField;
-        changingAsset = assetField;
+    const swapAsset = () => {
+        originalAsset = field;
+        changingAsset = field;
+        showMedia = true;
     }
     $: if (changingAsset) {
         if (field === originalAsset) {
@@ -141,8 +142,8 @@
             <div on:click={editAsset(field)}>View</div>
         {:else}
             <img src="{field}" class="thumbnail" />
-            <div on:click={editAsset(field)}>Edit</div>
-            <div on:click={() => showMedia = true} on:click={() => swapAsset(field)}>Change</div>
+            <div on:click={editAsset}>Edit</div>
+            <div on:click={swapAsset}>Change</div>
         {/if}
     {:else if field.length < 50}
         <input id="{label}" type="text" bind:value={field} />
