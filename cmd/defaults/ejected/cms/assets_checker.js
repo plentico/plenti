@@ -10,5 +10,5 @@ export const isDoc = file => {
     return docExtensions.includes(file.substr(file.lastIndexOf('.') + 1)) || reDoc.test(file);
 }
 
-const reAsset = new RegExp("/?assets/.*\.(" + imageExtensions.join("|") + "|" + docExtensions.join("|") + ")");
+const reAsset = new RegExp("^/?assets/.*\.(" + imageExtensions.join("|") + "|" + docExtensions.join("|") + ")$");
 export const isAsset = asset => reAsset.test(asset);
