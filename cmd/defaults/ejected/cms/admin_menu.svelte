@@ -14,6 +14,7 @@
     let showMedia = false;
     const toggleMedia = () => {
         showMedia = !showMedia;
+        changingAsset = "";
     }
     let activeMedia = "upload";
     const setActiveMedia = selected => {
