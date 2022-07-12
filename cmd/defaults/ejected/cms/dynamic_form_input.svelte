@@ -130,89 +130,99 @@
 </script>
 
 {#if field === null}
-    <div>{field} is null</div>
+    <div class="field">{field} is null</div>
 {:else if field === undefined}
-    <div>{field} is undefined</div>
+    <div class="field">{field} is undefined</div>
 {:else if field.constructor === "".constructor}
     {#if isDate(field)}
-        <input type="date" value={makeDate(field)} on:input={date => bindDate(date.target.value)} />
-    {:else if isAsset(field)}
-        {#if editingAssets.includes(field)}
-            <input id="{label}" type="text" bind:value={tempAssetPath} /> 
-            <div on:click={editAsset}>View</div>
-        {:else}
-            <img src="{field}" class="thumbnail" />
-            <div on:click={editAsset}>Edit</div>
-            <div on:click={swapAsset}>Change</div>
-        {/if}
-    {:else if field.length < 50}
-        <input id="{label}" type="text" bind:value={field} />
-    {:else}
-        <div class="editor">
-            <button on:click={textarea.focus()} on:click|preventDefault={() => document.execCommand("bold")} title="Bold the selected text">
-                <b>B</b>
-            </button>
-            <button on:click={textarea.focus()} on:click|preventDefault={() => document.execCommand("italic")} title="Italicize the selected text">
-                <i>I</i>
-            </button>
-            <button on:click={textarea.focus()} on:click|preventDefault={() => document.execCommand("underline")} title="Underline the selected text">
-                <u>U</u>
-            </button>
-            <div class="spacer"></div>
-            <button on:click={textarea.focus()} on:click|preventDefault={() => document.execCommand("insertUnorderedList")}>
-                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-list-numbers-MODIFIED" width="20" height="20" viewBox="0 0 24 24" stroke-width="1.5" stroke="black" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M11 6h9" />
-                    <path d="M11 12h9" />
-                    <path d="M12 18h8" />
-                    <circle cx="5" r="2" cy="7"></circle>
-                    <circle cx="5" r="2" cy="17"></circle>
-                </svg>
-            </button>
-            <button on:click={textarea.focus()} on:click|preventDefault={() => document.execCommand("insertOrderedList")}>
-                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-list-numbers" width="20" height="20" viewBox="0 0 24 24" stroke-width="1.5" stroke="black" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M11 6h9" />
-                    <path d="M11 12h9" />
-                    <path d="M12 18h8" />
-                    <path d="M4 16a2 2 0 1 1 4 0c0 .591 -.5 1 -1 1.5l-3 2.5h4" />
-                    <path d="M6 10v-6l-2 2" />
-                </svg>
-            </button>
-            <div class="spacer"></div>
-            <button on:click={textarea.focus()} on:click={createLink} on:click|preventDefault={() => document.execCommand("insertHTML", false, "<a href='" + linkURL + "' " + linkOptions + ">" + linkText + "</a>")}>
-                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-link" width="20" height="20" viewBox="0 0 24 24" stroke-width="1.5" stroke="black" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5" />
-                    <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5" />
-                </svg>
-            </button>
-            <button on:click={textarea.focus()} on:click|preventDefault={() => document.execCommand("unlink")}>
-                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-unlink" width="20" height="20" viewBox="0 0 24 24" stroke-width="1.5" stroke="black" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5" />
-                    <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5" />
-                    <line x1="16" y1="21" x2="16" y2="19" />
-                    <line x1="19" y1="16" x2="21" y2="16" />
-                    <line x1="3" y1="8" x2="5" y2="8" />
-                    <line x1="8" y1="3" x2="8" y2="5" />
-                </svg>
-            </button>
-            <div class="spacer"></div>
-            <button on:click={textarea.focus()} on:click|preventDefault={() => document.execCommand("removeFormat")}>
-                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clear-formatting" width="20" height="20" viewBox="0 0 24 24" stroke-width="1.5" stroke="black" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M17 15l4 4m0 -4l-4 4" />
-                    <path d="M7 6v-1h11v1" />
-                    <line x1="7" y1="19" x2="11" y2="19" />
-                    <line x1="13" y1="5" x2="9" y2="19" />
-                </svg>
-            </button>
+        <div class="field">
+            <input type="date" value={makeDate(field)} on:input={date => bindDate(date.target.value)} />
         </div>
-        <div id="{label}" class="textarea" contenteditable=true bind:innerHTML={field} bind:this={textarea}></div>
+    {:else if isAsset(field)}
+        <div class="field">
+            {#if editingAssets.includes(field)}
+                <input id="{label}" type="text" bind:value={tempAssetPath} /> 
+                <div on:click={editAsset}>View</div>
+            {:else}
+                <img src="{field}" class="thumbnail" />
+                <div on:click={editAsset}>Edit</div>
+                <div on:click={swapAsset}>Change</div>
+            {/if}
+        </div>
+    {:else if field.length < 50}
+        <div class="field">
+            <input id="{label}" type="text" bind:value={field} />
+        </div>
+    {:else}
+        <div class="field">
+            <div class="editor">
+                <button on:click={textarea.focus()} on:click|preventDefault={() => document.execCommand("bold")} title="Bold the selected text">
+                    <b>B</b>
+                </button>
+                <button on:click={textarea.focus()} on:click|preventDefault={() => document.execCommand("italic")} title="Italicize the selected text">
+                    <i>I</i>
+                </button>
+                <button on:click={textarea.focus()} on:click|preventDefault={() => document.execCommand("underline")} title="Underline the selected text">
+                    <u>U</u>
+                </button>
+                <div class="spacer"></div>
+                <button on:click={textarea.focus()} on:click|preventDefault={() => document.execCommand("insertUnorderedList")}>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-list-numbers-MODIFIED" width="20" height="20" viewBox="0 0 24 24" stroke-width="1.5" stroke="black" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <path d="M11 6h9" />
+                        <path d="M11 12h9" />
+                        <path d="M12 18h8" />
+                        <circle cx="5" r="2" cy="7"></circle>
+                        <circle cx="5" r="2" cy="17"></circle>
+                    </svg>
+                </button>
+                <button on:click={textarea.focus()} on:click|preventDefault={() => document.execCommand("insertOrderedList")}>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-list-numbers" width="20" height="20" viewBox="0 0 24 24" stroke-width="1.5" stroke="black" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <path d="M11 6h9" />
+                        <path d="M11 12h9" />
+                        <path d="M12 18h8" />
+                        <path d="M4 16a2 2 0 1 1 4 0c0 .591 -.5 1 -1 1.5l-3 2.5h4" />
+                        <path d="M6 10v-6l-2 2" />
+                    </svg>
+                </button>
+                <div class="spacer"></div>
+                <button on:click={textarea.focus()} on:click={createLink} on:click|preventDefault={() => document.execCommand("insertHTML", false, "<a href='" + linkURL + "' " + linkOptions + ">" + linkText + "</a>")}>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-link" width="20" height="20" viewBox="0 0 24 24" stroke-width="1.5" stroke="black" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5" />
+                        <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5" />
+                    </svg>
+                </button>
+                <button on:click={textarea.focus()} on:click|preventDefault={() => document.execCommand("unlink")}>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-unlink" width="20" height="20" viewBox="0 0 24 24" stroke-width="1.5" stroke="black" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <path d="M10 14a3.5 3.5 0 0 0 5 0l4 -4a3.5 3.5 0 0 0 -5 -5l-.5 .5" />
+                        <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5" />
+                        <line x1="16" y1="21" x2="16" y2="19" />
+                        <line x1="19" y1="16" x2="21" y2="16" />
+                        <line x1="3" y1="8" x2="5" y2="8" />
+                        <line x1="8" y1="3" x2="8" y2="5" />
+                    </svg>
+                </button>
+                <div class="spacer"></div>
+                <button on:click={textarea.focus()} on:click|preventDefault={() => document.execCommand("removeFormat")}>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clear-formatting" width="20" height="20" viewBox="0 0 24 24" stroke-width="1.5" stroke="black" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <path d="M17 15l4 4m0 -4l-4 4" />
+                        <path d="M7 6v-1h11v1" />
+                        <line x1="7" y1="19" x2="11" y2="19" />
+                        <line x1="13" y1="5" x2="9" y2="19" />
+                    </svg>
+                </button>
+            </div>
+            <div id="{label}" class="textarea" contenteditable=true bind:innerHTML={field} bind:this={textarea}></div>
+        </div>
     {/if}
 {:else if field.constructor === true.constructor}
-    <input id="{label}" type="checkbox" bind:checked={field} /><span>{field}</span>
+    <div class="field">
+        <input id="{label}" type="checkbox" bind:checked={field} /><span>{field}</span>
+    </div>
 {:else if field.constructor === [].constructor}
     <main class="dragdroplist">
         <div 
@@ -281,6 +291,7 @@
                 <div class="buttons">
                     {#if removesItems}
                         <button
+                            class="close"
                             on:click|preventDefault={() => removeItem(value)}>
                             <svg xmlns="http://www.w3.org/2000/svg" height="16" viewBox="0 0 24 24" width="16"><path d="M0 0h24v24H0z" fill="none"/><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
                         </button>
@@ -300,7 +311,7 @@
     <fieldset>
         <!-- <legend>{label}</legend> -->
         {#each Object.entries(field) as [key, value]}
-            <div>
+            <div class="field">
                 <label for={key}>{key}</label>
                 <svelte:self bind:field={field[key]} label={key} bind:showMedia bind:changingAsset />
             </div>
@@ -311,6 +322,12 @@
 <style>
     label {
         display: block;
+    }
+    .field {
+        margin-bottom: 20px;
+    }
+    .field:last-of-type {
+        margin-bottom: 0;
     }
     input[type=text] {
         height: 30px;
