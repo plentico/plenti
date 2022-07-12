@@ -240,7 +240,7 @@
             on:touchmove={function(ev) {ev.stopPropagation(); drag(ev.touches[0].clientY);}}
             on:mouseup={function(ev) {ev.stopPropagation(); release(ev);}}
             on:touchend={function(ev) {ev.stopPropagation(); release(ev.touches[0]);}}>
-        {#each field as value, key (compID = isOpen ? key : value.constructor === ({}).constructor ? value[Object.keys(value)[0]] : value)}
+        {#each field as value, key (compID = isOpen ? key : value)}
             <div 
                 id={(grabbed && compID == grabbed.dataset.id) ? "grabbed" : ""}
                 data-index={key}
