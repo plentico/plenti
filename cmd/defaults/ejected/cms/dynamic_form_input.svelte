@@ -133,7 +133,11 @@
     <div class="field">{field} is null</div>
 {:else if field === undefined}
     <div class="field">{field} is undefined</div>
-{:else if field.constructor === "".constructor}
+{:else if typeof field === "number"}
+    <div class="field">
+        <input id="{label}" type="number" bind:value={field} />
+    </div>
+{:else if typeof field === "string"}
     {#if isDate(field)}
         <div class="field">
             <input type="date" value={makeDate(field)} on:input={date => bindDate(date.target.value)} />
@@ -219,7 +223,7 @@
             <div id="{label}" class="textarea" contenteditable=true bind:innerHTML={field} bind:this={textarea}></div>
         </div>
     {/if}
-{:else if field.constructor === true.constructor}
+{:else if typeof field === "boolean"}
     <div class="field">
         <input id="{label}" type="checkbox" bind:checked={field} /><span>{field}</span>
     </div>
