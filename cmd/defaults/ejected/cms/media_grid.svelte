@@ -1,7 +1,21 @@
 <script>
+    import { onMount } from 'svelte';
     import { isImage, isDoc } from './assets_checker.js';
     export let files, changingAsset, showMedia;
     export let selectedMedia = [];
+
+    onMount(async () => {
+        focus();
+        window.addEventListener('blur', () => {
+            let embeds = document.querySelectorAll('embed');
+            embeds.forEach(embed => {
+                if (document.activeElement === embed) {
+                    selectMedia(embed.attributes.src.nodeValue);
+                }
+            });
+            window.parent.focus();
+        });
+    });
 
     const selectMedia = file => {
         if (changingAsset !== "") {
