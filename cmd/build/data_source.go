@@ -293,7 +293,7 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 	// Don't add _blueprint.json or other special named files starting with underscores.
 	if fileName[:1] == "_" {
 		blueprintDetailsStr := "{\n" +
-			"\"pager\": 1,\n" +
+			"\"pager\": null,\n" +
 			"\"type\": \"" + contentType + "\",\n" +
 			"\"path\": \"" + path + "\",\n" +
 			"\"filepath\": \"" + filePath + "\",\n" +
@@ -306,7 +306,7 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 	}
 
 	contentDetailsStr := "{\n" +
-		"\"pager\": 1,\n" +
+		"\"pager\": null,\n" +
 		"\"type\": \"" + contentType + "\",\n" +
 		"\"path\": \"" + path + "\",\n" +
 		"\"filepath\": \"" + filePath + "\",\n" +
