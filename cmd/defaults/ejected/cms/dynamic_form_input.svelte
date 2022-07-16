@@ -1,6 +1,6 @@
 <script>
     import { isDate, makeDate, formatDate } from './dates.js';
-    import { isAsset } from './assets_checker.js';
+    import { isAssetPath, isImagePath, isDocPath } from './assets_checker.js';
     export let field, label, showMedia, changingAsset;
 
     const bindDate = date => {
@@ -142,13 +142,17 @@
         <div class="field">
             <input type="date" value={makeDate(field)} on:input={date => bindDate(date.target.value)} />
         </div>
-    {:else if isAsset(field)}
+    {:else if isAssetPath(field)}
         <div class="field">
             {#if editingAssets.includes(field)}
                 <input id="{label}" type="text" bind:value={tempAssetPath} /> 
                 <div on:click={editAsset}>View</div>
             {:else}
-                <img src="{field}" class="thumbnail" />
+                {#if isImagePath(field)}
+                    <img src="{field}" class="thumbnail" />
+                {:else if isDocPath(field)}
+                    <embed src="{field}" class="thumbnail" />
+                {/if}
                 <div on:click={editAsset}>Edit</div>
                 <div on:click={swapAsset}>Change</div>
             {/if}
