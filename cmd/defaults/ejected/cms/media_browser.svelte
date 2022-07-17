@@ -19,7 +19,11 @@
             let folders = allFolders.slice(cut, -1);
             if (folders.length > 0 && !filters.includes(folders)) {
                 // Get the index of any parent folders that have already been added
-                let subfolderIndex = filters.findIndex(val => folders.includes(...val))
+                let subfolderIndex = filters.findIndex(val => {
+                    let filterStr = val.join('');
+                    let folderStr = folders.join('');
+                    return folderStr.includes(filterStr);
+                });
                 // Check if a parent folder was found
                 if (subfolderIndex === -1) {
                     // No subpaths match this path, so add it
