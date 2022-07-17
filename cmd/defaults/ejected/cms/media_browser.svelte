@@ -18,28 +18,18 @@
             // Remove first (assets folder) and last (filename) elements.
             let folders = allFolders.slice(cut, -1);
             if (folders.length > 0 && !filters.includes(folders)) {
-                /*
-                filters.forEach((val, i) => {
-                    if (folders.includes(...val)) {
-                        filters[i] = folders;
-                    }
-                });
-                */
-                let subfolder = filters.findIndex(val => folders.includes(...val))
-                if (subfolder === -1) {
+                // Get the index of any parent folders that have already been added
+                let subfolderIndex = filters.findIndex(val => folders.includes(...val))
+                // Check if a parent folder was found
+                if (subfolderIndex === -1) {
+                    // No subpaths match this path, so add it
                     filters = [...filters, folders];
                 } else {
-                    filters[subfolder] = folders;
+                    // Parent path has already been added,
+                    // replace with more complete path containing child folders
+                    filters[subfolderIndex] = folders;
                 }
             }
-            /*
-            for (const folder of folders) {
-                if (!filters.includes(folder[0])) {
-                    // Add filter and force update
-                    filters = [...filters, folder];
-                }
-            }
-            */
         }
     }
 
@@ -96,9 +86,11 @@
     <div class="filters-wrapper">
         <div class="filters">
         {#each filters as filterGroup}
-            {#each filterGroup as filter}
-                <div on:click={() => toggleFilter(filter)} class="filter{enabledFilters.includes(filter) ? ' active' : ''}">{filter}</div>
-            {/each}
+            <div class="filter-group">
+                {#each filterGroup as filter}
+                    <div on:click={() => toggleFilter(filter)} class="filter{enabledFilters.includes(filter) ? ' active' : ''}">{filter}</div>
+                {/each}
+            </div>
         {/each}
         </div>
         {#if enabledFilters.length > 0}
@@ -137,16 +129,18 @@
         align-items: center;
         flex-wrap: wrap;
     }
-    .filter {
+    .filter-group {
         border-radius: 6px;
-        display: inline-block;
-        padding: 4px 10px;
         cursor: pointer;
         font-weight: bold;
         background-color: transparent;
         border: 2px solid #1c7fc7;
         color: #1c7fc7;
         font-size: .8rem;
+    }
+    .filter {
+        display: inline-block;
+        padding: 4px 10px;
     }
     .filter.active {
         background-color: #1c7fc7;
