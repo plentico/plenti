@@ -10,6 +10,8 @@ export const isDoc = file => {
     return docExtensions.includes(file.substr(file.lastIndexOf('.') + 1)) || reDoc.test(file);
 }
 
+export const isAsset = file => isImage(file) || isDoc(file);
+
 const reAssetPath = new RegExp("^/?assets/.*\.(" + imageExtensions.join("|") + "|" + docExtensions.join("|") + ")$");
 const reImagePath = new RegExp("^/?assets/.*\.(" + imageExtensions.join("|") + ")$");
 const reDocPath = new RegExp("^/?assets/.*\.(" + docExtensions.join("|") + ")$");

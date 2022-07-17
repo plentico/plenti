@@ -2,7 +2,7 @@
     import MediaGrid from './media_grid.svelte';
     import ButtonWrapper from './button_wrapper.svelte';
     import Button from './button.svelte';
-    import { isImage } from './assets_checker.js';
+    import { isAsset } from './assets_checker.js';
 
     export let assets, changingAsset, showMedia;
     let filters = [];
@@ -10,9 +10,13 @@
     let selectedMedia = [];
 
     for (const asset of assets) {
-        if (!isImage(asset)) {
+        if (isAsset(asset)) {
+            // Create an array of path segments.
+            let folders = asset.split('/')
+            // Get the index right after the assets folder (works with and without baseurl).
+            let cut = folders.findIndex(i => i === "assets") + 1;
             // Remove first (assets folder) and last (filename) elements.
-            const folders = asset.split('/').slice(1, -1);
+            folders = folders.slice(cut, -1);
             for (const folder of folders) {
                 if (!filters.includes(folder)) {
                     // Add filter and force update
