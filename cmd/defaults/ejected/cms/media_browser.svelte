@@ -12,17 +12,34 @@
     for (const asset of assets) {
         if (isAsset(asset)) {
             // Create an array of path segments.
-            let folders = asset.split('/')
+            let allFolders = asset.split('/')
             // Get the index right after the assets folder (works with and without baseurl).
-            let cut = folders.findIndex(i => i === "assets") + 1;
+            let cut = allFolders.findIndex(i => i === "assets") + 1;
             // Remove first (assets folder) and last (filename) elements.
-            folders = folders.slice(cut, -1);
+            let folders = allFolders.slice(cut, -1);
+            if (folders.length > 0 && !filters.includes(folders)) {
+                /*
+                filters.forEach((val, i) => {
+                    if (folders.includes(...val)) {
+                        filters[i] = folders;
+                    }
+                });
+                */
+                let subfolder = filters.findIndex(val => folders.includes(...val))
+                if (subfolder === -1) {
+                    filters = [...filters, folders];
+                } else {
+                    filters[subfolder] = folders;
+                }
+            }
+            /*
             for (const folder of folders) {
-                if (!filters.includes(folder)) {
+                if (!filters.includes(folder[0])) {
                     // Add filter and force update
                     filters = [...filters, folder];
                 }
             }
+            */
         }
     }
 
@@ -78,8 +95,10 @@
 <div class="media-wrapper">
     <div class="filters-wrapper">
         <div class="filters">
-        {#each filters as filter}
-            <div on:click={() => toggleFilter(filter)} class="filter{enabledFilters.includes(filter) ? ' active' : ''}">{filter}</div>
+        {#each filters as filterGroup}
+            {#each filterGroup as filter}
+                <div on:click={() => toggleFilter(filter)} class="filter{enabledFilters.includes(filter) ? ' active' : ''}">{filter}</div>
+            {/each}
         {/each}
         </div>
         {#if enabledFilters.length > 0}
