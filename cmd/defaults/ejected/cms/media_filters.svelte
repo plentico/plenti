@@ -34,6 +34,18 @@
         }
     }
 
+    const assetMatchesFilter = (asset, filters) => {
+        // Compare arrays in exact order by converting to strings
+        return filters.find(filter => asset.join('') === filter.join(''));
+    }
+
+    // Filter assets
+    $: filteredAssets = assets.filter(asset => {
+        // Show all assets if no filter is applied, or
+        // Check if the asset is in enabled filters
+        return !enabledFilters.length || assetMatchesFilter(assetPathToArray(asset), enabledFilters);
+    });
+
     const getFilterSubGroup = (filter, filterGroup) => {
         // Get filters position inside full group array
         let filterIndex = filterGroup.findIndex(f => f === filter);
@@ -61,21 +73,6 @@
     const clearFilters = () => {
         enabledFilters = [];
     }
-
-    // Filter assets
-    $: filteredAssets = assets.filter(asset => {
-        if (enabledFilters.length == 0) {
-            // No filters are applied, return all assets
-            return asset;
-        }
-        let folders = assetPathToArray(asset);
-        return enabledFilters.find(enabledFilter => {
-            if (folders.join('') === enabledFilter.join('')) {
-                return asset;
-            }
-
-        });
-    });
 
 </script>
 
