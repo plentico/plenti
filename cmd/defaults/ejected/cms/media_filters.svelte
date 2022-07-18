@@ -11,24 +11,29 @@
         return allFolders.slice(cut, -1);
     }
 
+    const parentAssetIndex = (asset, filters) => {
+        // Return position of filter in filters array,
+        // if it's a subpath of current asset (if not found return -1)
+        return filters.findIndex(filter => asset.join('').includes(filter.join('')));
+    }
+
     for (const asset of assets) {
         if (isAsset(asset)) {
-            let folders = assetPathToArray(asset); 
-            if (folders.length > 0 && !filters.includes(folders)) {
+            // Turn asset path into array of subfolders
+            let assetFolders = assetPathToArray(asset); 
+            // Make sure we're not adding empty filters
+            if (assetFolders.length > 0) {
                 // Get the index of any parent folders that have already been added
-                let subfolderIndex = filters.findIndex(val => {
-                    let filterStr = val.join('');
-                    let folderStr = folders.join('');
-                    return folderStr.includes(filterStr);
-                });
+                let subfolderIndex = parentAssetIndex(assetFolders, filters);
                 // Check if a parent folder was found
                 if (subfolderIndex === -1) {
-                    // No subpaths match this path, so add it
-                    filters = [...filters, folders];
+                    // No previously added filter is a subpath of this asset path,
+                    // so add the asset path to filters
+                    filters = [...filters, assetFolders];
                 } else {
                     // Parent path has already been added,
                     // replace with more complete path containing child folders
-                    filters[subfolderIndex] = folders;
+                    filters[subfolderIndex] = assetFolders;
                 }
             }
         }
@@ -42,7 +47,7 @@
     // Filter assets
     $: filteredAssets = assets.filter(asset => {
         // Show all assets if no filter is applied, or
-        // Check if the asset is in enabled filters
+        // Show specific asset if it's in the enabled filters
         return !enabledFilters.length || assetMatchesFilter(assetPathToArray(asset), enabledFilters);
     });
 
