@@ -10,7 +10,27 @@
     let selectedMedia = [];
 
     // Filter assets
-    $: filteredAssets = assets
+    $: filteredAssets = assets.filter(asset => {
+        if (enabledFilters.length == 0) {
+            //console.log(asset)
+            return asset;
+        }
+        //console.log("asset: " + asset);
+        //console.log("enFil: " + enabledFilters.join('/'));
+        let allFolders = asset.split('/')
+        let cut = allFolders.findIndex(i => i === "assets") + 1;
+        let folders = allFolders.slice(cut, -1);
+        return enabledFilters.find(enabledFilter => {
+            if (folders.join('') === enabledFilter.join('')) {
+                //console.log("enFil: " + enabledFilter.join(''));
+                //console.log("FOLDERS: " + folders.join(''))
+                console.log(asset)
+                return asset;
+            }
+
+        });
+    });
+    /*
         .filter(asset => 
             // Show all if no filters selected
             enabledFilters.length == 0 ||
@@ -21,6 +41,7 @@
                 .slice(1, -1)
                 .some(folder => enabledFilters.includes(folder))
         );
+    */
 
     const downloadFiles = () => {
         selectedMedia.forEach(mediaFile => {

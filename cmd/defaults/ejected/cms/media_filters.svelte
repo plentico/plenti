@@ -30,14 +30,29 @@
         }
     }
 
-    const toggleFilter = filter => {
-        if (enabledFilters.includes(filter)) {
+    const getFilterSubGroup = (filter, filterGroup) => {
+        let filterIndex = filterGroup.findIndex(f => f === filter);
+        //console.log("filterIndex: " + filterIndex);
+        let filterSubGroup = filterGroup.slice(0, filterIndex + 1);
+        //console.log("subFilterGroup: " + filterSubGroup);
+        return filterSubGroup;
+    }
+    const arrayCompare = (arr1, arr2) => {
+        return arr1.find(f => f.join('') === arr2.join(''));
+    }
+
+    const toggleFilter = (filter, filterGroup) => {
+        let filterSubGroup = getFilterSubGroup(filter, filterGroup);
+
+        if (enabledFilters.find(f => f.join('') === filterSubGroup.join(''))) {
+            //console.log("remove!")
             // Remove filter
-            enabledFilters = enabledFilters.filter(current => current != filter);
+            enabledFilters = enabledFilters.filter(current => current.join('') !== filterSubGroup.join(''));
         } else {
             // Add filter and force update for enabled filters
-            enabledFilters = [...enabledFilters, filter];
+            enabledFilters = [...enabledFilters, filterSubGroup];
         }
+        //console.log(enabledFilters)
     }
 
     const clearFilters = () => {
@@ -52,7 +67,7 @@
     {#each filters as filterGroup}
         <div class="filter-group">
             {#each filterGroup as filter}
-                <div on:click={() => toggleFilter(filter)} class="filter{enabledFilters.includes(filter) ? ' active' : ''}">{filter}</div>
+                <div on:click={() => toggleFilter(filter, filterGroup)} class="filter{arrayCompare(enabledFilters, getFilterSubGroup(filter, filterGroup)) ? ' active' : ''}">{filter}</div>
             {/each}
         </div>
     {/each}
