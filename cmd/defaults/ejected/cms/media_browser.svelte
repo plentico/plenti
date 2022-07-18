@@ -8,23 +8,7 @@
     let filters = [];
     let enabledFilters = [];
     let selectedMedia = [];
-
-    // Filter assets
-    $: filteredAssets = assets.filter(asset => {
-        if (enabledFilters.length == 0) {
-            // No filters are applied, return all assets
-            return asset;
-        }
-        let allFolders = asset.split('/')
-        let cut = allFolders.findIndex(i => i === "assets") + 1;
-        let folders = allFolders.slice(cut, -1);
-        return enabledFilters.find(enabledFilter => {
-            if (folders.join('') === enabledFilter.join('')) {
-                return asset;
-            }
-
-        });
-    });
+    $: filteredAssets = [];
 
     const downloadFiles = () => {
         selectedMedia.forEach(mediaFile => {
@@ -49,7 +33,7 @@
 </script>
 
 <div class="media-wrapper">
-    <MediaFilters bind:assets bind:filters bind:enabledFilters />
+    <MediaFilters bind:assets bind:filters bind:enabledFilters bind:filteredAssets />
     <MediaGrid files={filteredAssets} bind:selectedMedia={selectedMedia} bind:changingAsset bind:showMedia />
 </div>
 {#if selectedMedia.length > 0} 

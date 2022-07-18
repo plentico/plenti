@@ -1,15 +1,19 @@
 <script>
     import { isAsset } from './assets_checker.js';
-    export let assets, filters, enabledFilters; 
+    export let assets, filters, enabledFilters, filteredAssets; 
+
+    const assetPathToArray = asset => {
+        // Create an array of path segments.
+        let allFolders = asset.split('/')
+        // Get the index right after the assets folder (works with and without baseurl).
+        let cut = allFolders.findIndex(i => i === "assets") + 1;
+        // Remove "assets" folder and last (filename) elements.
+        return allFolders.slice(cut, -1);
+    }
 
     for (const asset of assets) {
         if (isAsset(asset)) {
-            // Create an array of path segments.
-            let allFolders = asset.split('/')
-            // Get the index right after the assets folder (works with and without baseurl).
-            let cut = allFolders.findIndex(i => i === "assets") + 1;
-            // Remove first (assets folder) and last (filename) elements.
-            let folders = allFolders.slice(cut, -1);
+            let folders = assetPathToArray(asset); 
             if (folders.length > 0 && !filters.includes(folders)) {
                 // Get the index of any parent folders that have already been added
                 let subfolderIndex = filters.findIndex(val => {
@@ -58,6 +62,20 @@
         enabledFilters = [];
     }
 
+    // Filter assets
+    $: filteredAssets = assets.filter(asset => {
+        if (enabledFilters.length == 0) {
+            // No filters are applied, return all assets
+            return asset;
+        }
+        let folders = assetPathToArray(asset);
+        return enabledFilters.find(enabledFilter => {
+            if (folders.join('') === enabledFilter.join('')) {
+                return asset;
+            }
+
+        });
+    });
 
 </script>
 
