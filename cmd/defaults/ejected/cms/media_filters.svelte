@@ -31,28 +31,27 @@
     }
 
     const getFilterSubGroup = (filter, filterGroup) => {
+        // Get filters position inside full group array
         let filterIndex = filterGroup.findIndex(f => f === filter);
-        //console.log("filterIndex: " + filterIndex);
+        // Get array from first folder to where this filter was found (cut off nested folders after that)
         let filterSubGroup = filterGroup.slice(0, filterIndex + 1);
-        //console.log("subFilterGroup: " + filterSubGroup);
+        // Return array of filter and parent folders (no children folders)
         return filterSubGroup;
     }
-    const arrayCompare = (arr1, arr2) => {
-        return arr1.find(f => f.join('') === arr2.join(''));
+
+    const filterIsEnabled = (enabledFilters, filterSubGroup) => {
+        // Compare exact order of arrays by converting to strings
+        return enabledFilters.find(f => f.join('') === filterSubGroup.join(''));
     }
 
-    const toggleFilter = (filter, filterGroup) => {
-        let filterSubGroup = getFilterSubGroup(filter, filterGroup);
-
-        if (enabledFilters.find(f => f.join('') === filterSubGroup.join(''))) {
-            //console.log("remove!")
+    const toggleFilter = (filterSubGroup) => {
+        if (filterIsEnabled(enabledFilters, filterSubGroup)) {
             // Remove filter
             enabledFilters = enabledFilters.filter(current => current.join('') !== filterSubGroup.join(''));
         } else {
             // Add filter and force update for enabled filters
             enabledFilters = [...enabledFilters, filterSubGroup];
         }
-        //console.log(enabledFilters)
     }
 
     const clearFilters = () => {
@@ -67,7 +66,7 @@
     {#each filters as filterGroup}
         <div class="filter-group">
             {#each filterGroup as filter}
-                <div on:click={() => toggleFilter(filter, filterGroup)} class="filter{arrayCompare(enabledFilters, getFilterSubGroup(filter, filterGroup)) ? ' active' : ''}">{filter}</div>
+                <div on:click={() => toggleFilter(getFilterSubGroup(filter, filterGroup))} class="filter{filterIsEnabled(enabledFilters, getFilterSubGroup(filter, filterGroup)) ? ' active' : ''}">{filter}</div>
             {/each}
         </div>
     {/each}
