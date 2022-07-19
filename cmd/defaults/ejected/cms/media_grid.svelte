@@ -30,7 +30,7 @@
     } 
 </script>
 
-<div class="media-browser">
+<div class="media-grid">
     {#each files as file}
         <div class="media{selectedMedia.includes(file) ? ' selected' : ''}" on:click={selectMedia(file)}>
             {#if isDoc(file)}
@@ -49,7 +49,7 @@
 </div>
 
 <style>
-    .media-browser {
+    .media-grid {
         display: grid;
         grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
         gap: 10px;

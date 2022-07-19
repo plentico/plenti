@@ -39,7 +39,7 @@
 {#if selectedMedia.length > 0} 
     <ButtonWrapper>
         <button on:click={downloadFiles}>Download selected</button> 
-        <div class="delete-wrapper" on:click={removeAssets}>
+        <div class="delete-wrapper button-secondary" on:click={removeAssets}>
             <Button bind:commitList={mediaList} buttonText="Delete Selected Media" action="delete" encoding="text" />
         </div>
     </ButtonWrapper>
@@ -47,7 +47,8 @@
 
 <style>
     .media-wrapper {
-        margin: 20px 0;
+        display: flex;
+        flex-direction: column;
         overflow: hidden;
     }
 </style>

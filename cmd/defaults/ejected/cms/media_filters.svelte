@@ -1,6 +1,9 @@
 <script>
     import { isAsset } from './assets_checker.js';
-    export let assets, filters, enabledFilters, filteredAssets; 
+    export let assets;
+    export let filters = [];
+    export let enabledFilters = [];
+    export let filteredAssets = []; 
 
     const assetPathToArray = asset => {
         // Create an array of path segments.
@@ -105,6 +108,7 @@
 <style>
     .filters-wrapper {
         display: flex;
+        margin-top: 20px;
     }
     .filters {
         display: flex;

@@ -1,4 +1,5 @@
 <script>
+    import MediaFilters from './media_filters.svelte';
     import MediaGrid from './media_grid.svelte';
     import ButtonWrapper from './button_wrapper.svelte';
     import Button from './button.svelte';
@@ -58,9 +59,10 @@
 
 <div class="upload-wrapper">
     {#if mediaList.length > 0}
+        <MediaFilters bind:assets />
         <MediaGrid files={getThumbnails(mediaList)} bind:selectedMedia={selectedMedia} />
         <ButtonWrapper>
-            <div on:click={addUploadToLibrary}>
+            <div class="button-primary" on:click={addUploadToLibrary}>
                 <Button bind:commitList={mediaList} buttonText="Save Media" action="create" encoding="base64" />
             </div>
             {#if selectedMedia.length > 0}
@@ -70,28 +72,30 @@
             {/if}
         </ButtonWrapper>
     {:else}
-        <div class="drop{drag ? ' active' : ''}"
-            on:dragenter={toggleDrag} 
-            on:dragleave={toggleDrag}  
-            on:drop|preventDefault={event => dropFile(event)} 
-            on:dragover|preventDefault
-        >
-            <div class="drop-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-cloud-upload" width="44" height="44" viewBox="0 0 24 24" stroke-width="1.5" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M7 18a4.6 4.4 0 0 1 0 -9a5 4.5 0 0 1 11 2h1a3.5 3.5 0 0 1 0 7h-1" />
-                    <polyline points="9 15 12 12 15 15" />
-                    <line x1="12" y1="12" x2="12" y2="21" />
-                </svg>
+        <div class="upload-widgets">
+            <div class="drop{drag ? ' active' : ''}"
+                on:dragenter={toggleDrag} 
+                on:dragleave={toggleDrag}  
+                on:drop|preventDefault={event => dropFile(event)} 
+                on:dragover|preventDefault
+            >
+                <div class="drop-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-cloud-upload" width="44" height="44" viewBox="0 0 24 24" stroke-width="1.5" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <path d="M7 18a4.6 4.4 0 0 1 0 -9a5 4.5 0 0 1 11 2h1a3.5 3.5 0 0 1 0 7h-1" />
+                        <polyline points="9 15 12 12 15 15" />
+                        <line x1="12" y1="12" x2="12" y2="21" />
+                    </svg>
+                </div>
+                <div class="drop-text">Drag a file here to upload</div>
             </div>
-            <div class="drop-text">Drag a file here to upload</div>
-        </div>
-        <div class="or">Or</div>
-        <div on:change={event => selectFile(event.target.files)}>
-            <label class="file">
-                <input type="file" multiple="multiple" aria-label="File browser">
-                <span class="file-custom"></span>
-            </label>
+            <div class="or">Or</div>
+            <div class="choose" on:change={event => selectFile(event.target.files)}>
+                <label class="file">
+                    <input type="file" multiple="multiple" aria-label="File browser">
+                    <span class="file-custom"></span>
+                </label>
+            </div>
         </div>
     {/if}
 </div>
@@ -100,11 +104,16 @@
     .upload-wrapper {
         display: flex;
         flex-direction: column;
+        overflow: hidden;
+        height: 100%;
+    }
+    .upload-widgets {
+        display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
         height: 100%;
         box-sizing: border-box;
-        overflow: hidden;
     }
     .drop {
         width: 100%;
