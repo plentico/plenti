@@ -77,7 +77,12 @@
         <MediaFilters bind:assets bind:enabledFilters singleSelect={true} />
         <MediaGrid files={getThumbnails(mediaList)} bind:selectedMedia={selectedMedia} />
         <ButtonWrapper>
-            <div class="button-primary" on:click={addUploadToLibrary}>
+            <div 
+                class="button-primary"
+                on:click={addUploadToLibrary}
+                on:click|preventDefault={() => enabledFilters=[]}
+                on:click|preventDefault={() => filePrefix = "assets/"}
+                >
                 <Button bind:commitList={mediaList} buttonText="Save Media" action="create" encoding="base64" />
             </div>
             {#if selectedMedia.length > 0}

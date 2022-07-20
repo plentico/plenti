@@ -1,5 +1,5 @@
 <script>
-    import { isAsset } from './assets_checker.js';
+    import { isAssetPath } from './assets_checker.js';
     export let assets;
     export let filters = [];
     export let enabledFilters = [];
@@ -22,7 +22,7 @@
     }
 
     for (const asset of assets) {
-        if (isAsset(asset)) {
+        if (isAssetPath(asset)) {
             // Turn asset path into array of subfolders
             let assetFolders = assetPathToArray(asset); 
             // Make sure we're not adding empty filters
