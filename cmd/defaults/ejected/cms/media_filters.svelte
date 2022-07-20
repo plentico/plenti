@@ -4,6 +4,7 @@
     export let filters = [];
     export let enabledFilters = [];
     export let filteredAssets = []; 
+    export let singleSelect = false;
 
     const assetPathToArray = asset => {
         // Create an array of path segments.
@@ -69,6 +70,9 @@
     }
 
     const toggleFilter = (filterSubGroup) => {
+        if (singleSelect) {
+            clearFilters();
+        }
         if (filterIsEnabled(enabledFilters, filterSubGroup)) {
             // Remove filter
             enabledFilters = enabledFilters.filter(current => current.join('') !== filterSubGroup.join(''));

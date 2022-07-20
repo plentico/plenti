@@ -5,6 +5,7 @@
     import Button from './button.svelte';
 
     export let assets;
+    let enabledFilters = [];
 
     let mediaList = [];
     const createMediaList = file => {
@@ -21,6 +22,20 @@
         Array.from(files).forEach(file => {
             createMediaList(file);
         });
+    }
+
+    let filePrefix = "assets/";
+    $: if (enabledFilters) {
+        if (enabledFilters.length > 0) {
+            // Convert filter array to path
+            let filterPath = enabledFilters[0].join('/') + "/";
+            let newPrefix = "assets/" + filterPath;
+            mediaList.forEach(mediaFile => {
+                mediaFile.file = mediaFile.file.replace(filePrefix, newPrefix);
+            });
+            // Set new prefix in case filter is switched and needs to be replaced
+            filePrefix = newPrefix;
+        }
     }
 
     let drag;
@@ -59,7 +74,7 @@
 
 <div class="upload-wrapper">
     {#if mediaList.length > 0}
-        <MediaFilters bind:assets />
+        <MediaFilters bind:assets bind:enabledFilters singleSelect={true} />
         <MediaGrid files={getThumbnails(mediaList)} bind:selectedMedia={selectedMedia} />
         <ButtonWrapper>
             <div class="button-primary" on:click={addUploadToLibrary}>
