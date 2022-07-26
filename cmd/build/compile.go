@@ -231,8 +231,7 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string,
 			// Remove whitespace on sides that might occur when splitting into array by comma.
 			currentNamedImport = strings.TrimSpace(currentNamedImport)
 			// Check that there is a valid named import.
-			if currentNamedImport != "" && importSignature != "" {
-
+			if currentNamedImport != "" && importSignature != "" && strings.HasSuffix(importSignature, "_svelte") {
 				// Entry should be block scoped, like: let count = layouts_scripts_stores_svelte_count;
 				blockScopedVar := "\n let " + currentNamedImport + " = " + importSignature + "_" + currentNamedImport + ";"
 				// Add block scoped var inside create_ssr_component.
