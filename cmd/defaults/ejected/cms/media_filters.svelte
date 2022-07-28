@@ -1,6 +1,6 @@
 <script>
     import { isAssetPath } from './assets_checker.js';
-    export let assets;
+    export let assets, changingAsset;
     export let filters = [];
     export let enabledFilters = [];
     export let filteredAssets = []; 
@@ -85,6 +85,9 @@
     const clearFilters = () => {
         enabledFilters = [];
     }
+
+    // Apply filters from current asset when swapping for new asset
+    toggleFilter(assetPathToArray(changingAsset));
 
 </script>
 

@@ -435,7 +435,7 @@
         opacity: 1.0;
     }
     .thumbnail-wrapper {
-        max-height: 115px;
+        height: 115px;
         overflow: hidden;
         position: relative;
     }
@@ -452,7 +452,7 @@
         border: 0;
         background-color: transparent;
         color: transparent;
-        font-size: 1.5rem;
+        font-size: 1.25rem;
         transition: all .15s;
     }
     button.swap:hover {

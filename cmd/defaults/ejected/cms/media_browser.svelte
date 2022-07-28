@@ -33,7 +33,7 @@
 </script>
 
 <div class="media-wrapper">
-    <MediaFilters bind:assets bind:filters bind:enabledFilters bind:filteredAssets />
+    <MediaFilters bind:assets bind:filters bind:enabledFilters bind:filteredAssets bind:changingAsset />
     <MediaGrid files={filteredAssets} bind:selectedMedia={selectedMedia} bind:changingAsset bind:showMedia />
 </div>
 {#if selectedMedia.length > 0} 
