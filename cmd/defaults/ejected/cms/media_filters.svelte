@@ -86,8 +86,10 @@
         enabledFilters = [];
     }
 
-    // Apply filters from current asset when swapping for new asset
-    toggleFilter(assetPathToArray(changingAsset));
+    if (changingAsset) {
+        // Apply filters from current asset when swapping for new asset
+        toggleFilter(assetPathToArray(changingAsset));
+    }
 
 </script>
 

@@ -4,7 +4,7 @@
     import ButtonWrapper from './button_wrapper.svelte';
     import Button from './button.svelte';
 
-    export let assets;
+    export let assets, changingAsset;
     let enabledFilters = [];
 
     let mediaList = [];
@@ -74,7 +74,7 @@
 
 <div class="upload-wrapper">
     {#if mediaList.length > 0}
-        <MediaFilters bind:assets bind:enabledFilters singleSelect={true} />
+        <MediaFilters bind:assets bind:enabledFilters singleSelect={true} {changingAsset} />
         <MediaGrid files={getThumbnails(mediaList)} bind:selectedMedia={selectedMedia} />
         <ButtonWrapper>
             <div 
