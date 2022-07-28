@@ -112,7 +112,7 @@
             <div class="or">Or</div>
             <div class="choose" on:change={event => selectFile(event.target.files)}>
                 <label class="file">
-                    <input type="file" multiple="multiple" aria-label="File browser">
+                    <input type="file" multiple="{changingAsset ? false : true}" aria-label="File browser">
                     <span class="file-custom"></span>
                 </label>
             </div>
