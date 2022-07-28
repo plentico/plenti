@@ -1,5 +1,5 @@
 <script>
-    export let content, showMedia, changingAsset;
+    export let content, showMedia, changingAsset, localMediaList;
     import DynamicFormInput from './dynamic_form_input.svelte';
     import ButtonWrapper from './button_wrapper.svelte';
     import Button from './button.svelte';
@@ -9,7 +9,7 @@
     {#each Object.entries(content.fields) as [label, field]}
         <div class="field">
             <label for="{label}">{label}</label>
-            <DynamicFormInput bind:field={content.fields[label]} {label} bind:showMedia bind:changingAsset />
+            <DynamicFormInput bind:field={content.fields[label]} {label} bind:showMedia bind:changingAsset bind:localMediaList />
         </div>
     {/each}
     <ButtonWrapper>

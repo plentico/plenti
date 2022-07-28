@@ -42,6 +42,7 @@
     }
 
     let changingAsset = "";
+    let localMediaList = [];
 </script>
 
 <div class="spacer"></div>
@@ -135,7 +136,7 @@
       {#if activeMedia === 'library'}
         <MediaBrowser bind:assets bind:changingAsset bind:showMedia />
       {:else}
-        <FileUpload bind:assets bind:changingAsset bind:showMedia />
+        <FileUpload bind:assets bind:changingAsset bind:showMedia bind:localMediaList />
       {/if}
     </div>
   </div>
@@ -182,7 +183,7 @@
     {#if activeEditor === 'code'}
       <JSONEditor bind:content />
     {:else}
-      <VisualEditor bind:content bind:showMedia bind:changingAsset />
+      <VisualEditor bind:content bind:showMedia bind:changingAsset bind:localMediaList />
     {/if}
   </div>
 {/if}

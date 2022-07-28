@@ -1,7 +1,7 @@
 <script>
     import { isDate, makeDate, formatDate } from './dates.js';
     import { isAssetPath, isImagePath, isDocPath } from './assets_checker.js';
-    export let field, label, showMedia, changingAsset;
+    export let field, label, showMedia, changingAsset, localMediaList;
 
     const bindDate = date => {
         field = formatDate(date, field);
@@ -112,6 +112,24 @@
             field = changingAsset;
         }
     }
+
+    const loadDataImage = imgEl => {
+        let src = imgEl.target.attributes.src.nodeValue;
+        console.log("can't load image")
+        console.log(imgEl)
+        console.log(src)
+        let allImg = document.querySelectorAll('img[src="' + src + '"]');
+        console.log(localMediaList)
+        console.log(allImg)
+        allImg.forEach(i => {
+            localMediaList.forEach(asset => {
+                if(asset.file === field) {
+                    i.src = asset.contents; 
+                    console.log(i)
+                }
+            });
+        });
+    }
 </script>
 
 {#if field === null}
@@ -130,7 +148,7 @@
     {:else if isAssetPath(field)}
         <div class="field thumbnail-wrapper">
             {#if isImagePath(field)}
-                <img src="{field}" alt="click to change thumbnail" class="thumbnail" />
+                <img src="{field}" alt="click to change thumbnail" class="thumbnail" on:error={e => loadDataImage(e)} />
             {:else if isDocPath(field)}
                 <embed src="{field}" class="thumbnail" />
             {/if}
@@ -287,7 +305,7 @@
             </div>
             {#if openKeys.includes(key)}
                 <div transition:slide={{ duration: 300 }}>
-                    <svelte:self bind:field={field[key]} {label} bind:showMedia bind:changingAsset />
+                    <svelte:self bind:field={field[key]} {label} bind:showMedia bind:changingAsset bind:localMediaList />
                 </div>
             {/if}
             </div>
@@ -300,7 +318,7 @@
         {#each Object.entries(field) as [key, value]}
             <div class="field">
                 <label for={key}>{key}</label>
-                <svelte:self bind:field={field[key]} label={key} bind:showMedia bind:changingAsset />
+                <svelte:self bind:field={field[key]} label={key} bind:showMedia bind:changingAsset bind:localMediaList />
             </div>
         {/each}
     </fieldset>

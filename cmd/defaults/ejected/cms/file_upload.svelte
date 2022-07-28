@@ -4,15 +4,14 @@
     import ButtonWrapper from './button_wrapper.svelte';
     import Button from './button.svelte';
 
-    export let assets, changingAsset, showMedia;
+    export let assets, changingAsset, showMedia, localMediaList;
     let enabledFilters = [];
 
-    let mediaList = [];
     const createMediaList = file => {
         let reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = e => {
-            mediaList = [...mediaList, {
+            localMediaList = [...localMediaList, {
                 file: "assets/" + file.name,
                 contents: e.target.result
             }];
@@ -30,7 +29,7 @@
             // Convert filter array to path
             let filterPath = enabledFilters[0].join('/') + "/";
             let newPrefix = "assets/" + filterPath;
-            mediaList.forEach(mediaFile => {
+            localMediaList.forEach(mediaFile => {
                 mediaFile.file = mediaFile.file.replace(filePrefix, newPrefix);
             });
             // Set new prefix in case filter is switched and needs to be replaced
@@ -58,7 +57,7 @@
     let selectedMedia = [];
     const removeSelectedMedia = () => {
         selectedMedia.forEach(file => {
-            mediaList = mediaList.filter(i => i.contents !== file);
+            localMediaList = localMediaList.filter(i => i.contents !== file);
             selectedMedia = [];
         });
     }
@@ -66,16 +65,16 @@
     const getThumbnails = mediaList => mediaList.map(i => i.contents);
 
     const addUploadToLibrary = () => {
-        mediaList.forEach(m => {
+        localMediaList.forEach(m => {
             assets = [...assets, m.contents];
         });
     }
 </script>
 
 <div class="upload-wrapper">
-    {#if mediaList.length > 0}
+    {#if localMediaList.length > 0}
         <MediaFilters bind:assets bind:enabledFilters singleSelect={true} {changingAsset} />
-        <MediaGrid files={getThumbnails(mediaList)} bind:selectedMedia={selectedMedia} />
+        <MediaGrid files={getThumbnails(localMediaList)} bind:selectedMedia={selectedMedia} />
         <ButtonWrapper>
             <div 
                 class="button-primary"
@@ -84,17 +83,17 @@
                 on:click|preventDefault={() => filePrefix = "assets/"}
                 on:click|preventDefault={() => {
                     if(changingAsset) {
-                        changingAsset = mediaList[0].file;
+                        changingAsset = localMediaList[0].file;
                         showMedia = false;
                     }
                 }}
                 >
-                <Button bind:commitList={mediaList} buttonText="Save Media" action="create" encoding="base64" />
+                <Button bind:commitList={localMediaList} buttonText="Save Media" action="create" encoding="base64" />
             </div>
             {#if selectedMedia.length > 0}
                 <button on:click|preventDefault="{removeSelectedMedia}">Discard selected</button> 
             {:else}
-                <button on:click|preventDefault="{() => mediaList=[]}">Discard all</button>
+                <button on:click|preventDefault="{() => localMediaList=[]}">Discard all</button>
             {/if}
         </ButtonWrapper>
     {:else}
