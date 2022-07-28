@@ -82,9 +82,9 @@
                 on:click={addUploadToLibrary}
                 on:click|preventDefault={() => enabledFilters=[]}
                 on:click|preventDefault={() => filePrefix = "assets/"}
-                on:click|preventDefault={() => changingAsset = mediaList[0].file}
                 on:click|preventDefault={() => {
                     if(changingAsset) {
+                        changingAsset = mediaList[0].file;
                         showMedia = false;
                     }
                 }}
