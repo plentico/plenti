@@ -101,21 +101,6 @@
         }
     }
 
-    let tempAssetPath;
-    let editingAssets = [];
-    const editAsset = () => {
-        if (editingAssets.includes(field)) {
-            // Remove asset from editing
-            editingAssets = editingAssets.filter(asset => asset !== field);
-            field = tempAssetPath;
-            tempAssetPath = "";
-        } else {
-            // Add asset to editing
-            editingAssets = [...editingAssets, field];
-            tempAssetPath = field;
-        }
-    }
-
     let originalAsset;
     const swapAsset = () => {
         originalAsset = field;
@@ -143,19 +128,13 @@
             <input type="date" value={makeDate(field)} on:input={date => bindDate(date.target.value)} />
         </div>
     {:else if isAssetPath(field)}
-        <div class="field">
-            {#if editingAssets.includes(field)}
-                <input id="{label}" type="text" bind:value={tempAssetPath} /> 
-                <div on:click={editAsset}>View</div>
-            {:else}
-                {#if isImagePath(field)}
-                    <img src="{field}" class="thumbnail" />
-                {:else if isDocPath(field)}
-                    <embed src="{field}" class="thumbnail" />
-                {/if}
-                <div on:click={editAsset}>Edit</div>
-                <div on:click={swapAsset}>Change</div>
+        <div class="field thumbnail-wrapper">
+            {#if isImagePath(field)}
+                <img src="{field}" alt="click to change thumbnail" class="thumbnail" />
+            {:else if isDocPath(field)}
+                <embed src="{field}" class="thumbnail" />
             {/if}
+            <button class="swap" on:click|preventDefault={swapAsset}>Change Asset</button>
         </div>
     {:else if field.length < 50}
         <div class="field">
@@ -455,7 +434,29 @@
         z-index: 20;
         opacity: 1.0;
     }
+    .thumbnail-wrapper {
+        max-height: 115px;
+        overflow: hidden;
+        position: relative;
+    }
     .thumbnail {
-        max-width: 100px;
+        max-width: 200px;
+    }
+    button.swap {
+        cursor: pointer;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 200px;
+        height: 115px;
+        border: 0;
+        background-color: transparent;
+        color: transparent;
+        font-size: 1.5rem;
+        transition: all .15s;
+    }
+    button.swap:hover {
+        background-color: rgba(0, 0, 0, .75);
+        color: white;
     }
 </style>
