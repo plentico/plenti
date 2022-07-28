@@ -4,7 +4,7 @@
     import ButtonWrapper from './button_wrapper.svelte';
     import Button from './button.svelte';
 
-    export let assets, changingAsset;
+    export let assets, changingAsset, showMedia;
     let enabledFilters = [];
 
     let mediaList = [];
@@ -82,6 +82,12 @@
                 on:click={addUploadToLibrary}
                 on:click|preventDefault={() => enabledFilters=[]}
                 on:click|preventDefault={() => filePrefix = "assets/"}
+                on:click|preventDefault={() => changingAsset = mediaList[0].file}
+                on:click|preventDefault={() => {
+                    if(changingAsset) {
+                        showMedia = false;
+                    }
+                }}
                 >
                 <Button bind:commitList={mediaList} buttonText="Save Media" action="create" encoding="base64" />
             </div>

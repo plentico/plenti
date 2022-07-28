@@ -135,7 +135,7 @@
       {#if activeMedia === 'library'}
         <MediaBrowser bind:assets bind:changingAsset bind:showMedia />
       {:else}
-        <FileUpload bind:assets {changingAsset} />
+        <FileUpload bind:assets bind:changingAsset bind:showMedia />
       {/if}
     </div>
   </div>
