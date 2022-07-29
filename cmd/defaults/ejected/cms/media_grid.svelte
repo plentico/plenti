@@ -38,6 +38,7 @@
             {:else if isImage(file)}
                 <img src={file} />
             {/if}
+            <div class="filename">{file.split("/").pop()}</div>
             {#if selectedMedia.includes(file)}
             <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-check" width="65" height="65" viewBox="0 0 24 24" stroke-width="2.5" stroke="#1c7fc7" fill="none" stroke-linecap="round" stroke-linejoin="round">
                 <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -66,6 +67,21 @@
         align-items: center;
         justify-content: center;
         border: 2px solid black;
+        position: relative;
+        cursor: pointer;
+    }
+    .filename {
+        position: absolute;
+        width: 100%;
+        bottom: -20px;
+        left: 0;
+        text-align: center;
+        transition: all .15s;
+        background: rgba(0,0,0,.5);
+        color: white;
+    }
+    .media:hover .filename {
+        bottom: 0;
     }
     .media.selected {
         border: 2px solid #1c7fc7;

@@ -113,19 +113,19 @@
         }
     }
 
+    // If an img path is 404, load the data image instead
     const loadDataImage = imgEl => {
+        // Get src from img that was clicked on in visual editor
         let src = imgEl.target.attributes.src.nodeValue;
-        console.log("can't load image")
-        console.log(imgEl)
-        console.log(src)
+        // Load all image on the page with that source
+        // TODO: Could load images not related to this field specifically
         let allImg = document.querySelectorAll('img[src="' + src + '"]');
-        console.log(localMediaList)
-        console.log(allImg)
         allImg.forEach(i => {
             localMediaList.forEach(asset => {
+                // Check if the field path matches a recently uploaded file in memory
                 if(asset.file === field) {
+                    // Set the source to the data image instead of the path that can't be found
                     i.src = asset.contents; 
-                    console.log(i)
                 }
             });
         });
@@ -148,7 +148,7 @@
     {:else if isAssetPath(field)}
         <div class="field thumbnail-wrapper">
             {#if isImagePath(field)}
-                <img src="{field}" alt="click to change thumbnail" class="thumbnail" on:error={e => loadDataImage(e)} />
+                <img src="{field}" alt="click to change thumbnail" class="thumbnail" on:error={imgEl => loadDataImage(imgEl)} />
             {:else if isDocPath(field)}
                 <embed src="{field}" class="thumbnail" />
             {/if}
