@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/plentico/plenti/cmd/build"
@@ -158,6 +159,7 @@ func init() {
 }
 
 type localChange struct {
+	Action   string
 	File     string
 	Contents string
 }
@@ -174,9 +176,18 @@ func postLocal(w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("Could not unmarshal JSON data: %v", err)
 		}
 		for _, change := range localChanges {
-			err = os.WriteFile(change.File, []byte(change.Contents), os.ModePerm)
-			if err != nil {
-				fmt.Printf("Unable to write to local file: %v", err)
+			if change.Action == "create" || change.Action == "update" {
+				err = os.WriteFile(change.File, []byte(change.Contents), os.ModePerm)
+				if err != nil {
+					fmt.Printf("Unable to write to local file: %v", err)
+				}
+			}
+			if change.Action == "delete" {
+				currentDir, _ := os.Getwd()
+				err = os.Remove(filepath.Join(currentDir, change.File))
+				if err != nil {
+					fmt.Printf("Unable to delete local file: %v", err)
+				}
 			}
 		}
 	}

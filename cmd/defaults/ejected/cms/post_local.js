@@ -6,6 +6,7 @@ export async function postLocal(commitList, action, encoding) {
     let body = [];
     commitList.forEach(item => {
         body.push({
+            action, action,
             file: item.file,
             contents: item.contents
         });
