@@ -105,6 +105,7 @@ var serveCmd = &cobra.Command{
 			fs = http.FileServer(http.Dir(buildDir))
 		}
 		http.Handle("/", fs)
+		// Handle local edits made via the Git-CMS
 		http.HandleFunc("/postlocal", postLocal)
 		// Watch filesystem for changes.
 		gowatch(buildDir)
@@ -156,41 +157,28 @@ func init() {
 	//serveCmd.Flags().BoolVarP(&common.UseMemFS, "in-memory", "M", false, "Use in memory filesystem")
 }
 
-type PostLocal struct {
+type localChange struct {
 	File     string
 	Contents string
 }
 
 func postLocal(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
-
 		b, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			panic(err)
+			fmt.Printf("Could not read 'body' from local edit: %v", err)
 		}
-
-		var jsonData []PostLocal
-		err = json.Unmarshal(b, &jsonData)
-		for _, d := range jsonData {
-			fmt.Println(d.File)
-			err = os.WriteFile(d.File, []byte(d.Contents), os.ModePerm)
+		var localChanges []localChange
+		err = json.Unmarshal(b, &localChanges)
+		if err != nil {
+			fmt.Printf("Could not unmarshal JSON data: %v", err)
+		}
+		for _, change := range localChanges {
+			err = os.WriteFile(change.File, []byte(change.Contents), os.ModePerm)
 			if err != nil {
-				fmt.Printf("Unable to write file: %v", err)
+				fmt.Printf("Unable to write to local file: %v", err)
 			}
 		}
-		//fmt.Println(jsonData)
-
-		//fmt.Println(string(b))
-
-		//fmt.Println(r)
-		/*
-			filename := r.FormValue("file")
-			contents := r.FormValue("contents")
-			err = os.WriteFile(filename, []byte(contents), os.ModePerm)
-			if err != nil {
-				fmt.Printf("Unable to write file: %v", err)
-			}
-		*/
 	}
 }
 

@@ -1,6 +1,5 @@
 export async function postLocal(commitList, action, encoding) {
-    console.log("post_local.js fired");
-    let url = 'http://localhost:3000/postlocal';
+    let url = '/postlocal';
     const headers = {
         'Content-Type': 'application/json; charset=utf-8'
     };
@@ -15,7 +14,6 @@ export async function postLocal(commitList, action, encoding) {
         method: 'POST',
         headers,
         body: JSON.stringify(body),
-        //body: body,
     });
     if (response.ok) {
         console.log("Saved locally!");
