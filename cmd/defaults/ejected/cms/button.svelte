@@ -1,12 +1,20 @@
 <script>
     export let commitList, buttonText, action, encoding;
     import { publish } from './publish.js';
+    import { postLocal } from './post_local.js';
+    import { env } from '../env.js';
+
+    const local = env.local ?? false;
 
     let status;
     const onSubmit = async () => {
         status = "sending";
         try {
-            await publish(commitList, action, encoding);
+            if (local) {
+                await postLocal(commitList, action, encoding);
+            } else {
+                await publish(commitList, action, encoding);
+            }
             status = "sent";
             resetStatus();
         } catch (error) {

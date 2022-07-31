@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -104,6 +105,7 @@ var serveCmd = &cobra.Command{
 			fs = http.FileServer(http.Dir(buildDir))
 		}
 		http.Handle("/", fs)
+		http.HandleFunc("/postlocal", postLocal)
 		// Watch filesystem for changes.
 		gowatch(buildDir)
 		if build.Doreload {
@@ -152,6 +154,44 @@ func init() {
 	serveCmd.Flags().BoolVarP(&build.Doreload, "live-reload", "L", false, "Enable live reload")
 	serveCmd.Flags().StringVarP(&ConfigFileFlag, "config", "c", "plenti.json", "use a custom sitewide configuration file")
 	//serveCmd.Flags().BoolVarP(&common.UseMemFS, "in-memory", "M", false, "Use in memory filesystem")
+}
+
+type PostLocal struct {
+	File     string
+	Contents string
+}
+
+func postLocal(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+
+		b, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			panic(err)
+		}
+
+		var jsonData []PostLocal
+		err = json.Unmarshal(b, &jsonData)
+		for _, d := range jsonData {
+			fmt.Println(d.File)
+			err = os.WriteFile(d.File, []byte(d.Contents), os.ModePerm)
+			if err != nil {
+				fmt.Printf("Unable to write file: %v", err)
+			}
+		}
+		//fmt.Println(jsonData)
+
+		//fmt.Println(string(b))
+
+		//fmt.Println(r)
+		/*
+			filename := r.FormValue("file")
+			contents := r.FormValue("contents")
+			err = os.WriteFile(filename, []byte(contents), os.ModePerm)
+			if err != nil {
+				fmt.Printf("Unable to write file: %v", err)
+			}
+		*/
+	}
 }
 
 func serveSSL(port int) {
