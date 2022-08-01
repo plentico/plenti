@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -160,6 +161,7 @@ func init() {
 
 type localChange struct {
 	Action   string
+	Encoding string
 	File     string
 	Contents string
 }
@@ -175,9 +177,17 @@ func postLocal(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			fmt.Printf("Could not unmarshal JSON data: %v", err)
 		}
+		var contents []byte
 		for _, change := range localChanges {
 			if change.Action == "create" || change.Action == "update" {
-				err = os.WriteFile(change.File, []byte(change.Contents), os.ModePerm)
+				contents = []byte(change.Contents)
+				if change.Encoding == "base64" {
+					contents, err = base64.StdEncoding.DecodeString(change.Contents)
+					if err != nil {
+						fmt.Printf("Could not decode base64 asset: %v", err)
+					}
+				}
+				err = os.WriteFile(change.File, contents, os.ModePerm)
 				if err != nil {
 					fmt.Printf("Unable to write to local file: %v", err)
 				}

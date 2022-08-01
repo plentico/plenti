@@ -3,12 +3,14 @@ export async function postLocal(commitList, action, encoding) {
     const headers = {
         'Content-Type': 'application/json; charset=utf-8'
     };
+    const makeDataStr = base64Str => base64Str.split(',')[1];
     let body = [];
-    commitList.forEach(item => {
+    commitList.forEach(commitItem => {
         body.push({
             action, action,
-            file: item.file,
-            contents: item.contents
+            encoding: encoding,
+            file: commitItem.file,
+            contents: encoding === "base64" ? makeDataStr(commitItem.contents) : commitItem.contents
         });
     });
     const response = await fetch(url, {
