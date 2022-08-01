@@ -4,6 +4,7 @@ import { createDataStore } from './storage.js';
 import { env } from '../env.js';
 
 export const repoUrl = env.cms.repo ? new URL(env.cms.repo) : new URL("https://gitlab.com");
+const local = env.local;
 
 const settings = {
     server: repoUrl.origin,
@@ -13,6 +14,11 @@ const settings = {
     appId: env.cms.appId
 };
 
+const localTokenStore = createDataStore('local_tokens');
+let localTokens;
+localTokenStore.subscribe(value => {
+    localTokens = value;
+});
 const tokenStore = createDataStore('gitlab_tokens');
 let tokens, isExpired;
 tokenStore.subscribe(value => {
@@ -30,7 +36,7 @@ stateStore.subscribe(value => state = value);
 
 const getUser = () => ({
     isBeingAuthenticated: Boolean(state) || (tokens && isExpired),
-    isAuthenticated: tokens && !isExpired,
+    isAuthenticated: localTokens || (tokens && !isExpired),
     tokens,
 
     finishAuthentication(params) {
@@ -52,11 +58,16 @@ const getUser = () => ({
     },
 
     logout() {
+        if (local) {
+            localTokenStore.set(null);
+            return;
+        }
         tokenStore.set(null);
         codeVerifierStore.set(null);
     },
 });
 export const user = readable(getUser(), set => {
+    localTokenStore.subscribe(() => set(getUser()));
     tokenStore.subscribe(() => set(getUser()));
     stateStore.subscribe(() => set(getUser()));
 });
@@ -79,6 +90,10 @@ const hash = async text => {
 };
 
 const requestAuthCode = async () => {
+    if (local) {
+        localTokenStore.set(true);
+        return;
+    }
     stateStore.set(generateString());
     codeVerifierStore.set(generateString());
     const codeChallenge = await hash(codeVerifier);
