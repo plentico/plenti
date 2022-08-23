@@ -229,7 +229,7 @@
         <input id="{label}" type="checkbox" bind:checked={field} /><span>{field}</span>
     </div>
 {:else if field.constructor === [].constructor}
-    <main class="dragdroplist">
+    <div class="dragdroplist">
         <div 
             bind:this={ghost}
             id="ghost"
@@ -311,7 +311,7 @@
             </div>
         {/each}
         </div>
-    </main>
+    </div>
 {:else if field.constructor === ({}).constructor}
     <fieldset>
         <!-- <legend>{label}</legend> -->
@@ -372,7 +372,7 @@
         font-family: sans-serif;
         font-size: small;
     }
-    main {
+    .dragdroplist {
         position: relative;
     }
     .list {
