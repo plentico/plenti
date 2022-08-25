@@ -130,6 +130,15 @@
             });
         });
     }
+
+    const heading = level => {
+        let s = window.getSelection();
+        if (s.baseNode.parentNode.tagName === level.toUpperCase()) {
+            document.execCommand('formatBlock', false, 'div');
+        } else {
+            document.execCommand('insertHTML', false, '<' + level + '>' + s + '</' + level + '>');
+        }
+    }
 </script>
 
 {#if field === null}
@@ -209,6 +218,16 @@
                         <line x1="3" y1="8" x2="5" y2="8" />
                         <line x1="8" y1="3" x2="8" y2="5" />
                     </svg>
+                </button>
+                <div class="spacer"></div>
+                <button on:click={textarea.focus()} on:click|preventDefault={() => heading("h1")} title="Heading level one">
+                    h1
+                </button>
+                <button on:click={textarea.focus()} on:click|preventDefault={() => heading("h2")} title="Heading level two">
+                    h2
+                </button>
+                <button on:click={textarea.focus()} on:click|preventDefault={() => heading("h3")} title="Heading level three">
+                    h3
                 </button>
                 <div class="spacer"></div>
                 <button on:click={textarea.focus()} on:click|preventDefault={() => document.execCommand("removeFormat")}>
