@@ -1,6 +1,7 @@
 <script>
     import { isDate, makeDate, formatDate } from './dates.js';
     import { isAssetPath, isImagePath, isDocPath } from './assets_checker.js';
+    import Checkbox from './fields/checkbox.svelte';
     export let field, label, showMedia, changingAsset, localMediaList, parentKeys, schema;
 
     const bindDate = date => {
@@ -147,10 +148,11 @@
     <div class="field">{field} is undefined</div>
 {:else if schema && schema.hasOwnProperty(parentKeys)}
     {#if schema[parentKeys].type === "checkbox"}
-        {#each schema[parentKeys].values as value}
-            <label for="{value}">{value}</label>
-            <input id="{value}" type="checkbox" checked={field.includes(value)} on:click={() => field = [...field, value]} />
-        {/each}
+        <Checkbox {schema} {parentKeys} bind:field />
+    {/if}
+    {#if false}
+        {console.log(parentKeys.split('.').reduce((o,i)=> o[i], schema))}
+        <div>WYSIWYG</div>
     {/if}
 {:else if typeof field === "number"}
     <div class="field">

@@ -5,9 +5,7 @@
     import Button from './button.svelte';
     import schemas from '../schemas.js';
 
-    console.log(schemas);
     let schema = schemas[content.type];
-    console.log(schema);
 </script>
 
 <form>
