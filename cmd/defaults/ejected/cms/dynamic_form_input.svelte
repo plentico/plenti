@@ -1,7 +1,7 @@
 <script>
     import { isDate, makeDate, formatDate } from './dates.js';
     import { isAssetPath, isImagePath, isDocPath } from './assets_checker.js';
-    export let field, label, showMedia, changingAsset, localMediaList;
+    export let field, label, showMedia, changingAsset, localMediaList, parentKeys, schema;
 
     const bindDate = date => {
         field = formatDate(date, field);
@@ -145,6 +145,13 @@
     <div class="field">{field} is null</div>
 {:else if field === undefined}
     <div class="field">{field} is undefined</div>
+{:else if schema && schema.hasOwnProperty(parentKeys)}
+    {#if schema[parentKeys].type === "checkbox"}
+        {#each schema[parentKeys].values as value}
+            <label for="{value}">{value}</label>
+            <input id="{value}" type="checkbox" checked={field.includes(value)} on:click={() => field = [...field, value]} />
+        {/each}
+    {/if}
 {:else if typeof field === "number"}
     <div class="field">
         <input id="{label}" type="number" bind:value={field} />
@@ -324,7 +331,7 @@
             </div>
             {#if openKeys.includes(key)}
                 <div transition:slide={{ duration: 300 }}>
-                    <svelte:self bind:field={field[key]} {label} bind:showMedia bind:changingAsset bind:localMediaList />
+                    <svelte:self bind:field={field[key]} {label} bind:showMedia bind:changingAsset bind:localMediaList parentKeys={parentKeys + '.' + key} {schema} />
                 </div>
             {/if}
             </div>
@@ -337,7 +344,7 @@
         {#each Object.entries(field) as [key, value]}
             <div class="field">
                 <label for={key}>{key}</label>
-                <svelte:self bind:field={field[key]} label={key} bind:showMedia bind:changingAsset bind:localMediaList />
+                <svelte:self bind:field={field[key]} label={key} bind:showMedia bind:changingAsset bind:localMediaList parentKeys={parentKeys + '.' + key} {schema} />
             </div>
         {/each}
     </fieldset>

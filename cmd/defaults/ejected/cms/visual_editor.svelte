@@ -3,13 +3,18 @@
     import DynamicFormInput from './dynamic_form_input.svelte';
     import ButtonWrapper from './button_wrapper.svelte';
     import Button from './button.svelte';
+    import schemas from '../schemas.js';
+
+    console.log(schemas);
+    let schema = schemas[content.type];
+    console.log(schema);
 </script>
 
 <form>
     {#each Object.entries(content.fields) as [label, field]}
         <div class="field">
             <label for="{label}">{label}</label>
-            <DynamicFormInput bind:field={content.fields[label]} {label} bind:showMedia bind:changingAsset bind:localMediaList />
+            <DynamicFormInput bind:field={content.fields[label]} {label} bind:showMedia bind:changingAsset bind:localMediaList parentKeys={label} {schema} />
         </div>
     {/each}
     <ButtonWrapper>
