@@ -1,5 +1,5 @@
 <script>
-    export let field;
+    export let schema, parentKeys, field;
 
     let textarea;
     
@@ -29,16 +29,27 @@
 </script>
 
 <div class="editor">
+    {#if schema[parentKeys].options.includes("bold")}
     <button on:click={textarea.focus()} on:click|preventDefault={() => document.execCommand("bold")} title="Bold the selected text">
         <b>B</b>
     </button>
+    {/if}
+    {#if schema[parentKeys].options.includes("italic")}
     <button on:click={textarea.focus()} on:click|preventDefault={() => document.execCommand("italic")} title="Italicize the selected text">
         <i>I</i>
     </button>
+    {/if}
+    {#if schema[parentKeys].options.includes("underline")}
     <button on:click={textarea.focus()} on:click|preventDefault={() => document.execCommand("underline")} title="Underline the selected text">
         <u>U</u>
     </button>
+    {/if}
+    {#if schema[parentKeys].options.includes("bold")
+        || schema[parentKeys].options.includes("italic")
+        || schema[parentKeys].options.includes("underline")}
     <div class="spacer"></div>
+    {/if}
+    {#if schema[parentKeys].options.includes("bullets")}
     <button on:click={textarea.focus()} on:click|preventDefault={() => document.execCommand("insertUnorderedList")}>
         <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-list-numbers-MODIFIED" width="20" height="20" viewBox="0 0 24 24" stroke-width="1.5" stroke="black" fill="none" stroke-linecap="round" stroke-linejoin="round">
             <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -49,6 +60,8 @@
             <circle cx="5" r="2" cy="17"></circle>
         </svg>
     </button>
+    {/if}
+    {#if schema[parentKeys].options.includes("numbers")}
     <button on:click={textarea.focus()} on:click|preventDefault={() => document.execCommand("insertOrderedList")}>
         <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-list-numbers" width="20" height="20" viewBox="0 0 24 24" stroke-width="1.5" stroke="black" fill="none" stroke-linecap="round" stroke-linejoin="round">
             <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -59,7 +72,12 @@
             <path d="M6 10v-6l-2 2" />
         </svg>
     </button>
+    {/if}
+    {#if schema[parentKeys].options.includes("bullets")
+        || schema[parentKeys].options.includes("numbers")}
     <div class="spacer"></div>
+    {/if}
+    {#if schema[parentKeys].options.includes("link")}
     <button on:click={textarea.focus()} on:click={createLink} on:click|preventDefault={() => document.execCommand("insertHTML", false, "<a href='" + linkURL + "' " + linkOptions + ">" + linkText + "</a>")}>
         <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-link" width="20" height="20" viewBox="0 0 24 24" stroke-width="1.5" stroke="black" fill="none" stroke-linecap="round" stroke-linejoin="round">
             <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -67,6 +85,8 @@
             <path d="M14 10a3.5 3.5 0 0 0 -5 0l-4 4a3.5 3.5 0 0 0 5 5l.5 -.5" />
         </svg>
     </button>
+    {/if}
+    {#if schema[parentKeys].options.includes("unlink")}
     <button on:click={textarea.focus()} on:click|preventDefault={() => document.execCommand("unlink")}>
         <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-unlink" width="20" height="20" viewBox="0 0 24 24" stroke-width="1.5" stroke="black" fill="none" stroke-linecap="round" stroke-linejoin="round">
             <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -78,17 +98,32 @@
             <line x1="8" y1="3" x2="8" y2="5" />
         </svg>
     </button>
+    {/if}
+    {#if schema[parentKeys].options.includes("link")
+        || schema[parentKeys].options.includes("unlink")}
     <div class="spacer"></div>
+    {/if}
+    {#if schema[parentKeys].options.includes("heading1")}
     <button on:click={textarea.focus()} on:click|preventDefault={() => heading("h1")} title="Heading level one">
         h1
     </button>
+    {/if}
+    {#if schema[parentKeys].options.includes("heading2")}
     <button on:click={textarea.focus()} on:click|preventDefault={() => heading("h2")} title="Heading level two">
         h2
     </button>
+    {/if}
+    {#if schema[parentKeys].options.includes("heading3")}
     <button on:click={textarea.focus()} on:click|preventDefault={() => heading("h3")} title="Heading level three">
         h3
     </button>
+    {/if}
+    {#if schema[parentKeys].options.includes("heading1")
+        || schema[parentKeys].options.includes("heading2")
+        || schema[parentKeys].options.includes("heading3")}
     <div class="spacer"></div>
+    {/if}
+    {#if schema[parentKeys].options.includes("clear")}
     <button on:click={textarea.focus()} on:click|preventDefault={() => document.execCommand("removeFormat")}>
         <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clear-formatting" width="20" height="20" viewBox="0 0 24 24" stroke-width="1.5" stroke="black" fill="none" stroke-linecap="round" stroke-linejoin="round">
             <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -98,7 +133,9 @@
             <line x1="13" y1="5" x2="9" y2="19" />
         </svg>
     </button>
+    {/if}
 </div>
+
 <div class="textarea" contenteditable=true bind:innerHTML={field} bind:this={textarea}></div>
 
 <style>

@@ -25,7 +25,6 @@
         {/if}
         {#if schema[parentKeys].type === "wysiwyg"}
             <Wysiwyg {schema} {parentKeys} bind:field />
-            {console.log(parentKeys.split('.').reduce((o,i)=> o[i], schema))}
         {/if}
     {:else if typeof field === "number"}
         <input id="{label}" type="number" bind:value={field} />
