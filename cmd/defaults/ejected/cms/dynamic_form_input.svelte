@@ -23,9 +23,9 @@
         {#if schema[parentKeys].type === "checkbox"}
             <Checkbox {schema} {parentKeys} bind:field />
         {/if}
-        {#if false}
+        {#if schema[parentKeys].type === "wysiwyg"}
+            <Wysiwyg {schema} {parentKeys} bind:field />
             {console.log(parentKeys.split('.').reduce((o,i)=> o[i], schema))}
-            <Wysiwyg bind:field />
         {/if}
     {:else if typeof field === "number"}
         <input id="{label}" type="number" bind:value={field} />
@@ -34,10 +34,13 @@
             <input type="date" value={makeDate(field)} on:input={date => bindDate(date.target.value)} />
         {:else if isAssetPath(field)}
             <Asset bind:field bind:showMedia bind:changingAsset bind:localMediaList />
-        {:else if field.length < 50}
-            <input id="{label}" type="text" bind:value={field} />
         {:else}
-            <Wysiwyg bind:field />
+            <div
+                class="textarea"
+                role="textbox"
+                contenteditable=true
+                bind:innerHTML={field}
+            ></div>
         {/if}
     {:else if typeof field === "boolean"}
         <label><input id="{label}" type="checkbox" bind:checked={field} /> {field}</label>
@@ -58,6 +61,24 @@
     .field:last-of-type {
         margin-bottom: 0;
     }
+    .textarea {
+        background: white;
+        border: 1px solid gainsboro;
+        resize: vertical;
+        overflow: auto;
+        padding: 7px;
+        font-family: sans-serif;
+        font-size: small;
+        white-space: pre-wrap;
+    }
+    /*
+    textarea {
+        width: 100%;
+        resize: vertical;
+        box-sizing: border-box;
+        padding: 7px;
+        border: 1px solid gainsboro;
+    }
     input[type=text] {
         height: 30px;
         padding: 0 7px;
@@ -66,4 +87,5 @@
         width: 100%;
         box-sizing: border-box;
     }
+    */
 </style>
