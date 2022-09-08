@@ -4,6 +4,7 @@
     import Checkbox from './fields/checkbox.svelte';
     import Wysiwyg from './fields/wysiwyg.svelte';
     import Component from './fields/component.svelte';
+    import Group from './fields/group.svelte';
 
     export let field, label, showMedia, changingAsset, localMediaList, parentKeys, schema;
 
@@ -77,16 +78,9 @@
 {:else if typeof field === "boolean"}
     <label><input id="{label}" type="checkbox" bind:checked={field} /> {field}</label>
 {:else if field.constructor === [].constructor}
-    <Component bind:field {label} bind:showMedia bind:changingAsset bind:localMediaList bind:parentKeys {schema} />
+    <Component bind:field bind:showMedia bind:changingAsset bind:localMediaList bind:parentKeys {schema} />
 {:else if field.constructor === ({}).constructor}
-    <fieldset>
-        {#each Object.entries(field) as [key, value]}
-            <div class="field">
-                <label for={key}>{key}</label>
-                <svelte:self bind:field={field[key]} label={key} bind:showMedia bind:changingAsset bind:localMediaList parentKeys={parentKeys + '.' + key} {schema} />
-            </div>
-        {/each}
-    </fieldset>
+    <Group bind:field bind:showMedia bind:changingAsset bind:localMediaList bind:parentKeys {schema} />
 {/if}
 </div>
 

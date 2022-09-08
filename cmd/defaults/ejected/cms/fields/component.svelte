@@ -1,6 +1,6 @@
 <script>
     import DynamicFormInput from "../dynamic_form_input.svelte";
-    export let field, label, showMedia, changingAsset, localMediaList, parentKeys, schema;
+    export let field, showMedia, changingAsset, localMediaList, parentKeys, schema;
 
     // Accordion
     import {slide} from "svelte/transition";
@@ -156,7 +156,7 @@
         </div>
         {#if openKeys.includes(key)}
             <div transition:slide={{ duration: 300 }}>
-                <DynamicFormInput bind:field={field[key]} {label} bind:showMedia bind:changingAsset bind:localMediaList parentKeys={parentKeys + '.' + key} {schema} />
+                <DynamicFormInput bind:field={field[key]} label={key} bind:showMedia bind:changingAsset bind:localMediaList parentKeys={parentKeys + '.' + key} {schema} />
             </div>
         {/if}
         </div>
