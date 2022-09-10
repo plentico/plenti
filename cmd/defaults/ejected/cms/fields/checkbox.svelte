@@ -2,20 +2,20 @@
     export let schema, parentKeys, field;
 </script>
 
-{#each schema[parentKeys].values as value}
+{#each schema[parentKeys].options as option}
     <div class="checkbox">
         <label>
             <input
-                id="{value}" 
+                id="{option}" 
                 type="checkbox"
-                checked={field.includes(value)}
+                checked={field.includes(option)}
                 on:click={() => {
-                    if (field.includes(value)) {
-                        field = field.filter(f => f != value);
+                    if (field.includes(option)) {
+                        field = field.filter(f => f != option);
                     } else {
-                        field = [...field, value];
+                        field = [...field, option];
                     }
                 }}
-            /> {value}</label>
+            /> {option}</label>
     </div>
 {/each}

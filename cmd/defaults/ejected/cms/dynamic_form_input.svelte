@@ -2,6 +2,7 @@
     import { isDate, makeDate, formatDate } from './dates.js';
     import { isAssetPath } from './assets_checker.js';
     import Checkbox from './fields/checkbox.svelte';
+    import Radio from './fields/radio.svelte';
     import Wysiwyg from './fields/wysiwyg.svelte';
     import Component from './fields/component.svelte';
     import Group from './fields/group.svelte';
@@ -22,6 +23,9 @@
     {:else if schema && schema.hasOwnProperty(parentKeys)}
         {#if schema[parentKeys].type === "checkbox"}
             <Checkbox {schema} {parentKeys} bind:field />
+        {/if}
+        {#if schema[parentKeys].type === "radio"}
+            <Radio {schema} {parentKeys} bind:field />
         {/if}
         {#if schema[parentKeys].type === "wysiwyg"}
             <Wysiwyg {schema} {parentKeys} bind:field />
