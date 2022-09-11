@@ -10,10 +10,7 @@
                 type="radio"
                 name="radio"
                 checked={field === option}
-                on:click={() => {
-                    field = "";
-                    field = option;
-                }}
+                on:click={() => {field = option;}}
             /> {option}</label>
     </div>
 {/each}

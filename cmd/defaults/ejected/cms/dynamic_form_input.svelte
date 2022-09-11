@@ -7,6 +7,7 @@
     import Component from './fields/component.svelte';
     import Group from './fields/group.svelte';
     import Asset from './fields/asset.svelte';
+    import Select from './fields/select.svelte';
 
     export let field, label, showMedia, changingAsset, localMediaList, parentKeys, schema;
 
@@ -26,6 +27,9 @@
         {/if}
         {#if schema[parentKeys].type === "radio"}
             <Radio {schema} {parentKeys} bind:field />
+        {/if}
+        {#if schema[parentKeys].type === "select"}
+            <Select {schema} {parentKeys} bind:field />
         {/if}
         {#if schema[parentKeys].type === "wysiwyg"}
             <Wysiwyg {schema} {parentKeys} bind:field />
