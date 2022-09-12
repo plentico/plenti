@@ -5,9 +5,10 @@
     import Radio from './fields/radio.svelte';
     import Wysiwyg from './fields/wysiwyg.svelte';
     import Component from './fields/component.svelte';
-    import Group from './fields/group.svelte';
+    import Fieldset from './fields/fieldset.svelte';
     import Asset from './fields/asset.svelte';
     import Select from './fields/select.svelte';
+    import Autocomplete from './fields/autocomplete.svelte';
 
     export let field, label, showMedia, changingAsset, localMediaList, parentKeys, schema;
 
@@ -34,6 +35,9 @@
         {#if schema[parentKeys].type === "wysiwyg"}
             <Wysiwyg {schema} {parentKeys} bind:field />
         {/if}
+        {#if schema[parentKeys].type === "autocomplete"}
+            <Autocomplete {schema} {parentKeys} bind:field />
+        {/if}
     {:else if typeof field === "number"}
         <input id="{label}" type="number" bind:value={field} />
     {:else if typeof field === "string"}
@@ -54,7 +58,7 @@
     {:else if field.constructor === [].constructor}
         <Component bind:field bind:showMedia bind:changingAsset bind:localMediaList bind:parentKeys {schema} />
     {:else if field.constructor === ({}).constructor}
-        <Group bind:field bind:showMedia bind:changingAsset bind:localMediaList bind:parentKeys {schema} />
+        <Fieldset bind:field bind:showMedia bind:changingAsset bind:localMediaList bind:parentKeys {schema} />
     {/if}
 </div>
 
