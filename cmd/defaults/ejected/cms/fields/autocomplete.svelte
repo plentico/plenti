@@ -23,12 +23,36 @@
     }
 </script>
 
-<input bind:value={input} on:keyup={search} />
+<div class="autocomplete">
+    <input bind:value={input} on:keyup={search} />
+    {#if results && results.length > 0}
+        <select bind:value={field} size={results.length}>
+            {#each results as result}
+                <option>{result}</option>
+            {/each}
+        </select>
+    {/if}
+</div>
 
-{#if results}
-    <ul>
-        {#each results as result}
-            <li on:click={() => field = result}>{result}</li>
-        {/each}
-    </ul>
-{/if}
+<style>
+    .autocomplete {
+        position: relative;
+    }
+    input {
+        width: 100%;
+        box-sizing: border-box;
+        height: 37px;
+        padding: 7px;
+    }
+    select {
+        position: absolute;
+        max-height: 200px;
+        top: 37px;
+        left: 0;
+        width: 100%;
+        z-index: 1;
+    }
+    option {
+        padding: 7px;
+    }
+</style>
