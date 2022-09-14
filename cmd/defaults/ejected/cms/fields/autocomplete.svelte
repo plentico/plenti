@@ -2,7 +2,12 @@
     import allContent from '../../content.svelte';
     export let schema, parentKeys, field;
 
-    let input, results, loading;
+    let input, results, loading, option;
+
+    //input = field;
+    if (field.constructor !== [].constructor) {
+        field = [field];
+    }
 
     const search = () => {
         loading = true;
@@ -27,7 +32,11 @@
     }
     const makeSelection = () => {
         results = [];
-        input = field;
+        field = [...field, option]
+        //input = field;
+    }
+    const removeTag = tag => {
+        field = field.filter(t => t !== tag);
     }
 </script>
 
@@ -47,11 +56,25 @@
         {/if}
     </div>
     {#if results && results.length > 0}
-        <select bind:value={field} size={results.length}>
+        <select bind:value={option} size={results.length}>
             {#each results as result}
                 <option on:click={makeSelection}>{result}</option>
             {/each}
         </select>
+    {/if}
+    {#if field.constructor === [].constructor}
+        <div class="tags">
+            {#each field as tag}
+                <span class="tag">
+                    {tag}
+                    <svg on:click={() => removeTag(tag)} xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-x" width="20" height="20" viewBox="0 0 24 24" stroke-width="1.5" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </span>
+            {/each} 
+        </div>
     {/if}
 </div>
 
@@ -64,6 +87,7 @@
         box-sizing: border-box;
         height: 37px;
         padding: 7px;
+        padding-right: 32px;
     }
     select {
         position: absolute;
@@ -75,6 +99,18 @@
     }
     option {
         padding: 7px;
+    }
+    .tags {
+        display: flex;
+        gap: 5px;
+        padding: 10px 0;
+    }
+    .tag {
+        background-color: gainsboro;
+        display: flex;
+        gap: 5px;
+        padding: 2px 5px;
+        border-radius: 4px;
     }
     .load-icon {
         position: absolute;
