@@ -4,6 +4,8 @@
 
     let input, results, loading, option;
 
+    let deepCloneContent = structuredClone(allContent);
+
     // Make sure field value starts as an array
     if (field.constructor !== [].constructor) {
         field = [field];
@@ -13,7 +15,7 @@
         loading = true;
         results = [];
         schema[parentKeys].options.forEach(option => {
-            let filteredContent = allContent.filter(c => c.type = option.type);
+            let filteredContent = deepCloneContent.filter(c => c.type = option.type);
             filteredContent.forEach(content => {
                 option.search.forEach(field => {
                     if (content.fields.hasOwnProperty(field)
@@ -72,7 +74,7 @@
         {/if}
     </div>
     {#if results && results.length > 0}
-        <select bind:value={option} size={results.length + 1}>
+        <select bind:value={option} size={results.length === 1 ? 2 : results.length}>
             {#each results as result}
                 <option on:click={makeSelection}>{result}</option>
             {/each}
