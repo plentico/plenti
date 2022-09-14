@@ -4,7 +4,7 @@
 
     let input, results, loading, option;
 
-    //input = field;
+    // Make sure field value starts as an array
     if (field.constructor !== [].constructor) {
         field = [field];
     }
@@ -33,7 +33,7 @@
     const makeSelection = () => {
         results = [];
         field = [...field, option]
-        //input = field;
+        input = "";
     }
     const removeTag = tag => {
         field = field.filter(t => t !== tag);
@@ -41,7 +41,23 @@
 </script>
 
 <div class="autocomplete">
-    <input bind:value={input} on:keyup={search} />
+    <div class="input-wrapper">
+        {#if field.constructor === [].constructor}
+            <div class="tags">
+                {#each field as tag}
+                    <span class="tag">
+                        {tag}
+                        <svg on:click={() => removeTag(tag)} xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-x" width="15" height="15" viewBox="0 0 24 24" stroke-width="2" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                    </span>
+                {/each} 
+            </div>
+        {/if}
+        <input bind:value={input} on:keyup={search} />
+    </div>
     <div class="load-icon">
         {#if loading}
             <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-loader-2" width="20" height="20" viewBox="0 0 24 24" stroke-width="2" stroke="gray" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -62,32 +78,22 @@
             {/each}
         </select>
     {/if}
-    {#if field.constructor === [].constructor}
-        <div class="tags">
-            {#each field as tag}
-                <span class="tag">
-                    {tag}
-                    <svg on:click={() => removeTag(tag)} xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-x" width="20" height="20" viewBox="0 0 24 24" stroke-width="1.5" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                </span>
-            {/each} 
-        </div>
-    {/if}
 </div>
 
 <style>
     .autocomplete {
         position: relative;
     }
-    input {
-        width: 100%;
-        box-sizing: border-box;
+    .input-wrapper {
+        background: white;
+        border: 1px solid gainsboro;
+        overflow-y: hidden;
         height: 37px;
-        padding: 7px;
-        padding-right: 32px;
+        display: flex;
+    }
+    input {
+        border: none;
+        outline: none;
     }
     select {
         position: absolute;
@@ -103,9 +109,12 @@
     .tags {
         display: flex;
         gap: 5px;
-        padding: 10px 0;
+        padding: 7px;
     }
     .tag {
+        font-family: sans-serif;
+        font-size: small;
+        white-space: nowrap;
         background-color: gainsboro;
         display: flex;
         gap: 5px;
