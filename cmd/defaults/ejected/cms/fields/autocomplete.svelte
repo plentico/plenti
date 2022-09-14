@@ -72,7 +72,7 @@
         {/if}
     </div>
     {#if results && results.length > 0}
-        <select bind:value={option} size={results.length}>
+        <select bind:value={option} size={results.length + 1}>
             {#each results as result}
                 <option on:click={makeSelection}>{result}</option>
             {/each}
@@ -108,8 +108,9 @@
     }
     .tags {
         display: flex;
-        gap: 5px;
+        gap: 7px;
         padding: 7px;
+        align-items: center;
     }
     .tag {
         font-family: sans-serif;
@@ -120,6 +121,9 @@
         gap: 5px;
         padding: 2px 5px;
         border-radius: 4px;
+    }
+    .tag svg {
+        cursor: pointer;
     }
     .load-icon {
         position: absolute;
