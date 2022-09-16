@@ -1,0 +1,21 @@
+<script>
+    export let schema, parentKeys, field;
+    const uuidv4 = () => {
+        return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+            (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+        );
+    }
+    if (field === "") {
+        field = uuidv4();
+    }
+</script>
+
+<input bind:value={field} disabled />
+
+<style>
+    input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 7px;
+    }
+</style>

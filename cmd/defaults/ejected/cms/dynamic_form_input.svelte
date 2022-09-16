@@ -9,6 +9,7 @@
     import Asset from './fields/asset.svelte';
     import Select from './fields/select.svelte';
     import Autocomplete from './fields/autocomplete.svelte';
+    import ID from './fields/id.svelte';
 
     export let field, label, showMedia, changingAsset, localMediaList, parentKeys, schema;
 
@@ -37,6 +38,9 @@
         {/if}
         {#if schema[parentKeys].type === "autocomplete"}
             <Autocomplete {schema} {parentKeys} bind:field />
+        {/if}
+        {#if schema[parentKeys].type === "id"}
+            <ID {schema} {parentKeys} bind:field />
         {/if}
     {:else if typeof field === "number"}
         <input id="{label}" type="number" bind:value={field} />
