@@ -57,8 +57,7 @@ const validateFilename = (filename, type) => {
         content.filename == filename + '.json'
     );
     if (existingContent) {
-        //validationErrors = [...validationErrors, "Content with this filename already exists. <a href='" + existingContent.path + "'>Edit content</a>?"];
-        validationErrors = [...validationErrors, ["Content with this filename already exists.", {"link": existingContent.path, "text": "Edit content"}]];
+        validationErrors = [...validationErrors, ["Content with this filename already exists.", existingContent.path]];
     }
 
     return validationErrors;

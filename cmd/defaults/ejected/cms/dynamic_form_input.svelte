@@ -10,8 +10,11 @@
     import Select from './fields/select.svelte';
     import Autocomplete from './fields/autocomplete.svelte';
     import ID from './fields/id.svelte';
+    import schemas from '../schemas.js';
 
-    export let field, label, showMedia, changingAsset, localMediaList, parentKeys, schema;
+    export let field, label, showMedia, changingAsset, localMediaList, parentKeys, content;
+
+    let schema = schemas[content.type];
 
     const bindDate = date => {
         field = formatDate(date, field);
@@ -40,7 +43,7 @@
             <Autocomplete {schema} {parentKeys} bind:field />
         {/if}
         {#if schema[parentKeys].type === "id"}
-            <ID {schema} {parentKeys} bind:field />
+            <ID bind:field />
         {/if}
     {:else if typeof field === "number"}
         <input id="{label}" type="number" bind:value={field} />
@@ -60,9 +63,9 @@
     {:else if typeof field === "boolean"}
         <label><input id="{label}" type="checkbox" bind:checked={field} /> {field}</label>
     {:else if field.constructor === [].constructor}
-        <Component bind:field bind:showMedia bind:changingAsset bind:localMediaList bind:parentKeys {schema} />
+        <Component bind:field bind:showMedia bind:changingAsset bind:localMediaList bind:parentKeys {content} />
     {:else if field.constructor === ({}).constructor}
-        <Fieldset bind:field bind:showMedia bind:changingAsset bind:localMediaList bind:parentKeys {schema} />
+        <Fieldset bind:field bind:showMedia bind:changingAsset bind:localMediaList bind:parentKeys {content} />
     {/if}
 </div>
 

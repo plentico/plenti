@@ -40,8 +40,8 @@
     {#if validationErrors}
         <ul class="errors">
         {#each validationErrors as error}
-            {#if error.constructor === Array && error.length >= 2}    
-                <li>{error[0]} <span class="error-link" on:click={() => editExistingContent(error[1].link)}>{error[1].text}</span>?</li>
+            {#if error.constructor === Array && error.length > 1}    
+                <li>{error[0]} <span class="error-link" on:click={() => editExistingContent(error[1])}>Edit Content</span>?</li>
             {:else}
                 <li>{error}</li>
             {/if}
