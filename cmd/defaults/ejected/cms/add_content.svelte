@@ -13,7 +13,7 @@
 
     let validationErrors = [];
     const checkFilename = () => {
-        validationErrors = validateFilename(filename);
+        validationErrors = validateFilename(filename, selectedType);
         // No errors, redirect to "add" page
         if (validationErrors.length === 0) {
             history.pushState(null, '', '/#add/' + selectedType + '/' + filename);
@@ -22,19 +22,29 @@
         }
     }
 
+    const editExistingContent = existingPath => {
+        history.pushState(null, '', existingPath);
+        showAdd = false; 
+        showEditor = true;
+    }
+
 </script>
 
 {#if selectedType}
     <h1>Set {selectedType} filename:</h1>
     <div class="filename">
         <span>content/{selectedType}/</span>
-        <input placeholder="filename" bind:value={filename} class="{validationErrors.length > 0 ? 'error' : ''}" />
+        <input placeholder="filename" autofocus bind:value={filename} class="{validationErrors.length > 0 ? 'error' : ''}" />
         <span>.json</span>
     </div>
     {#if validationErrors}
         <ul class="errors">
         {#each validationErrors as error}
-            <li>{error}</li>
+            {#if error.constructor === Array && error.length >= 2}    
+                <li>{error[0]} <span class="error-link" on:click={() => editExistingContent(error[1].link)}>{error[1].text}</span>?</li>
+            {:else}
+                <li>{error}</li>
+            {/if}
         {/each}
         </ul>
     {/if}
@@ -92,5 +102,10 @@
     }
     .errors {
         color: red;
+    }
+    .error-link {
+        cursor: pointer;
+        color: #1c7fc7;
+        text-decoration: underline;
     }
 </style>

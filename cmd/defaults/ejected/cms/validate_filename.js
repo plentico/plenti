@@ -1,4 +1,6 @@
-const validateFilename = filename => {
+import allContent from '../content.js';
+
+const validateFilename = (filename, type) => {
     
     let validationErrors = [];
 
@@ -49,6 +51,14 @@ const validateFilename = filename => {
     }
     if (filename.indexOf('<') >= 0 || filename.indexOf('>') >= 0) {
         validationErrors = [...validationErrors, "No opening or closing angle brackets < > allowed in filename"];
+    }
+    const existingContent = allContent.find(content =>
+        content.type == type &&
+        content.filename == filename + '.json'
+    );
+    if (existingContent) {
+        //validationErrors = [...validationErrors, "Content with this filename already exists. <a href='" + existingContent.path + "'>Edit content</a>?"];
+        validationErrors = [...validationErrors, ["Content with this filename already exists.", {"link": existingContent.path, "text": "Edit content"}]];
     }
 
     return validationErrors;
