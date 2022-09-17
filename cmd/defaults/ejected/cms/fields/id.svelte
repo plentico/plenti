@@ -5,12 +5,14 @@
             (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
         );
     }
-    if (field === "") {
-        field = uuidv4();
-    }
+    setTimeout(() => {
+        if (field === "") {
+            field = uuidv4();
+        }
+    }, 100);
 </script>
 
-<input bind:value={field} disabled />
+<input value={field} disabled />
 
 <style>
     input {

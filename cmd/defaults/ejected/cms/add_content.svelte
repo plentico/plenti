@@ -16,14 +16,12 @@
         validationErrors = validateFilename(filename, selectedType);
         // No errors, redirect to "add" page
         if (validationErrors.length === 0) {
-            history.pushState(null, '', '/#add/' + selectedType + '/' + filename);
-            showAdd = false; 
-            showEditor = true;
+            redirectAndEdit('/#add/' + selectedType + '/' + filename);
         }
     }
 
-    const editExistingContent = existingPath => {
-        history.pushState(null, '', existingPath);
+    const redirectAndEdit = path => {
+        history.pushState(null, '', path);
         showAdd = false; 
         showEditor = true;
     }
@@ -40,8 +38,8 @@
     {#if validationErrors}
         <ul class="errors">
         {#each validationErrors as error}
-            {#if error.constructor === Array && error.length > 1}    
-                <li>{error[0]} <span class="error-link" on:click={() => editExistingContent(error[1])}>Edit Content</span>?</li>
+            {#if typeof error === "object"}    
+                <li>{error.message} <span class="error-link" on:click={() => redirectAndEdit(error.contentPath)}>Edit Content</span>?</li>
             {:else}
                 <li>{error}</li>
             {/if}
