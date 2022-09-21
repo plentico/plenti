@@ -47,7 +47,7 @@
 
 <div class="spacer"></div>
 <nav>
-  <a href="." id="home">
+  <a href="{baseUrl}" class="home">
     <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home-2" width="30" height="30" viewBox="0 0 24 24" stroke-width="2" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
       <polyline points="5 12 3 12 12 3 21 12 19 12" />
@@ -55,7 +55,7 @@
     </svg>
     Home
   </a>
-  <a href="." on:click|preventDefault={toggleEditor}>
+  <a href="." class="{showEditor ? 'view' : 'edit'}" on:click|preventDefault={toggleEditor}>
     {#if showEditor}
     <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-eye" width="30" height="30" viewBox="0 0 24 24" stroke-width="2" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -73,7 +73,7 @@
     {/if}
   </a>
   <span class="gap"></span>
-  <a href="." on:click|preventDefault={() => { showAdd = true; }}>
+  <a href="." class="add" on:click|preventDefault={() => { showAdd = true; }}>
     <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-circle-plus" width="30" height="30" viewBox="0 0 24 24" stroke-width="2" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
       <circle cx="12" cy="12" r="9" />
@@ -82,7 +82,7 @@
     </svg>
     Add
   </a>
-  <a href="." on:click|preventDefault={toggleMedia}>
+  <a href="." class="media" on:click|preventDefault={toggleMedia}>
     <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-photo" width="30" height="30" viewBox="0 0 24 24" stroke-width="2" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
       <line x1="15" y1="8" x2="15.01" y2="8" />
@@ -92,7 +92,7 @@
     </svg>
     Media
   </a>
-  <a href="." on:click|preventDefault={$user.logout}>
+  <a href="." class="logout" on:click|preventDefault={$user.logout}>
     <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-logout" width="30" height="30" viewBox="0 0 24 24" stroke-width="2" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
       <path d="M14 8v-2a2 2 0 0 0 -2 -2h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2 -2v-2" />

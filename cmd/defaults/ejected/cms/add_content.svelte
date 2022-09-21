@@ -23,7 +23,10 @@
     const redirectAndEdit = path => {
         history.pushState(null, '', path);
         showAdd = false; 
-        showEditor = true;
+        setTimeout(() => {
+            // TODO: Fix load order and remove timeouts
+            showEditor = true;
+        }, 100);
     }
 
 </script>
