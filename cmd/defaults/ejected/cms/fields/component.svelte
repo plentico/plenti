@@ -156,7 +156,7 @@
         </div>
         {#if openKeys.includes(key)}
             <div transition:slide={{ duration: 300 }}>
-                <DynamicFormInput bind:field={field[key]} label={key} bind:showMedia bind:changingAsset bind:localMediaList parentKeys={parentKeys + '.' + key} {content} />
+                <DynamicFormInput bind:field={field[key]} label={null} bind:showMedia bind:changingAsset bind:localMediaList parentKeys={parentKeys + '.' + key} {content} />
             </div>
         {/if}
         </div>

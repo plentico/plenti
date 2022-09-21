@@ -21,7 +21,10 @@
     }
 </script>
 
-<div class="field">
+<div class="field {label}">
+    {#if label}
+        <label for="{label}">{label}</label>    
+    {/if}
     {#if field === null}
         {field} is null
     {:else if field === undefined}
