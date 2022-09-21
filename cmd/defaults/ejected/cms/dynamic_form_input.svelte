@@ -1,5 +1,5 @@
 <script>
-    import { isDate, makeDate, formatDate } from './dates.js';
+    import { isDate } from './dates.js';
     import { isAssetPath } from './assets_checker.js';
     import Checkbox from './fields/checkbox.svelte';
     import Radio from './fields/radio.svelte';
@@ -10,15 +10,14 @@
     import Select from './fields/select.svelte';
     import Autocomplete from './fields/autocomplete.svelte';
     import ID from './fields/id.svelte';
+    import Date from './fields/date.svelte';
+    import Text from './fields/text.svelte';
+    import Boolean from './fields/boolean.svelte';
     import schemas from '../schemas.js';
 
     export let field, label, showMedia, changingAsset, localMediaList, parentKeys, content;
 
     let schema = schemas[content.type];
-
-    const bindDate = date => {
-        field = formatDate(date, field);
-    }
 </script>
 
 <div class="field {label}">
@@ -52,19 +51,14 @@
         <input id="{label}" type="number" bind:value={field} />
     {:else if typeof field === "string"}
         {#if isDate(field)}
-            <input type="date" value={makeDate(field)} on:input={date => bindDate(date.target.value)} />
+            <Date bind:field />
         {:else if isAssetPath(field)}
             <Asset bind:field bind:showMedia bind:changingAsset bind:localMediaList />
         {:else}
-            <div
-                class="textarea"
-                role="textbox"
-                contenteditable=true
-                bind:innerHTML={field}
-            ></div>
+            <Text bind:field />
         {/if}
     {:else if typeof field === "boolean"}
-        <label><input id="{label}" type="checkbox" bind:checked={field} /> {field}</label>
+        <Boolean bind:field {label} />
     {:else if field.constructor === [].constructor}
         <Component bind:field bind:showMedia bind:changingAsset bind:localMediaList bind:parentKeys {content} />
     {:else if field.constructor === ({}).constructor}
@@ -82,31 +76,4 @@
     .field:last-of-type {
         margin-bottom: 0;
     }
-    .textarea {
-        background: white;
-        border: 1px solid gainsboro;
-        resize: vertical;
-        overflow: auto;
-        padding: 7px;
-        font-family: sans-serif;
-        font-size: small;
-        white-space: pre-wrap;
-    }
-    /*
-    textarea {
-        width: 100%;
-        resize: vertical;
-        box-sizing: border-box;
-        padding: 7px;
-        border: 1px solid gainsboro;
-    }
-    input[type=text] {
-        height: 30px;
-        padding: 0 7px;
-        border: 1px solid gainsboro;
-        border-radius: 3px;
-        width: 100%;
-        box-sizing: border-box;
-    }
-    */
 </style>
