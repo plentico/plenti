@@ -11,6 +11,7 @@
     import Autocomplete from './fields/autocomplete.svelte';
     import ID from './fields/id.svelte';
     import Date from './fields/date.svelte';
+    import Number from './fields/number.svelte';
     import Text from './fields/text.svelte';
     import Boolean from './fields/boolean.svelte';
 
@@ -45,8 +46,23 @@
         {#if schema[parentKeys].type === "id"}
             <ID bind:field />
         {/if}
+        {#if schema[parentKeys].type === "text"}
+            <Text bind:field />
+        {/if}
+        {#if schema[parentKeys].type === "number"}
+            <Number bind:field />
+        {/if}
+        {#if schema[parentKeys].type === "boolean"}
+            <Boolean bind:field {label} />
+        {/if}
+        {#if schema[parentKeys].type === "date"}
+            <Date bind:field />
+        {/if}
+        {#if schema[parentKeys].type === "asset"}
+            <Asset bind:field bind:showMedia bind:changingAsset bind:localMediaList />
+        {/if}
     {:else if typeof field === "number"}
-        <input id="{label}" type="number" bind:value={field} />
+        <Number bind:field {label} />
     {:else if typeof field === "string"}
         {#if isDate(field)}
             <Date bind:field />

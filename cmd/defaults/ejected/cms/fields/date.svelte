@@ -1,5 +1,5 @@
 <script>
-    import { makeDate, formatDate } from '../dates.js';
+    import { isDate, makeDate, formatDate } from '../dates.js';
 
     export let field;
 
@@ -8,4 +8,9 @@
     }
 </script>
 
-<input type="date" value={makeDate(field)} on:input={date => bindDate(date.target.value)} />
+<input 
+    type="date"
+    value={isDate(field) ? makeDate(field) : null}
+    on:input={date => bindDate(date.target.value)}
+    required
+/>
