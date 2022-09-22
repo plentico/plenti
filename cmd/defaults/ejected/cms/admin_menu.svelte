@@ -152,7 +152,7 @@
         </svg>
     </div>
     <div class="modal small" on:click|stopPropagation>
-      <AddContent bind:showAdd bind:showEditor bind:content />
+      <AddContent bind:showAdd bind:showEditor />
     </div>
   </div>
   

@@ -2,9 +2,8 @@
     import blueprints from '../blueprints.js';
     import ButtonWrapper from './button_wrapper.svelte';
     import validateFilename from './validate_filename.js';
-    import allBlueprints from '../blueprints.js';
 
-    export let showAdd, showEditor, content;
+    export let showAdd, showEditor;
     let filename = "";
 
     let selectedType;
@@ -25,10 +24,6 @@
         history.pushState(null, '', path);
         showAdd = false; 
         showEditor = true;
-        const blueprint = allBlueprints.find(blueprint => blueprint.type == selectedType);
-        content = structuredClone(blueprint);
-        content.filename = filename + '.json';
-        content.filepath = content.filepath.replace('_blueprint.json', filename + '.json');
     }
 
 </script>
@@ -56,13 +51,12 @@
         <button class="button" on:click={() => setType(null)}>Go back</button>
     </ButtonWrapper>
 {:else}
-<h1>Add content of type:</h1>
-
-<div class="blueprints">
-    {#each blueprints as blueprint}
-        <button on:click={() => setType(blueprint.type)} class="blueprint">{blueprint.type}</button>
-    {/each}
-</div>
+    <h1>Add content of type:</h1>
+    <div class="blueprints">
+        {#each blueprints as blueprint}
+            <button on:click={() => setType(blueprint.type)} class="blueprint">{blueprint.type}</button>
+        {/each}
+    </div>
 {/if}
 
 <style>
