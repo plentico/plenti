@@ -13,8 +13,11 @@
     import Date from './fields/date.svelte';
     import Text from './fields/text.svelte';
     import Boolean from './fields/boolean.svelte';
+    import schemas from '../schemas.js';
 
-    export let field, label, showMedia, changingAsset, localMediaList, parentKeys, schema;
+    export let field, label, showMedia, changingAsset, localMediaList, parentKeys, content;
+
+    $: schema = schemas[content.type];
 
 </script>
 
@@ -58,9 +61,9 @@
     {:else if typeof field === "boolean"}
         <Boolean bind:field {label} />
     {:else if field.constructor === [].constructor}
-        <Component bind:field bind:showMedia bind:changingAsset bind:localMediaList bind:parentKeys {schema} />
+        <Component bind:field bind:showMedia bind:changingAsset bind:localMediaList bind:parentKeys {content} />
     {:else if field.constructor === ({}).constructor}
-        <Fieldset bind:field bind:showMedia bind:changingAsset bind:localMediaList bind:parentKeys {schema} />
+        <Fieldset bind:field bind:showMedia bind:changingAsset bind:localMediaList bind:parentKeys {content} />
     {/if}
 </div>
 
