@@ -2,8 +2,9 @@
     import blueprints from '../blueprints.js';
     import ButtonWrapper from './button_wrapper.svelte';
     import validateFilename from './validate_filename.js';
+    import allBlueprints from '../blueprints.js';
 
-    export let showAdd, showEditor;
+    export let showAdd, showEditor, content;
     let filename = "";
 
     let selectedType;
@@ -23,10 +24,11 @@
     const redirectAndEdit = path => {
         history.pushState(null, '', path);
         showAdd = false; 
-        setTimeout(() => {
-            // TODO: Fix load order and remove timeouts
-            showEditor = true;
-        }, 100);
+        showEditor = true;
+        const blueprint = allBlueprints.find(blueprint => blueprint.type == selectedType);
+        content = structuredClone(blueprint);
+        content.filename = filename + '.json';
+        content.filepath = content.filepath.replace('_blueprint.json', filename + '.json');
     }
 
 </script>

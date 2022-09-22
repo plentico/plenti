@@ -45,24 +45,6 @@
       });
   }
 
-  const deepClone = (value) => {
-    if (value instanceof Array) {
-      const clone = [];
-      for (const element of value) {
-        clone.push(deepClone(element));
-      }
-      return clone;
-    } else if (typeof value === 'object') {
-      const clone = {};
-      for (const key in value) {
-        clone[key] = deepClone(value[key]);
-      }
-      return clone;
-    } else {
-      return value;
-    }
-  };
-
   /**
    * @return {boolean} true if hash location found and navigated, false otherwise.
    */
@@ -77,7 +59,7 @@
 
       if (type && filename && blueprint) {
         import('../content/' + type + '.js').then(m => {
-          content = deepClone(blueprint);
+          content = structuredClone(blueprint);
           content.isNew = true;
           content.filename = filename + '.json';
           content.filepath = content.filepath.replace('_blueprint.json', filename + '.json');
