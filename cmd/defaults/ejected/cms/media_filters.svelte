@@ -1,5 +1,5 @@
 <script>
-    import { isAssetPath } from './assets_checker.js';
+    import { isAssetPath } from './asset_checker.js';
     export let assets, changingAsset;
     export let filters = [];
     export let enabledFilters = [];

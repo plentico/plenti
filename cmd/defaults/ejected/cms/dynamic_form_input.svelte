@@ -1,6 +1,6 @@
 <script>
-    import { isDate } from './dates.js';
-    import { isAssetPath } from './assets_checker.js';
+    import { isDate } from './date_checker.js';
+    import { isAssetPath } from './asset_checker.js';
     import Checkbox from './fields/checkbox.svelte';
     import Radio from './fields/radio.svelte';
     import Wysiwyg from './fields/wysiwyg.svelte';

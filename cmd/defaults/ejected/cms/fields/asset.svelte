@@ -1,5 +1,5 @@
 <script>
-    import { isImagePath, isDocPath } from '../assets_checker.js';
+    import { isImagePath, isDocPath } from '../asset_checker.js';
 
     export let field, showMedia, changingAsset, localMediaList;
 

@@ -1,5 +1,5 @@
 <script>
-    import { isDate, makeDate, formatDate } from '../dates.js';
+    import { isDate, makeDate, formatDate } from '../date_checker.js';
 
     export let field;
 

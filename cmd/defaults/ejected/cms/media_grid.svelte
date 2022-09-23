@@ -1,6 +1,6 @@
 <script>
     import { onMount } from 'svelte';
-    import { isImage, isDoc } from './assets_checker.js';
+    import { isImage, isDoc } from './asset_checker.js';
     export let files, changingAsset, showMedia;
     export let selectedMedia = [];
 
