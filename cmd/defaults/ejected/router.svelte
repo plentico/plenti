@@ -55,14 +55,14 @@
 
     if (location.hash.startsWith('#add/') && $user.isAuthenticated) {
       const [type, filename] = location.hash.substring('#add/'.length).split('/');
-      const blueprint = allBlueprints.find(blueprint => blueprint.type == type);
+      const defaultContent = allDefaults.find(defaultContent => defaultContent.type == type);
 
-      if (type && filename && blueprint) {
+      if (type && filename && defaultContent) {
         import('../content/' + type + '.js').then(m => {
-          content = structuredClone(blueprint);
+          content = structuredClone(defaultContent);
           content.isNew = true;
           content.filename = filename + '.json';
-          content.filepath = content.filepath.replace('_blueprint.json', filename + '.json');
+          content.filepath = content.filepath.replace('_defaults.json', filename + '.json');
           layout = m.default;
         }).catch(handle404);
         return true;
@@ -92,7 +92,7 @@
   // Git-CMS
   import adminMenu from './cms/admin_menu.svelte';
   import { user } from './cms/auth.js';
-  import allBlueprints from './blueprints.js';
+  import allDefaults from './defaults.js';
   if ($user.isBeingAuthenticated) { 
     $user.finishAuthentication(params);
   }

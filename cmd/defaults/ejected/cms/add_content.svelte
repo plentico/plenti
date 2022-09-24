@@ -1,5 +1,5 @@
 <script>
-    import blueprints from '../blueprints.js';
+    import defaults from '../defaults.js';
     import ButtonWrapper from './button_wrapper.svelte';
     import validateFilename from './validate_filename.js';
 
@@ -52,21 +52,21 @@
     </ButtonWrapper>
 {:else}
     <h1>Add content of type:</h1>
-    <div class="blueprints">
-        {#each blueprints as blueprint}
-            <button on:click={() => setType(blueprint.type)} class="blueprint">{blueprint.type}</button>
+    <div class="defaults">
+        {#each defaults as defaultContent}
+            <button on:click={() => setType(defaultContent.type)} class="default">{defaultContent.type}</button>
         {/each}
     </div>
 {/if}
 
 <style>
-    .blueprints {
+    .defaults {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 10px;
         margin-bottom: 25px;
     }
-    .blueprint {
+    .default {
         border-radius: 6px;
         min-height: 50px;
         display: flex;
@@ -78,7 +78,7 @@
         color: #1c7fc7;
         background-color: transparent;
     }
-    .blueprint:hover {
+    .default:hover {
         background-color: #1c7fc7;
         color: white;
     }

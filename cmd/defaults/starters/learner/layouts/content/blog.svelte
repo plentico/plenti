@@ -19,11 +19,7 @@
 
 <p><em>{#if author}Written by {author}{/if}{#if date}&nbsp;on {date}{/if}</em></p>
 
-<div>
-  {#each body as paragraph}
-    <p>{@html paragraph}</p>
-  {/each}
-</div>
+<p>{@html body}</p>
 
 {#if store}
   <h3>The count is {count_value}</h3>

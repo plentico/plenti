@@ -35,7 +35,9 @@ There are no required fields when creating your new type.
 Any individual file within a type can contain variations in its field structure.
 Just make sure to account for this in the corresponding '/layouts/content/<your_type>.svelte' file.
 
-Optionally add a _blueprint.json file to define the default field structure for the type.
+Optionally add a _defaults.json file to define the default content for the type when creating a new instance.
+
+Optionally add a _schema.json file to define the input widgets used in the editor.
 `,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
@@ -97,9 +99,13 @@ func doTypeContentPath(typeName string) error {
 	if err := os.MkdirAll(typeContentPath, os.ModePerm); err != nil {
 		return fmt.Errorf("Can't create type named \"%s\": %w%s\n", typeName, err, common.Caller())
 	}
-	err := createJSONFile(typeContentPath + "/_blueprint.json")
+	err := createJSONFile(typeContentPath + "/_defaults.json")
 	if err != nil {
-		return fmt.Errorf("Can't create _blueprint.json for type \"%s\": %w%s\n", typeName, err, common.Caller())
+		return fmt.Errorf("Can't create _defaults.json for type \"%s\": %w%s\n", typeName, err, common.Caller())
+	}
+	err = createJSONFile(typeContentPath + "/_schema.json")
+	if err != nil {
+		return fmt.Errorf("Can't create _schema.json for type \"%s\": %w%s\n", typeName, err, common.Caller())
 	}
 	return nil
 }

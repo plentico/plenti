@@ -125,8 +125,8 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 	allContentStr := "["
 	// Store each content file in array we can iterate over for creating static html.
 	allContent := []content{}
-	// Start the string that will be used for allBlueprints object.
-	allBlueprintsStr := "const allBlueprints = ["
+	// Start the string that will be used for allDefaults object.
+	allDefaultsStr := "const allDefaults = ["
 	// Start the string that will be used for allSchemas object.
 	allSchemasStr := "const allSchemas = {"
 
@@ -136,7 +136,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 			if info.IsDir() {
 				return nil
 			}
-			contentFileCounter, allContentStr, allContent, allBlueprintsStr, allSchemasStr, err = getContent(path, info, err, siteConfig, buildPath, contentJSPath, allContentStr, allContent, contentFileCounter, allBlueprintsStr, allSchemasStr)
+			contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, err = getContent(path, info, err, siteConfig, buildPath, contentJSPath, allContentStr, allContent, contentFileCounter, allDefaultsStr, allSchemasStr)
 			if err != nil {
 				return err
 			}
@@ -149,7 +149,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 			if info.IsDir() {
 				return nil
 			}
-			contentFileCounter, allContentStr, allContent, allBlueprintsStr, allSchemasStr, err = getContent(path, info, err, siteConfig, buildPath, contentJSPath, allContentStr, allContent, contentFileCounter, allBlueprintsStr, allSchemasStr)
+			contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, err = getContent(path, info, err, siteConfig, buildPath, contentJSPath, allContentStr, allContent, contentFileCounter, allDefaultsStr, allSchemasStr)
 			if err != nil {
 				return err
 			}
@@ -161,11 +161,11 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 
 	// End the string that will be used in allContent object.
 	allContentStr = strings.TrimSuffix(allContentStr, ",") + "]"
-	// End the string that will be used in allBlueprints object.
-	allBlueprintsStr = strings.TrimSuffix(allBlueprintsStr, ",") + "];\n\nexport default allBlueprints;"
-	err := writeContentJS(buildPath+"/spa/ejected/blueprints.js", allBlueprintsStr)
+	// End the string that will be used in allDefaults object.
+	allDefaultsStr = strings.TrimSuffix(allDefaultsStr, ",") + "];\n\nexport default allDefaults;"
+	err := writeContentJS(buildPath+"/spa/ejected/defaults.js", allDefaultsStr)
 	if err != nil {
-		fmt.Println("Could not write blueprints.js file")
+		fmt.Println("Could not write defaults.js file")
 	}
 	// End the string that will be used in allSchemas object.
 	allSchemasStr = strings.TrimSuffix(allSchemasStr, ",") + "\n};\n\nexport default allSchemas;"
@@ -218,10 +218,10 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 
 func getContent(path string, info os.FileInfo, err error, siteConfig readers.SiteConfig,
 	buildPath string, contentJSPath string, allContentStr string, allContent []content,
-	contentFileCounter int, allBlueprintsStr string, allSchemasStr string) (int, string, []content, string, string, error) {
+	contentFileCounter int, allDefaultsStr string, allSchemasStr string) (int, string, []content, string, string, error) {
 
 	if err != nil {
-		return contentFileCounter, allContentStr, allContent, allBlueprintsStr, allSchemasStr, fmt.Errorf("can't stat %s: %w", path, err)
+		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, fmt.Errorf("can't stat %s: %w", path, err)
 	}
 
 	filePath, contentType, fileName := getFileInfo(path)
@@ -229,13 +229,13 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 	// Don't process hidden files, like .DS_Store
 	if fileName[:1] == "." {
 		// Skip silently so we don't stop the build or clutter the terminal
-		return contentFileCounter, allContentStr, allContent, allBlueprintsStr, allSchemasStr, nil
+		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, nil
 	}
 
 	// Get the contents of the file.
 	fileContentBytes, err := getVirtualFileIfThemeBuild(path)
 	if err != nil {
-		return contentFileCounter, allContentStr, allContent, allBlueprintsStr, allSchemasStr, fmt.Errorf("file: %s %w%s\n", path, err, common.Caller())
+		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, fmt.Errorf("file: %s %w%s\n", path, err, common.Caller())
 	}
 	fileContentStr := string(fileContentBytes)
 
@@ -248,7 +248,7 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 	// Get field key/values from content source.
 	typeFields, err := readers.GetTypeFields(fileContentBytes)
 	if err != nil {
-		return contentFileCounter, allContentStr, allContent, allBlueprintsStr, allSchemasStr, fmt.Errorf("\nError getting content from %s %w", filePath, err)
+		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, fmt.Errorf("\nError getting content from %s %w", filePath, err)
 	}
 
 	// Setup regex to find field name.
@@ -298,9 +298,9 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 
 	destPath := buildPath + "/" + path + "/index.html"
 
-	// Don't add _blueprint.json
-	if fileName == "_blueprint.json" {
-		blueprintDetailsStr := "{\n" +
+	// Don't add _defaults.json
+	if fileName == "_defaults.json" {
+		defaultsDetailsStr := "{\n" +
 			"\"pager\": null,\n" +
 			"\"type\": \"" + contentType + "\",\n" +
 			"\"path\": \"" + path + "\",\n" +
@@ -308,9 +308,9 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 			"\"filename\": \"" + fileName + "\",\n" +
 			"\"fields\": " + fileContentStr + "\n}"
 
-		allBlueprintsStr = allBlueprintsStr + blueprintDetailsStr + ","
+		allDefaultsStr = allDefaultsStr + defaultsDetailsStr + ","
 
-		return contentFileCounter, allContentStr, allContent, allBlueprintsStr, allSchemasStr, nil
+		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, nil
 	}
 	// Don't add _schema.json
 	if fileName == "_schema.json" {
@@ -318,7 +318,7 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 
 		allSchemasStr = allSchemasStr + schemaDetailsStr + ","
 
-		return contentFileCounter, allContentStr, allContent, allBlueprintsStr, allSchemasStr, nil
+		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, nil
 	}
 
 	contentDetailsStr := "{\n" +
@@ -331,7 +331,7 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 
 	// Write to the content.js client data source file.
 	if err = writeContentJS(contentJSPath, contentDetailsStr+","); err != nil {
-		return contentFileCounter, allContentStr, allContent, allBlueprintsStr, allSchemasStr, fmt.Errorf("file: %s %w%s\n", contentJSPath, err, common.Caller())
+		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, fmt.Errorf("file: %s %w%s\n", contentJSPath, err, common.Caller())
 	}
 
 	// Remove newlines, tabs, and extra space.
@@ -355,7 +355,7 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 	// Increment counter for logging purposes.
 	contentFileCounter++
 
-	return contentFileCounter, allContentStr, allContent, allBlueprintsStr, allSchemasStr, nil
+	return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, nil
 }
 
 func getFileInfo(path string) (string, string, string) {
