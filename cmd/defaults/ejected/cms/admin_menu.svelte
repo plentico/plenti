@@ -1,5 +1,5 @@
 <script>
-    export let user, content;
+    export let user, content, shadowContent;
     import JSONEditor from "./json_editor.svelte";
     import MediaBrowser from "./media_browser.svelte";
     import FileUpload from "./file_upload.svelte";
@@ -183,7 +183,7 @@
     {#if activeEditor === 'code'}
       <JSONEditor bind:content />
     {:else}
-      <VisualEditor bind:content bind:showMedia bind:changingAsset bind:localMediaList />
+      <VisualEditor bind:content bind:showMedia bind:changingAsset bind:localMediaList bind:shadowContent />
     {/if}
   </div>
 {/if}

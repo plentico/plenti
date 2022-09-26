@@ -1,5 +1,5 @@
 <script>
-    export let content, showMedia, changingAsset, localMediaList;
+    export let content, showMedia, changingAsset, localMediaList, shadowContent;
     import DynamicFormInput from './dynamic_form_input.svelte';
     import ButtonWrapper from './button_wrapper.svelte';
     import Button from './button.svelte';
@@ -16,6 +16,7 @@
                 {#if schema_field[1]?.before === label}
                     <DynamicFormInput 
                         field=""
+                        bind:shadowContent
                         label={schema_field[0]}
                         bind:showMedia
                         bind:changingAsset
@@ -40,6 +41,7 @@
                 {#if schema_field[1]?.after === label}
                     <DynamicFormInput 
                         field=""
+                        bind:shadowContent
                         label={schema_field[0]}
                         bind:showMedia
                         bind:changingAsset

@@ -1,4 +1,4 @@
-<Html {path} {params} {content} {layout} {allContent} {allLayouts} {env} {user} {adminMenu} />
+<Html {path} {params} {content} {layout} {allContent} {allLayouts} {env} {user} {adminMenu} {shadowContent} />
 
 <script>
   import Navaid from 'navaid';
@@ -6,6 +6,8 @@
   import { getContent } from './main.js';
 
   export let path, params, content, layout, allContent, allLayouts, env;
+
+  let shadowContent = {};
 
   function draw(m) {
     content = getContent(path); 

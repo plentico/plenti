@@ -16,6 +16,11 @@
     import Boolean from './fields/boolean.svelte';
 
     export let field, label, showMedia, changingAsset, localMediaList, parentKeys, schema;
+    export let shadowContent = false;
+
+    $: if (shadowContent !== false) {
+        shadowContent[label] = field;
+    }
 
 </script>
 
