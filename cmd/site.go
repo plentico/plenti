@@ -145,12 +145,11 @@ var siteCmd = &cobra.Command{
 		addNodeModules(projectDir)
 
 		fmt.Printf(heredoc.Docf(`
-			Success: Created %q site.
 
-			We suggest that you begin by typing:
+			Success: Created %q ✅
 
-			  cd %s
-			  plenti serve
+			Get started with: cd %s && plenti serve
+
 		`, projectDir, projectDir))
 
 	},

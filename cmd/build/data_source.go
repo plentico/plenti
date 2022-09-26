@@ -313,7 +313,9 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, nil
 	}
 	// Don't add _schema.json
-	if fileName == "_schema.json" {
+	if strings.HasPrefix(fileName, "_schema") {
+		// Remove _schema_ prefix for single types
+		contentType = strings.TrimPrefix(contentType, "_schema_")
 		schemaDetailsStr := "\n\"" + contentType + "\": " + fileContentStr
 
 		allSchemasStr = allSchemasStr + schemaDetailsStr + ","

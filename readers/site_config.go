@@ -57,13 +57,13 @@ func GetSiteConfig(basePath string) (SiteConfig, string) {
 	if err != nil {
 		fmt.Println(heredoc.Docf(`
 
-			Error: Unable to read site config file %v.
+			Error: Unable to read plenti.json: %v ❌
 
-			Are you in the site folder that was created?.
+			Are you in the folder for your project?
 
-			We suggest that you begin by typing:
+			Start by typing:
 
-			  cd [project name]
+			  cd [your project name]
 			  plenti serve
 		`, err))
 		os.Exit(1)
