@@ -15,7 +15,7 @@
             {#each Object.entries(schema) as schema_field}
                 {#if schema_field[1]?.before === label}
                     <DynamicFormInput 
-                        field=""
+                        field={shadowContent[schema_field[0]]}
                         bind:shadowContent
                         label={schema_field[0]}
                         bind:showMedia
@@ -40,7 +40,7 @@
             {#each Object.entries(schema) as schema_field}
                 {#if schema_field[1]?.after === label}
                     <DynamicFormInput 
-                        field=""
+                        field={shadowContent[schema_field[0]]}
                         bind:shadowContent
                         label={schema_field[0]}
                         bind:showMedia
