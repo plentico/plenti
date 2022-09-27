@@ -411,6 +411,7 @@ func createProps(currentContent content, allContentStr string, env env) error {
 	_, err := SSRctx.RunScript("var props = {content: "+currentContent.contentDetails+
 		", layout: "+componentSignature+
 		", allContent: "+allContentStr+
+		", shadowContent: {}"+
 		", env: {local: "+env.local+
 		", baseurl: '"+env.baseurl+
 		"', cms: { repo: '"+env.cms.repo+
