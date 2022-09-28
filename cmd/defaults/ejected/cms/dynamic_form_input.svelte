@@ -28,11 +28,7 @@
     {#if label}
         <label for="{label}">{label}</label>    
     {/if}
-    {#if field === null}
-        {field} is null
-    {:else if field === undefined}
-        {field} is undefined
-    {:else if schema && schema.hasOwnProperty(parentKeys)}
+    {#if schema && schema.hasOwnProperty(parentKeys)}
         {#if schema[parentKeys].type === "checkbox"}
             <Checkbox {schema} {parentKeys} bind:field />
         {/if}
@@ -82,6 +78,10 @@
         <Component bind:field bind:showMedia bind:changingAsset bind:localMediaList bind:parentKeys {schema} />
     {:else if field.constructor === ({}).constructor}
         <Fieldset bind:field bind:showMedia bind:changingAsset bind:localMediaList bind:parentKeys {schema} />
+    {:else if field === null}
+        <div>field is null</div>
+    {:else if field === undefined}
+        <div>field is undefined</div>
     {/if}
 </div>
 
