@@ -29,6 +29,9 @@
         <label for="{label}">{label}</label>    
     {/if}
     {#if schema && schema.hasOwnProperty(parentKeys)}
+        {#if schema[parentKeys].type === "component"}
+            <Component bind:field bind:showMedia bind:changingAsset bind:localMediaList bind:parentKeys {schema} />
+        {/if}
         {#if schema[parentKeys].type === "checkbox"}
             <Checkbox {schema} {parentKeys} bind:field />
         {/if}

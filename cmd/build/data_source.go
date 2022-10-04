@@ -129,6 +129,8 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 	allDefaultsStr := "const allDefaults = ["
 	// Start the string that will be used for allSchemas object.
 	allSchemasStr := "const allSchemas = {"
+	// Start the string that will be used for allComponents object.
+	allComponentsStr := "const allComponents = {"
 
 	// Go through all sub directories in "content/" folder.
 	if ThemeFs != nil {
@@ -136,7 +138,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 			if info.IsDir() {
 				return nil
 			}
-			contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, err = getContent(path, info, err, siteConfig, buildPath, contentJSPath, allContentStr, allContent, contentFileCounter, allDefaultsStr, allSchemasStr)
+			contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, allComponentsStr, err = getContent(path, info, err, siteConfig, buildPath, contentJSPath, allContentStr, allContent, contentFileCounter, allDefaultsStr, allSchemasStr, allComponentsStr)
 			if err != nil {
 				return err
 			}
@@ -149,7 +151,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 			if info.IsDir() {
 				return nil
 			}
-			contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, err = getContent(path, info, err, siteConfig, buildPath, contentJSPath, allContentStr, allContent, contentFileCounter, allDefaultsStr, allSchemasStr)
+			contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, allComponentsStr, err = getContent(path, info, err, siteConfig, buildPath, contentJSPath, allContentStr, allContent, contentFileCounter, allDefaultsStr, allSchemasStr, allComponentsStr)
 			if err != nil {
 				return err
 			}
@@ -172,6 +174,12 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 	err = writeContentJS(buildPath+"/spa/ejected/schemas.js", allSchemasStr)
 	if err != nil {
 		fmt.Println("Could not write schemas.js file")
+	}
+	// End the string that will be used in allComponents object.
+	allComponentsStr = strings.TrimSuffix(allComponentsStr, ",") + "\n};\n\nexport default allComponents;"
+	err = writeContentJS(buildPath+"/spa/ejected/components.js", allComponentsStr)
+	if err != nil {
+		fmt.Println("Could not write components.js file")
 	}
 
 	for _, currentContent := range allContent {
@@ -218,10 +226,10 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 
 func getContent(path string, info os.FileInfo, err error, siteConfig readers.SiteConfig,
 	buildPath string, contentJSPath string, allContentStr string, allContent []content,
-	contentFileCounter int, allDefaultsStr string, allSchemasStr string) (int, string, []content, string, string, error) {
+	contentFileCounter int, allDefaultsStr string, allSchemasStr string, allComponentsStr string) (int, string, []content, string, string, string, error) {
 
 	if err != nil {
-		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, fmt.Errorf("can't stat %s: %w", path, err)
+		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, allComponentsStr, fmt.Errorf("can't stat %s: %w", path, err)
 	}
 
 	filePath, contentType, fileName := getFileInfo(path)
@@ -229,13 +237,13 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 	// Don't process hidden files, like .DS_Store
 	if fileName[:1] == "." {
 		// Skip silently so we don't stop the build or clutter the terminal
-		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, nil
+		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, allComponentsStr, nil
 	}
 
 	// Get the contents of the file.
 	fileContentBytes, err := getVirtualFileIfThemeBuild(path)
 	if err != nil {
-		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, fmt.Errorf("file: %s %w%s\n", path, err, common.Caller())
+		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, allComponentsStr, fmt.Errorf("file: %s %w%s\n", path, err, common.Caller())
 	}
 	fileContentStr := string(fileContentBytes)
 
@@ -248,7 +256,7 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 	// Get field key/values from content source.
 	typeFields, err := readers.GetTypeFields(fileContentBytes)
 	if err != nil {
-		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, fmt.Errorf("\nError getting content from %s %w", filePath, err)
+		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, allComponentsStr, fmt.Errorf("\nError getting content from %s %w", filePath, err)
 	}
 
 	// Setup regex to find field name.
@@ -298,6 +306,15 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 
 	destPath := buildPath + "/" + path + "/index.html"
 
+	// Don't add _components
+	if contentType == "_components" {
+		component := strings.Split(filePath, "/")[2]
+		componentDetailsStr := "\n\"" + component + "\": " + fileContentStr
+
+		allComponentsStr = allComponentsStr + componentDetailsStr + ","
+
+		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, allComponentsStr, nil
+	}
 	// Don't add _defaults.json
 	if fileName == "_defaults.json" {
 		defaultsDetailsStr := "{\n" +
@@ -310,7 +327,7 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 
 		allDefaultsStr = allDefaultsStr + defaultsDetailsStr + ","
 
-		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, nil
+		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, allComponentsStr, nil
 	}
 	// Don't add _schema.json
 	if strings.HasPrefix(fileName, "_schema") {
@@ -320,7 +337,7 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 
 		allSchemasStr = allSchemasStr + schemaDetailsStr + ","
 
-		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, nil
+		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, allComponentsStr, nil
 	}
 
 	contentDetailsStr := "{\n" +
@@ -333,7 +350,7 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 
 	// Write to the content.js client data source file.
 	if err = writeContentJS(contentJSPath, contentDetailsStr+","); err != nil {
-		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, fmt.Errorf("file: %s %w%s\n", contentJSPath, err, common.Caller())
+		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, allComponentsStr, fmt.Errorf("file: %s %w%s\n", contentJSPath, err, common.Caller())
 	}
 
 	// Remove newlines, tabs, and extra space.
@@ -357,7 +374,7 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 	// Increment counter for logging purposes.
 	contentFileCounter++
 
-	return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, nil
+	return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, allComponentsStr, nil
 }
 
 func getFileInfo(path string) (string, string, string) {

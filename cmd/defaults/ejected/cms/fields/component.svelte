@@ -1,5 +1,6 @@
 <script>
     import DynamicFormInput from "../dynamic_form_input.svelte";
+    import allComponents from "../../components.js";
     export let field, showMedia, changingAsset, localMediaList, parentKeys, schema;
 
     // Accordion
@@ -77,6 +78,13 @@
     }
     const removeItem = val => {
         field = field.filter(i => i !== val);
+    }
+    let compList = false;
+    const toggleCompList = () => {
+        compList = !compList;
+    }
+    const addComponent = component => {
+        field = [...field, allComponents[component]];
     }
 </script>
 
@@ -170,6 +178,14 @@
         </div>
     {/each}
     </div>
+    {#if schema}
+        <button on:click|preventDefault={toggleCompList}>Add new component</button>
+        {#if compList}
+            {#each schema[parentKeys].options as option}
+                <option on:click={() => addComponent(option)}>{option}</option>
+            {/each}
+        {/if}
+    {/if}
 </div>
 
 <style>
