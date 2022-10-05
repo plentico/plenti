@@ -178,11 +178,23 @@
         </div>
     {/each}
     </div>
-    {#if schema}
-        <button on:click|preventDefault={toggleCompList}>Add new component</button>
+    {#if schema && schema[parentKeys]?.options.length > 0}
+        <button class="add" on:click|preventDefault={toggleCompList}>
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-circle-plus" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="#1c7fc7" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                <circle cx="12" cy="12" r="9"></circle>
+                <line x1="9" y1="12" x2="15" y2="12"></line>
+                {#if !compList}
+                    <line x1="12" y1="9" x2="12" y2="15"></line>
+                {/if}
+            </svg>
+            Add new component
+        </button>
         {#if compList}
             {#each schema[parentKeys].options as option}
-                <option on:click={() => addComponent(option)}>{option}</option>
+                <button class="add-name" on:click|preventDefault={() => addComponent(option)}>
+                    {option}
+                </button>
             {/each}
         {/if}
     {/if}
@@ -268,5 +280,16 @@
     #ghost.haunting {
         z-index: 20;
         opacity: 1.0;
+    }
+    .add, .add-name {
+        background-color: transparent;
+        border: none;
+        cursor: pointer;
+        display: block;
+    }
+    .add {
+        display: flex;
+        gap: 5px;
+        align-items: center;
     }
 </style>
