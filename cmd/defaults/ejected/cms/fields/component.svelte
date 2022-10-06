@@ -83,15 +83,17 @@
     const toggleCompList = () => {
         compList = !compList;
     }
-    const addComponent = component => {
-        field = [...field, allComponents[component]];
-    }
     let addName;
-    const clickName = compName => {
-        addName = compName;
+    const addComponent = component => {
+        if (component in allComponents) {
+            field = [...field, allComponents[component]];
+            addName = component;
+        } else {
+            addName = component + "not_found";
+        }
         setTimeout(() => {
             addName = "";
-        }, 250)
+        }, 250);
     }
 </script>
 
@@ -201,14 +203,22 @@
             <div class="add-list">
                 {#each schema[parentKeys].options as option}
                     <button 
-                        class="add-name{addName === option ? ' clicked': ''}"
+                        class="add-name"
+                        style={
+                            addName === option ? 'border-color: #4bb543':
+                            addName === option + 'not_found' ? 'border-color: #ed0f0f': ''}
                         on:click|preventDefault={() => addComponent(option)}
-                        on:click|preventDefault={() => clickName(option)}
                     >
                         {#if addName === option}
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-check" width="15" height="15" viewBox="0 0 24 24" stroke-width="2" stroke="white" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-check" width="15" height="15" viewBox="0 0 24 24" stroke-width="2" stroke="#4bb543" fill="none" stroke-linecap="round" stroke-linejoin="round">
                                 <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
                                 <path d="M5 12l5 5l10 -10"></path>
+                            </svg>
+                        {:else if addName === option + "not_found"}
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-x" width="15" height="15" viewBox="0 0 24 24" stroke-width="2" stroke="#ed0f0f" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
                             </svg>
                         {/if}
                         {option}
@@ -327,9 +337,8 @@
         align-items: center;
         gap: 5px;
     }
-    .add-name.clicked {
-        background-color: #5a5a5a;
-        color: white;
+    .add-name:hover {
+        border: 1px solid gray;
     }
     .add-list {
         background-color: white;
