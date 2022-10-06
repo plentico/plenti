@@ -85,8 +85,9 @@
     }
     let addName;
     const addComponent = component => {
-        if (component in allComponents) {
-            field = [...field, allComponents[component]];
+        let components = structuredClone(allComponents);
+        if (component in components) {
+            field = [...field, components[component]];
             addName = component;
         } else {
             addName = component + "not_found";
