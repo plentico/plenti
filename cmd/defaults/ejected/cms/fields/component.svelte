@@ -200,13 +200,10 @@
             Add new {label}
         </button>
         {#if compList}
-            <div class="add-list">
+            <div class="add-list" transition:slide|local={{ duration: 300 }}>
                 {#each schema[parentKeys].options as option}
                     <button 
                         class="add-name"
-                        style={
-                            addName === option ? 'border-color: #4bb543':
-                            addName === option + 'not_found' ? 'border-color: #ed0f0f': ''}
                         on:click|preventDefault={() => addComponent(option)}
                     >
                         {#if addName === option}
@@ -323,7 +320,8 @@
         align-items: center;
         background-color: white;
         border: 1px solid gainsboro;
-        position: relative
+        position: relative;
+        z-index: 1;
     }
     .add.open {
         border-bottom: none;
@@ -336,9 +334,6 @@
         justify-content: center;
         align-items: center;
         gap: 5px;
-    }
-    .add-name:hover {
-        border: 1px solid gray;
     }
     .add-list {
         background-color: white;
