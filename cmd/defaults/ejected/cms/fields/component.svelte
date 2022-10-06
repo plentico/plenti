@@ -179,7 +179,7 @@
     {/each}
     </div>
     {#if schema && schema[parentKeys]?.options.length > 0}
-        <button class="add" on:click|preventDefault={toggleCompList}>
+        <button class="add{compList ? ' open':''}" on:click|preventDefault={toggleCompList}>
             <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-circle-plus" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="#1c7fc7" fill="none" stroke-linecap="round" stroke-linejoin="round">
                 <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
                 <circle cx="12" cy="12" r="9"></circle>
@@ -191,11 +191,13 @@
             Add new component
         </button>
         {#if compList}
-            {#each schema[parentKeys].options as option}
-                <button class="add-name" on:click|preventDefault={() => addComponent(option)}>
-                    {option}
-                </button>
-            {/each}
+            <div class="add-list">
+                {#each schema[parentKeys].options as option}
+                    <button class="add-name" on:click|preventDefault={() => addComponent(option)}>
+                        {option}
+                    </button>
+                {/each}
+            </div>
         {/if}
     {/if}
 </div>
@@ -219,7 +221,7 @@
         width: 100%;
         min-height: 2em;
         background-color: white;
-        border: 1px solid rgb(190, 190, 190);
+        border: 1px solid gainsboro;
         border-radius: 2px;
         user-select: none;
     }
@@ -290,6 +292,27 @@
     .add {
         display: flex;
         gap: 5px;
+        padding-left: 4px;
         align-items: center;
+        background-color: white;
+        border: 1px solid gainsboro;
+        position: relative
+    }
+    .add.open {
+        border-bottom: none;
+    }
+    .add-name {
+        border-radius: 5px;
+        padding: 5px;
+        border: 1px solid gainsboro;
+    }
+    .add-list {
+        background-color: white;
+        border: 1px solid gainsboro;
+        margin-top: -1px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        padding: 10px;
+        gap: 5px;
     }
 </style>
