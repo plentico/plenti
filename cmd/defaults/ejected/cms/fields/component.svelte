@@ -1,7 +1,7 @@
 <script>
     import DynamicFormInput from "../dynamic_form_input.svelte";
     import allComponents from "../../components.js";
-    export let field, showMedia, changingAsset, localMediaList, parentKeys, schema;
+    export let field, label, showMedia, changingAsset, localMediaList, parentKeys, schema;
 
     // Accordion
     import {slide} from "svelte/transition";
@@ -85,6 +85,13 @@
     }
     const addComponent = component => {
         field = [...field, allComponents[component]];
+    }
+    let addName;
+    const clickName = compName => {
+        addName = compName;
+        setTimeout(() => {
+            addName = "";
+        }, 250)
     }
 </script>
 
@@ -188,12 +195,22 @@
                     <line x1="12" y1="9" x2="12" y2="15"></line>
                 {/if}
             </svg>
-            Add new component
+            Add new {label}
         </button>
         {#if compList}
             <div class="add-list">
                 {#each schema[parentKeys].options as option}
-                    <button class="add-name" on:click|preventDefault={() => addComponent(option)}>
+                    <button 
+                        class="add-name{addName === option ? ' clicked': ''}"
+                        on:click|preventDefault={() => addComponent(option)}
+                        on:click|preventDefault={() => clickName(option)}
+                    >
+                        {#if addName === option}
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-check" width="15" height="15" viewBox="0 0 24 24" stroke-width="2" stroke="white" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                <path d="M5 12l5 5l10 -10"></path>
+                            </svg>
+                        {/if}
                         {option}
                     </button>
                 {/each}
@@ -305,6 +322,14 @@
         border-radius: 5px;
         padding: 5px;
         border: 1px solid gainsboro;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 5px;
+    }
+    .add-name.clicked {
+        background-color: #5a5a5a;
+        color: white;
     }
     .add-list {
         background-color: white;
