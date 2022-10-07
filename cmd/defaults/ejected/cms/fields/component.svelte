@@ -86,7 +86,14 @@
     let addName;
     const addComponent = component => {
         let components = structuredClone(allComponents);
+        // Check if there is a component default available
         if (component in components) {
+            field.forEach(c => {
+                // Check if exact component value exists on page already
+                if (JSON.stringify(c) === JSON.stringify(components[component])) {
+                    components[component].plenti_salt = addSalt();
+                }
+            });
             field = [...field, components[component]];
             addName = component;
         } else {
@@ -95,6 +102,28 @@
         setTimeout(() => {
             addName = "";
         }, 250);
+    }
+    const addSalt = () => {
+        // Create salt give duplicate components some uniqueness
+        return (Math.random() + 1).toString(36).substring(7);
+    }
+    const removeSalt = component => {
+        if ('plenti_salt' in component) {
+            field.forEach(c => {
+                // Deep clone so salt doesn't get added to original component
+                let b = structuredClone(c);
+                // Add salt to each component for comparison
+                b.plenti_salt = component.plenti_salt;
+                // Check if exact component value exists on page already
+                if (JSON.stringify(b) === JSON.stringify(component)) {
+                    // Still matching, keep salt
+                    return;
+                }
+            });
+            // No matches, remove salt
+            delete component.plenti_salt;
+            component = component;
+        }
     }
 </script>
 
@@ -152,7 +181,7 @@
                 </button>
             </div>
 
-            <div class="content" on:click|preventDefault={accordion(key)}>
+            <div class="content" on:click|preventDefault={accordion(key)} on:click={() => removeSalt(value)}>
                 {#if value.constructor === "".constructor}
                     {value.replace(/<[^>]*>?/gm, '').slice(0, 20).concat(value.length > 20 ? '...' : '')}
                 {:else if value.constructor === ({}).constructor}

@@ -24,6 +24,7 @@
 
 </script>
 
+{#if label !== "plenti_salt"}
 <div class="field {label}">
     {#if label}
         <label for="{label}">{label}</label>    
@@ -86,7 +87,8 @@
     {:else if field === undefined}
         <div>field is undefined</div>
     {/if}
-</div>
+</div> 
+{/if}
 
 <style>
     label {
