@@ -109,27 +109,25 @@
     }
     const toggleSalt = component => {
         if ('plenti_salt' in component) {
-            field.forEach(c => {
+            for (const c of field) {
                 // Deep clone so salt doesn't get added to original component
-                let b = structuredClone(c);
-                // Add salt to each component for comparison
-                b.plenti_salt = component.plenti_salt;
+                let b = structuredClone(component);
+                // Temp remove salt for comparison
+                delete b.plenti_salt;
                 // Check if exact component value exists on page already
-                if (JSON.stringify(b) === JSON.stringify(component)) {
+                if (JSON.stringify(c) === JSON.stringify(b)) {
                     // Still matching, keep salt
                     return;
                 }
-            });
+            };
             // No matches, remove salt
             delete component.plenti_salt;
             component = component;
         } else {
-            field.forEach(c => {
-                // Check if exact component value exists on page already
-                if (JSON.stringify(c) === JSON.stringify(component)) {
-                    component.plenti_salt = createSalt();
-                }
-            });
+            // Check if component matches more than itself
+            if (field.filter(c => JSON.stringify(c) === JSON.stringify(component)).length > 1) {
+                component.plenti_salt = createSalt();
+            }
         }
     }
 </script>
@@ -213,7 +211,7 @@
             </div>
         </div>
         {#if openKeys.includes(key)}
-            <div transition:slide={{ duration: 300 }}>
+            <div transition:slide|local={{ duration: 300 }}>
                 <DynamicFormInput
                     bind:field={field[key]}
                     label={null}
