@@ -91,7 +91,7 @@
             field.forEach(c => {
                 // Check if exact component value exists on page already
                 if (JSON.stringify(c) === JSON.stringify(components[component])) {
-                    components[component].plenti_salt = addSalt();
+                    components[component].plenti_salt = createSalt();
                 }
             });
             field = [...field, components[component]];
@@ -103,11 +103,11 @@
             addName = "";
         }, 250);
     }
-    const addSalt = () => {
+    const createSalt = () => {
         // Create salt give duplicate components some uniqueness
         return (Math.random() + 1).toString(36).substring(7);
     }
-    const removeSalt = component => {
+    const toggleSalt = component => {
         if ('plenti_salt' in component) {
             field.forEach(c => {
                 // Deep clone so salt doesn't get added to original component
@@ -123,6 +123,13 @@
             // No matches, remove salt
             delete component.plenti_salt;
             component = component;
+        } else {
+            field.forEach(c => {
+                // Check if exact component value exists on page already
+                if (JSON.stringify(c) === JSON.stringify(component)) {
+                    component.plenti_salt = createSalt();
+                }
+            });
         }
     }
 </script>
@@ -181,7 +188,11 @@
                 </button>
             </div>
 
-            <div class="content" on:click|preventDefault={accordion(key)} on:click={() => removeSalt(value)}>
+            <div 
+                class="content" 
+                on:click|preventDefault={accordion(key)}
+                on:click={() => toggleSalt(value)}
+            >
                 {#if value.constructor === "".constructor}
                     {value.replace(/<[^>]*>?/gm, '').slice(0, 20).concat(value.length > 20 ? '...' : '')}
                 {:else if value.constructor === ({}).constructor}
