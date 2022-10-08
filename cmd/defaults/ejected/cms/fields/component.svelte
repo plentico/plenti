@@ -9,16 +9,13 @@
         var bKeys = Object.keys(b).sort();
         return JSON.stringify(aKeys) === JSON.stringify(bKeys);
     }
-    let compSchemas = structuredClone(allComponentSchemas);
     let compSchema;
     const setCompSchema = component => {
-        for (const c in components) {
-            //console.log(component)
-            //console.log(c)
-            if (objKeysMatch(components[c], component)) {
-                console.log("match!")
+        let compDefaults = structuredClone(allComponentDefaults);
+        let compSchemas = structuredClone(allComponentSchemas);
+        for (const c in compDefaults) {
+            if (objKeysMatch(compDefaults[c], component)) {
                 compSchema = compSchemas[c];
-                //console.log(schema)
             }
         }
     }
@@ -27,8 +24,8 @@
     import {slide} from "svelte/transition";
     let isOpen = false;
     let openKeys = [];
-    const accordion = (newKey, value) => {
-        setCompSchema(value);
+    const accordion = (newKey, component) => {
+        setCompSchema(component);
         if (openKeys.length === 1 && openKeys.includes(newKey)) {
             setTimeout(() => {
                 isOpen = false;
@@ -105,17 +102,17 @@
         compList = !compList;
     }
     let addName;
-    let components = structuredClone(allComponentDefaults);
     const addComponent = component => {
+        let compDefaults = structuredClone(allComponentDefaults);
         // Check if there is a component default available
-        if (component in components) {
+        if (component in compDefaults) {
             field.forEach(c => {
                 // Check if exact component value exists on page already
-                if (JSON.stringify(c) === JSON.stringify(components[component])) {
-                    components[component].plenti_salt = createSalt();
+                if (JSON.stringify(c) === JSON.stringify(compDefaults[component])) {
+                    compDefaults[component].plenti_salt = createSalt();
                 }
             });
-            field = [...field, components[component]];
+            field = [...field, compDefaults[component]];
             addName = component;
         } else {
             addName = component + "not_found";
