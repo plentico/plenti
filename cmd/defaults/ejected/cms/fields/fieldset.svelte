@@ -1,6 +1,6 @@
 <script>
     import DynamicFormInput from "../dynamic_form_input.svelte";
-    export let field, showMedia, changingAsset, localMediaList, parentKeys, schema;
+    export let field, showMedia, changingAsset, localMediaList, parentKeys, schema, compSchema;
 </script>
 
 <fieldset>
@@ -11,8 +11,9 @@
             bind:showMedia
             bind:changingAsset
             bind:localMediaList
-            parentKeys={parentKeys + '.' + key}
+            parentKeys={parentKeys === "" ? key : parentKeys + '.' + key}
             {schema}
+            {compSchema}
         />
     {/each}
 </fieldset>

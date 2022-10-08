@@ -15,29 +15,14 @@
     import Text from './fields/text.svelte';
     import Boolean from './fields/boolean.svelte';
 
-    export let field, label, showMedia, changingAsset, localMediaList, parentKeys, schema;
+    export let field, label, showMedia, changingAsset, localMediaList, parentKeys, schema, compSchema;
     export let shadowContent = false;
 
     $: if (shadowContent !== false) {
         shadowContent[label] = field;
     }
-
-    import allComponentSchemas from '../component_schemas.js';
-
-    function containsNumbers(str) {
-        return /[0-9]/.test(str);
-    }
-    let compSchema, compName, compField;
-    if (containsNumbers(parentKeys)) {
-        compName = parentKeys.split('.')[0];
-        console.log("compName: " + compName)
-        compField = parentKeys.split('.').pop();
-        console.log("compField: " + compField)
-        compSchema = allComponentSchemas[compName];
-        //console.log(label);
-        //console.log(parentKeys);
-        console.log(compSchema);
-    }
+    console.log(parentKeys)
+    console.log(compSchema)
 
 </script>
 
@@ -46,9 +31,9 @@
     {#if label}
         <label for="{label}">{label}</label>    
     {/if}
-    {#if compSchema && compSchema.hasOwnProperty(compField)}
-        {#if compSchema[compField].type === "autcomplete"}
-            <Autocomplete {schema} {parentKeys} bind:field /> 
+    {#if compSchema && compSchema.hasOwnProperty(parentKeys)}
+        {#if compSchema[parentKeys].type === "autocomplete"}
+            <Autocomplete {schema} {parentKeys} bind:field />
         {/if}
     {/if}
     {#if schema && schema.hasOwnProperty(parentKeys)}
@@ -103,7 +88,7 @@
     {:else if field.constructor === [].constructor}
         <Component bind:field bind:showMedia bind:changingAsset bind:localMediaList bind:parentKeys {schema} />
     {:else if field.constructor === ({}).constructor}
-        <Fieldset bind:field bind:showMedia bind:changingAsset bind:localMediaList bind:parentKeys {schema} />
+        <Fieldset bind:field bind:showMedia bind:changingAsset bind:localMediaList bind:parentKeys {schema} {compSchema} />
     {:else if field === null}
         <div>field is null</div>
     {:else if field === undefined}

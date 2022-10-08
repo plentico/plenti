@@ -1,13 +1,34 @@
 <script>
     import DynamicFormInput from "../dynamic_form_input.svelte";
     import allComponentDefaults from "../../component_defaults.js";
+    import allComponentSchemas from '../../component_schemas.js';
     export let field, label, showMedia, changingAsset, localMediaList, parentKeys, schema;
+
+    const objKeysMatch = (a, b) => {
+        var aKeys = Object.keys(a).sort();
+        var bKeys = Object.keys(b).sort();
+        return JSON.stringify(aKeys) === JSON.stringify(bKeys);
+    }
+    let compSchemas = structuredClone(allComponentSchemas);
+    let compSchema;
+    const setCompSchema = component => {
+        for (const c in components) {
+            //console.log(component)
+            //console.log(c)
+            if (objKeysMatch(components[c], component)) {
+                console.log("match!")
+                compSchema = compSchemas[c];
+                //console.log(schema)
+            }
+        }
+    }
 
     // Accordion
     import {slide} from "svelte/transition";
     let isOpen = false;
     let openKeys = [];
-    const accordion = newKey => {
+    const accordion = (newKey, value) => {
+        setCompSchema(value);
         if (openKeys.length === 1 && openKeys.includes(newKey)) {
             setTimeout(() => {
                 isOpen = false;
@@ -84,8 +105,8 @@
         compList = !compList;
     }
     let addName;
+    let components = structuredClone(allComponentDefaults);
     const addComponent = component => {
-        let components = structuredClone(allComponentDefaults);
         // Check if there is a component default available
         if (component in components) {
             field.forEach(c => {
@@ -188,8 +209,8 @@
 
             <div 
                 class="content" 
-                on:click|preventDefault={accordion(key)}
-                on:click={() => toggleSalt(value)}
+                on:click|preventDefault={accordion(key, value)}
+                on:click={toggleSalt(value)}
             >
                 {#if value.constructor === "".constructor}
                     {value.replace(/<[^>]*>?/gm, '').slice(0, 20).concat(value.length > 20 ? '...' : '')}
@@ -218,8 +239,9 @@
                     bind:showMedia
                     bind:changingAsset
                     bind:localMediaList
-                    parentKeys={parentKeys + '.' + key}
+                    parentKeys={""}
                     {schema}
+                    {compSchema}
                 />
             </div>
         {/if}
