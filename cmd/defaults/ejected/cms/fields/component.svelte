@@ -1,6 +1,6 @@
 <script>
     import DynamicFormInput from "../dynamic_form_input.svelte";
-    import allComponents from "../../components.js";
+    import allComponentDefaults from "../../component_defaults.js";
     export let field, label, showMedia, changingAsset, localMediaList, parentKeys, schema;
 
     // Accordion
@@ -85,7 +85,7 @@
     }
     let addName;
     const addComponent = component => {
-        let components = structuredClone(allComponents);
+        let components = structuredClone(allComponentDefaults);
         // Check if there is a component default available
         if (component in components) {
             field.forEach(c => {

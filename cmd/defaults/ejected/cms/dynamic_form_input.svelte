@@ -22,12 +22,34 @@
         shadowContent[label] = field;
     }
 
+    import allComponentSchemas from '../component_schemas.js';
+
+    function containsNumbers(str) {
+        return /[0-9]/.test(str);
+    }
+    let compSchema, compName, compField;
+    if (containsNumbers(parentKeys)) {
+        compName = parentKeys.split('.')[0];
+        console.log("compName: " + compName)
+        compField = parentKeys.split('.').pop();
+        console.log("compField: " + compField)
+        compSchema = allComponentSchemas[compName];
+        //console.log(label);
+        //console.log(parentKeys);
+        console.log(compSchema);
+    }
+
 </script>
 
 {#if label !== "plenti_salt"}
 <div class="field {label}">
     {#if label}
         <label for="{label}">{label}</label>    
+    {/if}
+    {#if compSchema && compSchema.hasOwnProperty(compField)}
+        {#if compSchema[compField].type === "autcomplete"}
+            <Autocomplete {schema} {parentKeys} bind:field /> 
+        {/if}
     {/if}
     {#if schema && schema.hasOwnProperty(parentKeys)}
         {#if schema[parentKeys].type === "component"}
