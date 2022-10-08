@@ -13,8 +13,12 @@
     const setCompSchema = component => {
         let compDefaults = structuredClone(allComponentDefaults);
         let compSchemas = structuredClone(allComponentSchemas);
+        // Deep clone so we're not changing original component
+        let b = structuredClone(component);
+        // Temp remove salt for comparison
+        delete b.plenti_salt;
         for (const c in compDefaults) {
-            if (objKeysMatch(compDefaults[c], component)) {
+            if (objKeysMatch(compDefaults[c], b)) {
                 compSchema = compSchemas[c];
             }
         }
@@ -128,7 +132,7 @@
     const toggleSalt = component => {
         if ('plenti_salt' in component) {
             for (const c of field) {
-                // Deep clone so salt doesn't get added to original component
+                // Deep clone so we're not changing original component
                 let b = structuredClone(component);
                 // Temp remove salt for comparison
                 delete b.plenti_salt;
