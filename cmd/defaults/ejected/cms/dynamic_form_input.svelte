@@ -21,9 +21,6 @@
     $: if (shadowContent !== false) {
         shadowContent[label] = field;
     }
-    console.log(parentKeys)
-    console.log(compSchema)
-
 </script>
 
 {#if label !== "plenti_salt"}
@@ -32,11 +29,43 @@
         <label for="{label}">{label}</label>    
     {/if}
     {#if compSchema && compSchema.hasOwnProperty(parentKeys)}
-        {#if compSchema[parentKeys].type === "autocomplete"}
-            <Autocomplete {schema} {parentKeys} bind:field />
+        {#if compSchema[parentKeys].type === "component"}
+            <Component bind:field {label} bind:showMedia bind:changingAsset bind:localMediaList bind:parentKeys {schema} />
         {/if}
-    {/if}
-    {#if schema && schema.hasOwnProperty(parentKeys)}
+        {#if compSchema[parentKeys].type === "checkbox"}
+            <Checkbox schema={compSchema} {parentKeys} bind:field />
+        {/if}
+        {#if compSchema[parentKeys].type === "radio"}
+            <Radio schema={compSchema} {parentKeys} bind:field />
+        {/if}
+        {#if compSchema[parentKeys].type === "select"}
+            <Select schema={compSchema} {parentKeys} bind:field />
+        {/if}
+        {#if compSchema[parentKeys].type === "wysiwyg"}
+            <Wysiwyg schema={compSchema} {parentKeys} bind:field />
+        {/if}
+        {#if compSchema[parentKeys].type === "autocomplete"}
+            <Autocomplete schema={compSchema} {parentKeys} bind:field />
+        {/if}
+        {#if compSchema[parentKeys].type === "id"}
+            <ID bind:field />
+        {/if}
+        {#if compSchema[parentKeys].type === "text"}
+            <Text bind:field />
+        {/if}
+        {#if compSchema[parentKeys].type === "number"}
+            <Number bind:field />
+        {/if}
+        {#if compSchema[parentKeys].type === "boolean"}
+            <Boolean bind:field {label} />
+        {/if}
+        {#if compSchema[parentKeys].type === "date"}
+            <Date bind:field />
+        {/if}
+        {#if compSchema[parentKeys].type === "asset"}
+            <Asset bind:field bind:showMedia bind:changingAsset bind:localMediaList />
+        {/if}
+    {:else if schema && schema.hasOwnProperty(parentKeys)}
         {#if schema[parentKeys].type === "component"}
             <Component bind:field {label} bind:showMedia bind:changingAsset bind:localMediaList bind:parentKeys {schema} />
         {/if}
