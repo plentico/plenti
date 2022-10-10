@@ -11,6 +11,7 @@
     import Autocomplete from './fields/autocomplete.svelte';
     import ID from './fields/id.svelte';
     import Date from './fields/date.svelte';
+    import Time from './fields/time.svelte';
     import Number from './fields/number.svelte';
     import Text from './fields/text.svelte';
     import Boolean from './fields/boolean.svelte';
@@ -62,6 +63,9 @@
         {#if compSchema[parentKeys].type === "date"}
             <Date bind:field />
         {/if}
+        {#if compSchema[parentKeys].type === "time"}
+            <Time bind:field schema={compSchema} {parentKeys} />
+        {/if}
         {#if compSchema[parentKeys].type === "asset"}
             <Asset bind:field bind:showMedia bind:changingAsset bind:localMediaList />
         {/if}
@@ -98,6 +102,9 @@
         {/if}
         {#if schema[parentKeys].type === "date"}
             <Date bind:field />
+        {/if}
+        {#if schema[parentKeys].type === "time"}
+            <Time bind:field {schema} {parentKeys} />
         {/if}
         {#if schema[parentKeys].type === "asset"}
             <Asset bind:field bind:showMedia bind:changingAsset bind:localMediaList />

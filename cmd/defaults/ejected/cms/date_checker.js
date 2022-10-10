@@ -51,3 +51,50 @@ export const formatDate = (date, format) => {
     // Can't find format
     return date;
 }
+
+/**
+ * 14:30
+ * 02:30pm || 02:30 pm || 02:30PM || 02:30 PM
+ * 2:30pm || 2:30 pm || 2:30PM || 2:30 PM
+ * 14:30:45
+ * 02:30:45pm || 02:30:45 pm || 02:30:45PM || 02:30:45 PM
+ * 2:30:45pm || 2:30:45 pm || 2:30:45PM || 2:30:45 PM
+ */
+const reTime = new RegExp("^(0?[1-9]|1[0-9]|2[0-4])(:)([0-5][0-9])((:)([0-5][0-9]))?(\s?(pm|PM|am|AM))?$");
+
+export const isTime = time => reTime.test(time);
+export const makeTime = time => {
+    if (reTime.test(time)) {
+        let replacements = time.match(reTime);
+        let period = replacements[7] === undefined ? '' : replacements[7];
+        return time.replace(period, '');
+    }
+}
+export const formatTime = (time, format) => {
+    // Get parts from formatted HTML time input
+    let parts = time.split(':');
+    let hour = parts[0];
+    let minute = parts[1];
+    let second = parts[2] === undefined ? '' : parts[2];
+
+    // Recall the format used in original string from JSON
+    if (reTime.test(format)) {
+        let replacements = format.match(reTime);
+        //let hour = replacements[1] === undefined ? '' : replacements[1];
+        //let delimeter = replacements[2] === undefined ? '' : replacements[2];
+        //let minute = replacements[3] === undefined ? '' : replacements[3];
+        second = replacements[4] === undefined ? '' : ':' + second;
+        let period = replacements[7] === undefined ? '' : replacements[7];
+        console.log(replacements)
+        /*
+        console.log("hour: " + hour)
+        console.log("del: " + delimeter)
+        console.log("minute: " + minute)
+        console.log("second: " + second)
+        console.log("period: " + period);
+        */
+        return hour + ':' + minute + second + period;
+    }
+    // Couldn't find format
+    return time;
+}
