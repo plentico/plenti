@@ -48,11 +48,13 @@ theme folder within the "themes/" directory.
 			common.CheckErr(writers.SetSiteConfig(siteConfig, configPath))
 			// Delete the corresponding theme folder.
 			if err := os.RemoveAll("themes/" + repoName); err != nil {
-				common.CheckErr(fmt.Errorf("Could not delete theme folder: %w", err))
+				err = fmt.Errorf("Could not delete theme folder: %w", err)
+				fmt.Println(err.Error())
 			}
 
+		} else {
+			fmt.Printf("Could not find %v theme_config in plenti.json\n", repoName)
 		}
-		fmt.Printf("Could not find %v theme_config in plenti.json\n", repoName)
 
 	},
 }
