@@ -81,6 +81,10 @@ export const inputFormatTime = time => {
         if (Number(hour) === 12) {
             hour = "00";
         }
+        // Time input needs leading zero
+        if (hour.length !== 2) {
+            hour = "0" + hour;
+        }
     }
     // Remove am / pm so HTML input can read value
     return hour + minute + second;
@@ -106,7 +110,9 @@ export const displayFormatTime = (time, format) => {
             hour = Number(hour) === 12 ? 12 : Number(hour) - 12;
             period = period === period.toUpperCase() ? "PM" : "pm";
         } else {
-            if (Number(hour) === 0) {
+            // Convert to number for comparison and removing leading zeros
+            hour = Number(hour);
+            if (hour === 0) {
                 hour = 12;
             }
             period = period === period.toUpperCase() ? "AM" : "am";
