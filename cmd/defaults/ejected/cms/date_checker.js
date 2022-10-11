@@ -63,38 +63,50 @@ export const formatDate = (date, format) => {
 const reTime = new RegExp("^(0?[1-9]|1[0-9]|2[0-4])(:)([0-5][0-9])((:)([0-5][0-9]))?(\s?(pm|PM|am|AM))?$");
 
 export const isTime = time => reTime.test(time);
-export const makeTime = time => {
-    if (reTime.test(time)) {
-        let replacements = time.match(reTime);
-        let period = replacements[7] === undefined ? '' : replacements[7];
-        return time.replace(period, '');
+export const inputFormatTime = time => {
+    let replacements = time.match(reTime);
+    let hour = replacements[1] === undefined ? '' : replacements[1];
+    let minute = replacements[3] === undefined ? '' : ':' + replacements[3];
+    let second = replacements[6] === undefined ? '' : ':' + replacements[6];
+    // Get am / pm if set in initial string
+    let period = replacements[7] === undefined ? '' : replacements[7];
+    // Convert AM / PM to military time
+    if (period === "pm" || period === "PM") {
+        // HTML input needs 24 hour format
+        hour = Number(hour) === 12 ? 12 : Number(hour) + 12;
     }
+    if (period === "am" || period === "AM") {
+        if (Number(hour) === 12) {
+            hour = "00";
+        }
+    }
+    // Remove am / pm so HTML input can read value
+    return hour + minute + second;
 }
-export const formatTime = (time, format) => {
+export const displayFormatTime = (time, format) => {
     // Get parts from formatted HTML time input
     let parts = time.split(':');
     let hour = parts[0];
-    let minute = parts[1];
-    let second = parts[2] === undefined ? '' : parts[2];
+    let minute = ':' + parts[1];
+    let second = parts[2] === undefined ? '' : ':' + parts[2];
 
     // Recall the format used in original string from JSON
-    if (reTime.test(format)) {
-        let replacements = format.match(reTime);
-        //let hour = replacements[1] === undefined ? '' : replacements[1];
-        //let delimeter = replacements[2] === undefined ? '' : replacements[2];
-        //let minute = replacements[3] === undefined ? '' : replacements[3];
-        second = replacements[4] === undefined ? '' : ':' + second;
-        let period = replacements[7] === undefined ? '' : replacements[7];
-        console.log(replacements)
-        /*
-        console.log("hour: " + hour)
-        console.log("del: " + delimeter)
-        console.log("minute: " + minute)
-        console.log("second: " + second)
-        console.log("period: " + period);
-        */
-        return hour + ':' + minute + second + period;
+    let replacements = format.match(reTime);
+    // The optional space before am or pm
+    let space = replacements[6] === undefined ? '' : replacements[6];
+    // AM or PM
+    let period = replacements[7] === undefined ? '' : replacements[7];
+    
+    console.log(hour)
+    if (Number(hour) >= 12) {
+        // Convert back from military time to 12 hour format
+        hour = Number(hour) === 12 ? 12 : Number(hour) - 12;
+        period = period === period.toUpperCase() ? "PM" : "pm";
+    } else {
+        if (Number(hour) === 0) {
+            hour = 12;
+        }
+        period = period === period.toUpperCase() ? "AM" : "am";
     }
-    // Couldn't find format
-    return time;
+    return hour + minute + second + space + period;
 }

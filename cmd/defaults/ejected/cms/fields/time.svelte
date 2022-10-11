@@ -1,11 +1,9 @@
 <script>
-    import { isTime, makeTime, formatTime } from '../date_checker.js';
+    import { isTime, inputFormatTime, displayFormatTime } from '../date_checker.js';
 
     export let field, schema, parentKeys;
 
-    const bindTime = time => {
-        field = formatTime(time, field);
-    }
+    const bindTime = time => field = displayFormatTime(time, field);
     
     let showSeconds;
     if (schema[parentKeys].hasOwnProperty("options")) {
@@ -13,9 +11,9 @@
     }
 </script>
 
-<input 
+<input
     type="time"
-    value={isTime(field) ? makeTime(field) : null}
+    value={isTime(field) ? inputFormatTime(field) : null}
     on:input={time => bindTime(time.target.value)}
     step="{showSeconds ? 1 : 60}"
     required
