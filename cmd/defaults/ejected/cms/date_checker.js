@@ -70,12 +70,14 @@ export const inputFormatTime = time => {
     let second = replacements[6] === undefined ? '' : ':' + replacements[6];
     // Get am / pm if set in initial string
     let period = replacements[7] === undefined ? '' : replacements[7];
-    // Convert AM / PM to military time
+    // Check if PM is used
     if (period === "pm" || period === "PM") {
         // HTML input needs 24 hour format
         hour = Number(hour) === 12 ? 12 : Number(hour) + 12;
     }
+    // Check if AM is used
     if (period === "am" || period === "AM") {
+        // Military format starts at 00 instead of 12am 
         if (Number(hour) === 12) {
             hour = "00";
         }
@@ -84,7 +86,7 @@ export const inputFormatTime = time => {
     return hour + minute + second;
 }
 export const displayFormatTime = (time, format) => {
-    // Get parts from formatted HTML time input
+    // Get parts from formatted HTML time input (the changing value from editor)
     let parts = time.split(':');
     let hour = parts[0];
     let minute = ':' + parts[1];
@@ -92,21 +94,23 @@ export const displayFormatTime = (time, format) => {
 
     // Recall the format used in original string from JSON
     let replacements = format.match(reTime);
-    // The optional space before am or pm
+    // Get the optional space before am or pm
     let space = replacements[6] === undefined ? '' : replacements[6];
-    // AM or PM
+    // Get AM or PM if available
     let period = replacements[7] === undefined ? '' : replacements[7];
     
-    console.log(hour)
-    if (Number(hour) >= 12) {
-        // Convert back from military time to 12 hour format
-        hour = Number(hour) === 12 ? 12 : Number(hour) - 12;
-        period = period === period.toUpperCase() ? "PM" : "pm";
-    } else {
-        if (Number(hour) === 0) {
-            hour = 12;
+    // Check if AM or PM was initially used
+    if (period !== '') {
+        if (Number(hour) >= 12) {
+            // Convert back from military time to 12 hour format
+            hour = Number(hour) === 12 ? 12 : Number(hour) - 12;
+            period = period === period.toUpperCase() ? "PM" : "pm";
+        } else {
+            if (Number(hour) === 0) {
+                hour = 12;
+            }
+            period = period === period.toUpperCase() ? "AM" : "am";
         }
-        period = period === period.toUpperCase() ? "AM" : "am";
     }
     return hour + minute + second + space + period;
 }

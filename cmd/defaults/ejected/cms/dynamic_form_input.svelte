@@ -1,5 +1,5 @@
 <script>
-    import { isDate } from './date_checker.js';
+    import { isDate, isTime } from './date_checker.js';
     import { isAssetPath } from './asset_checker.js';
     import Checkbox from './fields/checkbox.svelte';
     import Radio from './fields/radio.svelte';
@@ -64,7 +64,7 @@
             <Date bind:field />
         {/if}
         {#if compSchema[parentKeys].type === "time"}
-            <Time bind:field schema={compSchema} {parentKeys} />
+            <Time bind:field />
         {/if}
         {#if compSchema[parentKeys].type === "asset"}
             <Asset bind:field bind:showMedia bind:changingAsset bind:localMediaList />
@@ -104,7 +104,7 @@
             <Date bind:field />
         {/if}
         {#if schema[parentKeys].type === "time"}
-            <Time bind:field {schema} {parentKeys} />
+            <Time bind:field />
         {/if}
         {#if schema[parentKeys].type === "asset"}
             <Asset bind:field bind:showMedia bind:changingAsset bind:localMediaList />
@@ -114,6 +114,8 @@
     {:else if typeof field === "string"}
         {#if isDate(field)}
             <Date bind:field />
+        {:else if isTime(field)}
+            <Time bind:field />
         {:else if isAssetPath(field)}
             <Asset bind:field bind:showMedia bind:changingAsset bind:localMediaList />
         {:else}
