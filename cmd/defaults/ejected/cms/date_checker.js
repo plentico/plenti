@@ -60,7 +60,7 @@ export const formatDate = (date, format) => {
  * 02:30:45pm || 02:30:45 pm || 02:30:45PM || 02:30:45 PM
  * 2:30:45pm || 2:30:45 pm || 2:30:45PM || 2:30:45 PM
  */
-const reTime = new RegExp("^(0?[1-9]|1[0-9]|2[0-4])(:)([0-5][0-9])((:)([0-5][0-9]))?(\s?(pm|PM|am|AM))?$");
+const reTime = new RegExp("^(0?[1-9]|1[0-9]|2[0-4])(:)([0-5][0-9])((:)([0-5][0-9]))?((\\s)?(pm|PM|am|AM))?$");
 
 export const isTime = time => reTime.test(time);
 export const inputFormatTime = time => {
@@ -69,7 +69,7 @@ export const inputFormatTime = time => {
     let minute = replacements[3] === undefined ? '' : ':' + replacements[3];
     let second = replacements[6] === undefined ? '' : ':' + replacements[6];
     // Get am / pm if set in initial string
-    let period = replacements[7] === undefined ? '' : replacements[7];
+    let period = replacements[9] === undefined ? '' : replacements[9];
     // Check if PM is used
     if (period === "pm" || period === "PM") {
         // HTML input needs 24 hour format
@@ -95,9 +95,9 @@ export const displayFormatTime = (time, format) => {
     // Recall the format used in original string from JSON
     let replacements = format.match(reTime);
     // Get the optional space before am or pm
-    let space = replacements[6] === undefined ? '' : replacements[6];
+    let space = replacements[8] === undefined ? '' : ' ';
     // Get AM or PM if available
-    let period = replacements[7] === undefined ? '' : replacements[7];
+    let period = replacements[9] === undefined ? '' : replacements[9];
     
     // Check if AM or PM was initially used
     if (period !== '') {
