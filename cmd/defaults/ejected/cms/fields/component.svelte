@@ -5,17 +5,25 @@
     export let field, label, showMedia, changingAsset, localMediaList, parentKeys, schema;
 
     const objKeysMatch = (a, b) => {
-        for (let [key, value] of Object.entries(a)) {
-            if (value instanceof Object && b.hasOwnProperty(key) && b[key] instanceof Object) {
-                console.log("RECUSION")
-                return objKeysMatch(value, b[key]);
+        let aKeys = Object.keys(a).sort();
+        let bKeys = Object.keys(b).sort();
+        // Set matching true if keys at this level are equal (starts top-level)
+        let matching = JSON.stringify(aKeys) === JSON.stringify(bKeys);
+        // Skip if already mismatched at current level
+        if (matching) {
+            // Loop through the object
+            for (let [key, value] of Object.entries(a)) {
+                // Make sure we're comparing two objects
+                if (value instanceof Object && b.hasOwnProperty(key) && b[key] instanceof Object) {
+                    // Recusively compare keys at new level
+                    matching = objKeysMatch(value, b[key]);
+                    if (!matching) {
+                        break;
+                    }
+                }
             }
         }
-        var aKeys = Object.keys(a).sort();
-        var bKeys = Object.keys(b).sort();
-        console.log(aKeys)
-        console.log(bKeys)
-        return JSON.stringify(aKeys) === JSON.stringify(bKeys);
+        return matching;
     }
     let compSchema;
     const setCompSchema = component => {
@@ -26,10 +34,7 @@
         // Temp remove salt for comparison
         delete b.plenti_salt;
         for (const c in compDefaults) {
-            console.log(c)
-            console.log(b)
             if (objKeysMatch(compDefaults[c], b)) {
-                console.log("FOUNDDD")
                 compSchema = compSchemas[c];
             }
         }
