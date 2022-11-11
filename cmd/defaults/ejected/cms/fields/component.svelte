@@ -146,6 +146,11 @@
         return (Math.random() + 1).toString(36).substring(7);
     }
     const toggleSalt = component => {
+        // Check if the component is an object
+        if (component.constructor !== ({}).constructor) {
+            // It's not an object, so exit (can't add salt)
+            return;
+        }
         if ('plenti_salt' in component) {
             for (const c of field) {
                 // Deep clone so we're not changing original component
