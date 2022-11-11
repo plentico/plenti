@@ -155,7 +155,7 @@ func Build() error {
 	}
 
 	// Run Gopack (custom Snowpack alternative) for ESM support.
-	err = build.Gopack(buildPath)
+	err = build.Gopack(buildPath, siteConfig)
 	if err != nil {
 		log.Fatal("\nError in Gopack build step", err)
 	}

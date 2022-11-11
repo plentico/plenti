@@ -5,6 +5,7 @@
 	},
 	"baseurl": "/",
 	"build": "public",
+	"entrypoint": "global/html.svelte",
 	"local": {
 		"port": 3000
 	},

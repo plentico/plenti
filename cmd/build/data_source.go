@@ -192,7 +192,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 
 	for _, currentContent := range allContent {
 
-		err := createProps(currentContent, allContentStr, env)
+		err := createProps(currentContent, allContentStr, env, siteConfig.EntryPoint)
 		if err != nil {
 			return fmt.Errorf("\nCan't create props for %s %w", currentContent.contentFilepath, err)
 		}
@@ -207,7 +207,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 			return err
 		}
 		for _, paginatedContent := range allPaginatedContent {
-			if err = createProps(paginatedContent, allContentStr, env); err != nil {
+			if err = createProps(paginatedContent, allContentStr, env, siteConfig.EntryPoint); err != nil {
 				return err
 			}
 
@@ -437,7 +437,7 @@ func removeExtraSlashes(path string) string {
 	return path
 }
 
-func createProps(currentContent content, allContentStr string, env env) error {
+func createProps(currentContent content, allContentStr string, env env, entryPoint string) error {
 	componentSignature := "layouts_content_" + currentContent.contentType + "_svelte"
 	_, err := SSRctx.RunScript("var props = {content: "+currentContent.contentDetails+
 		", layout: "+componentSignature+
@@ -454,7 +454,12 @@ func createProps(currentContent content, allContentStr string, env env) error {
 		return fmt.Errorf("\nCould not create props for %s\n%+v", componentSignature, err)
 	}
 	// Render the HTML with props needed for the current content.
-	_, err = SSRctx.RunScript("var { html, css: staticCss} = layouts_global_html_svelte.render(props);", "create_ssr")
+	entrySignature := strings.ReplaceAll(
+		strings.ReplaceAll(
+			"layouts/"+entryPoint,
+			"/", "_"),
+		".", "_")
+	_, err = SSRctx.RunScript(fmt.Sprintf("var { html, css: staticCss} = %s.render(props);", entrySignature), "create_ssr")
 	if err != nil {
 		return fmt.Errorf("\nCan't render htmlComponent for %s\n%+v", componentSignature, err)
 	}

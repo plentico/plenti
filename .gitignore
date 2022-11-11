@@ -4,6 +4,7 @@
 !.vscode/launch.json
 *.code-workspace
 .history
+.idea
 ### Go ###
 # Binaries for programs and plugins
 *.exe
