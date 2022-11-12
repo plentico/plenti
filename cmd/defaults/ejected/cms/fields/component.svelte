@@ -14,7 +14,9 @@
             // Loop through the object
             for (let [key, value] of Object.entries(a)) {
                 // Make sure we're comparing two objects
-                if (value instanceof Object && b.hasOwnProperty(key) && b[key] instanceof Object) {
+                if (value.constructor === ({}).constructor &&
+                    b.hasOwnProperty(key) && 
+                    b[key].constructor === ({}).constructor) {
                     // Recusively compare keys at new level
                     matching = objKeysMatch(value, b[key]);
                     if (!matching) {

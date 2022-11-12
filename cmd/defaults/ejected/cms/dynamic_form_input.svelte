@@ -31,7 +31,7 @@
     {/if}
     {#if compSchema && compSchema.hasOwnProperty(parentKeys)}
         {#if compSchema[parentKeys].type === "component"}
-            <Component bind:field {label} bind:showMedia bind:changingAsset bind:localMediaList bind:parentKeys {schema} />
+            <Component bind:field {label} bind:showMedia bind:changingAsset bind:localMediaList bind:parentKeys schema={compSchema} />
         {/if}
         {#if compSchema[parentKeys].type === "checkbox"}
             <Checkbox schema={compSchema} {parentKeys} bind:field />
