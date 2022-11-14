@@ -6,7 +6,7 @@
     class="textarea"
     role="textbox"
     contenteditable=true
-    bind:innerHTML={field}
+    bind:textContent={field}
 ></div>
 
 <style>
