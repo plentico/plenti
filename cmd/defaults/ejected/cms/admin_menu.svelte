@@ -8,7 +8,7 @@
     import allAssets from './assets.js';
     import { env } from '../env.js';
 
-    let baseUrl = env.local ? '/' : env.baseurl;
+    let baseUrl = env.local ? '/' : env.baseurl || '/';
     let assets = allAssets.map(asset => baseUrl + asset);
 
     let showMedia = false;
