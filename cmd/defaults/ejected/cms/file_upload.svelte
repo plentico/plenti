@@ -4,7 +4,7 @@
     import ButtonWrapper from './button_wrapper.svelte';
     import Button from './button.svelte';
 
-    export let assets, changingAsset, showMedia, localMediaList;
+    export let assets, changingAsset, showMedia, localMediaList, assetPrefix;
     let enabledFilters = [];
 
     const createMediaList = file => {
@@ -12,7 +12,7 @@
         reader.readAsDataURL(file);
         reader.onload = e => {
             localMediaList = [...localMediaList, {
-                file: "assets/" + file.name,
+                file: assetPrefix + "assets/" + file.name,
                 contents: e.target.result
             }];
         };
@@ -23,12 +23,12 @@
         });
     }
 
-    let filePrefix = "assets/";
+    let filePrefix = assetPrefix + "assets/";
     $: if (enabledFilters) {
         if (enabledFilters.length > 0) {
             // Convert filter array to path
             let filterPath = enabledFilters[0].join('/') + "/";
-            let newPrefix = "assets/" + filterPath;
+            let newPrefix = assetPrefix + "assets/" + filterPath;
             localMediaList.forEach(mediaFile => {
                 mediaFile.file = mediaFile.file.replace(filePrefix, newPrefix);
             });
@@ -80,7 +80,7 @@
                 class="button-primary"
                 on:click={addUploadToLibrary}
                 on:click|preventDefault={() => enabledFilters=[]}
-                on:click|preventDefault={() => filePrefix = "assets/"}
+                on:click|preventDefault={() => filePrefix = assetPrefix + "assets/"}
                 on:click|preventDefault={() => {
                     if(changingAsset) {
                         changingAsset = localMediaList[0].file;
