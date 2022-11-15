@@ -264,8 +264,7 @@
                     bind:changingAsset
                     bind:localMediaList
                     parentKeys={""}
-                    {schema}
-                    {compSchema}
+                    schema={compSchema}
                 />
             </div>
         {/if}

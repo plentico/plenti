@@ -1,13 +1,28 @@
 <script>
-    export let field;
+    export let schema, parentKeys, field;
+
+    let disabled;
+    if (schema && schema[parentKeys]?.options) {
+        disabled = schema[parentKeys].options.includes("disabled");
+    }
+    console.log(schema)
 </script>
 
-<div
-    class="textarea"
-    role="textbox"
-    contenteditable=true
-    bind:textContent={field}
-></div>
+{#if disabled}
+    <div
+        class="textarea disabled"
+        role="textbox"
+        contenteditable=false
+        bind:textContent={field}
+    ></div>
+{:else}
+    <div
+        class="textarea"
+        role="textbox"
+        contenteditable=true
+        bind:textContent={field}
+    ></div>
+{/if}
 
 <style>
     .textarea {
@@ -19,5 +34,10 @@
         font-family: sans-serif;
         font-size: small;
         white-space: pre-wrap;
+    }
+    .textarea.disabled {
+        resize: none;
+        background-color: gainsboro;
+        border: 1px solid gray;
     }
 </style>

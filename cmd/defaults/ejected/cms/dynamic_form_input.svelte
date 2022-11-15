@@ -16,7 +16,7 @@
     import Text from './fields/text.svelte';
     import Boolean from './fields/boolean.svelte';
 
-    export let field, label, showMedia, changingAsset, localMediaList, parentKeys, schema, compSchema;
+    export let field, label, showMedia, changingAsset, localMediaList, parentKeys, schema;
     export let shadowContent = false;
 
     $: if (shadowContent !== false) {
@@ -29,49 +29,9 @@
     {#if label}
         <label for="{label}">{label}</label>    
     {/if}
-    {#if compSchema && compSchema.hasOwnProperty(parentKeys)}
-        {#if compSchema[parentKeys].type === "component"}
-            <Component bind:field {label} bind:showMedia bind:changingAsset bind:localMediaList bind:parentKeys schema={compSchema} />
-        {/if}
-        {#if compSchema[parentKeys].type === "checkbox"}
-            <Checkbox schema={compSchema} {parentKeys} bind:field />
-        {/if}
-        {#if compSchema[parentKeys].type === "radio"}
-            <Radio schema={compSchema} {parentKeys} bind:field />
-        {/if}
-        {#if compSchema[parentKeys].type === "select"}
-            <Select schema={compSchema} {parentKeys} bind:field />
-        {/if}
-        {#if compSchema[parentKeys].type === "wysiwyg"}
-            <Wysiwyg schema={compSchema} {parentKeys} bind:field />
-        {/if}
-        {#if compSchema[parentKeys].type === "autocomplete"}
-            <Autocomplete schema={compSchema} {parentKeys} bind:field />
-        {/if}
-        {#if compSchema[parentKeys].type === "id"}
-            <ID bind:field />
-        {/if}
-        {#if compSchema[parentKeys].type === "text"}
-            <Text bind:field />
-        {/if}
-        {#if compSchema[parentKeys].type === "number"}
-            <Number bind:field />
-        {/if}
-        {#if compSchema[parentKeys].type === "boolean"}
-            <Boolean bind:field {label} />
-        {/if}
-        {#if compSchema[parentKeys].type === "date"}
-            <Date bind:field />
-        {/if}
-        {#if compSchema[parentKeys].type === "time"}
-            <Time bind:field />
-        {/if}
-        {#if compSchema[parentKeys].type === "asset"}
-            <Asset bind:field bind:showMedia bind:changingAsset bind:localMediaList />
-        {/if}
-    {:else if schema && schema.hasOwnProperty(parentKeys)}
+    {#if schema && schema.hasOwnProperty(parentKeys)}
         {#if schema[parentKeys].type === "component"}
-            <Component bind:field {label} bind:showMedia bind:changingAsset bind:localMediaList bind:parentKeys {schema} />
+            <Component bind:field {label} bind:showMedia bind:changingAsset bind:localMediaList {parentKeys} {schema} />
         {/if}
         {#if schema[parentKeys].type === "checkbox"}
             <Checkbox {schema} {parentKeys} bind:field />
@@ -92,7 +52,7 @@
             <ID bind:field />
         {/if}
         {#if schema[parentKeys].type === "text"}
-            <Text bind:field />
+            <Text {schema} {parentKeys} bind:field />
         {/if}
         {#if schema[parentKeys].type === "number"}
             <Number bind:field />
@@ -124,9 +84,9 @@
     {:else if typeof field === "boolean"}
         <Boolean bind:field {label} />
     {:else if field.constructor === [].constructor}
-        <Component bind:field bind:showMedia bind:changingAsset bind:localMediaList bind:parentKeys {schema} />
+        <Component bind:field bind:showMedia bind:changingAsset bind:localMediaList {parentKeys} {schema} />
     {:else if field.constructor === ({}).constructor}
-        <Fieldset bind:field bind:showMedia bind:changingAsset bind:localMediaList bind:parentKeys {schema} {compSchema} />
+        <Fieldset bind:field bind:showMedia bind:changingAsset bind:localMediaList {parentKeys} {schema} />
     {:else if field === null}
         <div>field is null</div>
     {:else if field === undefined}
