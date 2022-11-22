@@ -5,7 +5,6 @@
     if (schema && schema[parentKeys]?.options) {
         disabled = schema[parentKeys].options.includes("disabled");
     }
-    console.log(schema)
 </script>
 
 {#if disabled}

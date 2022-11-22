@@ -1,4 +1,4 @@
-import { readable } from 'svelte/store';
+import { writable } from 'svelte/store';
 import { createSessionStore } from './session.js';
 import { createDataStore } from './storage.js';
 import { env } from '../env.js';
@@ -66,7 +66,7 @@ const getUser = () => ({
         codeVerifierStore.set(null);
     },
 });
-export const user = readable(getUser(), set => {
+export const user = writable(getUser(), set => {
     localTokenStore.subscribe(() => set(getUser()));
     tokenStore.subscribe(() => set(getUser()));
     stateStore.subscribe(() => set(getUser()));
