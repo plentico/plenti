@@ -66,9 +66,6 @@ var serveCmd = &cobra.Command{
 		s.Color("blue")
 		s.Start()
 
-		// Always set as Local when using serve command
-		build.Local = true
-
 		// Skip build command if BuildFlag is set to False
 		if BuildFlag {
 			// Run build command before starting server
@@ -155,6 +152,7 @@ func init() {
 	serveCmd.Flags().BoolVarP(&MinifyFlag, "minify", "m", true, "minify JS output for faster performance")
 	serveCmd.Flags().BoolVarP(&SSLFlag, "ssl", "s", false, "ssl/tls encryption to serve localhost over https")
 	serveCmd.Flags().BoolVarP(&build.Doreload, "live-reload", "L", false, "Enable live reload")
+	serveCmd.Flags().BoolVarP(&build.Local, "local", "l", true, "set false to emulate remote server")
 	serveCmd.Flags().StringVarP(&ConfigFileFlag, "config", "c", "plenti.json", "use a custom sitewide configuration file")
 	//serveCmd.Flags().BoolVarP(&common.UseMemFS, "in-memory", "M", false, "Use in memory filesystem")
 }
