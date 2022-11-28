@@ -31,8 +31,6 @@ var (
 
 	// Match dynamic import statments, e.g. import("") or import('').
 	reDynamicImport = regexp.MustCompile(`import\((?:'|").*(?:'|")\)`)
-	// Match entrypoint path inside dynamic import
-	reEntryPoint = regexp.MustCompile(`(?m)^import\sHtml\sfrom\s['|"](.*)['|"];`)
 	// Find any import statement in the file (including multiline imports).
 	reStaticImportGoPk = regexp.MustCompile(`(?m)^import(\s)(.*from(.*);|((.*\n){0,}?)\}(\s)from(.*);)`)
 	// Find any 'side-effects only' imports (e.g. import './my-module.js';)
@@ -58,7 +56,7 @@ func CheckMinifyFlag(flag bool) {
 var alreadyConvertedFiles []string
 
 // Gopack ensures ESM support for NPM dependencies.
-func Gopack(buildPath string, siteConfig readers.SiteConfig) error {
+func Gopack(buildPath string) error {
 
 	defer Benchmark(time.Now(), "Running Gopack")
 
@@ -68,7 +66,7 @@ func Gopack(buildPath string, siteConfig readers.SiteConfig) error {
 	alreadyConvertedFiles = []string{}
 
 	// Start at the entry point for the app
-	err := runPack(buildPath, buildPath+"/spa/ejected/main.js", siteConfig)
+	err := runPack(buildPath, buildPath+"/spa/ejected/main.js")
 	if err != nil {
 		return err
 	}
@@ -76,7 +74,7 @@ func Gopack(buildPath string, siteConfig readers.SiteConfig) error {
 	return nil
 }
 
-func runPack(buildPath, convertPath string, siteConfig readers.SiteConfig) error {
+func runPack(buildPath, convertPath string) error {
 	// Destination path for dependencies
 	gopackDir := buildPath + "/spa/web_modules"
 
@@ -84,16 +82,6 @@ func runPack(buildPath, convertPath string, siteConfig readers.SiteConfig) error
 	contentBytes, err := ioutil.ReadFile(convertPath)
 	if err != nil {
 		return fmt.Errorf("\nCould not read file %s to convert to esm\n%w", convertPath, err)
-	}
-
-	// Replace entrypoint
-	if convertPath == "public/spa/ejected/router.js" {
-		matches := reEntryPoint.FindSubmatch(contentBytes)
-		if len(matches) < 2 {
-			return fmt.Errorf("\nCould not find entrypoint import")
-		}
-		updatedImportPath := fmt.Sprintf("../%s", siteConfig.EntryPoint)
-		contentBytes = bytes.Replace(contentBytes, matches[1], []byte(updatedImportPath), 1)
 	}
 
 	// Created byte array of all dynamic imports in the current file.
@@ -209,7 +197,7 @@ func runPack(buildPath, convertPath string, siteConfig readers.SiteConfig) error
 			// Add the current file to list of already converted files.
 			alreadyConvertedFiles = append(alreadyConvertedFiles, fullPathStr)
 			// Use fullPathStr recursively to find its imports.
-			err = runPack(buildPath, fullPathStr, siteConfig)
+			err = runPack(buildPath, fullPathStr)
 			if err != nil {
 				return fmt.Errorf("\nCan't runPack on %s %w", fullPathStr, err)
 			}

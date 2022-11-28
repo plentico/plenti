@@ -56,9 +56,10 @@ type content struct {
 
 // Holds sitewide environment variables.
 type env struct {
-	local   string
-	baseurl string
-	cms     cms
+	local      string
+	baseurl    string
+	entrypoint string
+	cms        cms
 }
 type cms struct {
 	repo        string
@@ -78,8 +79,9 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 	contentJSPath := buildPath + "/spa/ejected/content.js"
 	envPath := buildPath + "/spa/ejected/env.js"
 	env := env{
-		local:   strconv.FormatBool(Local),
-		baseurl: siteConfig.BaseURL,
+		local:      strconv.FormatBool(Local),
+		baseurl:    siteConfig.BaseURL,
+		entrypoint: siteConfig.EntryPoint,
 		cms: cms{
 			repo:        siteConfig.CMS.Repo,
 			redirectUrl: siteConfig.CMS.RedirectUrl,
@@ -91,6 +93,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 	// Create env magic prop.
 	envStr := "export let env = { local: " + env.local +
 		", baseurl: '" + env.baseurl +
+		"', entrypoint: '" + env.entrypoint +
 		"', cms: { repo: '" + env.cms.repo +
 		"', redirectUrl: '" + env.cms.redirectUrl +
 		"', appId: '" + env.cms.appId +
@@ -192,7 +195,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 
 	for _, currentContent := range allContent {
 
-		err := createProps(currentContent, allContentStr, env, siteConfig.EntryPoint)
+		err := createProps(currentContent, allContentStr, env)
 		if err != nil {
 			return fmt.Errorf("\nCan't create props for %s %w", currentContent.contentFilepath, err)
 		}
@@ -207,7 +210,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 			return err
 		}
 		for _, paginatedContent := range allPaginatedContent {
-			if err = createProps(paginatedContent, allContentStr, env, siteConfig.EntryPoint); err != nil {
+			if err = createProps(paginatedContent, allContentStr, env); err != nil {
 				return err
 			}
 
@@ -437,7 +440,7 @@ func removeExtraSlashes(path string) string {
 	return path
 }
 
-func createProps(currentContent content, allContentStr string, env env, entryPoint string) error {
+func createProps(currentContent content, allContentStr string, env env) error {
 	componentSignature := "layouts_content_" + currentContent.contentType + "_svelte"
 	_, err := SSRctx.RunScript("var props = {content: "+currentContent.contentDetails+
 		", layout: "+componentSignature+
@@ -456,7 +459,7 @@ func createProps(currentContent content, allContentStr string, env env, entryPoi
 	// Render the HTML with props needed for the current content.
 	entrySignature := strings.ReplaceAll(
 		strings.ReplaceAll(
-			"layouts/"+entryPoint,
+			"layouts/"+env.entrypoint,
 			"/", "_"),
 		".", "_")
 	_, err = SSRctx.RunScript(fmt.Sprintf("var { html, css: staticCss} = %s.render(props);", entrySignature), "create_ssr")

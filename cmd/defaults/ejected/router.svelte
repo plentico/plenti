@@ -1,8 +1,19 @@
-<Html {path} {params} {content} {layout} {allContent} {allLayouts} {env} {user} {adminMenu} {shadowContent} />
+<svelte:component
+  this="{allLayouts['layouts_' + env.entrypoint.replace('/','_').replace('.','_')]}"
+  {path}
+  {params}
+  {content}
+  {layout}
+  {allContent}
+  {allLayouts}
+  {env}
+  {user}
+  {adminMenu}
+  {shadowContent}
+/>
 
 <script>
   import Navaid from 'navaid';
-  import Html from '../global/html.svelte';
   import { getContent } from './main.js';
 
   export let path, params, content, layout, allContent, allLayouts, env;
