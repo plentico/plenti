@@ -1,4 +1,4 @@
-import { writable } from 'svelte/store';
+import { readable } from 'svelte/store';
 import { createSessionStore } from './session.js';
 import { createDataStore } from './storage.js';
 import { env } from '../env.js';
@@ -53,6 +53,11 @@ const getUser = () => ({
         console.error('Invalid parameters or state');
     },
 
+    refresh() {
+        let authToken = JSON.parse(localStorage.getItem('PLENTI_CMS_GITLAB_TOKENS'));
+        this.isAuthenticated = authToken?.access_token;
+    },
+
     login() {
         return requestAuthCode();
     },
@@ -66,7 +71,7 @@ const getUser = () => ({
         codeVerifierStore.set(null);
     },
 });
-export const user = writable(getUser(), set => {
+export const user = readable(getUser(), set => {
     localTokenStore.subscribe(() => set(getUser()));
     tokenStore.subscribe(() => set(getUser()));
     stateStore.subscribe(() => set(getUser()));
