@@ -54,8 +54,9 @@ const getUser = () => ({
     },
 
     refresh() {
-        let authToken = JSON.parse(localStorage.getItem('PLENTI_CMS_GITLAB_TOKENS'));
-        this.isAuthenticated = authToken?.access_token;
+        let authTokens = JSON.parse(localStorage.getItem('PLENTI_CMS_GITLAB_TOKENS'));
+        this.isAuthenticated = typeof authTokens?.access_token !== 'undefined';
+        this.tokens = authTokens;
     },
 
     login() {
