@@ -34,6 +34,9 @@ var BuildFlag bool
 // SSLFlag can be set to true to serve localhost over HTTPS with SSL/TLS encryption
 var SSLFlag bool
 
+// LocalFlag can be set to false to emulate a remote environment
+var LocalFlag bool
+
 func setPort(siteConfig readers.SiteConfig) int {
 	// default to  use value from config file
 	port := siteConfig.Local.Port
@@ -65,6 +68,9 @@ var serveCmd = &cobra.Command{
 		s.Suffix = " Building..."
 		s.Color("blue")
 		s.Start()
+
+		// LocalFlag is true by default using serve cmd, but can be overridden
+		build.Local = LocalFlag
 
 		// Skip build command if BuildFlag is set to False
 		if BuildFlag {
@@ -152,7 +158,7 @@ func init() {
 	serveCmd.Flags().BoolVarP(&MinifyFlag, "minify", "m", true, "minify JS output for faster performance")
 	serveCmd.Flags().BoolVarP(&SSLFlag, "ssl", "s", false, "ssl/tls encryption to serve localhost over https")
 	serveCmd.Flags().BoolVarP(&build.Doreload, "live-reload", "L", false, "Enable live reload")
-	serveCmd.Flags().BoolVarP(&build.Local, "local", "l", true, "set false to emulate remote server")
+	serveCmd.Flags().BoolVarP(&LocalFlag, "local", "l", true, "set false to emulate remote server")
 	serveCmd.Flags().StringVarP(&ConfigFileFlag, "config", "c", "plenti.json", "use a custom sitewide configuration file")
 	//serveCmd.Flags().BoolVarP(&common.UseMemFS, "in-memory", "M", false, "Use in memory filesystem")
 }
