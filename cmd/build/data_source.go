@@ -29,7 +29,7 @@ var (
 	rePaginate = regexp.MustCompile(`:paginate\((.*?)\)`)
 
 	// Create regex for allowed characters when slugifying path.
-	reSlugify = regexp.MustCompile("[^a-z0-9/]+")
+	reSlugify = regexp.MustCompile("[^a-z0-9/*]+")
 	// Remove newlines.
 	reN = regexp.MustCompile(`\r?\n`)
 
@@ -315,7 +315,9 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 
 	path = removeExtraSlashes(path)
 
-	destPath := buildPath + "/" + path + "/index.html"
+	noWildcardsPath := strings.Replace(path, "*", "", -1)
+
+	destPath := buildPath + "/" + noWildcardsPath + "/index.html"
 
 	// Don't add _components
 	if contentType == "_components" {
@@ -482,6 +484,8 @@ func createHTML(currentContent content) error {
 	htmlBytes := []byte(renderedHTMLStr)
 	// Inject <!DOCTYPE html>
 	htmlBytes = bytes.Replace(htmlBytes, []byte("<html"), []byte("<!DOCTYPE html><html"), 1)
+	// Inject data-content-filepath attribute
+	htmlBytes = bytes.Replace(htmlBytes, []byte("<html"), []byte("<html data-content-filepath='"+currentContent.contentFilepath+"' "), 1)
 	if Doreload {
 		// Inject live-reload script (stored in ejected core).
 		htmlBytes = bytes.Replace(htmlBytes, []byte("</body>"), []byte("<script type='text/javascript' src='/spa/ejected/live-reload.js'></script></body>"), 1)

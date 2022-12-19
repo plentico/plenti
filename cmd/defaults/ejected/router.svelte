@@ -14,17 +14,22 @@
 
 <script>
   import Navaid from 'navaid';
-  import { getContent } from './main.js';
+  import allContent from './content.js';
+  import * as allLayouts from './layouts.js';
+  import { env } from './env.js';
 
-  export let path, params, content, layout, allContent, allLayouts, env;
-
+  let path = location.pathname;
+  let params = new URLSearchParams(location.search);
+  // Load data-content-filepath attribute from HTML
+  let content = allContent.find(c => c.filepath === document.documentElement.dataset.contentFilepath);
+  let layout;
   let shadowContent = {};
 
-  function draw(m) {
-    content = getContent(path); 
+  function draw(m, c) {
+    content = c; 
     if (content === undefined) {
       // Check if there is a 404 data source.
-      content = getContent("/404");
+      content = allContent.find(c => c.filepath === "content/404.json");
       if (content === undefined) {
         // If no 404.json data source exists, pass placeholder values.
         content = {
@@ -97,7 +102,9 @@
         return;
       }
 
-      import('../content/' + content.type + '.js').then(draw).catch(handle404);
+      import('../content/' + content.type + '.js')
+        .then(m => draw(m, content))
+        .catch(handle404);
     });
   });
   router.listen();
