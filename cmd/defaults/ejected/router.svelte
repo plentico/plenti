@@ -17,6 +17,9 @@
   import allContent from './content.js';
   import * as allLayouts from './layouts.js';
   import { env } from './env.js';
+  import adminMenu from './cms/admin_menu.svelte';
+  import { user } from './cms/auth.js';
+  import allDefaults from './defaults.js';
 
   let path = location.pathname;
   let params = new URLSearchParams(location.search);
@@ -24,6 +27,10 @@
   let content = allContent.find(c => c.filepath === document.documentElement.dataset.contentFilepath);
   let layout;
   let shadowContent = {};
+
+  if ($user.isBeingAuthenticated) { 
+    $user.finishAuthentication(params);
+  }
 
   function draw(m, c) {
     content = c; 
@@ -108,12 +115,4 @@
     });
   });
   router.listen();
-
-  // Git-CMS
-  import adminMenu from './cms/admin_menu.svelte';
-  import { user } from './cms/auth.js';
-  import allDefaults from './defaults.js';
-  if ($user.isBeingAuthenticated) { 
-    $user.finishAuthentication(params);
-  }
 </script>

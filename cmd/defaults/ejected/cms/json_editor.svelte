@@ -1,41 +1,40 @@
 <script>
-    import { onMount } from 'svelte';
     import ButtonWrapper from './button_wrapper.svelte';
     import Button from './button.svelte';
 
     export let content;
 
-    const loaded = Promise.resolve()
-        .then(() => import('https://unpkg.com/codemirror@5.65.1/lib/codemirror.js'))
-        .then(() => import('https://unpkg.com/codemirror@5.65.1/mode/javascript/javascript.js'));
-    let container;
-    let editor;
-    onMount(async () => {
-        await loaded;
-        editor = new CodeMirror(container, {
-            mode: 'javascript',
-        });
-        editor.on('change', () => {
-            try {
-                content.fields = JSON.parse(editor.getValue());
-            } catch (error) {
-                if (!(error instanceof SyntaxError)) {
-                    throw error;
+    const syntaxHighlight = json => {
+        json = JSON.stringify(json, null, 4);
+        json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+            var cls = 'number';
+            if (/^"/.test(match)) {
+                if (/:$/.test(match)) {
+                    cls = 'key';
+                } else {
+                    cls = 'string';
                 }
+            } else if (/true|false/.test(match)) {
+                cls = 'boolean';
+            } else if (/null/.test(match)) {
+                cls = 'null';
             }
+            return '<span class="' + cls + '">' + match + '</span>';
         });
-    });
-    $: if (editor && !editor.hasFocus()) {
-        editor.setValue(JSON.stringify(content.fields, undefined, 4));
     }
+
+    let formattedFields = syntaxHighlight(content.fields);
 </script>
 
-<svelte:head>
-    <link rel="stylesheet" href="https://unpkg.com/codemirror@5.65.1/lib/codemirror.css">
-</svelte:head>
-
 <form>
-    <div class="editor-container" bind:this={container}></div>
+    <div 
+        class="json-editor"
+        contenteditable=true
+        on:input={e => content.fields = JSON.parse(e.target.textContent)}
+    >
+        {@html formattedFields}
+    </div>
     <ButtonWrapper>
         <Button
             commitList={[
@@ -64,11 +63,18 @@
     form {
         padding: 20px;
     }
-    .editor-container {
-        border: 1px solid #ccc;
-        margin-bottom: .75rem;
+    .json-editor {
+        outline: 1px solid #ccc;
+        background-color: white;
+        font-family: monospace;
+        font-size: small;
+        white-space: pre-wrap;
+        padding: 5px;
+        margin-bottom: 20px;
     }
-    .editor-container :global(.CodeMirror) {
-        height: auto;
-    }
+    .json-editor :global(.string) { color: green; }
+    .json-editor :global(.number) { color: darkorange; }
+    .json-editor :global(.boolean) { color: blue; }
+    .json-editor :global(.null) { color: magenta; }
+    .json-editor :global(.key) { color: #ad0000; }
 </style>
