@@ -13,8 +13,8 @@
     const syntaxHighlight = json => {
         json = JSON.stringify(json, null, 4);
         json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|(true|false|null)|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, match => {
-            let cls = 'number';
+        return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|(true|false|null)|(-?[0-9]*\.?[0-9]*))/g, match => {
+            let cls = 'syntax';
             if (/^"/.test(match)) {
                 if (/:$/.test(match)) {
                     cls = 'key';
@@ -23,6 +23,8 @@
                 }
             } else if (/true|false/.test(match)) {
                 cls = 'boolean';
+            } else if (/[0-9]/.test(match)) {
+                cls = 'number';
             } else if (/null/.test(match)) {
                 cls = 'null';
             }
@@ -82,9 +84,10 @@
         padding: 5px;
         margin-bottom: 20px;
     }
-    .json-editor :global(.string) { color: darkgreen; }
-    .json-editor :global(.number) { color: darkorange; }
+    .json-editor :global(.string) { color: #323232; }
+    .json-editor :global(.number) { color: darkviolet; }
     .json-editor :global(.boolean) { color: darkblue; }
     .json-editor :global(.null) { color: magenta; }
     .json-editor :global(.key) { color: darkred; }
+    .json-editor :global(.syntax) { color: firebrick; }
 </style>
