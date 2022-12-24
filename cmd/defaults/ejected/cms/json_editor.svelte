@@ -4,6 +4,12 @@
 
     export let content;
 
+    let formattedFields, previousFilepath;
+    $: if (content.filepath !== previousFilepath) {
+        formattedFields = syntaxHighlight(content.fields);
+        previousFilepath = content.filepath;
+    }
+
     const syntaxHighlight = json => {
         json = JSON.stringify(json, null, 4);
         json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -23,8 +29,6 @@
             return '<span class="' + cls + '">' + match + '</span>';
         });
     }
-
-    let formattedFields = syntaxHighlight(content.fields);
 </script>
 
 <form>
