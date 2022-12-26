@@ -1,4 +1,6 @@
-export async function postLocal(commitList, action, encoding) {
+import { env } from '../env.js';
+
+export async function postLocal(commitList, shadowContent, action, encoding) {
     let url = '/postlocal';
     const headers = {
         'Content-Type': 'application/json; charset=utf-8'
@@ -19,7 +21,13 @@ export async function postLocal(commitList, action, encoding) {
         body: JSON.stringify(body),
     });
     if (response.ok) {
-        console.log("Saved locally!");
+        if (action === 'create' || action === 'update') {
+            shadowContent?.onSave();
+        }
+        if (action === 'delete') {
+            shadowContent?.onDelete();
+            history.pushState(null, '', env.baseurl && !env.local ? env.baseurl : '/');
+        }
     } else {
         const { error, message } = await response.json();
         throw new Error(`Publish failed: ${error || message}`);

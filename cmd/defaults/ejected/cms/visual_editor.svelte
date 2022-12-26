@@ -54,30 +54,30 @@
         {/if}
     {/each}
     <ButtonWrapper>
-        <div class="onSave" on:click={shadowContent?.onSave}>
-            <Button
-                commitList={[
-                    {
-                        file: content.filepath,
-                        contents: JSON.stringify(content.fields, undefined, '\t'),
-                    },
-                ]}
-                buttonText="Save"
-                action={content.isNew ? 'create' : 'update'}
-                encoding="text" />
-        </div>
-        <div class="onDelete" on:click={shadowContent?.onDelete}>
-            <Button
-                commitList={[
-                    {
-                        file: content.filepath,
-                        contents: JSON.stringify(content.fields, undefined, '\t'),
-                    },
-                ]}
-                buttonText="Delete"
-                action={'delete'}
-                encoding="text" />
-        </div>
+        <Button
+            commitList={[
+                {
+                    file: content.filepath,
+                    contents: JSON.stringify(content.fields, undefined, '\t'),
+                },
+            ]}
+            {shadowContent}
+            buttonText="Save"
+            action={content.isNew ? 'create' : 'update'}
+            encoding="text"
+        />
+        <Button
+            commitList={[
+                {
+                    file: content.filepath,
+                    contents: JSON.stringify(content.fields, undefined, '\t'),
+                },
+            ]}
+            {shadowContent}
+            buttonText="Delete"
+            action={'delete'}
+            encoding="text"
+        />
     </ButtonWrapper>
 </form>
 

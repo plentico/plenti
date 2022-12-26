@@ -21,7 +21,7 @@ const capitalizeFirstLetter = string => {
  * @param {string} contents
  * @param {string} action
  */
-export async function publish(commitList, action, encoding) {
+export async function publish(commitList, shadowContent, action, encoding) {
     await userAvailable;
     if (!currentUser.isAuthenticated) {
         throw new Error('Authentication required');
@@ -62,7 +62,11 @@ export async function publish(commitList, action, encoding) {
         body: JSON.stringify(payload),
     });
     if (response.ok) {
+        if (action === 'create' || action === 'update') {
+            shadowContent?.onSave();
+        }
         if (action === 'delete') {
+            shadowContent?.onDelete();
             history.pushState(null, '', env.baseurl && !env.local ? env.baseurl : '/');
         }
     } else {

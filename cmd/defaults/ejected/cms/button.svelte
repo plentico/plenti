@@ -1,5 +1,5 @@
 <script>
-    export let commitList, buttonText, action, encoding;
+    export let commitList, shadowContent, buttonText, action, encoding;
     import { publish } from './publish.js';
     import { postLocal } from './post_local.js';
     import { env } from '../env.js';
@@ -11,9 +11,9 @@
         status = "sending";
         try {
             if (local) {
-                await postLocal(commitList, action, encoding);
+                await postLocal(commitList, shadowContent, action, encoding);
             } else {
-                await publish(commitList, action, encoding);
+                await publish(commitList, shadowContent, action, encoding);
             }
             status = "sent";
             resetStatus();
