@@ -38,7 +38,9 @@
 </div>
 {#if selectedMedia.length > 0} 
     <ButtonWrapper>
-        <button on:click={downloadFiles}>Download selected</button> 
+        <div class="button-primary">
+            <button on:click={downloadFiles}>Download selected</button> 
+        </div>
         <div class="delete-wrapper button-secondary" on:click={removeAssets}>
             <Button bind:commitList={mediaList} buttonText="Delete Selected Media" action="delete" encoding="text" />
         </div>

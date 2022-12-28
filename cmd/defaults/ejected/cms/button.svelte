@@ -27,7 +27,7 @@
         setTimeout(() => {
             status = "";
             commitList = [];
-        }, 700);
+        }, 900);
     }
 </script>
 
@@ -35,14 +35,28 @@
     on:click|preventDefault={onSubmit}
     type="submit"
     disabled={status}
+    class="{status}"
 >
     {#if status == "sending"}
         Sending...
     {:else if status == "failed"}
-        Could not commit the changes.
+        Error saving
     {:else if status == "sent"}
-        Changes committed.
+        Changes committed
     {:else}
         {buttonText}
     {/if}
 </button>
+
+<style>
+    button {
+        color: white;
+        background-color: #1c7fc7;
+    }
+    button.sent {
+        background-color: darkgreen;
+    }
+    button.failed {
+        background-color: darkred;
+    }
+</style>
