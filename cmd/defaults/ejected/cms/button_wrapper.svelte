@@ -26,13 +26,13 @@
         background-color: #1c7fc7;
         color: #fff;
     }
-    .buttons > :global(button:last-child),
+    .buttons > :global(.button:last-child button),
     .buttons :global(.button-secondary button) {
         background-color: transparent;
         border: 2px solid #1c7fc7;
         color: #1c7fc7;
     }
-    .buttons > :global(button:last-child):hover,
+    .buttons > :global(.button:last-child button):hover,
     .buttons :global(.button-secondary button):hover {
         background-color: #1c7fc7;
         color: white;
