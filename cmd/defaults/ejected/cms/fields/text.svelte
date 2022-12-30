@@ -36,7 +36,7 @@
     }
     .textarea.disabled {
         resize: none;
-        background-color: gainsboro;
-        border: 1px solid gray;
+        background-color: whitesmoke;
+        border: 1px solid gainsboro;
     }
 </style>

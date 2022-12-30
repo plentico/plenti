@@ -16,3 +16,10 @@
         />
     {/each}
 </fieldset>
+
+<style>
+    fieldset {
+        border: 1px solid gainsboro;
+        margin: 0;
+    }
+</style>

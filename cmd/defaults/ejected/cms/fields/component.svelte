@@ -320,7 +320,7 @@
         flex-direction: column;
     }
     .item-wrapper {
-        background-color: gainsboro;
+        background-color: whitesmoke;
         margin-bottom: 0.5em;
     }
     .item {

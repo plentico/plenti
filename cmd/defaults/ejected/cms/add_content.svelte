@@ -47,23 +47,20 @@
         </ul>
     {/if}
     <ButtonWrapper>
-        <div class="button-primary">
-            <button on:click={checkFilename}>Set Filename</button>
-        </div>
-        <div class="button-secondary">
-            <button on:click={() => setType(null)}>Go back</button>
-        </div>
+        <button on:click={checkFilename} class="primary">Set Filename</button>
+        <button on:click={() => setType(null)}>Go back</button>
     </ButtonWrapper>
 {:else}
     <h1>Add content of type:</h1>
     <div class="defaults">
         {#each defaults as defaultContent}
             <ButtonWrapper>
-                <div class="button-secondary">
-                    <button on:click={() => setType(defaultContent.type)}>
-                        {defaultContent.type}
-                    </button>
-                </div>
+                <button 
+                    on:click={() => setType(defaultContent.type)}
+                    class="default"
+                >
+                    {defaultContent.type}
+                </button>
             </ButtonWrapper>
         {/each}
     </div>
@@ -75,6 +72,25 @@
         grid-template-columns: 1fr 1fr;
         gap: 10px;
         margin-bottom: 25px;
+    }
+    button {
+        width: 100%;
+        border-radius: 6px;
+        cursor: pointer;
+        border: none;
+        font-weight: bold;
+        line-height: 21px;
+        padding: 10px;
+    }
+    .default {
+        background-color: transparent;
+        border: 2px solid #1c7fc7;
+        color: #1c7fc7;
+    }
+    .primary,
+    .default:hover {
+        background-color: #1c7fc7;
+        color: white;
     }
     .filename input {
         background: #ededed;

@@ -66,6 +66,7 @@
                 }
             ]}
             buttonText="Delete"
+            buttonStyle="secondary"
             action={'delete'}
             encoding="text" />
     </ButtonWrapper>

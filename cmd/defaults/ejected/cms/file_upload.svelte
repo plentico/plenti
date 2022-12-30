@@ -77,7 +77,7 @@
         <MediaGrid files={getThumbnails(localMediaList)} bind:selectedMedia={selectedMedia} />
         <ButtonWrapper>
             <div 
-                class="button-primary"
+                class="save action"
                 on:click={addUploadToLibrary}
                 on:click|preventDefault={() => enabledFilters=[]}
                 on:click|preventDefault={() => filePrefix = assetPrefix + "assets/"}
@@ -87,13 +87,29 @@
                         showMedia = false;
                     }
                 }}
-                >
+            >
                 <Button bind:commitList={localMediaList} buttonText="Save Media" action="create" encoding="base64" />
             </div>
             {#if selectedMedia.length > 0}
-                <button on:click|preventDefault="{removeSelectedMedia}">Discard selected</button> 
+                <div 
+                    on:click|preventDefault="{removeSelectedMedia}"
+                    class="discard-selected action"
+                >
+                    <Button
+                        buttonText="Discard selected"
+                        buttonStyle="secondary"
+                    />
+                </div> 
             {:else}
-                <button on:click|preventDefault="{() => localMediaList=[]}">Discard all</button>
+                <div
+                    on:click|preventDefault="{() => localMediaList=[]}"
+                    class="discard-all action"
+                >
+                    <Button
+                        buttonText="Discard all"
+                        buttonStyle="secondary"
+                    />
+                </div>
             {/if}
         </ButtonWrapper>
     {:else}

@@ -1,9 +1,10 @@
 <script>
-    export let commitList, shadowContent, buttonText, action, encoding;
     import { publish } from './publish.js';
     import { postLocal } from './post_local.js';
     import { env } from '../env.js';
 
+    export let commitList, shadowContent, buttonText, action, encoding;
+    export let buttonStyle = "primary";
     const local = env.local ?? false;
     let status, confirmTooltip;
 
@@ -41,8 +42,18 @@
                 <div class="remove-file">{commitItem.file}</div>
             {/each}
             <div class="confirm-actions">
-                <button on:click|preventDefault={onSubmit}>Yes</button>
-                <button on:click|preventDefault={() => confirmTooltip = false}>Cancel</button>
+                <button
+                    on:click|preventDefault={onSubmit}
+                    class="primary"
+                >
+                    Yes
+                </button>
+                <button
+                    on:click|preventDefault={() => confirmTooltip = false}
+                    class="secondary"
+                >
+                    Cancel
+                </button>
             </div>
         </div>
     {/if}
@@ -50,7 +61,7 @@
         on:click|preventDefault={() => action === "delete" ? confirmTooltip = true : onSubmit}
         type="submit"
         disabled={status}
-        class="{status}"
+        class="{status} {buttonStyle}"
     >
         {#if status == "sending"}
             Sending...
@@ -65,7 +76,11 @@
 </div>
 
 <style>
-    button {
+    .button {
+        position: relative;
+        width: 100%;
+    }
+    button.primary {
         color: white;
         background-color: #1c7fc7;
     }
@@ -75,8 +90,17 @@
     button.failed {
         background-color: darkred;
     }
-    .button {
-        position: relative;
+    button {
+        width: 100%;
+        border-radius: 6px;
+        cursor: pointer;
+        border: none;
+        font-weight: bold;
+        line-height: 21px;
+        padding: 10px;
+    }
+    .secondary {
+        background-color: #e7e7e7;
     }
     .confirm {
         position: absolute;
@@ -114,6 +138,8 @@
         color: gray;
         margin-bottom: 8px;
         padding: 8px 0;
+        word-wrap: break-word;
+        word-break: break-word;
     }
     .confirm-actions {
         display: flex;
