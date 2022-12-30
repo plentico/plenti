@@ -76,40 +76,33 @@
         <MediaFilters bind:assets bind:enabledFilters singleSelect={true} {changingAsset} />
         <MediaGrid files={getThumbnails(localMediaList)} bind:selectedMedia={selectedMedia} />
         <ButtonWrapper>
-            <div 
-                class="save action"
-                on:click={addUploadToLibrary}
-                on:click|preventDefault={() => enabledFilters=[]}
-                on:click|preventDefault={() => filePrefix = assetPrefix + "assets/"}
-                on:click|preventDefault={() => {
+            <Button 
+                on:click={() => {
+                    addUploadToLibrary();
+                    enabledFilters=[];
+                    filePrefix = assetPrefix + "assets/";
                     if(changingAsset) {
                         changingAsset = localMediaList[0].file;
                         showMedia = false;
                     }
                 }}
-            >
-                <Button bind:commitList={localMediaList} buttonText="Save Media" action="create" encoding="base64" />
-            </div>
+                bind:commitList={localMediaList}
+                buttonText="Save Media"
+                action="create"
+                encoding="base64"
+            />
             {#if selectedMedia.length > 0}
-                <div 
-                    on:click|preventDefault="{removeSelectedMedia}"
-                    class="discard-selected action"
-                >
-                    <Button
-                        buttonText="Discard selected"
-                        buttonStyle="secondary"
-                    />
-                </div> 
+                <Button
+                    on:click="{removeSelectedMedia}"
+                    buttonText="Discard selected"
+                    buttonStyle="secondary"
+                />
             {:else}
-                <div
-                    on:click|preventDefault="{() => localMediaList=[]}"
-                    class="discard-all action"
-                >
-                    <Button
-                        buttonText="Discard all"
-                        buttonStyle="secondary"
-                    />
-                </div>
+                <Button
+                    on:click="{() => localMediaList=[]}"
+                    buttonText="Discard all"
+                    buttonStyle="secondary"
+                />
             {/if}
         </ButtonWrapper>
     {:else}

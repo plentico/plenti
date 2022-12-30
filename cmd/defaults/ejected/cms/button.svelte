@@ -58,7 +58,8 @@
         </div>
     {/if}
     <button 
-        on:click|preventDefault={() => action === "delete" ? confirmTooltip = true : onSubmit}
+        on:click
+        on:click|preventDefault={() => action === "delete" ? confirmTooltip = true : action ? onSubmit() : null}
         type="submit"
         disabled={status}
         class="{status} {buttonStyle}"

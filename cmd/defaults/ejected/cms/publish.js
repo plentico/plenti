@@ -63,10 +63,10 @@ export async function publish(commitList, shadowContent, action, encoding) {
     });
     if (response.ok) {
         if (action === 'create' || action === 'update') {
-            shadowContent.onSave?.();
+            shadowContent?.onSave?.();
         }
         if (action === 'delete') {
-            shadowContent.onDelete?.();
+            shadowContent?.onDelete?.();
             history.pushState(null, '', env.baseurl && !env.local ? env.baseurl : '/');
         }
     } else {

@@ -8,7 +8,4 @@
         gap: 20px;
         width: 100%;
     }
-    .buttons :global(.action) {
-        width: 100%;
-    }
 </style>

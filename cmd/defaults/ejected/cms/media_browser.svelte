@@ -38,20 +38,18 @@
 </div>
 {#if selectedMedia.length > 0} 
     <ButtonWrapper>
-        <div class="download action" on:click|preventDefault={downloadFiles}>
-            <Button
-                buttonText="Download selected"
-            />
-        </div>
-        <div class="delete action" on:click={removeAssets}>
-            <Button
-                bind:commitList={mediaList}
-                buttonText="Delete Selected Media"
-                buttonStyle="secondary"
-                action="delete"
-                encoding="text"
-            />
-        </div>
+        <Button
+            on:click={downloadFiles}
+            buttonText="Download selected"
+        />
+        <Button
+            on:click={removeAssets}
+            bind:commitList={mediaList}
+            buttonText="Delete Selected Media"
+            buttonStyle="secondary"
+            action="delete"
+            encoding="text"
+        />
     </ButtonWrapper>
 {/if}
 
