@@ -8,7 +8,7 @@
     import allAssets from './assets.js';
     import { env } from '../env.js';
 
-    let assetPrefix = !env.local && env.baseurl ? '' : '/';
+    let assetPrefix = env.baseurl ? '' : '/';
     let assets = allAssets.map(asset => assetPrefix + asset);
 
     let showMedia = false;
@@ -47,7 +47,7 @@
 
 <div class="spacer"></div>
 <nav>
-  <a href="{env.local || !env.baseurl ? '/' : '.'}" class="home">
+  <a href="{env.baseurl ? '.' : '/'}" class="home">
     <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home-2" width="30" height="30" viewBox="0 0 24 24" stroke-width="2" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
       <polyline points="5 12 3 12 12 3 21 12 19 12" />

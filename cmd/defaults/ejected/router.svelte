@@ -103,7 +103,7 @@
 
   const router = Navaid('/', handle404);
   allContent.forEach(content => {
-    router.on((env.local ? '' : env.baseurl) + content.path, () => {
+    router.on(env.baseurl + content.path, () => {
       // Override with hash location if one is found.
       if (navigateHashLocation()) {
         return;

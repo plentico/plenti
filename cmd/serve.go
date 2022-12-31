@@ -109,7 +109,11 @@ var serveCmd = &cobra.Command{
 			}
 			fs = http.FileServer(http.Dir(buildDir))
 		}
-		http.Handle("/", fs)
+		webroot := "/"
+		if len(siteConfig.BaseURL) > 0 {
+			webroot = siteConfig.BaseURL
+		}
+		http.Handle(webroot, http.StripPrefix(webroot, fs))
 		// Handle local edits made via the Git-CMS
 		http.HandleFunc("/postlocal", postLocal)
 		// Watch filesystem for changes.
@@ -128,10 +132,10 @@ var serveCmd = &cobra.Command{
 
 		if SSLFlag {
 			// Start an HTTPS webserver
-			serveSSL(port)
+			serveSSL(port, webroot)
 		}
 
-		fmt.Printf("Visit your site at http://localhost:%v/\n", port)
+		fmt.Printf("Visit your site at http://localhost:%v%v\n", port, webroot)
 		// Start the HTTP webserver
 		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 
@@ -191,6 +195,10 @@ func postLocal(w http.ResponseWriter, r *http.Request) {
 						fmt.Printf("Could not decode base64 asset: %v", err)
 					}
 				}
+				if len(change.File) > 0 && change.File[0:1] == "/" {
+					// Make sure path is relative to project
+					change.File = "." + change.File
+				}
 				err = os.WriteFile(change.File, contents, os.ModePerm)
 				if err != nil {
 					fmt.Printf("Unable to write to local file: %v", err)
@@ -207,7 +215,7 @@ func postLocal(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func serveSSL(port int) {
+func serveSSL(port int, webroot string) {
 	cert, key, err := httpscerts.GenerateArrays(fmt.Sprintf("localhost:%d", port))
 	if err != nil {
 		log.Fatal("Error: Couldn't create https certs.")
@@ -236,6 +244,6 @@ func serveSSL(port int) {
 		MaxHeaderBytes: 1 << 20,
 		TLSConfig:      cfg,
 	}
-	fmt.Printf("Visit your site at https://localhost:%v/\n", port)
+	fmt.Printf("Visit your site at https://localhost:%v%v\n", port, webroot)
 	log.Fatal(s.ListenAndServeTLS("", ""))
 }
