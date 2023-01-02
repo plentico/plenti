@@ -2,6 +2,7 @@
     import { publish } from './publish.js';
     import { postLocal } from './post_local.js';
     import { env } from '../env.js';
+    import { findFileReference } from './file_references.js';
 
     export let commitList, shadowContent, buttonText, action, encoding, afterSubmit;
     export let buttonStyle = "primary";
@@ -38,12 +39,20 @@
     {#if confirmTooltip}
         <div class="confirm">
             <div class="carrot"></div>
-            <div>Are you sure you want to permanently remove:</div>
-            <div class="filepaths">
-                {#each commitList as commitItem}
-                    <div class="filepath">{commitItem.file}</div>
-                {/each}
-            </div>
+            <div class="warning">Are you sure you want to permanently remove:</div>
+            {#each commitList as commitItem}
+                <div class="delete-filepath">
+                    {commitItem.file}
+                    {#if findFileReference(commitItem.file)}
+                        <div class="file-reference">
+                            This file is being used on:
+                        </div>
+                        <a href="{findFileReference(commitItem.file)}">
+                            {findFileReference(commitItem.file)}
+                        </a>
+                    {/if}
+                </div>
+            {/each}
             <div class="confirm-actions">
                 <button
                     on:click|preventDefault={onSubmit}
@@ -138,11 +147,17 @@
         border-top: 10px solid gainsboro;
         z-index: -1;
     }
-    .filepaths {
+    .warning {
+        margin-bottom: 5px;
+    }
+    .delete-filepath {
         color: gray;
-        padding: 5px 0 10px;
         word-wrap: break-word;
         word-break: break-word;
+        margin-bottom: 10px;
+    }
+    .file-reference {
+        color: darkred;
     }
     .confirm-actions {
         display: flex;
