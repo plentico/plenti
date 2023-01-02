@@ -33,11 +33,11 @@ const findFile = (fields, file) => {
     return found;
 }
 
-export const findFileReference = file => {
-    let found;
+export const findFileReferences = file => {
+    let found = [];
     allContent.forEach(content => {
 	    if (findFile(content.fields, file)) {
-  	        found = content.path;
+  	        found = [...found, content.path];
         }
     });
     return found;

@@ -2,7 +2,7 @@
     import { publish } from './publish.js';
     import { postLocal } from './post_local.js';
     import { env } from '../env.js';
-    import { findFileReference } from './file_references.js';
+    import { findFileReferences } from './file_references.js';
 
     export let commitList, shadowContent, buttonText, action, encoding, afterSubmit;
     export let buttonStyle = "primary";
@@ -43,13 +43,13 @@
             {#each commitList as commitItem}
                 <div class="delete-filepath">
                     {commitItem.file}
-                    {#if findFileReference(commitItem.file)}
+                    {#if findFileReferences(commitItem.file).length > 0}
                         <div class="file-reference">
                             This file is being used on:
                         </div>
-                        <a href="{findFileReference(commitItem.file)}">
-                            {findFileReference(commitItem.file)}
-                        </a>
+                        {#each findFileReferences(commitItem.file) as reference, i}
+                            <a href="{reference}">{reference}</a>{#if i < findFileReferences(commitItem.file).length -1},&nbsp;{/if}
+                        {/each}
                     {/if}
                 </div>
             {/each}
