@@ -43,7 +43,7 @@
             buttonText="Download selected"
         />
         <Button
-            on:click={removeAssets}
+            afterSubmit={removeAssets}
             bind:commitList={mediaList}
             buttonText="Delete Selected Media"
             buttonStyle="secondary"

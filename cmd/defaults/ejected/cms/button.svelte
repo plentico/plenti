@@ -3,7 +3,7 @@
     import { postLocal } from './post_local.js';
     import { env } from '../env.js';
 
-    export let commitList, shadowContent, buttonText, action, encoding;
+    export let commitList, shadowContent, buttonText, action, encoding, afterSubmit;
     export let buttonStyle = "primary";
     const local = env.local ?? false;
     let status, confirmTooltip;
@@ -18,6 +18,7 @@
                 await publish(commitList, shadowContent, action, encoding);
             }
             status = "sent";
+            afterSubmit?.();
             resetStatus();
         } catch (error) {
             status = "failed";
@@ -38,9 +39,11 @@
         <div class="confirm">
             <div class="carrot"></div>
             <div>Are you sure you want to permanently remove:</div>
-            {#each commitList as commitItem}
-                <div class="remove-file">{commitItem.file}</div>
-            {/each}
+            <div class="filepaths">
+                {#each commitList as commitItem}
+                    <div class="filepath">{commitItem.file}</div>
+                {/each}
+            </div>
             <div class="confirm-actions">
                 <button
                     on:click|preventDefault={onSubmit}
@@ -58,8 +61,8 @@
         </div>
     {/if}
     <button 
-        on:click
         on:click|preventDefault={() => action === "delete" ? confirmTooltip = true : action ? onSubmit() : null}
+        on:click
         type="submit"
         disabled={status}
         class="{status} {buttonStyle}"
@@ -135,10 +138,9 @@
         border-top: 10px solid gainsboro;
         z-index: -1;
     }
-    .remove-file {
+    .filepaths {
         color: gray;
-        margin-bottom: 8px;
-        padding: 8px 0;
+        padding: 5px 0 10px;
         word-wrap: break-word;
         word-break: break-word;
     }
