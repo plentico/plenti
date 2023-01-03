@@ -6,7 +6,7 @@ const checkType = (value, file) => {
     	    return true;
    	    }
  	}
-    if (value.constructor === ({}).constructor) {
+    if (value && value.constructor === ({}).constructor) {
         // It's an Obj, so go another layer deep
         return findFile(value, file);
     }
@@ -16,7 +16,7 @@ const checkType = (value, file) => {
 const findFile = (fields, file) => {
     let found = false;
     for (const [key, value] of Object.entries(fields)) {
-        if (value.constructor === [].constructor) {
+        if (value && value.constructor === [].constructor) {
             // It's an array, so loop through values
     	    value.forEach(nestedVal => {
                 // Check the type of each value
