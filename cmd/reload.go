@@ -7,8 +7,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/plentico/plenti/common"
-
 	"golang.org/x/net/websocket"
 )
 
@@ -53,15 +51,7 @@ func wshandler(ws *websocket.Conn) {
 		err := websocket.Message.Receive(ws, &msg)
 		if err != nil {
 			log.Println(err, "error in receive")
-
 		}
-		// can't be negative I think...
-		atomic.AddInt32(&numReloading, -1)
-		if atomic.LoadInt32(&numReloading) == 0 {
-			common.Unlock()
-
-		}
-
 	}()
 	for {
 		select {

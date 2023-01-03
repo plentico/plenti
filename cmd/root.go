@@ -7,7 +7,6 @@ import (
 	"log"
 	"os"
 
-	"github.com/plentico/plenti/common"
 	"github.com/plentico/plenti/readers"
 
 	"github.com/spf13/cobra"
@@ -48,7 +47,10 @@ Learn more at https://plenti.co`,
 		if versionFlag {
 			fmt.Println(Version)
 		} else {
-			common.CheckErr(cmd.Help())
+			err := cmd.Help()
+			if err != nil {
+				log.Fatal("Could not produce help text %w", err)
+			}
 		}
 	},
 }

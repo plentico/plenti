@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/plentico/plenti/common"
 	"github.com/plentico/plenti/readers"
 )
 
@@ -223,7 +222,7 @@ func runPack(buildPath, convertPath string) error {
 	// Overwrite the old file with the new content that contains the updated import path.
 	err = ioutil.WriteFile(convertPath, contentBytes, 0644)
 	if err != nil {
-		return fmt.Errorf("Could not overwite %s with new import: %w%s\n", convertPath, err, common.Caller())
+		return fmt.Errorf("Could not overwite %s with new import: %w\n", convertPath, err)
 	}
 	return nil
 

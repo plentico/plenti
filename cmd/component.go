@@ -3,10 +3,9 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"strings"
-
-	"github.com/plentico/plenti/common"
 
 	"github.com/spf13/cobra"
 )
@@ -44,12 +43,14 @@ Optionally add a _schema.json file to define the input widgets used in the edito
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		componentName := args[0]
-
-		common.CheckErr(doComponent(componentName))
+		err := createComponent(componentName)
+		if err != nil {
+			log.Fatal("\nCould not create \"%s\" component: %w", componentName, err)
+		}
 	},
 }
 
-func doComponent(componentName string) error {
+func createComponent(componentName string) error {
 	componentPath := fmt.Sprintf("content/_components/%s", strings.Trim(componentName, " /"))
 
 	//  !os.IsNotExist is true, the path exists. os.IsExist(err) == nil for Stat if file exists
@@ -61,15 +62,15 @@ func doComponent(componentName string) error {
 
 	fmt.Printf("Creating new Component: %s/\n", componentPath)
 	if err := os.MkdirAll(componentPath, os.ModePerm); err != nil {
-		return fmt.Errorf("Can't create component named \"%s\": %w%s\n", componentName, err, common.Caller())
+		return fmt.Errorf("Can't create component named \"%s\": %w\n", componentName, err)
 	}
 	err := createJSONFile(componentPath + "/_defaults.json")
 	if err != nil {
-		return fmt.Errorf("Can't create _defaults.json for component \"%s\": %w%s\n", componentName, err, common.Caller())
+		return fmt.Errorf("Can't create _defaults.json for component \"%s\": %w\n", componentName, err)
 	}
 	err = createJSONFile(componentPath + "/_schema.json")
 	if err != nil {
-		return fmt.Errorf("Can't create _schema.json for component \"%s\": %w%s\n", componentName, err, common.Caller())
+		return fmt.Errorf("Can't create _schema.json for component \"%s\": %w\n", componentName, err)
 	}
 
 	return nil

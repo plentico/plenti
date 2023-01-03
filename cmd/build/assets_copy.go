@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/plentico/plenti/common"
 	"github.com/spf13/afero"
 )
 
@@ -60,21 +59,21 @@ func copyAssetsFromTheme(assetsDir string, buildPath string, copiedSourceCounter
 		}
 		from, err := ThemeFs.Open(path)
 		if err != nil {
-			return fmt.Errorf("Could not open asset %s for copying: %w%s\n", path, err, common.Caller())
+			return fmt.Errorf("Could not open asset %s for copying: %w\n", path, err)
 
 		}
 		defer from.Close()
 
 		to, err := os.Create(fullPath)
 		if err != nil {
-			return fmt.Errorf("Could not create destination asset %s for copying from virtual theme: %w%s\n", fullPath, err, common.Caller())
+			return fmt.Errorf("Could not create destination asset %s for copying from virtual theme: %w\n", fullPath, err)
 
 		}
 		defer to.Close()
 
 		_, err = io.Copy(to, from)
 		if err != nil {
-			return fmt.Errorf("Could not copy asset from virtual theme source %s to destination: %w%s\n", path, err, common.Caller())
+			return fmt.Errorf("Could not copy asset from virtual theme source %s to destination: %w\n", path, err)
 
 		}
 
@@ -82,7 +81,7 @@ func copyAssetsFromTheme(assetsDir string, buildPath string, copiedSourceCounter
 		copiedSourceCounter++
 		return nil
 	}); err != nil {
-		return 0, fmt.Errorf("Could not get asset file from virtual theme build: %w%s\n", err, common.Caller())
+		return 0, fmt.Errorf("Could not get asset file from virtual theme build: %w\n", err)
 	}
 
 	err := createAssetsIndex(buildPath, index)
@@ -109,10 +108,6 @@ func copyAssetsFromProject(assetsDir string, buildPath string, copiedSourceCount
 		}
 		destPath := buildPath + "/" + assetPath
 		if assetFileInfo.IsDir() {
-			// no dirs
-			if common.UseMemFS {
-				return nil
-			}
 			// Make directory if it doesn't exist.
 			// Move on to next path.
 			if err = os.MkdirAll(destPath, os.ModePerm); err != nil {
@@ -121,31 +116,23 @@ func copyAssetsFromProject(assetsDir string, buildPath string, copiedSourceCount
 			return nil
 
 		}
-		if common.UseMemFS {
-			bd, err := os.ReadFile(assetPath)
-			if err != nil {
-				return fmt.Errorf("Could not open asset %s for copying: %w%s\n", assetPath, err, common.Caller())
-			}
-			common.Set(destPath, assetPath, &common.FData{B: bd})
-			return nil
-		}
 		from, err := os.Open(assetPath)
 		if err != nil {
-			return fmt.Errorf("Could not open asset %s for copying: %w%s\n", assetPath, err, common.Caller())
+			return fmt.Errorf("Could not open asset %s for copying: %w\n", assetPath, err)
 
 		}
 		defer from.Close()
 
 		to, err := os.Create(destPath)
 		if err != nil {
-			return fmt.Errorf("Could not create destination asset %s for copying: %w%s\n", destPath, err, common.Caller())
+			return fmt.Errorf("Could not create destination asset %s for copying: %w\n", destPath, err)
 
 		}
 		defer to.Close()
 
 		_, err = io.Copy(to, from)
 		if err != nil {
-			return fmt.Errorf("Could not copy asset from source %s to destination: %w%s\n", assetPath, err, common.Caller())
+			return fmt.Errorf("Could not copy asset from source %s to destination: %w\n", assetPath, err)
 
 		}
 
@@ -154,7 +141,7 @@ func copyAssetsFromProject(assetsDir string, buildPath string, copiedSourceCount
 		return nil
 	})
 	if err != nil {
-		return 0, fmt.Errorf("Could not get asset file: %w%s\n", err, common.Caller())
+		return 0, fmt.Errorf("Could not get asset file: %w\n", err)
 	}
 
 	err = createAssetsIndex(buildPath, index)
@@ -168,12 +155,12 @@ func copyAssetsFromProject(assetsDir string, buildPath string, copiedSourceCount
 func createAssetsIndex(buildPath string, index []string) error {
 	result, err := json.MarshalIndent(index, "", "\t")
 	if err != nil {
-		return fmt.Errorf("Unable to marshal JSON: %w%s", err, common.Caller())
+		return fmt.Errorf("Unable to marshal JSON: %w", err)
 	}
 	result = append(append([]byte("let allAssets = "), result...), []byte(";\nexport default allAssets;")...)
 	err = ioutil.WriteFile(buildPath+"/spa/ejected/cms/assets.js", result, os.ModePerm)
 	if err != nil {
-		return fmt.Errorf("Unable to write to asset index file: %w%s\n", err, common.Caller())
+		return fmt.Errorf("Unable to write to asset index file: %w\n", err)
 	}
 	return nil
 }

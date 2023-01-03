@@ -8,8 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-
-	"github.com/plentico/plenti/common"
 )
 
 // EjectCopy does a direct copy of any ejectable js files needed in spa build dir.
@@ -23,7 +21,7 @@ func EjectCopy(buildPath string, defaultsEjectedFS embed.FS) error {
 
 	ejected, err := fs.Sub(defaultsEjectedFS, "defaults")
 	if err != nil {
-		return fmt.Errorf("Unable to get ejected defaults: %w%s\n", err, common.Caller())
+		return fmt.Errorf("Unable to get ejected defaults: %w\n", err)
 	}
 
 	destPath := buildPath + "/spa/"
@@ -34,19 +32,6 @@ func EjectCopy(buildPath string, defaultsEjectedFS embed.FS) error {
 
 		// If the file is already in .js format just copy it straight over to build dir.
 		if filepath.Ext(ejectPath) == ".js" {
-
-			if common.UseMemFS {
-
-				bd, err := fs.ReadFile(ejected, ejectPath)
-				if err != nil {
-					return fmt.Errorf("can't read fs file: %s %w%s\n", ejectPath, err, common.Caller())
-				}
-
-				common.Set(destPath+ejectPath, ejectPath, &common.FData{B: bd})
-				return nil
-
-			}
-
 			if err := os.MkdirAll(destPath+"ejected", os.ModePerm); err != nil {
 				return err
 			}
@@ -61,27 +46,27 @@ func EjectCopy(buildPath string, defaultsEjectedFS embed.FS) error {
 				// Get the file from the project or virtual theme.
 				ejectedContent, err = getVirtualFileIfThemeBuild(ejectPath)
 				if err != nil {
-					return fmt.Errorf("can't read .js file: %s %w%s\n", ejectPath, err, common.Caller())
+					return fmt.Errorf("can't read .js file: %s %w\n", ejectPath, err)
 				}
 			} else if os.IsNotExist(err) {
 				// The file has not been ejected.
 				// Get the file from embedded defaults.
 				ejectedFile, err := ejected.Open(ejectPath)
 				if err != nil {
-					return fmt.Errorf("Could not open source .js file for copying: %w%s\n", err, common.Caller())
+					return fmt.Errorf("Could not open source .js file for copying: %w\n", err)
 				}
 				ejectedContent, err = ioutil.ReadAll(ejectedFile)
 				if err != nil {
-					return fmt.Errorf("Can't read ejected .js file: %w%s\n", err, common.Caller())
+					return fmt.Errorf("Can't read ejected .js file: %w\n", err)
 				}
 			}
 			destFile := destPath + ejectPath
 			// Create any sub directories need for filepath.
 			if err := os.MkdirAll(filepath.Dir(destFile), os.ModePerm); err != nil {
-				return fmt.Errorf("can't make folders for '%s': %w%s\n", destFile, err, common.Caller())
+				return fmt.Errorf("can't make folders for '%s': %w\n", destFile, err)
 			}
 			if err := ioutil.WriteFile(destFile, ejectedContent, os.ModePerm); err != nil {
-				return fmt.Errorf("Unable to write file: %w%s\n", err, common.Caller())
+				return fmt.Errorf("Unable to write file: %w\n", err)
 			}
 
 			copiedSourceCounter++
@@ -89,7 +74,7 @@ func EjectCopy(buildPath string, defaultsEjectedFS embed.FS) error {
 		return nil
 	})
 	if ejectedFilesErr != nil {
-		return fmt.Errorf("Could not get ejectable file: %w%s\n", ejectedFilesErr, common.Caller())
+		return fmt.Errorf("Could not get ejectable file: %w\n", ejectedFilesErr)
 	}
 
 	Log(fmt.Sprintf("Number of ejectable core files copied: %d", copiedSourceCounter))

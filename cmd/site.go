@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/plentico/plenti/common"
 	"github.com/plentico/plenti/readers"
 	"github.com/plentico/plenti/writers"
 
@@ -76,7 +75,7 @@ var siteCmd = &cobra.Command{
 		}
 		// Create base directory for site
 		if err := os.MkdirAll(projectDir, os.ModePerm); err != nil {
-			common.CheckErr(fmt.Errorf("Unable to create directory %s: %w", projectDir, err))
+			log.Fatal("Unable to create directory %s: %w", projectDir, err)
 		}
 
 		// Check for --theme flag.
@@ -85,7 +84,7 @@ var siteCmd = &cobra.Command{
 			defaultDirs := []string{"assets", "content", "layouts"}
 			for _, dir := range defaultDirs {
 				if err := os.MkdirAll(projectDir+"/"+dir, os.ModePerm); err != nil {
-					common.CheckErr(fmt.Errorf("Unable to create directory %s: %w", projectDir+"/"+dir, err))
+					log.Fatal("Unable to create directory %s: %w", projectDir+"/"+dir, err)
 				}
 			}
 
@@ -114,7 +113,10 @@ var siteCmd = &cobra.Command{
 			// Copy over the route overrides from the theme.
 			siteConfig.Routes = themeSiteConfig.Routes
 			// Save the siteConfig for the project with the updated routes.
-			common.CheckErr(writers.SetSiteConfig(siteConfig, configPath))
+			err := writers.SetSiteConfig(siteConfig, configPath)
+			if err != nil {
+				log.Fatal("Could not write site config %w\n", err)
+			}
 
 			return
 
@@ -123,19 +125,19 @@ var siteCmd = &cobra.Command{
 		// Check for --bare flag.
 		bareFlag, err := cmd.Flags().GetBool("bare")
 		if err != nil {
-			common.CheckErr(fmt.Errorf("Unable to get 'bare' flag: %w", err))
+			log.Fatal("Unable to get 'bare' flag: %w", err)
 		}
 
 		// set to Defaults and overwrite if bareFlag is set
 		scaffolding, err := fs.Sub(defaultsLearnerFS, "defaults/starters/learner")
 		if err != nil {
-			common.CheckErr(fmt.Errorf("Unable to get learner defaults: %w", err))
+			log.Fatal("Unable to get learner defaults: %w", err)
 		}
 		// Choose which scaffolding to use for new site.
 		if bareFlag {
 			scaffolding, err = fs.Sub(defaultsBareFS, "defaults/starters/bare")
 			if err != nil {
-				common.CheckErr(fmt.Errorf("Unable to get bare defaults: %w", err))
+				log.Fatal("Unable to get bare defaults: %w", err)
 			}
 		}
 		// Loop through site defaults to create site scaffolding
@@ -162,7 +164,7 @@ func writeDefaultFile(filename string, projectDir string) {
 	}
 	// Create the current default file
 	if err := ioutil.WriteFile(projectDir+"/"+filename, defaultFile, os.ModePerm); err != nil {
-		common.CheckErr(fmt.Errorf("Unable to write file '%s': %w\n", filename, err))
+		log.Fatal("Unable to write file '%s': %w\n", filename, err)
 	}
 }
 
@@ -174,7 +176,7 @@ func writeScaffolding(defaults fs.FS, projectDir string) {
 		if d.IsDir() {
 			// Create the directories needed for the current file
 			if err := os.MkdirAll(projectDir+"/"+path, os.ModePerm); err != nil {
-				common.CheckErr(fmt.Errorf("Unable to create path(s) %s: %v", path, err))
+				log.Fatal("Unable to create path(s) %s: %v", path, err)
 			}
 			return nil
 		}
@@ -182,7 +184,7 @@ func writeScaffolding(defaults fs.FS, projectDir string) {
 		contentBytes, err := ioutil.ReadAll(content)
 		// Create the current default file
 		if err := ioutil.WriteFile(projectDir+"/"+path, contentBytes, 0755); err != nil {
-			common.CheckErr(fmt.Errorf("Unable to write file: %w", err))
+			log.Fatal("Unable to write file: %w", err)
 		}
 		return nil
 	})
@@ -192,7 +194,7 @@ func writeScaffolding(defaults fs.FS, projectDir string) {
 func addNodeModules(projectDir string) {
 	nodeModules, err := fs.Sub(defaultsNodeModulesFS, "defaults")
 	if err != nil {
-		common.CheckErr(fmt.Errorf("Unable to get node_modules defaults: %w", err))
+		log.Fatal("Unable to get node_modules defaults: %w", err)
 	}
 	// Loop through node_modules npm pacakges to include in scaffolding
 	writeScaffolding(nodeModules, projectDir)

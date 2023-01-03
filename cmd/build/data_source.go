@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/plentico/plenti/common"
 	"github.com/plentico/plenti/readers"
 	"github.com/spf13/afero"
 )
@@ -100,26 +99,21 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 		"', branch: '" + env.cms.branch +
 		"' } };"
 
-	// no dirs needed for mem
-	if common.UseMemFS {
-		common.Set(contentJSPath, "", &common.FData{B: []byte(`const allContent = [`)})
-		common.Set(envPath, "", &common.FData{B: []byte(envStr)})
-	} else {
-		if err := os.MkdirAll(buildPath+"/spa/ejected", os.ModePerm); err != nil {
-			return err
-		}
-		// Start the new content.js file.
-		err := ioutil.WriteFile(contentJSPath, []byte(`const allContent = [`), 0755)
-		if err != nil {
-			fmt.Printf("Unable to write content.js file: %v", err)
-			return err
-		}
-		// Create the env.js file.
-		err = ioutil.WriteFile(envPath, []byte(envStr), 0755)
-		if err != nil {
-			fmt.Printf("Unable to write env.js file: %v", err)
-			return err
-		}
+		// no dirs needed for mem
+	if err := os.MkdirAll(buildPath+"/spa/ejected", os.ModePerm); err != nil {
+		return err
+	}
+	// Start the new content.js file.
+	err := ioutil.WriteFile(contentJSPath, []byte(`const allContent = [`), 0755)
+	if err != nil {
+		fmt.Printf("Unable to write content.js file: %v", err)
+		return err
+	}
+	// Create the env.js file.
+	err = ioutil.WriteFile(envPath, []byte(envStr), 0755)
+	if err != nil {
+		fmt.Printf("Unable to write env.js file: %v", err)
+		return err
 	}
 
 	// Set up counter for logging output.
@@ -170,7 +164,7 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 	allContentStr = strings.TrimSuffix(allContentStr, ",") + "]"
 	// End the string that will be used in allDefaults object.
 	allDefaultsStr = strings.TrimSuffix(allDefaultsStr, ",") + "];\n\nexport default allDefaults;"
-	err := writeContentJS(buildPath+"/spa/ejected/defaults.js", allDefaultsStr)
+	err = writeContentJS(buildPath+"/spa/ejected/defaults.js", allDefaultsStr)
 	if err != nil {
 		fmt.Println("Could not write defaults.js file")
 	}
@@ -227,10 +221,6 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 	if err := writeContentJS(contentJSPath, "];\n\nexport default allContent;"); err != nil {
 		return err
 	}
-	if common.UseMemFS {
-		// hash all content
-		common.Get(contentJSPath).Hash = common.CRC32Hasher(common.Get(contentJSPath).B)
-	}
 	return nil
 
 }
@@ -254,7 +244,7 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 	// Get the contents of the file.
 	fileContentBytes, err := getVirtualFileIfThemeBuild(path)
 	if err != nil {
-		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, allComponentDefaultsStr, allComponentSchemasStr, fmt.Errorf("file: %s %w%s\n", path, err, common.Caller())
+		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, allComponentDefaultsStr, allComponentSchemasStr, fmt.Errorf("file: %s %w\n", path, err)
 	}
 	fileContentStr := string(fileContentBytes)
 
@@ -369,7 +359,7 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 
 	// Write to the content.js client data source file.
 	if err = writeContentJS(contentJSPath, contentDetailsStr+","); err != nil {
-		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, allComponentDefaultsStr, allComponentSchemasStr, fmt.Errorf("file: %s %w%s\n", contentJSPath, err, common.Caller())
+		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, allComponentDefaultsStr, allComponentSchemasStr, fmt.Errorf("file: %s %w\n", contentJSPath, err)
 	}
 
 	// Remove newlines, tabs, and extra space.
@@ -475,7 +465,7 @@ func createHTML(currentContent content) error {
 	// Get the rendered HTML from v8go.
 	renderedHTML, err := SSRctx.RunScript("html;", "create_ssr")
 	if err != nil {
-		return fmt.Errorf("V8go could not execute js default: %w%s\n", err, common.Caller())
+		return fmt.Errorf("V8go could not execute js default: %w\n", err)
 
 	}
 	// Get the string value of the static HTML.
@@ -490,18 +480,14 @@ func createHTML(currentContent content) error {
 		// Inject live-reload script (stored in ejected core).
 		htmlBytes = bytes.Replace(htmlBytes, []byte("</body>"), []byte("<script type='text/javascript' src='/spa/ejected/live-reload.js'></script></body>"), 1)
 	}
-	if common.UseMemFS {
-		common.Set(currentContent.contentDest, "", &common.FData{B: htmlBytes})
-		return nil
-	}
 	// Create any folders need to write file.
 	if err := os.MkdirAll(strings.TrimSuffix(currentContent.contentDest, "/index.html"), os.ModePerm); err != nil {
-		return fmt.Errorf("couldn't create dirs in createHTML: %w%s\n", err, common.Caller())
+		return fmt.Errorf("couldn't create dirs in createHTML: %w\n", err)
 	}
 	// Write static HTML to the filesystem.
 	err = ioutil.WriteFile(currentContent.contentDest, htmlBytes, 0755)
 	if err != nil {
-		return fmt.Errorf("unable to write SSR file: %w%s\n", err, common.Caller())
+		return fmt.Errorf("unable to write SSR file: %w\n", err)
 	}
 	return nil
 }
@@ -596,33 +582,27 @@ func incrementPager(paginationVars []string, currentContent content, contentJSPa
 func getTotalPages(paginationVar string) (int, error) {
 	totalPages, err := SSRctx.RunScript("plenti_global_pager_"+paginationVar, "create_ssr")
 	if err != nil {
-		return 0, fmt.Errorf("Could not get value of '%v' used in pager: %w%s\n", paginationVar, err, common.Caller())
+		return 0, fmt.Errorf("Could not get value of '%v' used in pager: %w\n", paginationVar, err)
 	}
 	// Convert string total page value to integer.
 	totalPagesInt, err := strconv.Atoi(totalPages.String())
 	if err != nil {
-		return 0, fmt.Errorf("Can't convert pager value '%s' to an integer: %w%s\n", totalPages.String(), err, common.Caller())
+		return 0, fmt.Errorf("Can't convert pager value '%s' to an integer: %w\n", totalPages.String(), err)
 	}
 	return totalPagesInt, nil
 }
 
 func writeContentJS(contentJSPath string, contentDetailsStr string) error {
-	if common.UseMemFS {
-		allB := append(common.Get(contentJSPath).B, []byte(contentDetailsStr)...)
-		// ok to append as it gets created each build and has
-		common.Set(contentJSPath, "", &common.FData{B: allB})
-		return nil
-	}
 	// Create new content.js file if it doesn't already exist, or add to it if it does.
 	contentJSFile, err := os.OpenFile(contentJSPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		return fmt.Errorf("could not open content.js for writing: %w%s\n", err, common.Caller())
+		return fmt.Errorf("could not open content.js for writing: %w\n", err)
 	}
 	// Write to the file with info from current file in "/content" folder.
 	defer contentJSFile.Close()
 	if _, err := contentJSFile.WriteString(contentDetailsStr); err != nil {
 
-		return fmt.Errorf("could not write to file %s: %w%s\n", contentJSPath, err, common.Caller())
+		return fmt.Errorf("could not write to file %s: %w\n", contentJSPath, err)
 
 	}
 	return nil

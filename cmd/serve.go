@@ -14,8 +14,6 @@ import (
 
 	"github.com/plentico/plenti/cmd/build"
 
-	"github.com/plentico/plenti/common"
-
 	"github.com/plentico/plenti/readers"
 
 	"github.com/MakeNowJust/heredoc/v2"
@@ -92,23 +90,15 @@ var serveCmd = &cobra.Command{
 		// Watch filesystem for changes.
 		gowatch(buildDir)
 
-		common.QuitOnErr = false
 		fmt.Printf("\nServing site from your \"%v\" directory.\n", buildDir)
 
-		var fs http.Handler
-		// Point to folder containing the built site
-		if common.UseMemFS {
-
-			fs = common.NewH(buildDir)
-
-		} else {
-			// Check that the build directory exists
-			if _, err := os.Stat(buildDir); os.IsNotExist(err) {
-				fmt.Printf("The \"%v\" build directory does not exist, check your plenti.json file.\n", buildDir)
-				log.Fatal(err)
-			}
-			fs = http.FileServer(http.Dir(buildDir))
+		// Check that the build directory exists
+		if _, err := os.Stat(buildDir); os.IsNotExist(err) {
+			fmt.Printf("The \"%v\" build directory does not exist, check your plenti.json file.\n", buildDir)
+			log.Fatal(err)
 		}
+
+		fs := http.FileServer(http.Dir(buildDir))
 		webroot := "/"
 		if len(siteConfig.BaseURL) > 0 {
 			webroot = siteConfig.BaseURL
@@ -123,7 +113,6 @@ var serveCmd = &cobra.Command{
 			http.Handle("/reload", websocket.Handler(wshandler))
 
 		}
-		// fs := http.FileServer(http.Dir("assets/"))
 
 		// Check flags and config for local server port
 		port := setPort(siteConfig)
@@ -164,7 +153,6 @@ func init() {
 	serveCmd.Flags().BoolVarP(&build.Doreload, "live-reload", "L", false, "Enable live reload")
 	serveCmd.Flags().BoolVarP(&LocalFlag, "local", "l", true, "set false to emulate remote server")
 	serveCmd.Flags().StringVarP(&ConfigFileFlag, "config", "c", "plenti.json", "use a custom sitewide configuration file")
-	//serveCmd.Flags().BoolVarP(&common.UseMemFS, "in-memory", "M", false, "Use in memory filesystem")
 }
 
 type localChange struct {

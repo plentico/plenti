@@ -3,8 +3,8 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"log"
 
-	"github.com/plentico/plenti/common"
 	"github.com/plentico/plenti/readers"
 	"github.com/plentico/plenti/writers"
 
@@ -49,7 +49,10 @@ will no longer inherit assets, content, and layouts from this theme.
 		}
 		siteConfig.Theme = ""
 		// Update the config file on the filesystem.
-		common.CheckErr(writers.SetSiteConfig(siteConfig, configPath))
+		err := writers.SetSiteConfig(siteConfig, configPath)
+		if err != nil {
+			log.Fatal("Could not update site config file %w", err)
+		}
 
 	},
 }

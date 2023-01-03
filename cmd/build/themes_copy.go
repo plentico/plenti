@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/plentico/plenti/common"
 	"github.com/plentico/plenti/readers"
 	"github.com/spf13/afero"
 )
@@ -73,7 +72,7 @@ func ThemesCopy(theme string, themeOptions readers.ThemeOptions) error {
 		// Read the source theme file.
 		from, err := os.Open(themeFilePath)
 		if err != nil {
-			return fmt.Errorf("Could not open theme file for copying: %w%s\n", err, common.Caller())
+			return fmt.Errorf("Could not open theme file for copying: %w\n", err)
 		}
 		defer from.Close()
 
@@ -89,13 +88,13 @@ func ThemesCopy(theme string, themeOptions readers.ThemeOptions) error {
 
 		to, err := ThemeFs.Create(destPath)
 		if err != nil {
-			return fmt.Errorf("Could not create destination theme file for copying: %w%s\n", err, common.Caller())
+			return fmt.Errorf("Could not create destination theme file for copying: %w\n", err)
 		}
 		defer to.Close()
 
 		_, fileCopyErr := io.Copy(to, from)
 		if err != nil {
-			return fmt.Errorf("Could not copy theme file from source to destination: %w%s\n", fileCopyErr, common.Caller())
+			return fmt.Errorf("Could not copy theme file from source to destination: %w\n", fileCopyErr)
 		}
 
 		copiedThemeFileCounter++
@@ -103,7 +102,7 @@ func ThemesCopy(theme string, themeOptions readers.ThemeOptions) error {
 		return nil
 	})
 	if themeFilesErr != nil {
-		return fmt.Errorf("Could not get theme file: %w%s\n", themeFilesErr, common.Caller())
+		return fmt.Errorf("Could not get theme file: %w\n", themeFilesErr)
 	}
 
 	Log("Number of theme files copied: " + strconv.Itoa(copiedThemeFileCounter))

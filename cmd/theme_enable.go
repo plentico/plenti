@@ -3,9 +3,9 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
 
-	"github.com/plentico/plenti/common"
 	"github.com/plentico/plenti/readers"
 	"github.com/plentico/plenti/writers"
 
@@ -52,7 +52,10 @@ func enableTheme(themeLocation string, configLocation string, repoName string) {
 	if _, err := os.Stat(themeLocation); !os.IsNotExist(err) {
 		siteConfig.Theme = repoName
 		// Update the config file on the filesystem.
-		common.CheckErr(writers.SetSiteConfig(siteConfig, configPath))
+		err := writers.SetSiteConfig(siteConfig, configPath)
+		if err != nil {
+			log.Fatal("Could not update the config file %w", err)
+		}
 	} else {
 		fmt.Printf("Could not locate '%v' theme: %v\n", repoName, err)
 	}

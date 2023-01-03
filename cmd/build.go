@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/plentico/plenti/cmd/build"
-	"github.com/plentico/plenti/common"
 	"github.com/plentico/plenti/readers"
 
 	"github.com/spf13/cobra"
@@ -103,32 +102,25 @@ func Build() error {
 		if err != nil {
 			log.Fatal("\nError in ThemesMerge build step", err)
 		}
-
 	}
 
 	// Get the full path for the build directory of the site.
 	buildPath := filepath.Join(".", buildDir)
 
 	// Clear out any previous build dir of the same name.
-	if !common.UseMemFS {
-		if _, buildPathExistsErr := os.Stat(buildPath); buildPathExistsErr == nil {
-			build.Log("Removing old '" + buildPath + "' build directory")
-			if err = common.CheckErr(os.RemoveAll(buildPath)); err != nil {
-				return err
-			}
-
-		}
-
-		// Create the buildPath directory.
-		if err := os.MkdirAll(buildPath, os.ModePerm); err != nil {
-			// bail on error in build
-			if err = common.CheckErr(fmt.Errorf("Unable to create \"%v\" build directory: %s", err, buildDir)); err != nil {
-				return err
-			}
-
+	if _, buildPathExistsErr := os.Stat(buildPath); buildPathExistsErr == nil {
+		build.Log("Removing old '" + buildPath + "' build directory")
+		if err = os.RemoveAll(buildPath); err != nil {
+			log.Fatal("\nCan't remove \"%v\" folder from previous build", err, buildDir)
 		}
 	}
+
+	// Create the buildPath directory.
 	build.Log("Creating '" + buildDir + "' build directory")
+	if err := os.MkdirAll(buildPath, os.ModePerm); err != nil {
+		// bail on error in build
+		log.Fatal("Unable to create \"%v\" build directory: %s", err, buildDir)
+	}
 
 	// Directly copy .js that don't need compiling to the build dir.
 	err = build.EjectCopy(buildPath, defaultsEjectedFS)

@@ -1,18 +1,14 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 
 	"github.com/plentico/plenti/cmd/build"
-
-	"sync"
-
-	"github.com/plentico/plenti/common"
 
 	"time"
 
@@ -22,6 +18,8 @@ import (
 type watcher struct {
 	*fsnotify.Watcher
 }
+
+var lock uint32
 
 func gowatch(buildPath string) {
 	// Creates a new file watcher.
@@ -40,8 +38,6 @@ func gowatch(buildPath string) {
 
 }
 
-var isBuilding sync.Mutex
-
 // Watch looks for updates to filesystem to prompt a site rebuild.
 func (w *watcher) watch(buildPath string) {
 	// die on any error or will loop infinitely
@@ -49,26 +45,28 @@ func (w *watcher) watch(buildPath string) {
 	// TODO: these probably needs handling here as it won' quit/log.Fatal on serve
 	if _, err := os.Stat("content"); !os.IsNotExist(err) {
 		if err := filepath.WalkDir("content", w.watchDir(buildPath)); err != nil {
-			common.CheckErr(fmt.Errorf("Error watching 'content/' folder for changes: %w", err))
+			log.Fatal("Error watching 'content/' folder for changes: %w", err)
 		}
 	}
+
 	if _, err := os.Stat("layouts"); !os.IsNotExist(err) {
 		if err := filepath.WalkDir("layouts", w.watchDir(buildPath)); err != nil {
-			common.CheckErr(fmt.Errorf("Error watching 'layouts/' folder for changes: %w", err))
+			log.Fatal("Error watching 'layouts/' folder for changes: %w", err)
 		}
 	}
+
 	if _, err := os.Stat("assets"); !os.IsNotExist(err) {
 		if err := filepath.WalkDir("assets", w.watchDir(buildPath)); err != nil {
-			common.CheckErr(fmt.Errorf("Error watching 'assets/' folder for changes: %w", err))
+			log.Fatal("Error watching 'assets/' folder for changes: %w", err)
 		}
 	}
+
 	if err := w.Add("plenti.json"); err != nil {
-		common.CheckErr(fmt.Errorf("couldn't add 'plenti.json' to watcher %w", err))
-
+		log.Fatal("couldn't add 'plenti.json' to watcher %w", err)
 	}
-	if err := w.Add("package.json"); err != nil {
-		common.CheckErr(fmt.Errorf("couldn't add 'package.json' to watcher %w", err))
 
+	if err := w.Add("package.json"); err != nil {
+		log.Fatal("couldn't add 'package.json' to watcher %w", err)
 	}
 
 	done := make(chan bool)
@@ -85,18 +83,6 @@ func (w *watcher) watch(buildPath string) {
 			case event := <-w.Events:
 				// Don't rebuild when build dir is added or deleted.
 				if event.Name != "./"+buildPath {
-					if common.UseMemFS {
-						// seems to be RENAME using vscode on ubuntu...
-						if event.Op&fsnotify.Rename == fsnotify.Rename || event.Op&fsnotify.Remove == fsnotify.Remove {
-							build.Log("File delete detected: " + event.String())
-							if _, err := os.Stat(event.Name); errors.Is(err, os.ErrNotExist) {
-								common.Remove(event.Name)
-
-							}
-
-						}
-					}
-
 					// Add current event to array for batching.
 					// don't really care but if we build with
 					events[event.Name] = event
@@ -108,7 +94,7 @@ func (w *watcher) watch(buildPath string) {
 				if len(events) > 0 {
 					// if locked i.e still building from last then this will do nothing.
 					// Can queue build with a mutex but gets messy quickly if you have 3-4 quick ctrl-s with one right after next.
-					if !common.IsBuilding() {
+					if !atomic.CompareAndSwapUint32(&lock, 0, 1) {
 						err := Build()
 						// will be unlocked when we receive loaded message from ws in window.onload
 						// if any error leave as is. Shoud never send on channel if no connections or it will hang forever or until re load in browser..
@@ -117,7 +103,7 @@ func (w *watcher) watch(buildPath string) {
 
 						} else {
 							// not reloading so just unlock
-							common.Unlock()
+							atomic.StoreUint32(&lock, 0)
 						}
 
 					}
@@ -156,18 +142,6 @@ func (w *watcher) watch(buildPath string) {
 				if err != nil {
 					fmt.Printf("\nFile watching error: %s\n", err)
 				}
-
-				// default:
-				// 	connMU.Lock()
-				// 	if common.IsLocked() {
-				// 		log.Println("lcoked", len(connections), numReloading)
-				// 	}
-				// 	// If no conns and no waiting for reload we have no connections.
-				// 	if common.IsLocked() && len(connections) == 0 && numReloading == 0 {
-				// 		log.Println("unlcokign default")
-				// 		common.Unlock()
-				// 	}
-				// 	connMU.Unlock()
 			}
 		}
 	}()

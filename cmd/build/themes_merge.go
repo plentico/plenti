@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"time"
-
-	"github.com/plentico/plenti/common"
 )
 
 // ThemesMerge combines any nested themes with the current project.
@@ -44,7 +42,7 @@ func ThemesMerge(buildDir string) error {
 		// Read the source project file.
 		from, err := os.Open(projectFilePath)
 		if err != nil {
-			return fmt.Errorf("Could not open project file for copying: %w%s\n", err, common.Caller())
+			return fmt.Errorf("Could not open project file for copying: %w\n", err)
 		}
 		defer from.Close()
 
@@ -57,13 +55,13 @@ func ThemesMerge(buildDir string) error {
 
 		to, err := ThemeFs.Create(projectFilePath)
 		if err != nil {
-			return fmt.Errorf("Could not create destination project file for copying: %w%s\n", err, common.Caller())
+			return fmt.Errorf("Could not create destination project file for copying: %w\n", err)
 		}
 		defer to.Close()
 
 		_, fileCopyErr := io.Copy(to, from)
 		if err != nil {
-			return fmt.Errorf("Could not copy project file from source to destination: %w%s\n", fileCopyErr, common.Caller())
+			return fmt.Errorf("Could not copy project file from source to destination: %w\n", fileCopyErr)
 		}
 
 		copiedProjectFileCounter++
@@ -71,7 +69,7 @@ func ThemesMerge(buildDir string) error {
 		return nil
 	})
 	if themeFilesErr != nil {
-		return fmt.Errorf("Could not get project file: %w%s\n", themeFilesErr, common.Caller())
+		return fmt.Errorf("Could not get project file: %w\n", themeFilesErr)
 	}
 
 	Log("Number of project files copied: " + strconv.Itoa(copiedProjectFileCounter))

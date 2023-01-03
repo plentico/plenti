@@ -3,9 +3,9 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
 
-	"github.com/plentico/plenti/common"
 	"github.com/plentico/plenti/readers"
 	"github.com/plentico/plenti/writers"
 
@@ -45,7 +45,10 @@ theme folder within the "themes/" directory.
 			// Remove the corresponding theme_config entry.
 			delete(siteConfig.ThemeConfig, repoName)
 			// Update the config file on the filesystem.
-			common.CheckErr(writers.SetSiteConfig(siteConfig, configPath))
+			err := writers.SetSiteConfig(siteConfig, configPath)
+			if err != nil {
+				log.Fatal("Can't update site config file %w", err)
+			}
 			// Delete the corresponding theme folder.
 			if err := os.RemoveAll("themes/" + repoName); err != nil {
 				err = fmt.Errorf("Could not delete theme folder: %w", err)
