@@ -103,7 +103,7 @@ func Client(buildPath string, defaultsEjectedFS embed.FS) error {
 	}
 
 	// Compile Svelte components from ejectable core
-	fs.WalkDir(defaultsEjectedFS, "defaults/ejected", func(path string, d fs.DirEntry, err error) error {
+	fs.WalkDir(defaultsEjectedFS, "ejected", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -130,7 +130,7 @@ func Client(buildPath string, defaultsEjectedFS embed.FS) error {
 			componentStr = string(component)
 		} else if os.IsNotExist(err) {
 			// The file has not been ejected, use the embedded defaults.
-			nonEjectedFS, err := fs.Sub(defaultsEjectedFS, "defaults")
+			nonEjectedFS, err := fs.Sub(defaultsEjectedFS, ".")
 			if err != nil {
 				log.Fatal("Unable to get non ejected defaults: %w", err)
 			}

@@ -19,7 +19,7 @@ func NpmDefaults(defaultsNodeModulesFS embed.FS) error {
 	destPath := "node_modules"
 
 	if _, err := os.Stat(destPath); os.IsNotExist(err) {
-		nodeModules, err := fs.Sub(defaultsNodeModulesFS, "defaults")
+		nodeModules, err := fs.Sub(defaultsNodeModulesFS, ".")
 		if err != nil {
 			return fmt.Errorf("Unable to get node_modules defaults: %w\n", err)
 		}

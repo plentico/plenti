@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/plentico/plenti/cmd/build"
+	"github.com/plentico/plenti/defaults"
 	"github.com/plentico/plenti/readers"
 
 	"github.com/spf13/cobra"
@@ -78,7 +79,7 @@ func Build() error {
 	buildDir := setBuildDir(siteConfig)
 
 	// Add core NPM dependencies if node_module folder doesn't already exist.
-	err = build.NpmDefaults(defaultsNodeModulesFS)
+	err = build.NpmDefaults(defaults.NodeModulesFS)
 	if err != nil {
 		log.Fatal("\nError in NpmDefaults build step", err)
 	}
@@ -123,7 +124,7 @@ func Build() error {
 	}
 
 	// Directly copy .js that don't need compiling to the build dir.
-	err = build.EjectCopy(buildPath, defaultsEjectedFS)
+	err = build.EjectCopy(buildPath, defaults.EjectedFS)
 	if err != nil {
 		log.Fatal("\nError in EjectCopy build step", err)
 	}
@@ -135,7 +136,7 @@ func Build() error {
 	}
 
 	// Prep the client SPA.
-	err = build.Client(buildPath, defaultsEjectedFS)
+	err = build.Client(buildPath, defaults.EjectedFS)
 	if err != nil {
 		log.Fatal("\nError in Client build step", err)
 	}

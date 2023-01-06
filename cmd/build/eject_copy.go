@@ -19,7 +19,7 @@ func EjectCopy(buildPath string, defaultsEjectedFS embed.FS) error {
 
 	copiedSourceCounter := 0
 
-	ejected, err := fs.Sub(defaultsEjectedFS, "defaults")
+	ejected, err := fs.Sub(defaultsEjectedFS, ".")
 	if err != nil {
 		return fmt.Errorf("Unable to get ejected defaults: %w\n", err)
 	}

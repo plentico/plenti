@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/plentico/plenti/defaults"
 	"github.com/plentico/plenti/readers"
 	"github.com/plentico/plenti/writers"
 
@@ -129,13 +130,13 @@ var siteCmd = &cobra.Command{
 		}
 
 		// set to Defaults and overwrite if bareFlag is set
-		scaffolding, err := fs.Sub(defaultsLearnerFS, "defaults/starters/learner")
+		scaffolding, err := fs.Sub(defaults.LearnerFS, "starters/learner")
 		if err != nil {
 			log.Fatal("Unable to get learner defaults: %w", err)
 		}
 		// Choose which scaffolding to use for new site.
 		if bareFlag {
-			scaffolding, err = fs.Sub(defaultsBareFS, "defaults/starters/bare")
+			scaffolding, err = fs.Sub(defaults.BareFS, "starters/bare")
 			if err != nil {
 				log.Fatal("Unable to get bare defaults: %w", err)
 			}
@@ -158,7 +159,7 @@ var siteCmd = &cobra.Command{
 }
 
 func writeDefaultFile(filename string, projectDir string) {
-	defaultFile, err := defaultsBareFS.ReadFile("defaults/starters/bare/" + filename)
+	defaultFile, err := defaults.BareFS.ReadFile("starters/bare/" + filename)
 	if err != nil {
 		fmt.Printf("Can't read default file '%s': %s\n", filename, err)
 	}
@@ -192,7 +193,7 @@ func writeScaffolding(defaults fs.FS, projectDir string) {
 }
 
 func addNodeModules(projectDir string) {
-	nodeModules, err := fs.Sub(defaultsNodeModulesFS, "defaults")
+	nodeModules, err := fs.Sub(defaults.NodeModulesFS, ".")
 	if err != nil {
 		log.Fatal("Unable to get node_modules defaults: %w", err)
 	}

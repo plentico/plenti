@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/plentico/plenti/readers"
 
@@ -41,8 +42,13 @@ file in order to pull updates.
 		// Get the current site configuration file values.
 		siteConfig, _ := readers.GetSiteConfig(".")
 
+		theme, ok := siteConfig.ThemeConfig[repoName]
+		if !ok {
+			log.Fatalf("\nCould not find theme named \"%s\"\nCheck theme_config in plenti.json", repoName)
+		}
+
 		// Get the corresponding git remote for the theme.
-		url := siteConfig.ThemeConfig[repoName].URL
+		url := theme.URL
 
 		// Check that we were able to get the URL from the config file.
 		if url == "" {

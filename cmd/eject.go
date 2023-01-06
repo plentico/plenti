@@ -10,6 +10,7 @@ import (
 	"reflect"
 
 	"github.com/manifoldco/promptui"
+	"github.com/plentico/plenti/defaults"
 	"github.com/spf13/cobra"
 )
 
@@ -33,7 +34,7 @@ continue to work properly and you will have to manually apply any
 updates that are made to the core files (these are normally applied
 automatically).`,
 	Run: func(cmd *cobra.Command, args []string) {
-		ejected, err := fs.Sub(defaultsEjectedFS, "defaults")
+		ejected, err := fs.Sub(defaults.EjectedFS, ".")
 		if err != nil {
 			fmt.Printf("Unable to get ejected defaults: %s", err)
 		}
