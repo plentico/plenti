@@ -1,4 +1,4 @@
-package cmd
+package serve
 
 import (
 	"fmt"
@@ -21,7 +21,9 @@ type watcher struct {
 
 var lock uint32
 
-func gowatch(buildPath string) {
+type buildFunc func() error
+
+func Gowatch(buildPath string, Build buildFunc) {
 	// Creates a new file watcher.
 	wtch, err := fsnotify.NewWatcher()
 	// stop here as nothing will be watched
@@ -29,17 +31,16 @@ func gowatch(buildPath string) {
 		log.Fatal(fmt.Errorf("couldn't create 'fsnotify.Watcher' %w", err))
 	}
 	go func() {
-
 		// this can error
 		defer wtch.Close()
 		w := &watcher{wtch}
-		w.watch(buildPath)
+		w.watch(buildPath, Build)
 	}()
 
 }
 
 // Watch looks for updates to filesystem to prompt a site rebuild.
-func (w *watcher) watch(buildPath string) {
+func (w *watcher) watch(buildPath string, Build buildFunc) {
 	// die on any error or will loop infinitely
 	// Watch specific directories for changes (only if they exist).
 	// TODO: these probably needs handling here as it won' quit/log.Fatal on serve

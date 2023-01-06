@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/plentico/plenti/cmd/build"
+	"github.com/plentico/plenti/cmd/serve"
 
 	"github.com/plentico/plenti/readers"
 
@@ -87,9 +88,6 @@ var serveCmd = &cobra.Command{
 			fmt.Printf("The \"%v\" build directory does not exist, check your plenti.json file.\n", buildDir)
 			log.Fatal(err)
 		}
-		// Watch filesystem for changes.
-		gowatch(buildDir)
-
 		fmt.Printf("\nServing site from your \"%v\" directory.\n", buildDir)
 
 		// Check that the build directory exists
@@ -103,14 +101,20 @@ var serveCmd = &cobra.Command{
 		if len(siteConfig.BaseURL) > 0 {
 			webroot = siteConfig.BaseURL
 		}
+
+		// Handle "/" or baseurl
 		http.Handle(webroot, http.StripPrefix(webroot, fs))
+
 		// Handle local edits made via the Git-CMS
 		http.HandleFunc("/postlocal", postLocal)
+
 		// Watch filesystem for changes.
-		gowatch(buildDir)
+		serve.Gowatch(buildDir, Build)
+		serve.Gowatch(buildDir, Build)
+
 		if build.Doreload {
 			// websockets
-			http.Handle("/reload", websocket.Handler(wshandler))
+			http.Handle("/reload", websocket.Handler(serve.WebsocketHandler))
 
 		}
 

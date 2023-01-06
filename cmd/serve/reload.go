@@ -1,4 +1,4 @@
-package cmd
+package serve
 
 import (
 	"log"
@@ -27,7 +27,7 @@ var connMU sync.Mutex
 var numReloading int32
 
 // wshandler handles the numReloading when serve -L is used
-func wshandler(ws *websocket.Conn) {
+func WebsocketHandler(ws *websocket.Conn) {
 	// add new conn and chan to close
 	cc := wsc{ws: ws, closeC: make(chan struct{}, 1)}
 	connMU.Lock()
