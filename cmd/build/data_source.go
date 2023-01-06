@@ -248,9 +248,6 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 	}
 	fileContentStr := string(fileContentBytes)
 
-	// Convert path to a route the browser can understand
-	path = makeWebPath(path, fileName)
-
 	// Remove the extension (if it exists) from single types since the filename = the type name.
 	contentType = strings.TrimSuffix(contentType, filepath.Ext(contentType))
 
@@ -266,7 +263,7 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 	for configContentType, slug := range siteConfig.Routes {
 		if configContentType == contentType {
 			// Replace :filename.
-			slug = strings.Replace(slug, ":filename", strings.TrimSuffix(fileName, filepath.Ext(fileName)), -1)
+			slug = strings.Replace(slug, ":filename", fileName, -1)
 
 			// Replace :fields().
 			fieldReplacements := reField.FindAllStringSubmatch(slug, -1)
@@ -285,6 +282,9 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 		}
 	}
 
+	// Convert path to a route the browser can understand
+	path = makeWebPath(path, fileName)
+
 	// Initialize vars for path with replacement patterns still intact.
 	var pagerPath string
 	var pagerDestPath string
@@ -298,11 +298,8 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 		path = rePaginate.ReplaceAllString(path, "")
 	}
 
-	// Slugify output using reSlugify regex defined above.
-	path = strings.Trim(reSlugify.ReplaceAllString(strings.ToLower(path), "-"), "-")
-
+	path = slugify(path)
 	path = fixBlankPaths(path)
-
 	path = removeExtraSlashes(path)
 
 	noWildcardsPath := strings.Replace(path, "*", "", -1)
@@ -399,7 +396,7 @@ func makeWebPath(path string, fileName string) string {
 	// Remove the "content/" folder from path.
 	path = strings.TrimPrefix(path, "content/")
 	// Check for index file at any level.
-	if fileName == "index.json" {
+	if fileName == "_index.json" {
 		// Remove entire filename from path.
 		path = strings.TrimSuffix(path, fileName)
 	} else {
@@ -407,6 +404,11 @@ func makeWebPath(path string, fileName string) string {
 		path = strings.TrimSuffix(path, filepath.Ext(path))
 	}
 	return path
+}
+
+func slugify(path string) string {
+	// Slugify output using reSlugify regex defined above.
+	return strings.Trim(reSlugify.ReplaceAllString(strings.ToLower(path), "-"), "-")
 }
 
 func fixBlankPaths(path string) string {
