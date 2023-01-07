@@ -5,16 +5,16 @@
     import FileUpload from "./file_upload.svelte";
     import VisualEditor from "./visual_editor.svelte";
     import AddContent from "./add_content.svelte";
-    import allAssets from './assets.js';
+    import allMedia from './media.js';
     import { env } from '../env.js';
 
-    let assetPrefix = env.baseurl ? '' : '/';
-    let assets = allAssets.map(asset => assetPrefix + asset);
+    let mediaPrefix = env.baseurl ? '' : '/';
+    let media = allMedia.map(media => mediaPrefix + media);
 
-    let showMedia = false;
-    const toggleMedia = () => {
-        showMedia = !showMedia;
-        changingAsset = "";
+    let showMediaModal = false;
+    const toggleMediaModal = () => {
+        showMediaModal = !showMediaModal;
+        changingMedia = "";
     }
     let activeMedia = "upload";
     const setActiveMedia = selected => {
@@ -41,7 +41,7 @@
       };
     }
 
-    let changingAsset = "";
+    let changingMedia = "";
     let localMediaList = [];
 </script>
 
@@ -82,7 +82,7 @@
     </svg>
     Add
   </a>
-  <a href="." class="media" on:click|preventDefault={toggleMedia}>
+  <a href="." class="media" on:click|preventDefault={toggleMediaModal}>
     <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-photo" width="30" height="30" viewBox="0 0 24 24" stroke-width="2" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
       <line x1="15" y1="8" x2="15.01" y2="8" />
@@ -102,8 +102,8 @@
   </a>
 </nav>
 
-{#if showMedia}
-  <div class="modal-wrapper" on:click={toggleMedia}>
+{#if showMediaModal}
+  <div class="modal-wrapper" on:click={toggleMediaModal}>
     <div class="modal-close">
         <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-x" width="35" height="35" viewBox="5 5 14 14" stroke-width="1.5" stroke="white" fill="none" stroke-linecap="round" stroke-linejoin="round">
             <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -134,9 +134,9 @@
         </div>
       </div>
       {#if activeMedia === 'library'}
-        <MediaBrowser bind:assets bind:changingAsset bind:showMedia />
+        <MediaBrowser bind:media bind:changingMedia bind:showMediaModal />
       {:else}
-        <FileUpload bind:assets bind:changingAsset bind:showMedia bind:localMediaList {assetPrefix} />
+        <FileUpload bind:media bind:changingMedia bind:showMediaModal bind:localMediaList {mediaPrefix} />
       {/if}
     </div>
   </div>
@@ -183,7 +183,7 @@
     {#if activeEditor === 'code'}
       <JSONEditor bind:content />
     {:else}
-      <VisualEditor bind:content bind:showMedia bind:changingAsset bind:localMediaList bind:shadowContent />
+      <VisualEditor bind:content bind:showMediaModal bind:changingMedia bind:localMediaList bind:shadowContent />
     {/if}
   </div>
 {/if}

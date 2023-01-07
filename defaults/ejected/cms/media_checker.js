@@ -10,11 +10,11 @@ export const isDoc = file => {
     return docExtensions.includes(file.substr(file.lastIndexOf('.') + 1)) || reDoc.test(file);
 }
 
-export const isAsset = file => isImage(file) || isDoc(file);
+export const isMedia = file => isImage(file) || isDoc(file);
 
-const reAssetPath = new RegExp("^/?assets/.*\.(" + imageExtensions.join("|") + "|" + docExtensions.join("|") + ")$");
-const reImagePath = new RegExp("^/?assets/.*\.(" + imageExtensions.join("|") + ")$");
-const reDocPath = new RegExp("^/?assets/.*\.(" + docExtensions.join("|") + ")$");
-export const isAssetPath = asset => reAssetPath.test(asset);
-export const isImagePath = asset => reImagePath.test(asset);
-export const isDocPath = asset => reDocPath.test(asset);
+const reMediaPath = new RegExp("^/?media/.*\.(" + imageExtensions.join("|") + "|" + docExtensions.join("|") + ")$");
+const reImagePath = new RegExp("^/?media/.*\.(" + imageExtensions.join("|") + ")$");
+const reDocPath = new RegExp("^/?media/.*\.(" + docExtensions.join("|") + ")$");
+export const isMediaPath = media => reMediaPath.test(media);
+export const isImagePath = media => reImagePath.test(media);
+export const isDocPath = media => reDocPath.test(media);

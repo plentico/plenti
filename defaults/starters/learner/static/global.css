@@ -1,0 +1,47 @@
+:root {
+    --primary: rgb(34, 166, 237);
+    --primary-dark: rgb(16, 92, 133);
+    --accent: rgb(254, 211, 48);
+    --base: rgb(245, 245, 245);
+    --base-dark: rgb(17, 17, 17);
+}
+html, body {
+    height: 100%;
+}
+
+body {
+    font-family: 'Rubik', sans-serif;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+}
+.container {
+    max-width: 1024px;
+    margin: 0 auto;
+    flex-grow: 1;
+    padding: 0 20px;
+}
+.container a {
+    position: relative;
+    text-decoration: none;
+    color: var(--base-dark);
+    padding-bottom: 5px;
+}
+.container p a:before {
+    content: "";
+    width: 100%;
+    height: 100%;
+    background-image: linear-gradient(to top, var(--accent) 25%, rgba(0, 0, 0, 0) 40%);  
+    position: absolute;
+    left: 0;
+    bottom: 2px;
+    z-index: -1;   
+    will-change: width;
+    transform: rotate(-2deg);
+    transform-origin: left bottom;
+    transition: width .1s ease-out;
+}
+.container a:hover:before {
+    width: 0;
+    transition-duration: .15s;
+}

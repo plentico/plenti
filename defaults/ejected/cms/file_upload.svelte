@@ -4,7 +4,7 @@
     import ButtonWrapper from './button_wrapper.svelte';
     import Button from './button.svelte';
 
-    export let assets, changingAsset, showMedia, localMediaList, assetPrefix;
+    export let media, changingMedia, showMediaModal, localMediaList, mediaPrefix;
     let enabledFilters = [];
 
     const createMediaList = file => {
@@ -12,7 +12,7 @@
         reader.readAsDataURL(file);
         reader.onload = e => {
             localMediaList = [...localMediaList, {
-                file: assetPrefix + "assets/" + file.name,
+                file: mediaPrefix + "media/" + file.name,
                 contents: e.target.result
             }];
         };
@@ -23,12 +23,12 @@
         });
     }
 
-    let filePrefix = assetPrefix + "assets/";
+    let filePrefix = mediaPrefix + "media/";
     $: if (enabledFilters) {
         if (enabledFilters.length > 0) {
             // Convert filter array to path
             let filterPath = enabledFilters[0].join('/') + "/";
-            let newPrefix = assetPrefix + "assets/" + filterPath;
+            let newPrefix = mediaPrefix + "media/" + filterPath;
             localMediaList.forEach(mediaFile => {
                 mediaFile.file = mediaFile.file.replace(filePrefix, newPrefix);
             });
@@ -66,24 +66,24 @@
 
     const addUploadToLibrary = () => {
         localMediaList.forEach(m => {
-            assets = [...assets, m.contents];
+            media = [...media, m.contents];
         });
     }
 </script>
 
 <div class="upload-wrapper">
     {#if localMediaList.length > 0}
-        <MediaFilters bind:assets bind:enabledFilters singleSelect={true} {changingAsset} />
+        <MediaFilters bind:media bind:enabledFilters singleSelect={true} {changingMedia} />
         <MediaGrid files={getThumbnails(localMediaList)} bind:selectedMedia={selectedMedia} />
         <ButtonWrapper>
             <Button 
                 on:click={() => {
                     addUploadToLibrary();
                     enabledFilters=[];
-                    filePrefix = assetPrefix + "assets/";
-                    if(changingAsset) {
-                        changingAsset = localMediaList[0].file;
-                        showMedia = false;
+                    filePrefix = mediaPrefix + "media/";
+                    if(changingMedia) {
+                        changingMedia = localMediaList[0].file;
+                        showMediaModal = false;
                     }
                 }}
                 bind:commitList={localMediaList}
@@ -126,7 +126,7 @@
             <div class="or">Or</div>
             <div class="choose" on:change={event => selectFile(event.target.files)}>
                 <label class="file">
-                    <input type="file" multiple="{changingAsset ? false : true}" aria-label="File browser">
+                    <input type="file" multiple="{changingMedia ? false : true}" aria-label="File browser">
                     <span class="file-custom"></span>
                 </label>
             </div>

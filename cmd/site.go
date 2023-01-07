@@ -29,7 +29,6 @@ var siteCmd = &cobra.Command{
 	Long: heredoc.Doc(`
 	The project scaffolding follows this convention:
 	  - plenti.json = sitewide configuration.
-	  - assets/ = holds static files like images or videos.
 	  - content/ = json files that hold site content.
 	  - content/pages/ = regular site pages in json format.
 	  - content/pages/_defaults.json = template for the starting content of a page.
@@ -40,8 +39,10 @@ var siteCmd = &cobra.Command{
 	  - layouts/content/ = node level structure that has a route and correspond to content.
 	  - layouts/components/ = smaller reusable structures that can be used within larger ones.
 	  - layouts/global/ = base level html wrappers.
+	  - media/ = holds user uploaded files like images or videos.
 	  - node_modules/ = frontend libraries managed by npm.
 	  - package.json = npm configuration file.
+	  - static/ = holds theme files like global.css or robots.txt.
 	`),
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
@@ -82,7 +83,7 @@ var siteCmd = &cobra.Command{
 		// Check for --theme flag.
 		if themeFlag != "" {
 			// Create empty base folders for the project
-			defaultDirs := []string{"assets", "content", "layouts"}
+			defaultDirs := []string{"content", "layouts", "media", "static"}
 			for _, dir := range defaultDirs {
 				if err := os.MkdirAll(projectDir+"/"+dir, os.ModePerm); err != nil {
 					log.Fatal("Unable to create directory %s: %w", projectDir+"/"+dir, err)

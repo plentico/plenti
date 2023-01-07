@@ -43,7 +43,7 @@ func setBuildDir(siteConfig readers.SiteConfig) string {
 // buildCmd represents the build command
 var buildCmd = &cobra.Command{
 	Use:   "build",
-	Short: "Creates the static assets for your site",
+	Short: "Creates the public assets for your site",
 	Long: `Build generates the actual HTML, JS, and CSS into a directory
 of your choosing. The files that are created are all
 you need to deploy for your website.`,
@@ -129,10 +129,22 @@ func Build() error {
 		log.Fatal("\nError in EjectCopy build step", err)
 	}
 
-	// Directly copy static assets to the build dir.
-	err = build.AssetsCopy(buildPath)
-	if err != nil {
-		log.Fatal("\nError in AssetsCopy build step", err)
+	if _, err := os.Stat("static"); err == nil {
+		// static folder exists
+		// Directly copy static files to the build dir.
+		err = build.StaticCopy(buildPath)
+		if err != nil {
+			log.Fatal("\nError in StaticCopy build step", err)
+		}
+	}
+
+	if _, err := os.Stat("media"); err == nil {
+		// media folder exists
+		// Directly copy media to the build dir.
+		err = build.MediaCopy(buildPath)
+		if err != nil {
+			log.Fatal("\nError in MediaCopy build step", err)
+		}
 	}
 
 	// Prep the client SPA.

@@ -1,58 +1,58 @@
 <script>
-    import { isAssetPath } from './asset_checker.js';
-    export let assets, changingAsset;
+    import { isMediaPath } from './media_checker.js';
+    export let media, changingMedia;
     export let filters = [];
     export let enabledFilters = [];
-    export let filteredAssets = []; 
+    export let filteredMedia = []; 
     export let singleSelect = false;
 
-    const assetPathToArray = asset => {
+    const mediaPathToArray = media => {
         // Create an array of path segments.
-        let allFolders = asset.split('/')
-        // Get the index right after the assets folder (works with and without baseurl).
-        let cut = allFolders.findIndex(i => i === "assets") + 1;
-        // Remove "assets" folder and last (filename) elements.
+        let allFolders = media.split('/')
+        // Get the index right after the media folder (works with and without baseurl).
+        let cut = allFolders.findIndex(i => i === "media") + 1;
+        // Remove "media" folder and last (filename) elements.
         return allFolders.slice(cut, -1);
     }
 
-    const parentAssetIndex = (asset, filters) => {
+    const parentMediaIndex = (media, filters) => {
         // Return position of filter in filters array,
-        // if it's a subpath of current asset (if not found return -1)
-        return filters.findIndex(filter => asset.join('').includes(filter.join('')));
+        // if it's a subpath of current media file (if not found return -1)
+        return filters.findIndex(filter => media.join('').includes(filter.join('')));
     }
 
-    for (const asset of assets) {
-        if (isAssetPath(asset)) {
-            // Turn asset path into array of subfolders
-            let assetFolders = assetPathToArray(asset); 
+    for (const mediaFile of media) {
+        if (isMediaPath(mediaFile)) {
+            // Turn media path into array of subfolders
+            let mediaFolders = mediaPathToArray(mediaFile); 
             // Make sure we're not adding empty filters
-            if (assetFolders.length > 0) {
+            if (mediaFolders.length > 0) {
                 // Get the index of any parent folders that have already been added
-                let subfolderIndex = parentAssetIndex(assetFolders, filters);
+                let subfolderIndex = parentMediaIndex(mediaFolders, filters);
                 // Check if a parent folder was found
                 if (subfolderIndex === -1) {
-                    // No previously added filter is a subpath of this asset path,
-                    // so add the asset path to filters
-                    filters = [...filters, assetFolders];
+                    // No previously added filter is a subpath of this media path,
+                    // so add the media file path to filters
+                    filters = [...filters, mediaFolders];
                 } else {
                     // Parent path has already been added,
                     // replace with more complete path containing child folders
-                    filters[subfolderIndex] = assetFolders;
+                    filters[subfolderIndex] = mediaFolders;
                 }
             }
         }
     }
 
-    const assetMatchesFilter = (asset, filters) => {
+    const mediaMatchesFilter = (mediaFile, filters) => {
         // Compare arrays in exact order by converting to strings
-        return filters.find(filter => asset.join('') === filter.join(''));
+        return filters.find(filter => mediaFile.join('') === filter.join(''));
     }
 
-    // Filter assets
-    $: filteredAssets = assets.filter(asset => {
-        // Show all assets if no filter is applied, or
-        // Show specific asset if it's in the enabled filters
-        return !enabledFilters.length || assetMatchesFilter(assetPathToArray(asset), enabledFilters);
+    // Filter media
+    $: filteredMedia = media.filter(mediaFile => {
+        // Show all media if no filter is applied, or
+        // Show specific media file if it's in the enabled filters
+        return !enabledFilters.length || mediaMatchesFilter(mediaPathToArray(mediaFile), enabledFilters);
     });
 
     const getFilterSubGroup = (filter, filterGroup) => {
@@ -86,9 +86,9 @@
         enabledFilters = [];
     }
 
-    if (changingAsset) {
-        // Apply filters from current asset when swapping for new asset
-        toggleFilter(assetPathToArray(changingAsset));
+    if (changingMedia) {
+        // Apply filters from current media when swapping for new media
+        toggleFilter(mediaPathToArray(changingMedia));
     }
 
 </script>

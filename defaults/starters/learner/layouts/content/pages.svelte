@@ -1,5 +1,5 @@
 <script>
-  export let title, description, source, content, cms, user;
+  export let title, description, image, source, content, cms, user;
   import Uses from "../components/source.svelte";
 </script>
 
@@ -10,6 +10,12 @@
     <p>{@html paragraph}</p>
   {/each}
 </div>
+
+{#if image}
+  <div>
+    <img src="{image.src}" alt="{image.alt}" />
+  </div>
+{/if}
 
 {#if cms}
   <p>Try it out: <button on:click={$user.login}>Login</button></p>

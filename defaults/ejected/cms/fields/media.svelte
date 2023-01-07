@@ -1,17 +1,17 @@
 <script>
-    import { isImagePath, isDocPath } from '../asset_checker.js';
+    import { isImagePath, isDocPath } from '../media_checker.js';
 
-    export let field, showMedia, changingAsset, localMediaList;
+    export let field, showMediaModal, changingMedia, localMediaList;
 
-    let originalAsset;
-    const swapAsset = () => {
-        originalAsset = field;
-        changingAsset = field;
-        showMedia = true;
+    let originalMedia;
+    const swapMedia = () => {
+        originalMedia = field;
+        changingMedia = field;
+        showMediaModal = true;
     }
-    $: if (changingAsset) {
-        if (field === originalAsset) {
-            field = changingAsset;
+    $: if (changingMedia) {
+        if (field === originalMedia) {
+            field = changingMedia;
         }
     }
 
@@ -23,11 +23,11 @@
         // TODO: Could load images not related to this field specifically
         let allImg = document.querySelectorAll('img[src="' + src + '"]');
         allImg.forEach(i => {
-            localMediaList.forEach(asset => {
+            localMediaList.forEach(mediaItem => {
                 // Check if the field path matches a recently uploaded file in memory
-                if(asset.file === field) {
+                if(mediaItem.file === field) {
                     // Set the source to the data image instead of the path that can't be found
-                    i.src = asset.contents; 
+                    i.src = mediaItem.contents; 
                 }
             });
         });
@@ -40,7 +40,7 @@
     {:else if isDocPath(field)}
         <embed src="{field}" class="thumbnail" />
     {/if}
-    <button class="swap" on:click|preventDefault={swapAsset}>Change Asset</button>
+    <button class="swap" on:click|preventDefault={swapMedia}>Change Media</button>
 </div>
 
 <style>

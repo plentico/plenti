@@ -21,7 +21,7 @@ var CommitFlag string
 // themeAddCmd represents the theme command
 var themeAddCmd = &cobra.Command{
 	Use:   "add [url]",
-	Short: "Downloads parent theme to inherit content, layouts, and assets from",
+	Short: "Downloads parent theme to inherit content, layouts, media, and static from",
 	Long: `Themes allow you to leverage an existing Plenti site as a starting point for your own site.
 
 To use https://plenti.co as a theme for example, run: plenti new theme git@github.com:plentico/plenti.co

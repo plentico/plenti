@@ -56,9 +56,15 @@ func (w *watcher) watch(buildPath string, Build buildFunc) {
 		}
 	}
 
-	if _, err := os.Stat("assets"); !os.IsNotExist(err) {
-		if err := filepath.WalkDir("assets", w.watchDir(buildPath)); err != nil {
-			log.Fatal("Error watching 'assets/' folder for changes: %w", err)
+	if _, err := os.Stat("media"); !os.IsNotExist(err) {
+		if err := filepath.WalkDir("media", w.watchDir(buildPath)); err != nil {
+			log.Fatal("Error watching 'media/' folder for changes: %w", err)
+		}
+	}
+
+	if _, err := os.Stat("static"); !os.IsNotExist(err) {
+		if err := filepath.WalkDir("static", w.watchDir(buildPath)); err != nil {
+			log.Fatal("Error watching 'static/' folder for changes: %w", err)
 		}
 	}
 

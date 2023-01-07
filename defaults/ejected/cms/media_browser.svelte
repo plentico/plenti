@@ -4,11 +4,11 @@
     import ButtonWrapper from './button_wrapper.svelte';
     import Button from './button.svelte';
 
-    export let assets, changingAsset, showMedia;
+    export let media, changingMedia, showMediaModal;
     let filters = [];
     let enabledFilters = [];
     let selectedMedia = [];
-    $: filteredAssets = [];
+    $: filteredMedia = [];
 
     const downloadFiles = () => {
         selectedMedia.forEach(mediaFile => {
@@ -24,17 +24,17 @@
         return {file: i, contents: null};
     });
 
-    const removeAssets = () => {
+    const removeMedia = () => {
         selectedMedia.forEach(m => {
-            assets = assets.filter(i => i != m);
+            media = media.filter(i => i != m);
         });
         selectedMedia = [];
     }
 </script>
 
 <div class="media-wrapper">
-    <MediaFilters bind:assets bind:filters bind:enabledFilters bind:filteredAssets bind:changingAsset />
-    <MediaGrid files={filteredAssets} bind:selectedMedia={selectedMedia} bind:changingAsset bind:showMedia />
+    <MediaFilters bind:media bind:filters bind:enabledFilters bind:filteredMedia bind:changingMedia />
+    <MediaGrid files={filteredMedia} bind:selectedMedia={selectedMedia} bind:changingMedia bind:showMediaModal />
 </div>
 {#if selectedMedia.length > 0} 
     <ButtonWrapper>
@@ -43,7 +43,7 @@
             buttonText="Download selected"
         />
         <Button
-            afterSubmit={removeAssets}
+            afterSubmit={removeMedia}
             bind:commitList={mediaList}
             buttonText="Delete Selected Media"
             buttonStyle="secondary"

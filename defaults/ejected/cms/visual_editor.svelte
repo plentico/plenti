@@ -1,5 +1,5 @@
 <script>
-    export let content, showMedia, changingAsset, localMediaList, shadowContent;
+    export let content, showMediaModal, changingMedia, localMediaList, shadowContent;
     import DynamicFormInput from './dynamic_form_input.svelte';
     import ButtonWrapper from './button_wrapper.svelte';
     import Button from './button.svelte';
@@ -18,8 +18,8 @@
                         field={shadowContent[schema_field[0]]}
                         bind:shadowContent
                         label={schema_field[0]}
-                        bind:showMedia
-                        bind:changingAsset
+                        bind:showMediaModal
+                        bind:changingMedia
                         bind:localMediaList
                         parentKeys={schema_field[0]}
                         {schema}
@@ -30,8 +30,8 @@
         <DynamicFormInput 
             bind:field={content.fields[label]}
             {label}
-            bind:showMedia
-            bind:changingAsset
+            bind:showMediaModal
+            bind:changingMedia
             bind:localMediaList
             parentKeys={label}
             {schema}
@@ -43,8 +43,8 @@
                         field={shadowContent[schema_field[0]]}
                         bind:shadowContent
                         label={schema_field[0]}
-                        bind:showMedia
-                        bind:changingAsset
+                        bind:showMediaModal
+                        bind:changingMedia
                         bind:localMediaList
                         parentKeys={schema_field[0]}
                         {schema}

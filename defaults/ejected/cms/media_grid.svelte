@@ -1,7 +1,7 @@
 <script>
     import { onMount } from 'svelte';
-    import { isImage, isDoc } from './asset_checker.js';
-    export let files, changingAsset, showMedia;
+    import { isImage, isDoc } from './media_checker.js';
+    export let files, changingMedia, showMediaModal;
     export let selectedMedia = [];
 
     onMount(async () => {
@@ -18,9 +18,9 @@
     });
 
     const selectMedia = file => {
-        if (changingAsset !== "") {
-            changingAsset = file;
-            showMedia = false;
+        if (changingMedia !== "") {
+            changingMedia = file;
+            showMediaModal = false;
         }
         if (selectedMedia.includes(file)) {
             selectedMedia = selectedMedia.filter(m => m !== file);
