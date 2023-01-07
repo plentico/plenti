@@ -97,7 +97,7 @@ func copyMediaFromTheme(mediaDir string, buildPath string, index []string, copie
 func copyMediaFromProject(mediaDir string, buildPath string, index []string, copiedSourceCounter int) ([]string, int, error) {
 
 	if _, err := os.Stat(mediaDir); err == nil {
-		// Media folder exists, loop through contents
+		// the "media" folder exists, loop through contents
 		err := filepath.WalkDir(mediaDir, func(mediaPath string, mediaFileInfo fs.DirEntry, err error) error {
 			if err != nil {
 				return fmt.Errorf("can't stat %s: %w", mediaPath, err)

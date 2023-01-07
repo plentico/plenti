@@ -84,50 +84,48 @@ func copyStaticFilesFromTheme(staticDir string, buildPath string, copiedSourceCo
 
 func copyStaticFilesFromProject(staticDir string, buildPath string, copiedSourceCounter int) (int, error) {
 
-	// Exit function if "static/" directory does not exist.
-	if _, err := os.Stat(staticDir); os.IsNotExist(err) {
-		return 0, fmt.Errorf("%s driectory does not exist: %w", staticDir, err)
-	}
-
-	err := filepath.WalkDir(staticDir, func(staticPath string, staticFileInfo fs.DirEntry, err error) error {
-		if err != nil {
-			return fmt.Errorf("\ncan't stat %s: %w", staticPath, err)
-		}
-		destPath := buildPath + "/" + strings.TrimPrefix(staticPath, staticDir)
-		if staticFileInfo.IsDir() {
-			// Make directory if it doesn't exist.
-			// Move on to next path.
-			if err = os.MkdirAll(destPath, os.ModePerm); err != nil {
-				return fmt.Errorf("\ncannot create static dir %s: %w", staticPath, err)
+	if _, err := os.Stat(staticDir); err == nil {
+		// The "static" folder exists, loop through contents
+		err := filepath.WalkDir(staticDir, func(staticPath string, staticFileInfo fs.DirEntry, err error) error {
+			if err != nil {
+				return fmt.Errorf("\ncan't stat %s: %w", staticPath, err)
 			}
+			destPath := buildPath + "/" + strings.TrimPrefix(staticPath, staticDir)
+			if staticFileInfo.IsDir() {
+				// Make directory if it doesn't exist.
+				// Move on to next path.
+				if err = os.MkdirAll(destPath, os.ModePerm); err != nil {
+					return fmt.Errorf("\ncannot create static dir %s: %w", staticPath, err)
+				}
+				return nil
+
+			}
+			from, err := os.Open(staticPath)
+			if err != nil {
+				return fmt.Errorf("\nCould not open static file \"%s\" for copying: %w\n", staticPath, err)
+
+			}
+			defer from.Close()
+
+			to, err := os.Create(destPath)
+			if err != nil {
+				return fmt.Errorf("\nCould not create destination static file \"%s\" for copying: %w\n", destPath, err)
+
+			}
+			defer to.Close()
+
+			_, err = io.Copy(to, from)
+			if err != nil {
+				return fmt.Errorf("\nCould not copy static file from source \"%s\" to destination: %w\n", staticPath, err)
+
+			}
+
+			copiedSourceCounter++
 			return nil
-
-		}
-		from, err := os.Open(staticPath)
+		})
 		if err != nil {
-			return fmt.Errorf("\nCould not open static file \"%s\" for copying: %w\n", staticPath, err)
-
+			return 0, fmt.Errorf("\nCould not get static file: %w\n", err)
 		}
-		defer from.Close()
-
-		to, err := os.Create(destPath)
-		if err != nil {
-			return fmt.Errorf("\nCould not create destination static file \"%s\" for copying: %w\n", destPath, err)
-
-		}
-		defer to.Close()
-
-		_, err = io.Copy(to, from)
-		if err != nil {
-			return fmt.Errorf("\nCould not copy static file from source \"%s\" to destination: %w\n", staticPath, err)
-
-		}
-
-		copiedSourceCounter++
-		return nil
-	})
-	if err != nil {
-		return 0, fmt.Errorf("\nCould not get static file: %w\n", err)
 	}
 
 	return copiedSourceCounter, nil
