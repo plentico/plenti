@@ -2,7 +2,7 @@
     import DynamicFormInput from "../dynamic_form_input.svelte";
     import allComponentDefaults from "../../component_defaults.js";
     import allComponentSchemas from '../../component_schemas.js';
-    export let field, label, showMedia, changingAsset, localMediaList, parentKeys, schema;
+    export let field, label, showMediaModal, changingMedia, localMediaList, parentKeys, schema;
 
     const objKeysMatch = (a, b) => {
         let aKeys = Object.keys(a).sort();
@@ -260,8 +260,8 @@
                 <DynamicFormInput
                     bind:field={field[key]}
                     label={null}
-                    bind:showMedia
-                    bind:changingAsset
+                    bind:showMediaModal
+                    bind:changingMedia
                     bind:localMediaList
                     parentKeys={""}
                     schema={compSchema}
