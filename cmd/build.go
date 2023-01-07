@@ -129,22 +129,16 @@ func Build() error {
 		log.Fatal("\nError in EjectCopy build step", err)
 	}
 
-	if _, err := os.Stat("static"); err == nil {
-		// static folder exists
-		// Directly copy static files to the build dir.
-		err = build.StaticCopy(buildPath)
-		if err != nil {
-			log.Fatal("\nError in StaticCopy build step", err)
-		}
+	// Directly copy static files to the build dir.
+	err = build.StaticCopy(buildPath)
+	if err != nil {
+		log.Fatal("\nError in StaticCopy build step", err)
 	}
 
-	if _, err := os.Stat("media"); err == nil {
-		// media folder exists
-		// Directly copy media to the build dir.
-		err = build.MediaCopy(buildPath)
-		if err != nil {
-			log.Fatal("\nError in MediaCopy build step", err)
-		}
+	// Directly copy media to the build dir.
+	err = build.MediaCopy(buildPath)
+	if err != nil {
+		log.Fatal("\nError in MediaCopy build step", err)
 	}
 
 	// Prep the client SPA.
