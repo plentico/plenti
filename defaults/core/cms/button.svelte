@@ -1,7 +1,7 @@
 <script>
     import { publish } from './publish.js';
     import { postLocal } from './post_local.js';
-    import { env } from '../env.js';
+    import { env } from '../../generated/env.js';
     import { findFileReferences } from './file_references.js';
 
     export let commitList, shadowContent, buttonText, action, encoding, afterSubmit;

@@ -1,5 +1,5 @@
 import { user, repoUrl } from './auth.js';
-import { env } from '../env.js';
+import { env } from '../../generated/env.js';
 
 const apiBaseUrl = `${repoUrl.origin}/api/v4`;
 

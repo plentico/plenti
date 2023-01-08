@@ -1,5 +1,5 @@
 <script>
-    import allContent from '../../content.svelte';
+    import allContent from '../../../generated/content.js';
     export let schema, parentKeys, field;
 
     let input, results, loading, option;

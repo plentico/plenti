@@ -5,8 +5,8 @@
     import FileUpload from "./file_upload.svelte";
     import VisualEditor from "./visual_editor.svelte";
     import AddContent from "./add_content.svelte";
-    import allMedia from './media.js';
-    import { env } from '../env.js';
+    import allMedia from '../../generated/media.js';
+    import { env } from '../../generated/env.js';
 
     let mediaPrefix = env.baseurl ? '' : '/';
     let media = allMedia.map(media => mediaPrefix + media);

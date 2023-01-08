@@ -14,12 +14,12 @@
 
 <script>
   import Navaid from 'navaid';
-  import allContent from './content.js';
-  import * as allLayouts from './layouts.js';
-  import { env } from './env.js';
+  import allContent from '../generated/content.js';
+  import * as allLayouts from '../generated/layouts.js';
+  import { env } from '../generated/env.js';
   import adminMenu from './cms/admin_menu.svelte';
   import { user } from './cms/auth.js';
-  import allDefaults from './defaults.js';
+  import allDefaults from '../generated/defaults.js';
 
   let path = location.pathname;
   let params = new URLSearchParams(location.search);

@@ -65,7 +65,7 @@ func Gopack(buildPath string) error {
 	alreadyConvertedFiles = []string{}
 
 	// Start at the entry point for the app
-	err := runPack(buildPath, buildPath+"/spa/ejected/main.js")
+	err := runPack(buildPath, buildPath+"/spa/core/main.js")
 	if err != nil {
 		return err
 	}

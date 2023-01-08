@@ -1,7 +1,7 @@
 import { readable } from 'svelte/store';
 import { createSessionStore } from './session.js';
 import { createDataStore } from './storage.js';
-import { env } from '../env.js';
+import { env } from '../../generated/env.js';
 
 export const repoUrl = env.cms.repo ? new URL(env.cms.repo) : new URL("https://gitlab.com");
 const local = env.local;

@@ -124,7 +124,7 @@ func Build() error {
 	}
 
 	// Directly copy .js that don't need compiling to the build dir.
-	err = build.EjectCopy(buildPath, defaults.EjectedFS)
+	err = build.EjectCopy(buildPath, defaults.CoreFS)
 	if err != nil {
 		log.Fatal("\nError in EjectCopy build step", err)
 	}
@@ -142,7 +142,7 @@ func Build() error {
 	}
 
 	// Prep the client SPA.
-	err = build.Client(buildPath, defaults.EjectedFS)
+	err = build.Client(buildPath, defaults.CoreFS)
 	if err != nil {
 		log.Fatal("\nError in Client build step", err)
 	}

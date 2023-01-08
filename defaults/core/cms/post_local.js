@@ -1,4 +1,4 @@
-import { env } from '../env.js';
+import { env } from '../../generated/env.js';
 
 export async function postLocal(commitList, shadowContent, action, encoding) {
     let url = '/postlocal';

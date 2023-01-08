@@ -34,19 +34,19 @@ continue to work properly and you will have to manually apply any
 updates that are made to the core files (these are normally applied
 automatically).`,
 	Run: func(cmd *cobra.Command, args []string) {
-		ejected, err := fs.Sub(defaults.EjectedFS, ".")
+		coreDefaults, err := fs.Sub(defaults.CoreFS, ".")
 		if err != nil {
 			fmt.Printf("Unable to get ejected defaults: %s", err)
 		}
 		ejectableFiles := map[string][]byte{}
-		fs.WalkDir(ejected, ".", func(path string, d fs.DirEntry, err error) error {
+		fs.WalkDir(coreDefaults, ".", func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
 			if d.IsDir() {
 				return nil
 			}
-			contentFile, _ := ejected.Open(path)
+			contentFile, _ := coreDefaults.Open(path)
 			contentBytes, _ := ioutil.ReadAll(contentFile)
 			ejectableFiles[path] = contentBytes
 			return nil

@@ -2,8 +2,8 @@ package defaults
 
 import "embed"
 
-//go:embed all:ejected/*
-var EjectedFS embed.FS
+//go:embed all:core/*
+var CoreFS embed.FS
 
 //go:embed all:node_modules/*
 var NodeModulesFS embed.FS

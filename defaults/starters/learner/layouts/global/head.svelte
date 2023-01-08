@@ -9,7 +9,7 @@
   <title>{ title }</title>
 
   <base href="{env.baseurl}">
-  <script type="module" src="spa/ejected/main.js"></script>
+  <script type="module" src="spa/core/main.js"></script>
 
   <link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="logo.svg">

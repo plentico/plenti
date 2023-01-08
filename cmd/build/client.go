@@ -24,14 +24,14 @@ import (
 var SSRctx *v8go.Context
 
 // Client builds the SPA.
-func Client(buildPath string, defaultsEjectedFS embed.FS) error {
+func Client(buildPath string, coreFS embed.FS) error {
 
 	defer Benchmark(time.Now(), "Compiling client SPA with Svelte")
 
 	Log("\nCompiling client SPA with svelte")
 
 	stylePath := buildPath + "/spa/bundle.css"
-	allLayoutsPath := buildPath + "/spa/ejected/layouts.js"
+	allLayoutsPath := buildPath + "/spa/generated/layouts.js"
 	// Initialize string for layouts.js component list.
 	var allLayoutsStr string
 
@@ -103,7 +103,7 @@ func Client(buildPath string, defaultsEjectedFS embed.FS) error {
 	}
 
 	// Compile Svelte components from ejectable core
-	fs.WalkDir(defaultsEjectedFS, "ejected", func(path string, d fs.DirEntry, err error) error {
+	fs.WalkDir(coreFS, "core", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -130,7 +130,7 @@ func Client(buildPath string, defaultsEjectedFS embed.FS) error {
 			componentStr = string(component)
 		} else if os.IsNotExist(err) {
 			// The file has not been ejected, use the embedded defaults.
-			nonEjectedFS, err := fs.Sub(defaultsEjectedFS, ".")
+			nonEjectedFS, err := fs.Sub(coreFS, ".")
 			if err != nil {
 				log.Fatal("Unable to get non ejected defaults: %w", err)
 			}
@@ -194,7 +194,7 @@ func Client(buildPath string, defaultsEjectedFS embed.FS) error {
 	// Write layouts.js to filesystem.
 	err = ioutil.WriteFile(allLayoutsPath, []byte(allLayoutsStr), os.ModePerm)
 	if err != nil {
-		return fmt.Errorf("Unable to write layouts.js file: %w\n", err)
+		return fmt.Errorf("\nUnable to write layouts.js file: %w\n", err)
 	}
 
 	Log("Number of components compiled: " + strconv.Itoa(compiledComponentCounter))

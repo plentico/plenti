@@ -75,8 +75,8 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 	Log("\nGathering data source from 'content/' folder")
 
 	// Set some defaults
-	contentJSPath := buildPath + "/spa/ejected/content.js"
-	envPath := buildPath + "/spa/ejected/env.js"
+	contentJSPath := buildPath + "/spa/generated/content.js"
+	envPath := buildPath + "/spa/generated/env.js"
 	env := env{
 		local:      strconv.FormatBool(Local),
 		baseurl:    siteConfig.BaseURL,
@@ -99,10 +99,6 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 		"', branch: '" + env.cms.branch +
 		"' } };"
 
-		// no dirs needed for mem
-	if err := os.MkdirAll(buildPath+"/spa/ejected", os.ModePerm); err != nil {
-		return err
-	}
 	// Start the new content.js file.
 	err := ioutil.WriteFile(contentJSPath, []byte(`const allContent = [`), 0755)
 	if err != nil {
@@ -164,27 +160,27 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 	allContentStr = strings.TrimSuffix(allContentStr, ",") + "]"
 	// End the string that will be used in allDefaults object.
 	allDefaultsStr = strings.TrimSuffix(allDefaultsStr, ",") + "];\n\nexport default allDefaults;"
-	err = writeContentJS(buildPath+"/spa/ejected/defaults.js", allDefaultsStr)
+	err = writeContentJS(buildPath+"/spa/generated/defaults.js", allDefaultsStr)
 	if err != nil {
-		fmt.Println("Could not write defaults.js file")
+		return fmt.Errorf("\nCould not write defaults.js file")
 	}
 	// End the string that will be used in allSchemas object.
 	allSchemasStr = strings.TrimSuffix(allSchemasStr, ",") + "\n};\n\nexport default allSchemas;"
-	err = writeContentJS(buildPath+"/spa/ejected/schemas.js", allSchemasStr)
+	err = writeContentJS(buildPath+"/spa/generated/schemas.js", allSchemasStr)
 	if err != nil {
-		fmt.Println("Could not write schemas.js file")
+		return fmt.Errorf("\nCould not write schemas.js file")
 	}
 	// End the string that will be used in allComponentDefaults object.
 	allComponentDefaultsStr = strings.TrimSuffix(allComponentDefaultsStr, ",") + "\n};\n\nexport default allComponentDefaults;"
-	err = writeContentJS(buildPath+"/spa/ejected/component_defaults.js", allComponentDefaultsStr)
+	err = writeContentJS(buildPath+"/spa/generated/component_defaults.js", allComponentDefaultsStr)
 	if err != nil {
-		fmt.Println("Could not write component_defaults.js file")
+		return fmt.Errorf("\nCould not write component_defaults.js file")
 	}
 	// End the string that will be used in allComponentSchemas object.
 	allComponentSchemasStr = strings.TrimSuffix(allComponentSchemasStr, ",") + "\n};\n\nexport default allComponentSchemas;"
-	err = writeContentJS(buildPath+"/spa/ejected/component_schemas.js", allComponentSchemasStr)
+	err = writeContentJS(buildPath+"/spa/generated/component_schemas.js", allComponentSchemasStr)
 	if err != nil {
-		fmt.Println("Could not write component_schemas.js file")
+		return fmt.Errorf("\nCould not write component_schemas.js file")
 	}
 
 	for _, currentContent := range allContent {

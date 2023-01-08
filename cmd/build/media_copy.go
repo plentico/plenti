@@ -153,9 +153,14 @@ func createMediaIndex(buildPath string, index []string) error {
 		result = []byte("[]")
 	}
 	result = append(append([]byte("let allMedia = "), result...), []byte(";\nexport default allMedia;")...)
-	err = ioutil.WriteFile(buildPath+"/spa/ejected/cms/media.js", result, os.ModePerm)
+	mediaPath := buildPath + "/spa/generated/media.js"
+	// Create any sub directories need for filepath.
+	if err := os.MkdirAll(filepath.Dir(mediaPath), os.ModePerm); err != nil {
+		return fmt.Errorf("can't make folders for '%s': %w\n", mediaPath, err)
+	}
+	err = ioutil.WriteFile(mediaPath, result, os.ModePerm)
 	if err != nil {
-		return fmt.Errorf("Unable to write to media index file: %w\n", err)
+		return fmt.Errorf("\nUnable to write to media index file: %w\n", err)
 	}
 	return nil
 }

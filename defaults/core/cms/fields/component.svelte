@@ -1,7 +1,7 @@
 <script>
     import DynamicFormInput from "../dynamic_form_input.svelte";
-    import allComponentDefaults from "../../component_defaults.js";
-    import allComponentSchemas from '../../component_schemas.js';
+    import allComponentDefaults from "../../../generated/component_defaults.js";
+    import allComponentSchemas from '../../../generated/component_schemas.js';
     export let field, label, showMediaModal, changingMedia, localMediaList, parentKeys, schema;
 
     const objKeysMatch = (a, b) => {

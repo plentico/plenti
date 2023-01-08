@@ -3,7 +3,7 @@
     import DynamicFormInput from './dynamic_form_input.svelte';
     import ButtonWrapper from './button_wrapper.svelte';
     import Button from './button.svelte';
-    import schemas from '../schemas.js';
+    import schemas from '../../generated/schemas.js';
 
     $: schema = schemas[content.type];
 

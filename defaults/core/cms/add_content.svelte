@@ -1,5 +1,5 @@
 <script>
-    import defaults from '../defaults.js';
+    import defaults from '../../generated/defaults.js';
     import ButtonWrapper from './button_wrapper.svelte';
     import validateFilename from './validate_filename.js';
 

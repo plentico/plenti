@@ -1,4 +1,4 @@
-import allContent from '../content.js';
+import allContent from '../../generated/content.js';
 
 const checkType = (value, file) => {
 	if (typeof value === 'string') {
