@@ -113,8 +113,6 @@ func Client(buildPath string, coreFS embed.FS) error {
 		}
 		// Initialize var to hold actual component file contents
 		var componentStr string
-		// Remove the root folder since that doesn't get written to fs
-		path = strings.TrimPrefix(path, "defaults/")
 		// Check if the path has been ejected to the filesystem.
 		_, err = os.Stat(path)
 		// Check if the path has been ejected to the virtual filesystem for a theme build.
@@ -209,7 +207,7 @@ func copyNonSvelteFiles(layoutPath string, buildPath string) error {
 		}
 		defer from.Close()
 
-		destPath := buildPath + "/spa/" + strings.TrimPrefix(layoutPath, "layouts/")
+		destPath := buildPath + "/spa/" + layoutPath
 		// Create any sub directories need for filepath.
 		if err := os.MkdirAll(filepath.Dir(destPath), os.ModePerm); err != nil {
 			return fmt.Errorf("can't make folders for '%s': %w\n", destPath, err)
@@ -234,7 +232,7 @@ func compileComponent(err error, layoutPath string, layoutFileInfo os.FileInfo, 
 		return compiledComponentCounter, allLayoutsStr, fmt.Errorf("can't stat %s: %w", layoutPath, err)
 	}
 	// Create destination path.
-	destFile := buildPath + "/spa/" + strings.TrimPrefix(layoutPath, "layouts/")
+	destFile := buildPath + "/spa/" + layoutPath
 	// If the file is in .svelte format, compile it to .js
 	if filepath.Ext(layoutPath) == ".svelte" {
 		// Replace .svelte file extension with .js.
@@ -251,10 +249,8 @@ func compileComponent(err error, layoutPath string, layoutFileInfo os.FileInfo, 
 		}
 		// Create entry for layouts.js.
 		layoutSignature := strings.ReplaceAll(strings.ReplaceAll((layoutPath), "/", "_"), ".", "_")
-		// Remove layouts directory.
-		destLayoutPath := strings.TrimPrefix(layoutPath, "layouts/")
 		// Compose entry for layouts.js file.
-		allLayoutsStr = allLayoutsStr + "export {default as " + layoutSignature + "} from '../" + destLayoutPath + "';\n"
+		allLayoutsStr = allLayoutsStr + "export {default as " + layoutSignature + "} from '../" + layoutPath + "';\n"
 		// Increment counter for each compiled component.
 		compiledComponentCounter++
 	}

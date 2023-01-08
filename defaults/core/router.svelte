@@ -83,7 +83,7 @@
       const defaultContent = allDefaults.find(defaultContent => defaultContent.type == type);
 
       if (type && filename && defaultContent) {
-        import('../content/' + type + '.js').then(m => {
+        import('../layouts/content/' + type + '.js').then(m => {
           content = structuredClone(defaultContent);
           content.isNew = true;
           content.filename = filename + '.json';
@@ -109,7 +109,7 @@
         return;
       }
 
-      import('../content/' + content.type + '.js')
+      import('../layouts/content/' + content.type + '.js')
         .then(m => draw(m, content))
         .catch(handle404);
     });
