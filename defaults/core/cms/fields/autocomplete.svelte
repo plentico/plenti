@@ -15,12 +15,18 @@
         loading = true;
         results = [];
         schema[parentKeys].options.forEach(option => {
-            let filteredContent = deepCloneContent.filter(c => c.type = option.type);
+            let filteredContent = deepCloneContent.filter(c => c.type === option.type);
             filteredContent.forEach(content => {
                 option.search.forEach(field => {
-                    if (content.fields.hasOwnProperty(field)
-                        && content.fields[field].includes(input)) {
-                        results = [...results, content[option.result]];
+                    if (content.fields.hasOwnProperty(field) && content.fields[field].includes(input)) {
+                        let parts = option.result.split(".");
+                        let newResult = content[parts[0]];
+                        if (parts.length > 1) {
+                            parts.slice(1).forEach(part => {
+                                newResult = newResult[part]
+                            });
+                        }
+                        results = [...results, newResult];
                     }
                 });
             });
