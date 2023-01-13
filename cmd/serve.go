@@ -96,14 +96,15 @@ var serveCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		fs := http.FileServer(http.Dir(buildDir))
+		fileServer := FileServerWith404(http.Dir(buildDir))
+
 		webroot := "/"
 		if len(siteConfig.BaseURL) > 0 {
 			webroot = siteConfig.BaseURL
 		}
 
 		// Handle "/" or baseurl
-		http.Handle(webroot, http.StripPrefix(webroot, fs))
+		http.Handle(webroot, http.StripPrefix(webroot, fileServer))
 
 		// Handle local edits made via the Git-CMS
 		http.HandleFunc("/postlocal", postLocal)
@@ -238,4 +239,26 @@ func serveSSL(port int, webroot string) {
 	}
 	fmt.Printf("Visit your site at https://localhost:%v%v\n", port, webroot)
 	log.Fatal(s.ListenAndServeTLS("", ""))
+}
+
+func FileServerWith404(webroot http.FileSystem) http.Handler {
+	fs := http.FileServer(webroot)
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Try to open path
+		f, err := webroot.Open(r.URL.Path)
+
+		if err != nil && os.IsNotExist(err) {
+			// Not found, handle 404
+			r.URL.Path = "/404"
+		}
+
+		// Close if successfully opened
+		if err == nil {
+			f.Close()
+		}
+
+		// Default serve
+		fs.ServeHTTP(w, r)
+	})
 }

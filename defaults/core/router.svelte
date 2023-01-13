@@ -32,25 +32,6 @@
     $user.finishAuthentication(params);
   }
 
-  function draw(m, c) {
-    content = c; 
-    if (content === undefined) {
-      // Check if there is a 404 data source.
-      content = allContent.find(c => c.filepath === "content/404.json");
-      if (content === undefined) {
-        // If no 404.json data source exists, pass placeholder values.
-        content = {
-          "path": "/404",
-          "type": "404",
-          "filename": "404.json",
-          "fields": {}
-        }
-      }
-    }
-    layout = m.default;
-    window.scrollTo(0, 0);
-  }
-
   function track(obj) {
     path = obj.state || obj.uri || location.pathname;
     params = new URLSearchParams(location.search);
@@ -61,8 +42,21 @@
   addEventListener('popstate', track);
 
   const handle404 = () => {
-    import('../content/404.js')
-      .then(draw)
+    // Check if there is a 404 data source.
+    content = allContent.find(c => c.filepath === "content/404.json");
+    if (content === undefined) {
+      // If no 404.json data source exists, pass placeholder values.
+      content = {
+        "path": "/404",
+        "type": "404",
+        "filename": "404.json",
+        "fields": {}
+      }
+    }
+    import('../layouts/content/404.js')
+      .then(component => {
+        layout = component.default;
+      })
       .catch(err => {
         console.log("Add a '/layouts/content/404.svelte' file to handle Page Not Found errors.");
         console.log("If you want to pass data to your 404 component, you can also add a '/content/404.json' file.");
@@ -102,15 +96,18 @@
   };
 
   const router = Navaid('/', handle404);
-  allContent.forEach(content => {
-    router.on(env.baseurl + content.path, () => {
+  allContent.forEach(currentContent => {
+    router.on(env.baseurl + currentContent.path, () => {
       // Override with hash location if one is found.
       if (navigateHashLocation()) {
         return;
       }
 
-      import('../layouts/content/' + content.type + '.js')
-        .then(m => draw(m, content))
+      import('../layouts/content/' + currentContent.type + '.js')
+        .then(component => {
+          content = currentContent;
+          layout = component.default;
+        })
         .catch(handle404);
     });
   });
