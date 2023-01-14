@@ -250,7 +250,7 @@ func FileServerWith404(webroot http.FileSystem) http.Handler {
 
 		if err != nil && os.IsNotExist(err) {
 			// Not found, handle 404
-			r.URL.Path = "/404"
+			r.URL.Path = build.Path404
 		}
 
 		// Close if successfully opened

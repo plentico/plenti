@@ -18,6 +18,9 @@ import (
 // Local is set to true when using dev webserver, otherwise bools default to false.
 var Local bool
 
+// Path404 stores path to 404 html fallback for use in local webserver
+var Path404 string
+
 // Doreload and other flags should probably be part of a config accessible across build.
 // It gets set using server flags.
 var Doreload bool
@@ -301,6 +304,11 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 	noWildcardsPath := strings.Replace(path, "*", "", -1)
 
 	destPath := buildPath + "/" + noWildcardsPath + "/index.html"
+
+	// Set 404 path for local webserver
+	if contentType == "404" {
+		Path404 = path
+	}
 
 	// Don't add _components
 	if contentType == "_components" {
