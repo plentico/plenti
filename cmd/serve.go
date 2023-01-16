@@ -241,16 +241,17 @@ func serveSSL(port int, webroot string) {
 	log.Fatal(s.ListenAndServeTLS("", ""))
 }
 
-func FileServerWith404(webroot http.FileSystem) http.Handler {
-	fs := http.FileServer(webroot)
+func FileServerWith404(root http.FileSystem) http.Handler {
+	fs := http.FileServer(root)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Try to open path
-		f, err := webroot.Open(r.URL.Path)
+		f, err := root.Open(r.URL.Path)
 
 		if err != nil && os.IsNotExist(err) {
 			// Not found, handle 404
-			r.URL.Path = build.Path404
+			http.Redirect(w, r, build.Path404, http.StatusFound)
+			return
 		}
 
 		// Close if successfully opened
