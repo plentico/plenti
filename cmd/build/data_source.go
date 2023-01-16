@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -31,7 +32,7 @@ var (
 	rePaginate = regexp.MustCompile(`:paginate\((.*?)\)`)
 
 	// Create regex for allowed characters when slugifying path.
-	reSlugify = regexp.MustCompile("[^a-z0-9/*]+")
+	reSlugify = regexp.MustCompile("[^a-z0-9./*]+")
 	// Remove newlines.
 	reN = regexp.MustCompile(`\r?\n`)
 
@@ -281,9 +282,6 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 		}
 	}
 
-	// Convert path to a route the browser can understand
-	path = makeWebPath(path, fileName)
-
 	// Initialize vars for path with replacement patterns still intact.
 	var pagerPath string
 	var pagerDestPath string
@@ -297,13 +295,19 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 		path = rePaginate.ReplaceAllString(path, "")
 	}
 
+	// Convert path to a route the browser can understand
+	path = makeWebPath(path, fileName)
 	path = slugify(path)
 	path = fixBlankPaths(path)
 	path = removeExtraSlashes(path)
 
-	noWildcardsPath := strings.Replace(path, "*", "", -1)
+	// Add "public" folder and remove wildcards
+	destPath := buildPath + "/" + strings.Replace(path, "*", "", -1)
 
-	destPath := buildPath + "/" + noWildcardsPath + "/index.html"
+	if !strings.HasSuffix(destPath, ".html") {
+		destPath = destPath + "/index.html"
+		//fmt.Println(destPath)
+	}
 
 	// Set 404 path for local webserver
 	if contentType == "404" {
@@ -405,7 +409,7 @@ func makeWebPath(path string, fileName string) string {
 		path = strings.TrimSuffix(path, fileName)
 	} else {
 		// Remove file extension only from path for files other than index.json.
-		path = strings.TrimSuffix(path, filepath.Ext(path))
+		path = strings.TrimSuffix(path, ".json")
 	}
 	return path
 }
@@ -487,7 +491,7 @@ func createHTML(currentContent content) error {
 		htmlBytes = bytes.Replace(htmlBytes, []byte("</body>"), []byte("<script type='text/javascript' src='/spa/ejected/live-reload.js'></script></body>"), 1)
 	}
 	// Create any folders need to write file.
-	if err := os.MkdirAll(strings.TrimSuffix(currentContent.contentDest, "/index.html"), os.ModePerm); err != nil {
+	if err := os.MkdirAll(strings.TrimSuffix(currentContent.contentDest, path.Base(currentContent.contentDest)), os.ModePerm); err != nil {
 		return fmt.Errorf("couldn't create dirs in createHTML: %w\n", err)
 	}
 	// Write static HTML to the filesystem.
