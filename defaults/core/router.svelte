@@ -105,6 +105,9 @@
 
       import('../layouts/content/' + currentContent.type + '.js')
         .then(component => {
+          if (content.filename !== currentContent.filename) {
+            window.scrollTo(0, 0);
+          }
           content = currentContent;
           layout = component.default;
         })
