@@ -1,9 +1,10 @@
 <script>
     export let schema, parentKeys, field;
 
-    let disabled;
+    let disabled, hidden;
     if (schema && schema[parentKeys]?.options) {
         disabled = schema[parentKeys].options.includes("disabled");
+        hidden = schema[parentKeys].options.includes("hidden");
     }
 </script>
 
@@ -14,7 +15,7 @@
         contenteditable=false
         bind:textContent={field}
     ></div>
-{:else}
+{:else if !hidden}
     <div
         class="textarea"
         role="textbox"
