@@ -8,7 +8,7 @@
     import Fieldset from './fields/fieldset.svelte';
     import Media from './fields/media.svelte';
     import Select from './fields/select.svelte';
-    import Autocomplete from './fields/autocomplete.svelte';
+    import Reference from './fields/reference.svelte';
     import ID from './fields/id.svelte';
     import Date from './fields/date.svelte';
     import Time from './fields/time.svelte';
@@ -45,8 +45,11 @@
         {#if schema[parentKeys].type === "wysiwyg"}
             <Wysiwyg {schema} {parentKeys} bind:field />
         {/if}
-        {#if schema[parentKeys].type === "autocomplete"}
-            <Autocomplete {schema} {parentKeys} bind:field />
+        {#if schema[parentKeys].type === "reference"}
+            <Reference {schema} {parentKeys} bind:field />
+        {/if}
+        {#if schema[parentKeys].type === "references"}
+            <Reference {schema} {parentKeys} bind:field multi={true} />
         {/if}
         {#if schema[parentKeys].type === "id"}
             <ID bind:field />
