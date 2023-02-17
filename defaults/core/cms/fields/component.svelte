@@ -27,7 +27,6 @@
         }
         return matching;
     }
-    let compSchema;
     const setCompSchema = component => {
         let compDefaults = structuredClone(allComponentDefaults);
         let compSchemas = structuredClone(allComponentSchemas);
@@ -37,7 +36,7 @@
         delete b.plenti_salt;
         for (const c in compDefaults) {
             if (objKeysMatch(compDefaults[c], b)) {
-                compSchema = compSchemas[c];
+                return compSchemas[c];
             }
         }
     }
@@ -46,8 +45,7 @@
     import {slide} from "svelte/transition";
     let isOpen = false;
     let openKeys = [];
-    const accordion = (newKey, component) => {
-        setCompSchema(component);
+    const accordion = (newKey) => {
         if (openKeys.length === 1 && openKeys.includes(newKey)) {
             setTimeout(() => {
                 isOpen = false;
@@ -233,7 +231,7 @@
 
             <div 
                 class="content" 
-                on:click|preventDefault={accordion(key, value)}
+                on:click|preventDefault={accordion(key)}
                 on:click={toggleSalt(value)}
             >
                 {#if value.constructor === "".constructor}
@@ -264,7 +262,7 @@
                     bind:changingMedia
                     bind:localMediaList
                     parentKeys={""}
-                    schema={compSchema}
+                    schema={setCompSchema(value)}
                 />
             </div>
         {/if}
