@@ -1,4 +1,6 @@
 <script>
+    import {slide} from "svelte/transition";
+    import {flip} from "svelte/animate";
     import DynamicFormInput from "../dynamic_form_input.svelte";
     import allComponentDefaults from "../../../generated/component_defaults.js";
     import allComponentSchemas from '../../../generated/component_schemas.js';
@@ -42,11 +44,11 @@
     }
 
     // Accordion
-    import {slide} from "svelte/transition";
     let isOpen = false;
     let openKeys = [];
     const accordion = (newKey) => {
         if (openKeys.length === 1 && openKeys.includes(newKey)) {
+            // All accordions are closed, allow re-ordering
             setTimeout(() => {
                 isOpen = false;
             }, 300);
@@ -62,7 +64,6 @@
     }
 
     // Drag and drop
-    import {flip} from "svelte/animate";
     export let removesItems = true;
     let compID;
     let ghost;
@@ -72,6 +73,14 @@
     let offsetY = 0; // y distance from top of grabbed element to pointer
     let layerY = 0; // distance from top of list to top of client
     const grab = (clientY, element) => {
+        if (openKeys.length > 0) {
+            // Close any open accordions
+            setTimeout(() => {
+                isOpen = false;
+            }, 300);
+            openKeys = [];
+            return;
+        }
         // modify grabbed element
         grabbed = element;
         grabbed.dataset.grabY = clientY;
@@ -253,8 +262,12 @@
                 {/if}
             </div>
         </div>
-        {#if openKeys.includes(key)}
-            <div transition:slide={{ duration: 300 }}>
+        {#if isOpen && openKeys.includes(key)}
+            <div
+                class="component-content"
+                in:slide|local={{ duration: 300 }}
+                out:slide={{ duration: 300 }}
+            >
                 <DynamicFormInput
                     bind:field={field[key]}
                     label={null}
@@ -362,7 +375,6 @@
     }
     .buttons button {
         cursor: pointer;
-        height: 18px;
         margin: 0 auto;
         padding: 0;
         border: 1px solid rgba(0, 0, 0, 0);

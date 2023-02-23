@@ -55,7 +55,7 @@ func CheckMinifyFlag(flag bool) {
 var alreadyConvertedFiles []string
 
 // Gopack ensures ESM support for NPM dependencies.
-func Gopack(buildPath string) error {
+func Gopack(buildPath, entrypoint string) error {
 
 	defer Benchmark(time.Now(), "Running Gopack")
 
@@ -65,7 +65,7 @@ func Gopack(buildPath string) error {
 	alreadyConvertedFiles = []string{}
 
 	// Start at the entry point for the app
-	err := runPack(buildPath, buildPath+"/spa/core/main.js")
+	err := runPack(buildPath, entrypoint)
 	if err != nil {
 		return err
 	}

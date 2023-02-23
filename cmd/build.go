@@ -153,10 +153,15 @@ func Build() error {
 		log.Fatal("\nError in DataSource build step", err)
 	}
 
-	// Run Gopack (custom Snowpack alternative) for ESM support.
-	err = build.Gopack(buildPath)
+	// Run Gopack (custom Snowpack alternative) on app for ESM support.
+	err = build.Gopack(buildPath, buildPath+"/spa/core/main.js")
 	if err != nil {
 		log.Fatal("\nError in Gopack build step", err)
+	}
+	// Run Gopack manually on dynamic imports
+	err = build.GopackDynamic(buildPath)
+	if err != nil {
+		log.Fatal("\nError in GopackDynamic build step", err)
 	}
 
 	// only relates to defer recover
