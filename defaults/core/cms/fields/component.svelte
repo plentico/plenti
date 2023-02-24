@@ -263,11 +263,7 @@
             </div>
         </div>
         {#if isOpen && openKeys.includes(key)}
-            <div
-                class="component-content"
-                in:slide|local={{ duration: 300 }}
-                out:slide={{ duration: 300 }}
-            >
+            <div class="component-content" transition:slide={{ duration: 300 }}>
                 <DynamicFormInput
                     bind:field={field[key]}
                     label={null}

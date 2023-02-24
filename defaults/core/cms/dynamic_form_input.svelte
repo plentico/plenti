@@ -1,6 +1,22 @@
 <script>
     import { isDate, isTime } from './date_checker.js';
     import { isMediaPath } from './media_checker.js';
+    // Discoverable Widgets
+    import Component from './fields/component.svelte';
+    import Fieldset from './fields/fieldset.svelte';
+    import Media from './fields/media.svelte';
+    import Date from './fields/date.svelte';
+    import Time from './fields/time.svelte';
+    import Number from './fields/number.svelte';
+    import Text from './fields/text.svelte';
+    import Boolean from './fields/boolean.svelte';
+    // Schema Defined Widgets
+    import Checkbox from './fields/checkbox.svelte';
+    import Radio from './fields/radio.svelte';
+    import Wysiwyg from './fields/wysiwyg.svelte';
+    import Select from './fields/select.svelte';
+    import Reference from './fields/reference.svelte';
+    import ID from './fields/id.svelte';
 
     export let field, label, showMediaModal, changingMedia, localMediaList, parentKeys, schema;
     export let shadowContent = false;
@@ -10,33 +26,11 @@
     }
 
     let FieldWidget;
-    $: if (field) {
-        // Reset the widget every time the field changes
-        setFieldWidget();
-    }
-    const setFieldWidget = async () => {
+    (async () => {
         if (schema && schema.hasOwnProperty(parentKeys)) {
             FieldWidget = (await import('./fields/' + schema[parentKeys].type + '.svelte')).default;
-        } else if (typeof field === "number") {
-            FieldWidget = (await import('./fields/number.svelte')).default;
-        } else if (typeof field === "string") {
-            if (isDate(field)) {
-                FieldWidget = (await import('./fields/date.svelte')).default;
-            } else if (isTime(field)) {
-                FieldWidget = (await import('./fields/time.svelte')).default;
-            } else if (isMediaPath(field)) {
-                FieldWidget = (await import('./fields/media.svelte')).default;
-            } else {
-                FieldWidget = (await import('./fields/text.svelte')).default;
-            }
-        } else if (typeof field === "boolean") {
-            FieldWidget = (await import('./fields/boolean.svelte')).default;
-        } else if (field.constructor === [].constructor) {
-            FieldWidget = (await import('./fields/component.svelte')).default;
-        } else if (field.constructor === ({}).constructor) {
-            FieldWidget = (await import('./fields/fieldset.svelte')).default;
         }
-    }
+    })();
 </script>
 
 {#if label !== "plenti_salt"}
@@ -51,6 +45,40 @@
         {:else if FieldWidget}
             <svelte:component
                 this={FieldWidget}
+                bind:field
+                {label}
+                bind:showMediaModal
+                bind:changingMedia
+                bind:localMediaList
+                {parentKeys}
+                {schema}
+            />
+        {:else if typeof field === "number"}
+            <Number bind:field {label} />
+        {:else if typeof field === "string"}
+            {#if isDate(field)}
+                <Date bind:field />
+            {:else if isTime(field)}
+                <Time bind:field />
+            {:else if isMediaPath(field)}
+                <Media bind:field bind:showMediaModal bind:changingMedia bind:localMediaList />
+            {:else}
+                <Text bind:field />
+            {/if}
+        {:else if typeof field === "boolean"}
+            <Boolean bind:field {label} />
+        {:else if field.constructor === [].constructor}
+            <Component
+                bind:field
+                {label}
+                bind:showMediaModal
+                bind:changingMedia
+                bind:localMediaList
+                {parentKeys}
+                {schema}
+            />
+        {:else if field.constructor === ({}).constructor}
+            <Fieldset
                 bind:field
                 {label}
                 bind:showMediaModal
