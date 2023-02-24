@@ -159,6 +159,12 @@ func Build() error {
 		log.Fatal("\nError in Gopack build step", err)
 	}
 
+	// Run Gopack manually on dynamic imports
+	err = build.GopackDynamic(buildPath)
+	if err != nil {
+		log.Fatal("\nError in GopackDynamic build step", err)
+	}
+
 	// only relates to defer recover
 	return err
 

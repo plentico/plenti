@@ -28,7 +28,11 @@
     let FieldWidget;
     (async () => {
         if (schema && schema.hasOwnProperty(parentKeys)) {
-            FieldWidget = (await import('./fields/' + schema[parentKeys].type + '.svelte')).default;
+            try {
+                FieldWidget = (await import('./fields/' + schema[parentKeys].type + '.svelte')).default;
+            } catch (error) {
+                FieldWidget = (await import('../../layouts/_fields/' + schema[parentKeys].type + '.svelte')).default;
+            }
         }
     })();
 </script>
