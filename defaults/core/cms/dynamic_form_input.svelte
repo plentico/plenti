@@ -1,5 +1,4 @@
 <script>
-    import { onMount } from 'svelte';
     import { isDate, isTime } from './date_checker.js';
     import { isMediaPath } from './media_checker.js';
 
@@ -11,7 +10,11 @@
     }
 
     let FieldWidget;
-    onMount(async () => {
+    $: if (field) {
+        // Reset the widget every time the field changes
+        setFieldWidget();
+    }
+    const setFieldWidget = async () => {
         if (schema && schema.hasOwnProperty(parentKeys)) {
             FieldWidget = (await import('./fields/' + schema[parentKeys].type + '.svelte')).default;
         } else if (typeof field === "number") {
@@ -33,31 +36,31 @@
         } else if (field.constructor === ({}).constructor) {
             FieldWidget = (await import('./fields/fieldset.svelte')).default;
         }
-    });
+    }
 </script>
 
 {#if label !== "plenti_salt"}
-<div class="field {label}">
-    {#if label}
-        <label for="{label}">{label}</label>    
-    {/if}
-    {#if field === null}
-        <div>field is null</div>
-    {:else if field === undefined}
-        <div>field is undefined</div>
-    {:else if FieldWidget}
-        <svelte:component
-            this={FieldWidget}
-            bind:field
-            {label}
-            bind:showMediaModal
-            bind:changingMedia
-            bind:localMediaList
-            {parentKeys}
-            {schema}
-        />
-    {/if}
-</div> 
+    <div class="field {label}">
+        {#if label}
+            <label for="{label}">{label}</label>    
+        {/if}
+        {#if field === null}
+            <div>field is null</div>
+        {:else if field === undefined}
+            <div>field is undefined</div>
+        {:else if FieldWidget}
+            <svelte:component
+                this={FieldWidget}
+                bind:field
+                {label}
+                bind:showMediaModal
+                bind:changingMedia
+                bind:localMediaList
+                {parentKeys}
+                {schema}
+            />
+        {/if}
+    </div> 
 {/if}
 
 <style>
