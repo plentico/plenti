@@ -10,76 +10,78 @@
 </script>
 
 <form>
-    {#each Object.entries(content.fields) as [label, field]}
-        {#if schema}
-            {#each Object.entries(schema) as schema_field}
-                {#if schema_field[1]?.before === label}
-                    <DynamicFormInput 
-                        field={shadowContent[schema_field[0]]}
-                        bind:shadowContent
-                        label={schema_field[0]}
-                        bind:showMediaModal
-                        bind:changingMedia
-                        bind:localMediaList
-                        parentKeys={schema_field[0]}
-                        {schema}
-                    />
-                {/if}
-            {/each}
-        {/if}
-        <DynamicFormInput 
-            bind:field={content.fields[label]}
-            {label}
-            bind:showMediaModal
-            bind:changingMedia
-            bind:localMediaList
-            parentKeys={label}
-            {schema}
-        />
-        {#if schema}
-            {#each Object.entries(schema) as schema_field}
-                {#if schema_field[1]?.after === label}
-                    <DynamicFormInput 
-                        field={shadowContent[schema_field[0]]}
-                        bind:shadowContent
-                        label={schema_field[0]}
-                        bind:showMediaModal
-                        bind:changingMedia
-                        bind:localMediaList
-                        parentKeys={schema_field[0]}
-                        {schema}
-                    />
-                {/if}
-            {/each}
-        {/if}
-    {/each}
-    <ButtonWrapper>
-        <Button
-            commitList={[
-                {
-                    file: content.filepath,
-                    contents: JSON.stringify(content.fields, undefined, '\t'),
-                },
-            ]}
-            {shadowContent}
-            buttonText="Save"
-            action={content.isNew ? 'create' : 'update'}
-            encoding="text"
-        />
-        <Button
-            commitList={[
-                {
-                    file: content.filepath,
-                    contents: JSON.stringify(content.fields, undefined, '\t'),
-                },
-            ]}
-            {shadowContent}
-            buttonText="Delete"
-            buttonStyle="secondary"
-            action={'delete'}
-            encoding="text"
-        />
-    </ButtonWrapper>
+    {#key content.filepath}
+        {#each Object.entries(content.fields) as [label, field]}
+            {#if schema}
+                {#each Object.entries(schema) as schema_field}
+                    {#if schema_field[1]?.before === label}
+                        <DynamicFormInput 
+                            field={shadowContent[schema_field[0]]}
+                            bind:shadowContent
+                            label={schema_field[0]}
+                            bind:showMediaModal
+                            bind:changingMedia
+                            bind:localMediaList
+                            parentKeys={schema_field[0]}
+                            {schema}
+                        />
+                    {/if}
+                {/each}
+            {/if}
+            <DynamicFormInput 
+                bind:field={content.fields[label]}
+                {label}
+                bind:showMediaModal
+                bind:changingMedia
+                bind:localMediaList
+                parentKeys={label}
+                {schema}
+            />
+            {#if schema}
+                {#each Object.entries(schema) as schema_field}
+                    {#if schema_field[1]?.after === label}
+                        <DynamicFormInput 
+                            field={shadowContent[schema_field[0]]}
+                            bind:shadowContent
+                            label={schema_field[0]}
+                            bind:showMediaModal
+                            bind:changingMedia
+                            bind:localMediaList
+                            parentKeys={schema_field[0]}
+                            {schema}
+                        />
+                    {/if}
+                {/each}
+            {/if}
+        {/each}
+        <ButtonWrapper>
+            <Button
+                commitList={[
+                    {
+                        file: content.filepath,
+                        contents: JSON.stringify(content.fields, undefined, '\t'),
+                    },
+                ]}
+                {shadowContent}
+                buttonText="Save"
+                action={content.isNew ? 'create' : 'update'}
+                encoding="text"
+            />
+            <Button
+                commitList={[
+                    {
+                        file: content.filepath,
+                        contents: JSON.stringify(content.fields, undefined, '\t'),
+                    },
+                ]}
+                {shadowContent}
+                buttonText="Delete"
+                buttonStyle="secondary"
+                action={'delete'}
+                encoding="text"
+            />
+        </ButtonWrapper>
+    {/key}
 </form>
 
 <style>
