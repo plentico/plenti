@@ -11,6 +11,7 @@
     import Text from './fields/text.svelte';
     import Boolean from './fields/boolean.svelte';
     // Schema Defined Widgets
+    import ListText from './fields/list_text.svelte';
     import Checkbox from './fields/checkbox.svelte';
     import Radio from './fields/radio.svelte';
     import Wysiwyg from './fields/wysiwyg.svelte';
