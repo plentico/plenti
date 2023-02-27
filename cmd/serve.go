@@ -9,7 +9,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/plentico/plenti/cmd/build"
@@ -245,12 +247,19 @@ func FileServerWith404(root http.FileSystem) http.Handler {
 	fs := http.FileServer(root)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		upath := r.URL.Path
+		if !strings.HasPrefix(upath, "/") {
+			upath = "/" + upath
+			r.URL.Path = upath
+		}
+		upath = path.Clean(upath)
+
 		// Try to open path
-		f, err := root.Open(r.URL.Path)
+		f, err := root.Open(upath)
 
 		if err != nil && os.IsNotExist(err) {
 			// Not found, handle 404
-			http.Redirect(w, r, build.Path404, http.StatusFound)
+			http.Redirect(w, r, "/"+build.Path404, http.StatusFound)
 			return
 		}
 
