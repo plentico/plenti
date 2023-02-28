@@ -105,7 +105,7 @@
 
       import('../layouts/content/' + currentContent.type + '.js')
         .then(component => {
-          if (content.filename !== currentContent.filename) {
+          if (content.filepath !== currentContent.filepath) {
             window.scrollTo(0, 0);
           }
           content = currentContent;
