@@ -165,6 +165,12 @@ func Build() error {
 		log.Fatal("\nError in GopackDynamic build step", err)
 	}
 
+	// Run Minification
+	err = build.Minify(buildPath)
+	if err != nil {
+		log.Fatal("\nError in Minify build step", err)
+	}
+
 	// only relates to defer recover
 	return err
 

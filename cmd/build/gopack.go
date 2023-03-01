@@ -38,18 +38,7 @@ var (
 	reStaticExportGoPk = regexp.MustCompile(`export(\s)(.*from(.*);|((.*\n){0,}?)\}(\s)from(.*);)`)
 	// Find the path specifically (part between single or double quotes).
 	rePath = regexp.MustCompile(`(?:'|").*(?:'|")`)
-	// Retrieve minifier and load JS
-	m = loadJSMinifier()
 )
-
-// Create global var since cmd.minifyFlag is a circular dependency.
-var minifyFlag bool
-
-// CheckMinifyFlag sets global var if --minify flag is passed.
-func CheckMinifyFlag(flag bool) {
-	// If --minify flag is passed by user, this will be set to true.
-	minifyFlag = flag
-}
 
 // Initialize globally to keep track during recursion.
 var alreadyConvertedFiles []string
@@ -215,9 +204,6 @@ func runPack(buildPath, convertPath string) error {
 		} else {
 			return fmt.Errorf("\nImport path '%s' not resolvable from file '%s'\n", pathStr, convertPath)
 		}
-	}
-	if minifyFlag {
-		contentBytes = minifyJS(m, contentBytes)
 	}
 	// Overwrite the old file with the new content that contains the updated import path.
 	err = ioutil.WriteFile(convertPath, contentBytes, 0644)
