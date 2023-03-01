@@ -4,10 +4,16 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 // Create ESM support for files that don't have static imports in the app
 func GopackDynamic(buildPath string) error {
+
+	defer Benchmark(time.Now(), "Running GopackDynamic")
+
+	Log("\nRunning Gopack manually on dynamic imports")
+
 	// Dynamically imported CMS FieldWidgets
 	fieldWidgetPath := "/layouts/_fields"
 	// Check if there are any custom FieldWidgets in the project
