@@ -1,8 +1,9 @@
-<div align="center"><img src="https://plenti.co/assets/perry.png" width="200" /></div>
+<div align="center"><img src="https://plenti.co/media/perry.png" width="200" /></div>
 <h1 align="center">
   Plenti
 </h1>
-<div align="center">Static Site Generator with Go backend and Svelte frontend</div>
+<div align="center">Build-Time Render Engine (aka Static Site Generator) with Go backend and Svelte frontend</div>
+<div align="center">Ships with a fully integrated Git-CMS that you can host for cheap/free right with your static site</div>
 <div align="center">Website: <a href="https://plenti.co">https://plenti.co</a></div>
 <br />
 
@@ -38,4 +39,4 @@ Manual:
 2. Videos: [YouTube playlist](https://www.youtube.com/watch?v=Gr3KTOnsWEM&list=PLbWvcwWtuDm0tIrvD_xHvUXHBftbHDy5T)
 
 ### Contributing :purple_heart:
-Plenti is brand new and needs to be test driven a bit to work out the kinks. If you find bugs or have any questions, please open a new [issue](https://github.com/plentico/plenti/issues) to let us know! Thank you for being patient while Plenti grows :seedling:
+Plenti is still new, but constantly improving. The API might change from time to time before we hit a stable `v1.0.x` release. If you find bugs or have any questions, please open a new [issue](https://github.com/plentico/plenti/issues) to let us know! If you want to help keep Plenti free from commercial interests, please consider [making a donation](https://github.com/sponsors/plentico) so we can spend more time making improvements :seedling:
