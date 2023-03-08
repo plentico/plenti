@@ -4,13 +4,11 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/plentico/plenti/readers"
 )
@@ -40,38 +38,10 @@ var (
 	rePath = regexp.MustCompile(`(?:'|").*(?:'|")`)
 )
 
-// Initialize globally to keep track during recursion.
-var alreadyConvertedFiles []string
-
 // Gopack ensures ESM support for NPM dependencies.
-func Gopack(buildPath, entrypoint string) error {
-
-	defer Benchmark(time.Now(), "Running Gopack")
-
-	Log("\nRunning gopack to build esm support for npm dependencies")
-
-	// Clear web_modules from previous build.
-	alreadyConvertedFiles = []string{}
-
-	// Start at the entry point for the app
-	err := runPack(buildPath, entrypoint)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func runPack(buildPath, convertPath string) error {
+func Gopack(buildPath string, convertPath string, contentBytes []byte) ([]byte, error) {
 	// Destination path for dependencies
 	gopackDir := buildPath + "/spa/web_modules"
-
-	// Get the actual contents of the file we want to convert
-	contentBytes, err := ioutil.ReadFile(convertPath)
-	if err != nil {
-		return fmt.Errorf("\nCould not read file %s to convert to esm\n%w", convertPath, err)
-	}
-
 	// Created byte array of all dynamic imports in the current file.
 	dynamicImportPaths := reDynamicImport.FindAll(contentBytes, -1)
 	for _, dynamicImportPath := range dynamicImportPaths {
@@ -101,6 +71,8 @@ func runPack(buildPath, convertPath string) error {
 		var foundPath string
 		// Initialize the full path of the import.
 		var fullPathStr string
+		// Initialize error.
+		var err error
 
 		// Convert .svelte file extensions to .js so the browser can read them.
 		if filepath.Ext(pathStr) == ".svelte" {
@@ -180,53 +152,24 @@ func runPack(buildPath, convertPath string) error {
 			}
 		}
 
-		// Do not convert files that have already been converted to avoid loops.
-		if !alreadyConverted(fullPathStr, alreadyConvertedFiles) {
-			// Add the current file to list of already converted files.
-			alreadyConvertedFiles = append(alreadyConvertedFiles, fullPathStr)
-			// Use fullPathStr recursively to find its imports.
-			err = runPack(buildPath, fullPathStr)
-			if err != nil {
-				return fmt.Errorf("\nCan't runPack on %s %w", fullPathStr, err)
+		//if foundPath != "" {
+		// Remove "public" build dir from path.
+		replacePath := strings.Replace(foundPath, buildPath, "", 1)
+		// Wrap path in quotes.
+		replacePath = "'" + replacePath + "'"
+		// Convert string path to bytes.
+		replacePathBytes := []byte(replacePath)
+		// Actually replace the path to the dependency in the source content.
+		contentBytes = bytes.ReplaceAll(contentBytes, staticStatement,
+			rePath.ReplaceAll(staticStatement, rePath.ReplaceAll(pathBytes, replacePathBytes)))
+		/*
+			} else {
+				return contentBytes, fmt.Errorf("\nImport path '%s' not resolvable from file '%s'\n", pathStr, convertPath)
 			}
-		}
-
-		if foundPath != "" {
-			// Remove "public" build dir from path.
-			replacePath := strings.Replace(foundPath, buildPath, "", 1)
-			// Wrap path in quotes.
-			replacePath = "'" + replacePath + "'"
-			// Convert string path to bytes.
-			replacePathBytes := []byte(replacePath)
-			// Actually replace the path to the dependency in the source content.
-			contentBytes = bytes.ReplaceAll(contentBytes, staticStatement,
-				rePath.ReplaceAll(staticStatement, rePath.ReplaceAll(pathBytes, replacePathBytes)))
-		} else {
-			return fmt.Errorf("\nImport path '%s' not resolvable from file '%s'\n", pathStr, convertPath)
-		}
+		*/
 	}
-	// Overwrite the old file with the new content that contains the updated import path.
-	err = ioutil.WriteFile(convertPath, contentBytes, 0644)
-	if err != nil {
-		return fmt.Errorf("Could not overwite %s with new import: %w\n", convertPath, err)
-	}
-	return nil
+	return contentBytes, nil
 
-}
-
-func alreadyConverted(convertPath string, alreadyConvertedFiles []string) bool {
-	// Check if there are already files that have been converted
-	if len(alreadyConvertedFiles) > 0 {
-		for _, convertedFile := range alreadyConvertedFiles {
-			// Compare the currently queued file with each already converted file
-			if convertPath == convertedFile {
-				// Exit the function to avoid endless loops where files
-				// reference each other (like main.js and router.svelte)
-				return true
-			}
-		}
-	}
-	return false
 }
 
 func pathExists(path string) bool {

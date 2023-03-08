@@ -143,7 +143,7 @@ func Client(buildPath string, coreFS embed.FS) error {
 			componentStr = string(componentBytes)
 		}
 		destPath := buildPath + "/spa/" + strings.TrimSuffix(path, ".svelte") + ".js"
-		err = (compileSvelte(ctx, SSRctx, path, componentStr, destPath, stylePath))
+		err = compileSvelte(ctx, SSRctx, buildPath, path, componentStr, destPath, stylePath)
 		if err != nil {
 			fmt.Printf("Could not compile '%s' Svelte component: %s", path, err)
 		}
@@ -244,7 +244,7 @@ func compileComponent(err error, layoutPath string, layoutFileInfo os.FileInfo, 
 		}
 		componentStr := string(component)
 		// Actually compile component
-		if err = compileSvelte(ctx, SSRctx, layoutPath, componentStr, destFile, stylePath); err != nil {
+		if err = compileSvelte(ctx, SSRctx, buildPath, layoutPath, componentStr, destFile, stylePath); err != nil {
 			return compiledComponentCounter, allLayoutsStr, fmt.Errorf("%w\n", err)
 		}
 		// Create entry for layouts.js.

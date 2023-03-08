@@ -1,4 +1,4 @@
-import Router from './router.svelte';
+import Router from './router.js';
 
 new Router({
   target: document,

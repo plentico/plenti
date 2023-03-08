@@ -35,7 +35,7 @@ var (
 	reCSSCli = regexp.MustCompile(`var(\s)css(\s)=(\s)\{(.*\n){0,}\};`)
 )
 
-func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string,
+func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, buildPath string, layoutPath string,
 	componentStr string, destFile string, stylePath string) error {
 
 	// Create any sub directories need for filepath.
@@ -56,6 +56,10 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string,
 		return fmt.Errorf("V8go could not execute js.code for %s: %w\n", layoutPath, err)
 	}
 	jsBytes := []byte(jsCode.String())
+	jsBytes, err = Gopack(buildPath, destFile, jsBytes)
+	if err != nil {
+		return fmt.Errorf("Could not add ESM support via Gopack: %w", err)
+	}
 	err = os.WriteFile(destFile, jsBytes, 0755)
 	if err != nil {
 		return fmt.Errorf("Unable to write compiled client file: %w\n", err)
