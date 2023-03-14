@@ -8,12 +8,14 @@ require (
 	github.com/fsnotify/fsnotify v1.5.4
 	github.com/gerald1248/httpscerts v0.0.0-20170315065746-2c461ceb29ee
 	github.com/go-git/go-git/v5 v5.2.0
+	github.com/livebud/bud v0.2.8
+	github.com/livebud/js v0.0.0-20221112072017-b9e63b92aad5
 	github.com/manifoldco/promptui v0.8.0
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cobra v1.1.3
 	github.com/tdewolff/minify/v2 v2.11.7
 	golang.org/x/net v0.7.0
-	rogchap.com/v8go v0.5.1
+	rogchap.com/v8go v0.7.0
 )
 
 require (
@@ -25,7 +27,6 @@ require (
 	github.com/gliderlabs/ssh v0.3.2 // indirect
 	github.com/go-git/gcfg v1.5.0 // indirect
 	github.com/go-git/go-billy/v5 v5.0.0 // indirect
-	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
@@ -35,15 +36,15 @@ require (
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
-	github.com/sergi/go-diff v1.1.0 // indirect
+	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/tdewolff/parse/v2 v2.5.32 // indirect
 	github.com/xanzy/ssh-agent v0.3.0 // indirect
+	go.kuoruan.net/v8go-polyfills v0.5.1-0.20220727011656-c74c5b408ebd // indirect
 	golang.org/x/crypto v0.1.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
