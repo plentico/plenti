@@ -46,7 +46,7 @@
 </script>
 
 <div class="spacer"></div>
-<nav>
+<nav class="admin-menu">
   <a href="{env.baseurl ? '.' : '/'}" class="home">
     <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home-2" width="30" height="30" viewBox="0 0 24 24" stroke-width="2" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -220,7 +220,7 @@
       flex-grow: 1;
     }
     .sidenav {
-      height: calc(100% - 40px);
+      height: 100%;
       width: 500px;
       position: fixed;
       z-index: 1;
@@ -230,6 +230,7 @@
       padding-top: 40px;
       transition: 0.5s;
       box-shadow: 1px 0px 2px rgb(207 207 207);
+      box-sizing: border-box;
     }
     :global(body > div),
     :global(body > section),
