@@ -66,7 +66,8 @@
    * @return {boolean} true if hash location found and navigated, false otherwise.
    */
   const navigateHashLocation = () => {
-    if (location.pathname != '/') {
+    let baseurl = env.baseurl ? env.baseurl : '/';
+    if (location.pathname !== baseurl) {
       return false;
     }
 

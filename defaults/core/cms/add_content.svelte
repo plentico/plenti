@@ -3,8 +3,9 @@
     import ButtonWrapper from './button_wrapper.svelte';
     import validateFilename from './validate_filename.js';
 
-    export let showAdd, showEditor;
+    export let showAdd, showEditor, env;
     let filename = "";
+    let baseurl = env.baseurl ? env.baseurl : '/';
 
     let selectedType;
     const setType = type => {
@@ -16,7 +17,7 @@
         validationErrors = validateFilename(filename, selectedType);
         // No errors, redirect to "add" page
         if (validationErrors.length === 0) {
-            redirectAndEdit('/#add/' + selectedType + '/' + filename);
+            redirectAndEdit(baseurl + '#add/' + selectedType + '/' + filename);
         }
     }
 
