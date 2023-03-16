@@ -1,6 +1,6 @@
 module github.com/plentico/plenti
 
-go 1.18
+go 1.20
 
 require (
 	github.com/MakeNowJust/heredoc/v2 v2.0.1
@@ -13,7 +13,7 @@ require (
 	github.com/spf13/cobra v1.1.3
 	github.com/tdewolff/minify/v2 v2.11.7
 	golang.org/x/net v0.7.0
-	rogchap.com/v8go v0.5.1
+	rogchap.com/v8go v0.8.0
 )
 
 require (

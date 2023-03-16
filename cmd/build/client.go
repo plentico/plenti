@@ -47,22 +47,14 @@ func Client(buildPath string, coreFS embed.FS) error {
 	compilerStr := strings.Replace(string(compiler), "self.performance.now();", "'';", 1)
 	// Remove 'require' that breaks v8go on line 22647 of node_modules/svelte/compiler.js.
 	compilerStr = strings.Replace(compilerStr, "const Url$1 = (typeof URL !== 'undefined' ? URL : require('url').URL);", "", 1)
-	ctx, err := v8go.NewContext(nil)
-	if err != nil {
-		return fmt.Errorf("Could not create Isolate: %w\n", err)
-
-	}
+	ctx := v8go.NewContext(nil)
 	_, err = ctx.RunScript(compilerStr, "compile_svelte")
 	if err != nil {
 		return fmt.Errorf("Could not add svelte compiler: %w\n", err)
 
 	}
 
-	SSRctx, err = v8go.NewContext(nil)
-	if err != nil {
-		return fmt.Errorf("Could not create Isolate: %w\n", err)
-
-	}
+	SSRctx = v8go.NewContext(nil)
 	// Fix "ReferenceError: exports is not defined" errors on line 1319 (exports.current_component;).
 	if _, err := SSRctx.RunScript("var exports = {};", "create_ssr"); err != nil {
 		return err
