@@ -4,7 +4,7 @@
     import { env } from '../../generated/env.js';
     import { findFileReferences } from './file_references.js';
 
-    export let commitList, shadowContent, buttonText, action, encoding, afterSubmit;
+    export let commitList, shadowContent, buttonText, action, encoding, user, afterSubmit;
     export let buttonStyle = "primary";
     const local = env.local ?? false;
     let status, confirmTooltip;
@@ -14,9 +14,9 @@
         status = "sending";
         try {
             if (local) {
-                await postLocal(commitList, shadowContent, action, encoding);
+                await postLocal(commitList, shadowContent, action, encoding, user);
             } else {
-                await publish(commitList, shadowContent, action, encoding);
+                await publish(commitList, shadowContent, action, encoding, user);
             }
             status = "sent";
             afterSubmit?.();

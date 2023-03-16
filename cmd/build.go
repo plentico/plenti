@@ -156,7 +156,13 @@ func Build() error {
 	// Run Gopack (custom Snowpack alternative) on app for ESM support.
 	err = build.Gopack(buildPath, buildPath+"/spa/core/main.js")
 	if err != nil {
-		log.Fatal("\nError in Gopack build step", err)
+		log.Fatal("\nError in Gopack main.js build step", err)
+	}
+
+	// Run Gopack (custom Snowpack alternative) on dynamically imported adminMenu.
+	err = build.Gopack(buildPath, buildPath+"/spa/core/cms/admin_menu.js")
+	if err != nil {
+		log.Fatal("\nError in Gopack admin_menu.svelte build step", err)
 	}
 
 	// Run Gopack manually on dynamic imports

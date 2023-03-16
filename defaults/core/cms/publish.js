@@ -1,16 +1,6 @@
-import { user, repoUrl } from './auth.js';
 import { env } from '../../generated/env.js';
-
+const repoUrl = env.cms.repo ? new URL(env.cms.repo) : new URL("https://gitlab.com");
 const apiBaseUrl = `${repoUrl.origin}/api/v4`;
-
-// Keep track of current user and promise it's availability.
-let currentUser;
-const userAvailable = new Promise(resolve => {
-    user.subscribe(user => {
-        currentUser = user;
-        resolve();
-    });
-});
 
 const capitalizeFirstLetter = string => {
   return string.charAt(0).toUpperCase() + string.slice(1);
@@ -21,9 +11,11 @@ const capitalizeFirstLetter = string => {
  * @param {string} contents
  * @param {string} action
  */
-export async function publish(commitList, shadowContent, action, encoding) {
+export async function publish(commitList, shadowContent, action, encoding, user) {
+    
+    
     await userAvailable;
-    if (!currentUser.isAuthenticated) {
+    if (!user.isAuthenticated) {
         throw new Error('Authentication required');
     }
 
@@ -33,7 +25,7 @@ export async function publish(commitList, shadowContent, action, encoding) {
         '/repository/commits';
     const headers = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${currentUser.tokens.access_token}`,
+        'Authorization': `Bearer ${user.tokens.access_token}`,
     };
 
     const makeDataStr = base64Str => base64Str.split(',')[1];

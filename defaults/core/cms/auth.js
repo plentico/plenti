@@ -2,6 +2,7 @@ import { readable } from 'svelte/store';
 import { createSessionStore } from './session.js';
 import { createDataStore } from './storage.js';
 import { env } from '../../generated/env.js';
+import adminMenu from './admin_menu.svelte';
 
 export const repoUrl = env.cms.repo ? new URL(env.cms.repo) : new URL("https://gitlab.com");
 const local = env.local;
@@ -71,6 +72,9 @@ const getUser = () => ({
         tokenStore.set(null);
         codeVerifierStore.set(null);
     },
+
+    menu: adminMenu,
+
 });
 export const user = readable(getUser(), set => {
     localTokenStore.subscribe(() => set(getUser()));

@@ -8,7 +8,6 @@
   {allLayouts}
   {env}
   {user}
-  {adminMenu}
   {shadowContent}
 />
 
@@ -17,7 +16,6 @@
   import allContent from '../generated/content.js';
   import * as allLayouts from '../generated/layouts.js';
   import { env } from '../generated/env.js';
-  import adminMenu from './cms/admin_menu.svelte';
   import { user } from './cms/auth.js';
   import allDefaults from '../generated/defaults.js';
 

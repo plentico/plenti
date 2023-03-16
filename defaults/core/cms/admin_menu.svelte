@@ -181,9 +181,16 @@
       </div>
     </div>
     {#if activeEditor === 'code'}
-      <JSONEditor bind:content />
+      <JSONEditor bind:content {user} />
     {:else}
-      <VisualEditor bind:content bind:showMediaModal bind:changingMedia bind:localMediaList bind:shadowContent />
+      <VisualEditor 
+        bind:content
+        bind:showMediaModal
+        bind:changingMedia
+        bind:localMediaList
+        bind:shadowContent
+        {user}
+      />
     {/if}
   </div>
 {/if}

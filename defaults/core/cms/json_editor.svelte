@@ -2,7 +2,7 @@
     import ButtonWrapper from './button_wrapper.svelte';
     import Button from './button.svelte';
 
-    export let content;
+    export let content, user;
 
     let formattedFields, previousFilepath;
     $: if (content.filepath !== previousFilepath) {
@@ -57,7 +57,9 @@
             ]}
             buttonText="Save"
             action={content.isNew ? 'create' : 'update'}
-            encoding="text" />
+            encoding="text"
+            {user}
+        />
         <Button
             commitList={[
                 {
@@ -68,7 +70,9 @@
             buttonText="Delete"
             buttonStyle="secondary"
             action={'delete'}
-            encoding="text" />
+            encoding="text"
+            {user}
+        />
     </ButtonWrapper>
 </form>
 

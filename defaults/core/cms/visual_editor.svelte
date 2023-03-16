@@ -1,5 +1,5 @@
 <script>
-    export let content, showMediaModal, changingMedia, localMediaList, shadowContent;
+    export let content, showMediaModal, changingMedia, localMediaList, shadowContent, user;
     import DynamicFormInput from './dynamic_form_input.svelte';
     import ButtonWrapper from './button_wrapper.svelte';
     import Button from './button.svelte';
@@ -66,6 +66,7 @@
                 buttonText="Save"
                 action={content.isNew ? 'create' : 'update'}
                 encoding="text"
+                {user}
             />
             <Button
                 commitList={[
@@ -79,6 +80,7 @@
                 buttonStyle="secondary"
                 action={'delete'}
                 encoding="text"
+                {user}
             />
         </ButtonWrapper>
     {/key}
