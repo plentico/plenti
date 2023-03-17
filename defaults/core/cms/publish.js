@@ -12,7 +12,17 @@ const capitalizeFirstLetter = string => {
  * @param {string} action
  */
 export async function publish(commitList, shadowContent, action, encoding, user) {
-    if (!user.isAuthenticated) {
+    // Keep track of current user and promise it's availability.
+    let currentUser;
+    const userAvailable = new Promise(resolve => {
+        user.subscribe(user => {
+            currentUser = user;
+            resolve();
+        });
+    });
+                                                                
+    await userAvailable;
+    if (!currentUser.isAuthenticated) {
         throw new Error('Authentication required');
     }
 
@@ -22,7 +32,7 @@ export async function publish(commitList, shadowContent, action, encoding, user)
         '/repository/commits';
     const headers = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${user.tokens.access_token}`,
+        'Authorization': `Bearer ${currentUser.tokens.access_token}`,
     };
 
     const makeDataStr = base64Str => base64Str.split(',')[1];
