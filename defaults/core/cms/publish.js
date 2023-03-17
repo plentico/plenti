@@ -12,9 +12,6 @@ const capitalizeFirstLetter = string => {
  * @param {string} action
  */
 export async function publish(commitList, shadowContent, action, encoding, user) {
-    
-    
-    await userAvailable;
     if (!user.isAuthenticated) {
         throw new Error('Authentication required');
     }
