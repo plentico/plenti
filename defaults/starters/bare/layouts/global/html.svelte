@@ -5,8 +5,8 @@
 </script>
 
 <html lang="en">
-<Head title={content.filename} />
-<body>
-  <svelte:component this={layout} {...content.fields} />
-</body>
+  <Head title={content.filename} />
+  <body>
+    <svelte:component this={layout} {...content.fields} />
+  </body>
 </html>
