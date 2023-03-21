@@ -1,5 +1,4 @@
-<svelte:component
-  this="{allLayouts['layouts_' + env.entrypoint.replace('/','_').replace('.','_')]}"
+<Html
   {path}
   {params}
   {content}
@@ -12,6 +11,7 @@
 />
 
 <script>
+  import Html from '../layouts/global/html.svelte';
   import Navaid from 'navaid';
   import allContent from '../generated/content.js';
   import * as allLayouts from '../generated/layouts.js';
