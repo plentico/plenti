@@ -2,9 +2,10 @@ import { readable } from 'svelte/store';
 import { createSessionStore } from './session.js';
 import { createDataStore } from './storage.js';
 import { env } from '../../generated/env.js';
+import { makeUrl } from './url_checker.js';
 import adminMenu from './admin_menu.svelte';
 
-export const repoUrl = env.cms.repo ? new URL(env.cms.repo) : new URL("https://gitlab.com");
+export const repoUrl = makeUrl(env.cms.repo);
 const local = env.local;
 
 const settings = {

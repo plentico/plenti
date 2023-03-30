@@ -1,5 +1,7 @@
 import { env } from '../../generated/env.js';
-const repoUrl = env.cms.repo ? new URL(env.cms.repo) : new URL("https://gitlab.com");
+import { makeUrl } from './url_checker.js';
+
+const repoUrl = makeUrl(env.cms.repo);
 const apiBaseUrl = `${repoUrl.origin}/api/v4`;
 
 const capitalizeFirstLetter = string => {
