@@ -13,17 +13,10 @@
 <script>
   import Html from '../layouts/global/html.svelte';
   import Navaid from 'navaid';
-  import allContent from '../generated/content.js';
-  import * as allLayouts from '../generated/layouts.js';
-  import { env } from '../generated/env.js';
   import { user } from './cms/auth.js';
   import allDefaults from '../generated/defaults.js';
 
-  let path = location.pathname;
-  let params = new URLSearchParams(location.search);
-  // Load data-content-filepath attribute from HTML
-  let content = allContent.find(c => c.filepath === document.documentElement.dataset.contentFilepath);
-  let layout;
+  export let content, layout, path, params, allContent, allLayouts, env;
   let shadowContent = {};
 
   if ($user.isBeingAuthenticated) { 
