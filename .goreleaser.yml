@@ -27,6 +27,9 @@ builds:
   - darwin
   goarch:
   - amd64
+  - arm64
+universal_binaries:
+- replace: true
 archives:
 - replacements:
     darwin: Mac
