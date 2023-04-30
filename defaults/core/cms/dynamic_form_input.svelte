@@ -17,6 +17,7 @@
     import Wysiwyg from './fields/wysiwyg.svelte';
     import Select from './fields/select.svelte';
     import Reference from './fields/reference.svelte';
+    import References from './fields/references.svelte';
     import ID from './fields/id.svelte';
 
     export let field, label, showMediaModal, changingMedia, localMediaList, parentKeys, schema;

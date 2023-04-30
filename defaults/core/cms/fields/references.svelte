@@ -3,9 +3,14 @@
     export let schema, parentKeys, field;
 
     let input, results, loading, option;
-    console.log("reference: " + parentKeys)
+    console.log("references: " + parentKeys)
 
     let deepCloneContent = structuredClone(allContent);
+
+    // Make sure field value starts as an array
+    if (field.constructor !== [].constructor) {
+        field = [field];
+    }
 
     const search = () => {
         loading = true;
@@ -36,27 +41,27 @@
     }
     const makeSelection = () => {
         results = [];
-        field = option;
+        field = [...field, option];
         input = "";
     }
     const removeTag = tag => {
-        field = "";
+        field = field.filter(t => t !== tag);
     }
 </script>
 
-<div class="reference">
+<div class="references">
     <div class="input-wrapper">
         <div class="tags">
-            {#if field !== ""}
+            {#each field as tag}
                 <span class="tag">
-                    {field}
-                    <svg on:click={() => removeTag(field)} xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-x" width="15" height="15" viewBox="0 0 24 24" stroke-width="2" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    {tag}
+                    <svg on:click={() => removeTag(tag)} xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-x" width="15" height="15" viewBox="0 0 24 24" stroke-width="2" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
                         <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                         <line x1="18" y1="6" x2="6" y2="18" />
                         <line x1="6" y1="6" x2="18" y2="18" />
                     </svg>
                 </span>
-            {/if}
+            {/each} 
         </div>
         <input bind:value={input} on:keyup={search} />
     </div>
@@ -83,7 +88,7 @@
 </div>
 
 <style>
-    .reference {
+    .references {
         position: relative;
     }
     .input-wrapper {
