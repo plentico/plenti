@@ -3,7 +3,6 @@
     export let schema, parentKeys, field;
 
     let input, results, loading, option;
-    console.log("references: " + parentKeys)
 
     let deepCloneContent = structuredClone(allContent);
 

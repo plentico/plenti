@@ -116,7 +116,12 @@
             h3
         </button>
     {/if}
-    {#if options("heading1") || options("heading2") || options("heading3") || options("all")}
+    {#if options("heading4") || options("all")}
+        <button on:click={textarea.focus()} on:click|preventDefault={() => heading("h4")} title="Heading level four">
+            h4
+        </button>
+    {/if}
+    {#if options("heading1") || options("heading2") || options("heading3") || options("heading4") || options("all")}
         <div class="spacer"></div>
     {/if}
     {#if options("clear") || options("all")}
