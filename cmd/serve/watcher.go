@@ -77,10 +77,8 @@ func (w *watcher) watch(buildPath string, Build buildFunc) {
 
 	done := make(chan bool)
 
-	// Set delay for batching events.
-	ticker := time.NewTicker(300 * time.Millisecond)
-	// Batch events to prevent double firing (happens when saving files in some text editors).
-	events := make([]fsnotify.Event, 0)
+	timer := time.NewTimer(time.Millisecond)
+	<-timer.C // timer should be expired at first
 
 	go func() {
 		for {
@@ -89,20 +87,14 @@ func (w *watcher) watch(buildPath string, Build buildFunc) {
 			case event := <-w.Events:
 				// Don't rebuild when build dir is added or deleted.
 				if event.Name != "./"+buildPath {
-					// Add current event to array for batching.
-					events = append(events, event)
+					// Time resets on every event called, so it waits interval before triggering build
+					timer.Reset(time.Millisecond * 300)
+					// Display messages for each event that's triggered
+					logEvent(event, w)
 				}
 
-			case <-ticker.C:
-				// Checks on set interval if there are events.
-				// Display messages for each event in batch.
-				logEvents(events, w)
-				// Only build if there was an event.
-				if len(events) > 0 {
-					Build()
-				}
-				// Empty the batch array.
-				events = make([]fsnotify.Event, 0)
+			case <-timer.C:
+				Build()
 
 			// Watch for errors.
 			case err := <-w.Errors:
@@ -133,22 +125,20 @@ func (w *watcher) watchDir(buildPath string) fs.WalkDirFunc {
 	}
 }
 
-func logEvents(events []fsnotify.Event, w *watcher) {
-	for _, event := range events {
-		if event.Op&fsnotify.Create == fsnotify.Create {
-			build.Log("File create detected: " + event.String())
-			w.Add(event.Name) // Start watching new file for changes
-			build.Log("Now watching " + event.Name)
-		}
-		if event.Op&fsnotify.Write == fsnotify.Write {
-			build.Log("File write detected: " + event.String())
+func logEvent(event fsnotify.Event, w *watcher) {
+	if event.Op&fsnotify.Create == fsnotify.Create {
+		build.Log("File create detected: " + event.String())
+		w.Add(event.Name) // Start watching new file for changes
+		build.Log("Now watching " + event.Name)
+	}
+	if event.Op&fsnotify.Write == fsnotify.Write {
+		build.Log("File write detected: " + event.String())
 
-		}
-		if event.Op&fsnotify.Remove == fsnotify.Remove {
-			build.Log("File delete detected: " + event.String())
-		}
-		if event.Op&fsnotify.Rename == fsnotify.Rename {
-			build.Log("File rename detected: " + event.String())
-		}
+	}
+	if event.Op&fsnotify.Remove == fsnotify.Remove {
+		build.Log("File delete detected: " + event.String())
+	}
+	if event.Op&fsnotify.Rename == fsnotify.Rename {
+		build.Log("File rename detected: " + event.String())
 	}
 }
