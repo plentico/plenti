@@ -128,7 +128,6 @@ var serveCmd = &cobra.Command{
 
 		// Watch filesystem for changes.
 		serve.Gowatch(buildDir, Build)
-		serve.Gowatch(buildDir, Build)
 
 		if build.Doreload {
 			// websockets

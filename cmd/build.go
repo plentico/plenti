@@ -117,7 +117,7 @@ func Build() error {
 	if _, buildPathExistsErr := os.Stat(buildPath); buildPathExistsErr == nil {
 		build.Log("Removing old '" + buildPath + "' build directory")
 		if err = os.RemoveAll(buildPath); err != nil {
-			log.Fatal("\nCan't remove \"%v\" folder from previous build", err, buildDir)
+			log.Fatal("\nCan't remove \"%s\" folder from previous build: %s", buildDir, err)
 		}
 	}
 
