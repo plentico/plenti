@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/fs"
 	"log"
-	"os"
 	"path/filepath"
 
 	"github.com/plentico/plenti/cmd/build"
@@ -40,39 +39,10 @@ func Gowatch(buildPath string, Build buildFunc) {
 
 // Watch looks for updates to filesystem to prompt a site rebuild.
 func (w *watcher) watch(buildPath string, Build buildFunc) {
-	// die on any error or will loop infinitely
-	// Watch specific directories for changes (only if they exist).
-	// TODO: these probably needs handling here as it won' quit/log.Fatal on serve
-	if _, err := os.Stat("content"); !os.IsNotExist(err) {
-		if err := filepath.WalkDir("content", w.watchDir(buildPath)); err != nil {
-			log.Fatal("Error watching 'content/' folder for changes: %w", err)
-		}
-	}
-
-	if _, err := os.Stat("layouts"); !os.IsNotExist(err) {
-		if err := filepath.WalkDir("layouts", w.watchDir(buildPath)); err != nil {
-			log.Fatal("Error watching 'layouts/' folder for changes: %w", err)
-		}
-	}
-
-	if _, err := os.Stat("media"); !os.IsNotExist(err) {
-		if err := filepath.WalkDir("media", w.watchDir(buildPath)); err != nil {
-			log.Fatal("Error watching 'media/' folder for changes: %w", err)
-		}
-	}
-
-	if _, err := os.Stat("static"); !os.IsNotExist(err) {
-		if err := filepath.WalkDir("static", w.watchDir(buildPath)); err != nil {
-			log.Fatal("Error watching 'static/' folder for changes: %w", err)
-		}
-	}
-
-	if err := w.Add("plenti.json"); err != nil {
-		log.Fatal("couldn't add 'plenti.json' to watcher %w", err)
-	}
-
-	if err := w.Add("package.json"); err != nil {
-		log.Fatal("couldn't add 'package.json' to watcher %w", err)
+	// Watch project for changes.
+	if err := filepath.WalkDir(".", w.watchDir(buildPath)); err != nil {
+		// Die on any error or will loop infinitely
+		log.Fatal("Error watching for changes: %w", err)
 	}
 
 	done := make(chan bool)
@@ -94,6 +64,8 @@ func (w *watcher) watch(buildPath string, Build buildFunc) {
 				}
 
 			case <-timer.C:
+				fmt.Println("Change detected, rebuilding site")
+				// TODO: cancel build if new change is made before finishing
 				Build()
 
 			// Watch for errors.
