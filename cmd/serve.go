@@ -11,6 +11,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -47,6 +48,13 @@ func setPort(siteConfig readers.SiteConfig) int {
 		port = PortFlag
 	}
 	return port
+}
+
+func setProtocol(SSLFlag bool) string {
+	if SSLFlag {
+		return "https://"
+	}
+	return "http://"
 }
 
 // serveCmd represents the serve command
@@ -98,12 +106,19 @@ var serveCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		fileServer := FileServerWith404(http.Dir(buildDir))
-
 		webroot := "/"
 		if len(siteConfig.BaseURL) > 0 {
 			webroot = siteConfig.BaseURL
 		}
+
+		// Check flags and config for local server port
+		port := setPort(siteConfig)
+		// Check flags for local protocol
+		protocol := setProtocol(SSLFlag)
+		// Local URL that can be visited in browser
+		localUrl := protocol + "localhost:" + strconv.Itoa(port) + webroot
+
+		fileServer := FileServerWith404(http.Dir(buildDir), localUrl)
 
 		// Handle "/" or baseurl
 		http.Handle(webroot, http.StripPrefix(webroot, fileServer))
@@ -121,17 +136,15 @@ var serveCmd = &cobra.Command{
 
 		}
 
-		// Check flags and config for local server port
-		port := setPort(siteConfig)
-
 		s.Stop()
+
+		fmt.Printf("Visit your site at %v\n", localUrl)
 
 		if SSLFlag {
 			// Start an HTTPS webserver
-			serveSSL(port, webroot)
+			serveSSL(port)
 		}
 
-		fmt.Printf("Visit your site at http://localhost:%v%v\n", port, webroot)
 		// Start the HTTP webserver
 		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 
@@ -210,7 +223,7 @@ func postLocal(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func serveSSL(port int, webroot string) {
+func serveSSL(port int) {
 	cert, key, err := httpscerts.GenerateArrays(fmt.Sprintf("localhost:%d", port))
 	if err != nil {
 		log.Fatal("Error: Couldn't create https certs.")
@@ -239,14 +252,18 @@ func serveSSL(port int, webroot string) {
 		MaxHeaderBytes: 1 << 20,
 		TLSConfig:      cfg,
 	}
-	fmt.Printf("Visit your site at https://localhost:%v%v\n", port, webroot)
 	log.Fatal(s.ListenAndServeTLS("", ""))
 }
 
-func FileServerWith404(root http.FileSystem) http.Handler {
+func FileServerWith404(root http.FileSystem, localUrl string) http.Handler {
 	fs := http.FileServer(root)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if Building {
+			fmt.Fprint(w, "Site is still building...")
+			return
+		}
+
 		upath := r.URL.Path
 		if !strings.HasPrefix(upath, "/") {
 			upath = "/" + upath
@@ -257,9 +274,9 @@ func FileServerWith404(root http.FileSystem) http.Handler {
 		// Try to open path
 		f, err := root.Open(upath)
 
-		if err != nil && os.IsNotExist(err) {
+		if err != nil && os.IsNotExist(err) && !Building {
 			// Not found, handle 404
-			http.Redirect(w, r, "/"+build.Path404, http.StatusFound)
+			http.Redirect(w, r, localUrl+"/"+build.Path404, http.StatusFound)
 			return
 		}
 

@@ -30,6 +30,9 @@ var MinifyFlag bool
 // ConfigFileFlag allows you to point to a nonstandard sitewide configuration file for the build (instead of plenti.json).
 var ConfigFileFlag string
 
+// Building keeps track of whether the build is in process or not
+var Building bool
+
 func setBuildDir(siteConfig readers.SiteConfig) string {
 	buildDir := siteConfig.BuildDir
 	// Check if directory is overridden by flag.
@@ -54,6 +57,8 @@ you need to deploy for your website.`,
 
 // Build creates the compiled app that gets deployed.
 func Build() error {
+
+	Building = true
 
 	defer build.Benchmark(time.Now(), "Total build", true)
 
@@ -176,6 +181,8 @@ func Build() error {
 	if err != nil {
 		log.Fatal("\nError in Minify build step", err)
 	}
+
+	Building = false
 
 	// only relates to defer recover
 	return err
