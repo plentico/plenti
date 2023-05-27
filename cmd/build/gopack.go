@@ -102,6 +102,10 @@ func runPack(buildPath, convertPath string) error {
 		// Initialize the full path of the import.
 		var fullPathStr string
 
+		if pathStr == "" {
+			break
+		}
+
 		// Convert .svelte file extensions to .js so the browser can read them.
 		if filepath.Ext(pathStr) == ".svelte" {
 			// Declare found since path should be relative to the component it's referencing.
@@ -109,7 +113,7 @@ func runPack(buildPath, convertPath string) error {
 		}
 
 		// If relative import (catches both previously .svelte paths and those already in .js format)
-		if pathStr[:1] == "." {
+		if len(pathStr) > 0 && pathStr[:1] == "." {
 			// Make relative pathStr a full path that we can find on the filesystem.
 			fullPathStr = path.Clean(path.Dir(convertPath) + "/" + pathStr)
 
@@ -165,7 +169,7 @@ func runPack(buildPath, convertPath string) error {
 
 		// Make sure the import/export path doesn't start with a dot (.) or double dot (..)
 		// and make sure that the path doesn't have a file extension.
-		if pathStr[:1] != "." && filepath.Ext(pathStr) == "" {
+		if len(pathStr) > 0 && pathStr[:1] != "." && filepath.Ext(pathStr) == "" {
 			// Copy the npm file from /node_modules to /spa/web_modules
 			fullPathStr, err = copyNpmModule(pathStr, gopackDir)
 			if err != nil {

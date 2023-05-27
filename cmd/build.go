@@ -147,7 +147,7 @@ func Build() error {
 	}
 
 	// Prep the client SPA.
-	err = build.Client(buildPath, defaults.CoreFS)
+	err = build.Client(buildPath, defaults.CoreFS, defaults.CompilerFS)
 	if err != nil {
 		log.Fatal("\nError in Client build step", err)
 	}

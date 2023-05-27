@@ -2,6 +2,9 @@ package defaults
 
 import "embed"
 
+//go:embed all:compiler/*
+var CompilerFS embed.FS
+
 //go:embed all:core/*
 var CoreFS embed.FS
 

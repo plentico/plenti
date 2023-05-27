@@ -1,6 +1,7 @@
 package build
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,7 +14,6 @@ import (
 var (
 	// Regex match static import statements.
 	reStaticImport = regexp.MustCompile(`import\s((.*)\sfrom(.*);|(((.*)\n){0,})\}\sfrom(.*);)`)
-
 	// Regex match static export statements.
 	reStaticExport = regexp.MustCompile(`export\s(.*);`)
 	// Replace import references with variable signatures.
@@ -23,6 +23,8 @@ var (
 	reConst = regexp.MustCompile(`(?m)^const\s`)
 	// Only use comp signatures inside JS template literal placeholders.
 	reTemplatePlaceholder = regexp.MustCompile(`(?s)\$\{validate_component\(.*\)\}`)
+	// Match: var Compname = create_ssr_component(
+	reSSRComp = regexp.MustCompile(`(var\s)[A-Za-z0-9_-]*(\s=\screate_ssr_component\()`)
 	// Only add named imports to create_ssr_component().
 	reCreateFunc = regexp.MustCompile(`(create_ssr_component\(\(.*\)\s=>\s\{)`)
 	// Match: allLayouts.layouts_components_grid_svelte
@@ -35,6 +37,11 @@ var (
 	reCSSCli = regexp.MustCompile(`var(\s)css(\s)=(\s)\{(.*\n){0,}\};`)
 )
 
+type OutputCode struct {
+	JS  string
+	CSS string
+}
+
 func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string,
 	componentStr string, destFile string, stylePath string) error {
 
@@ -43,30 +50,27 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string,
 		return fmt.Errorf("can't make path: %s %w\n", layoutPath, err)
 	}
 
-	// Escape backticks so svelte doesn't try to compile a partial component string
-	componentStr = strings.ReplaceAll(componentStr, "`", "\\`")
 	// Compile component with Svelte.
-	_, err := ctx.RunScript("var { js, css } = svelte.compile(`"+componentStr+"`, {css: false, hydratable: true});", "compile_svelte")
+	scriptDOM := fmt.Sprintf(`;__svelte__.compile({ "path": %q, "code": %q, "target": "dom", "css": false, hydratable: true })`, layoutPath, componentStr)
+	resultDOM, err := ctx.RunScript(scriptDOM, "compile_svelte")
 	if err != nil {
-		return fmt.Errorf("\nCan't compile component file %s\n%w", layoutPath, err)
+		return fmt.Errorf("\nDOM: Can't compile component file %s\n%w", layoutPath, err)
 	}
 	// Get the JS code from the compiled result.
-	jsCode, err := ctx.RunScript("js.code;", "compile_svelte")
-	if err != nil {
-		return fmt.Errorf("V8go could not execute js.code for %s: %w\n", layoutPath, err)
+	outDOM := new(OutputCode)
+	if err := json.Unmarshal([]byte(resultDOM.String()), outDOM); err != nil {
+		return fmt.Errorf("Could not unmarshal DOM output: %w\n", err)
 	}
-	jsBytes := []byte(jsCode.String())
+	jsCode := outDOM.JS
+	jsBytes := []byte(jsCode)
 	err = os.WriteFile(destFile, jsBytes, 0755)
 	if err != nil {
 		return fmt.Errorf("Unable to write compiled client file: %w\n", err)
 	}
 
 	// Get the CSS code from the compiled result.
-	cssCode, err := ctx.RunScript("css.code;", "compile_svelte")
-	if err != nil {
-		return fmt.Errorf("V8go could not execute css.code  for %s: %w\n", layoutPath, err)
-	}
-	cssStr := strings.TrimSpace(cssCode.String())
+	cssCode := outDOM.CSS
+	cssStr := strings.TrimSpace(cssCode)
 	// If there is CSS, write it into the bundle.css file.
 	if cssStr != "null" {
 		cssFile, err := os.OpenFile(stylePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -80,25 +84,27 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string,
 	}
 
 	// Get Server Side Rendered (SSR) JS.
-	_, ssrCompileErr := ctx.RunScript("var { js: ssrJs, css: ssrCss } = svelte.compile(`"+componentStr+"`, {generate: 'ssr'});", "compile_svelte")
-	if ssrCompileErr != nil {
-		return fmt.Errorf("V8go could not compile ssrJs.code for %s: %w\n", layoutPath, ssrCompileErr)
-	}
-	ssrJsCode, err := ctx.RunScript("ssrJs.code;", "compile_svelte")
+	scriptSSR := fmt.Sprintf(`;__svelte__.compile({ "path": %q, "code": %q, "target": "ssr", "css": false })`, layoutPath, componentStr)
+	resultSSR, err := ctx.RunScript(scriptSSR, "compile_svelte")
 	if err != nil {
-		return fmt.Errorf("V8go could not get ssrJs.code value for %s: %w\n", layoutPath, err)
+		return fmt.Errorf("\nSSR: Can't compile component file %s\n%w", layoutPath, err)
 	}
+	outSSR := new(OutputCode)
+	if err := json.Unmarshal([]byte(resultSSR.String()), outSSR); err != nil {
+		return fmt.Errorf("Could not unmarshal SSR output: %w\n", err)
+	}
+	ssrJsCode := outSSR.JS
 
 	// Remove static import statements.
-	ssrStr := reStaticImport.ReplaceAllString(ssrJsCode.String(), `/*$0*/`)
+	ssrStr := reStaticImport.ReplaceAllString(ssrJsCode, `/*$0*/`)
 	// Remove static export statements.
 	ssrStr = reStaticExport.ReplaceAllString(ssrStr, `/*$0*/`)
 
 	ssrStr = reConst.ReplaceAllString(ssrStr, "var ")
 	// Create custom variable name for component based on the file path for the layout.
 	componentSignature := strings.ReplaceAll(strings.ReplaceAll(layoutPath, "/", "_"), ".", "_")
-	// Use signature instead of generic "Component". Add space to avoid also replacing part of "loadComponent".
-	ssrStr = strings.ReplaceAll(ssrStr, " Component ", " "+componentSignature+" ")
+	// Use signature instead of specific component name (e.g. var Html = create_ssr_component(($$result, $$props, $$bindings, slots) => {)
+	ssrStr = reSSRComp.ReplaceAllString(ssrStr, "${1}"+componentSignature+"${2}")
 
 	namedExports := reStaticExport.FindAllStringSubmatch(ssrStr, -1)
 	// Loop through all export statements.

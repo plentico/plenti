@@ -24,7 +24,7 @@ import (
 var SSRctx *v8go.Context
 
 // Client builds the SPA.
-func Client(buildPath string, coreFS embed.FS) error {
+func Client(buildPath string, coreFS embed.FS, compilerFS embed.FS) error {
 
 	defer Benchmark(time.Now(), "Compiling client SPA with Svelte")
 
@@ -38,15 +38,12 @@ func Client(buildPath string, coreFS embed.FS) error {
 	// Set up counter for logging output.
 	compiledComponentCounter := 0
 
-	// Get svelte compiler code from node_modules.
-	compiler, err := getVirtualFileIfThemeBuild("node_modules/svelte/compiler.js")
+	// Get transformed svelte compiler code from embedded filesystem.
+	compiler, err := compilerFS.ReadFile("compiler/compiler.js")
 	if err != nil {
 		return err
 	}
-	// Remove reference to 'self' that breaks v8go on line 19 of node_modules/svelte/compiler.js.
-	compilerStr := strings.Replace(string(compiler), "self.performance.now();", "'';", 1)
-	// Remove 'require' that breaks v8go on line 22647 of node_modules/svelte/compiler.js.
-	compilerStr = strings.Replace(compilerStr, "const Url$1 = (typeof URL !== 'undefined' ? URL : require('url').URL);", "", 1)
+	compilerStr := string(compiler)
 	ctx := v8go.NewContext(nil)
 	_, err = ctx.RunScript(compilerStr, "compile_svelte")
 	if err != nil {
@@ -57,10 +54,6 @@ func Client(buildPath string, coreFS embed.FS) error {
 	SSRctx = v8go.NewContext(nil)
 	// Fix "ReferenceError: exports is not defined" errors on line 1319 (exports.current_component;).
 	if _, err := SSRctx.RunScript("var exports = {};", "create_ssr"); err != nil {
-		return err
-	}
-	// Fix "TypeError: Cannot read property 'noop' of undefined" from node_modules/svelte/store/index.js.
-	if _, err := SSRctx.RunScript("function noop(){}", "create_ssr"); err != nil {
 		return err
 	}
 
@@ -80,10 +73,8 @@ func Client(buildPath string, coreFS embed.FS) error {
 			return err
 
 		}
-		// Fix "Cannot access 'on_destroy' before initialization" errors on line 1320 & line 1337 of node_modules/svelte/internal/index.js.
-		createSsrStr := strings.ReplaceAll(string(createSsrComponent), "function create_ssr_component(fn) {", "function create_ssr_component(fn) {var on_destroy= {};")
-		// Use empty noop() function created above instead of missing method.
-		createSsrStr = strings.ReplaceAll(createSsrStr, "internal.noop", "noop")
+		// Fix: TypeError: Cannot read properties of undefined (reading 'noop')
+		createSsrStr := strings.ReplaceAll(string(createSsrComponent), "internal.noop", "noop")
 		_, err = SSRctx.RunScript(createSsrStr, "create_ssr")
 		/*
 			// TODO: Can't check error because `ReferenceError: require is not defined` error on build so cannot quit ...
