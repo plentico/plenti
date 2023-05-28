@@ -189,31 +189,26 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 		return fmt.Errorf("\nCould not write component_schemas.js file")
 	}
 
-	//var wg sync.WaitGroup
 	wg := sync.WaitGroup{}
 	for _, currentContent := range allContent {
 		wg.Add(1)
 		go func(currentContent content, wg *sync.WaitGroup) error {
 			defer wg.Done()
-			fmt.Println("creating SSR ctx")
 			ssrCtx, err := createSSRCtx()
 			if err != nil {
 				return fmt.Errorf("\nCan't create SSR Context for %s %w", currentContent.contentFilepath, err)
 			}
 
-			fmt.Println("creating Props")
 			ssrCtx, err = createProps(ssrCtx, currentContent, allContentStr, env)
 			if err != nil {
 				return fmt.Errorf("\nCan't create props for %s %w", currentContent.contentFilepath, err)
 			}
 
-			fmt.Println("creating HTML")
 			err = createHTML(ssrCtx, currentContent)
 			if err != nil {
 				return fmt.Errorf("\nCan't create HTML for %s %w", currentContent.contentFilepath, err)
 			}
 
-			fmt.Println("Paginating")
 			allPaginatedContent, err := paginate(ssrCtx, currentContent, contentJSPath)
 			if err != nil {
 				return err
@@ -229,8 +224,8 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 
 			}
 			ssrCtx.Close()
-			//ssrCtx.Isolate().TerminateExecution()
-			//ssrCtx.Isolate().Dispose()
+			ssrCtx.Isolate().TerminateExecution()
+			ssrCtx.Isolate().Dispose()
 			return nil
 		}(currentContent, &wg)
 

@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/plentico/plenti/readers"
@@ -54,6 +55,8 @@ func Client(buildPath string, coreFS embed.FS, compilerFS embed.FS) error {
 
 	}
 
+	wg := sync.WaitGroup{}
+
 	// Compile Svelte components from ejectable core
 	fs.WalkDir(coreFS, "core", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -95,10 +98,8 @@ func Client(buildPath string, coreFS embed.FS, compilerFS embed.FS) error {
 			componentStr = string(componentBytes)
 		}
 		destPath := buildPath + "/spa/" + strings.TrimSuffix(path, ".svelte") + ".js"
-		err = (compileSvelte(ctx, path, componentStr, destPath, stylePath))
-		if err != nil {
-			fmt.Printf("Could not compile '%s' Svelte component: %s", path, err)
-		}
+		wg.Add(1)
+		go compileSvelte(&wg, ctx, path, componentStr, destPath, stylePath)
 		return nil
 	})
 
@@ -106,17 +107,30 @@ func Client(buildPath string, coreFS embed.FS, compilerFS embed.FS) error {
 	if ThemeFs != nil {
 		// A theme is being used, so compile the files from the virtual fs
 		if err := afero.Walk(ThemeFs, "layouts", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
-			if layoutFileInfo.IsDir() {
+			if layoutFileInfo.IsDir() || filepath.Ext(layoutPath) != ".svelte" {
 				return nil
 			}
 			err = copyNonSvelteFiles(layoutPath, buildPath)
 			if err != nil {
 				return err
 			}
-			compiledComponentCounter, allLayoutsStr, err = compileComponent(err, layoutPath, layoutFileInfo, buildPath, ctx, stylePath, allLayoutsStr, compiledComponentCounter)
+			// Create destination path.
+			destFile := buildPath + "/spa/" + layoutPath
+			destFile = strings.TrimSuffix(destFile, filepath.Ext(destFile)) + ".js"
+			// Get component file contents
+			component, err := getVirtualFileIfThemeBuild(layoutPath)
 			if err != nil {
-				return err
+				return fmt.Errorf("can't read component file: %s %w\n", layoutPath, err)
 			}
+			componentStr := string(component)
+			wg.Add(1)
+			go compileSvelte(&wg, ctx, layoutPath, componentStr, destFile, stylePath)
+			// Create entry for layouts.js.
+			layoutSignature := strings.ReplaceAll(strings.ReplaceAll((layoutPath), "/", "_"), ".", "_")
+			// Compose entry for layouts.js file.
+			allLayoutsStr = allLayoutsStr + "export {default as " + layoutSignature + "} from '../" + layoutPath + "';\n"
+			// Increment counter for each compiled component.
+			compiledComponentCounter++
 			return nil
 		}); err != nil {
 			return fmt.Errorf("\nCould not get layout from virtual theme build %w", err)
@@ -124,17 +138,30 @@ func Client(buildPath string, coreFS embed.FS, compilerFS embed.FS) error {
 	} else {
 		// A theme is NOT being used, so compile the components from the root project
 		if err := filepath.Walk("layouts", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
-			if layoutFileInfo.IsDir() {
+			if layoutFileInfo.IsDir() || filepath.Ext(layoutPath) != ".svelte" {
 				return nil
 			}
 			err = copyNonSvelteFiles(layoutPath, buildPath)
 			if err != nil {
 				return err
 			}
-			compiledComponentCounter, allLayoutsStr, err = compileComponent(err, layoutPath, layoutFileInfo, buildPath, ctx, stylePath, allLayoutsStr, compiledComponentCounter)
+			// Create destination path.
+			destFile := buildPath + "/spa/" + layoutPath
+			destFile = strings.TrimSuffix(destFile, filepath.Ext(destFile)) + ".js"
+			// Get component file contents
+			component, err := getVirtualFileIfThemeBuild(layoutPath)
 			if err != nil {
-				return err
+				return fmt.Errorf("can't read component file: %s %w\n", layoutPath, err)
 			}
+			componentStr := string(component)
+			wg.Add(1)
+			go compileSvelte(&wg, ctx, layoutPath, componentStr, destFile, stylePath)
+			// Create entry for layouts.js.
+			layoutSignature := strings.ReplaceAll(strings.ReplaceAll((layoutPath), "/", "_"), ".", "_")
+			// Compose entry for layouts.js file.
+			allLayoutsStr = allLayoutsStr + "export {default as " + layoutSignature + "} from '../" + layoutPath + "';\n"
+			// Increment counter for each compiled component.
+			compiledComponentCounter++
 			return nil
 		}); err != nil {
 			return fmt.Errorf("\nCould not get all layouts %w", err)
@@ -148,6 +175,8 @@ func Client(buildPath string, coreFS embed.FS, compilerFS embed.FS) error {
 	}
 
 	Log("Number of components compiled: " + strconv.Itoa(compiledComponentCounter))
+
+	wg.Wait()
 	return nil
 }
 
@@ -177,36 +206,6 @@ func copyNonSvelteFiles(layoutPath string, buildPath string) error {
 		}
 	}
 	return nil
-}
-
-func compileComponent(err error, layoutPath string, layoutFileInfo os.FileInfo, buildPath string, ctx *v8go.Context, stylePath string, allLayoutsStr string, compiledComponentCounter int) (int, string, error) {
-	if err != nil {
-		return compiledComponentCounter, allLayoutsStr, fmt.Errorf("can't stat %s: %w", layoutPath, err)
-	}
-	// Create destination path.
-	destFile := buildPath + "/spa/" + layoutPath
-	// If the file is in .svelte format, compile it to .js
-	if filepath.Ext(layoutPath) == ".svelte" {
-		// Replace .svelte file extension with .js.
-		destFile = strings.TrimSuffix(destFile, filepath.Ext(destFile)) + ".js"
-		// Get component file contents
-		component, err := getVirtualFileIfThemeBuild(layoutPath)
-		if err != nil {
-			return compiledComponentCounter, allLayoutsStr, fmt.Errorf("can't read component file: %s %w\n", layoutPath, err)
-		}
-		componentStr := string(component)
-		// Actually compile component
-		if err = compileSvelte(ctx, layoutPath, componentStr, destFile, stylePath); err != nil {
-			return compiledComponentCounter, allLayoutsStr, fmt.Errorf("%w\n", err)
-		}
-		// Create entry for layouts.js.
-		layoutSignature := strings.ReplaceAll(strings.ReplaceAll((layoutPath), "/", "_"), ".", "_")
-		// Compose entry for layouts.js file.
-		allLayoutsStr = allLayoutsStr + "export {default as " + layoutSignature + "} from '../" + layoutPath + "';\n"
-		// Increment counter for each compiled component.
-		compiledComponentCounter++
-	}
-	return compiledComponentCounter, allLayoutsStr, nil
 }
 
 func getVirtualFileIfThemeBuild(filename string) ([]byte, error) {

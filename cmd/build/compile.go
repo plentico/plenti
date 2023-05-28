@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/spf13/afero"
 	"rogchap.com/v8go"
@@ -43,8 +44,10 @@ type OutputCode struct {
 	CSS string
 }
 
-func compileSvelte(ctx *v8go.Context, layoutPath string,
+func compileSvelte(wg *sync.WaitGroup, ctx *v8go.Context, layoutPath string,
 	componentStr string, destFile string, stylePath string) error {
+
+	defer wg.Done()
 
 	// Create any sub directories need for filepath.
 	if err := os.MkdirAll(filepath.Dir(destFile), os.ModePerm); err != nil {
@@ -227,14 +230,10 @@ func compileSvelte(ctx *v8go.Context, layoutPath string,
 		}
 	}
 
-	afero.WriteFile(SSRFs, componentSignature, []byte(ssrStr), 0644)
-	/*
-		// Add component to context so it can be used to render HTML in data_source.go.
-		_, err = SSRctx.RunScript(ssrStr, "create_ssr")
-		if err != nil {
-			return fmt.Errorf("Could not add SSR Component for %s: %w\n", layoutPath, err)
-		}
-	*/
+	// Add virtual file for SSR component to be used in V8
+	if !strings.HasPrefix(componentSignature, "core") {
+		afero.WriteFile(SSRFs, componentSignature, []byte(ssrStr), 0644)
+	}
 
 	return nil
 }
