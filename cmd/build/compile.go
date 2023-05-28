@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/spf13/afero"
 	"rogchap.com/v8go"
 )
 
@@ -42,7 +43,7 @@ type OutputCode struct {
 	CSS string
 }
 
-func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string,
+func compileSvelte(ctx *v8go.Context, layoutPath string,
 	componentStr string, destFile string, stylePath string) error {
 
 	// Create any sub directories need for filepath.
@@ -226,11 +227,14 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string,
 		}
 	}
 
-	// Add component to context so it can be used to render HTML in data_source.go.
-	_, err = SSRctx.RunScript(ssrStr, "create_ssr")
-	if err != nil {
-		return fmt.Errorf("Could not add SSR Component for %s: %w\n", layoutPath, err)
-	}
+	afero.WriteFile(SSRFs, componentSignature, []byte(ssrStr), 0644)
+	/*
+		// Add component to context so it can be used to render HTML in data_source.go.
+		_, err = SSRctx.RunScript(ssrStr, "create_ssr")
+		if err != nil {
+			return fmt.Errorf("Could not add SSR Component for %s: %w\n", layoutPath, err)
+		}
+	*/
 
 	return nil
 }

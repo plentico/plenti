@@ -20,8 +20,8 @@ import (
 	"rogchap.com/v8go"
 )
 
-// SSRctx is a v8go context for loaded with components needed to render HTML.
-var SSRctx *v8go.Context
+// Global var for virtual SSR components
+var SSRFs afero.Fs
 
 // Client builds the SPA.
 func Client(buildPath string, coreFS embed.FS, compilerFS embed.FS) error {
@@ -29,6 +29,9 @@ func Client(buildPath string, coreFS embed.FS, compilerFS embed.FS) error {
 	defer Benchmark(time.Now(), "Compiling client SPA with Svelte")
 
 	Log("\nCompiling client SPA with svelte")
+
+	// Initialize var for virtual SSR components
+	SSRFs = afero.NewMemMapFs()
 
 	stylePath := buildPath + "/spa/bundle.css"
 	allLayoutsPath := buildPath + "/spa/generated/layouts.js"
@@ -48,40 +51,6 @@ func Client(buildPath string, coreFS embed.FS, compilerFS embed.FS) error {
 	_, err = ctx.RunScript(compilerStr, "compile_svelte")
 	if err != nil {
 		return fmt.Errorf("Could not add svelte compiler: %w\n", err)
-
-	}
-
-	SSRctx = v8go.NewContext(nil)
-	// Fix "ReferenceError: exports is not defined" errors on line 1319 (exports.current_component;).
-	if _, err := SSRctx.RunScript("var exports = {};", "create_ssr"); err != nil {
-		return err
-	}
-
-	var svelteLibs = [6]string{
-		"node_modules/svelte/animate/index.js",
-		"node_modules/svelte/easing/index.js",
-		"node_modules/svelte/internal/index.js",
-		"node_modules/svelte/motion/index.js",
-		"node_modules/svelte/store/index.js",
-		"node_modules/svelte/transition/index.js",
-	}
-
-	for _, svelteLib := range svelteLibs {
-		// Use v8go and add create_ssr_component() function.
-		createSsrComponent, err := getVirtualFileIfThemeBuild(svelteLib)
-		if err != nil {
-			return err
-
-		}
-		// Fix: TypeError: Cannot read properties of undefined (reading 'noop')
-		createSsrStr := strings.ReplaceAll(string(createSsrComponent), "internal.noop", "noop")
-		_, err = SSRctx.RunScript(createSsrStr, "create_ssr")
-		/*
-			// TODO: Can't check error because `ReferenceError: require is not defined` error on build so cannot quit ...
-			if err != nil {
-				fmt.Println(fmt.Errorf("Could not add create_ssr_component() func from svelte/internal for file %s: %w%s\n", svelteLib, err, common.Caller()))
-			}
-		*/
 
 	}
 
@@ -126,7 +95,7 @@ func Client(buildPath string, coreFS embed.FS, compilerFS embed.FS) error {
 			componentStr = string(componentBytes)
 		}
 		destPath := buildPath + "/spa/" + strings.TrimSuffix(path, ".svelte") + ".js"
-		err = (compileSvelte(ctx, SSRctx, path, componentStr, destPath, stylePath))
+		err = (compileSvelte(ctx, path, componentStr, destPath, stylePath))
 		if err != nil {
 			fmt.Printf("Could not compile '%s' Svelte component: %s", path, err)
 		}
@@ -144,7 +113,7 @@ func Client(buildPath string, coreFS embed.FS, compilerFS embed.FS) error {
 			if err != nil {
 				return err
 			}
-			compiledComponentCounter, allLayoutsStr, err = compileComponent(err, layoutPath, layoutFileInfo, buildPath, ctx, SSRctx, stylePath, allLayoutsStr, compiledComponentCounter)
+			compiledComponentCounter, allLayoutsStr, err = compileComponent(err, layoutPath, layoutFileInfo, buildPath, ctx, stylePath, allLayoutsStr, compiledComponentCounter)
 			if err != nil {
 				return err
 			}
@@ -162,7 +131,7 @@ func Client(buildPath string, coreFS embed.FS, compilerFS embed.FS) error {
 			if err != nil {
 				return err
 			}
-			compiledComponentCounter, allLayoutsStr, err = compileComponent(err, layoutPath, layoutFileInfo, buildPath, ctx, SSRctx, stylePath, allLayoutsStr, compiledComponentCounter)
+			compiledComponentCounter, allLayoutsStr, err = compileComponent(err, layoutPath, layoutFileInfo, buildPath, ctx, stylePath, allLayoutsStr, compiledComponentCounter)
 			if err != nil {
 				return err
 			}
@@ -210,7 +179,7 @@ func copyNonSvelteFiles(layoutPath string, buildPath string) error {
 	return nil
 }
 
-func compileComponent(err error, layoutPath string, layoutFileInfo os.FileInfo, buildPath string, ctx *v8go.Context, SSRctx *v8go.Context, stylePath string, allLayoutsStr string, compiledComponentCounter int) (int, string, error) {
+func compileComponent(err error, layoutPath string, layoutFileInfo os.FileInfo, buildPath string, ctx *v8go.Context, stylePath string, allLayoutsStr string, compiledComponentCounter int) (int, string, error) {
 	if err != nil {
 		return compiledComponentCounter, allLayoutsStr, fmt.Errorf("can't stat %s: %w", layoutPath, err)
 	}
@@ -227,7 +196,7 @@ func compileComponent(err error, layoutPath string, layoutFileInfo os.FileInfo, 
 		}
 		componentStr := string(component)
 		// Actually compile component
-		if err = compileSvelte(ctx, SSRctx, layoutPath, componentStr, destFile, stylePath); err != nil {
+		if err = compileSvelte(ctx, layoutPath, componentStr, destFile, stylePath); err != nil {
 			return compiledComponentCounter, allLayoutsStr, fmt.Errorf("%w\n", err)
 		}
 		// Create entry for layouts.js.

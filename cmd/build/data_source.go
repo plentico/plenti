@@ -10,10 +10,12 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/plentico/plenti/readers"
 	"github.com/spf13/afero"
+	"rogchap.com/v8go"
 )
 
 // Local is set to true when using dev webserver, otherwise bools default to false.
@@ -187,34 +189,53 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 		return fmt.Errorf("\nCould not write component_schemas.js file")
 	}
 
+	//var wg sync.WaitGroup
+	wg := sync.WaitGroup{}
 	for _, currentContent := range allContent {
-
-		err := createProps(currentContent, allContentStr, env)
-		if err != nil {
-			return fmt.Errorf("\nCan't create props for %s %w", currentContent.contentFilepath, err)
-		}
-
-		err = createHTML(currentContent)
-		if err != nil {
-			return fmt.Errorf("\nCan't create HTML for %s %w", currentContent.contentFilepath, err)
-		}
-
-		allPaginatedContent, err := paginate(currentContent, contentJSPath)
-		if err != nil {
-			return err
-		}
-		for _, paginatedContent := range allPaginatedContent {
-			if err = createProps(paginatedContent, allContentStr, env); err != nil {
-				return err
+		wg.Add(1)
+		go func(currentContent content, wg *sync.WaitGroup) error {
+			defer wg.Done()
+			fmt.Println("creating SSR ctx")
+			ssrCtx, err := createSSRCtx()
+			if err != nil {
+				return fmt.Errorf("\nCan't create SSR Context for %s %w", currentContent.contentFilepath, err)
 			}
 
-			if err = createHTML(paginatedContent); err != nil {
-				return err
+			fmt.Println("creating Props")
+			ssrCtx, err = createProps(ssrCtx, currentContent, allContentStr, env)
+			if err != nil {
+				return fmt.Errorf("\nCan't create props for %s %w", currentContent.contentFilepath, err)
 			}
 
-		}
+			fmt.Println("creating HTML")
+			err = createHTML(ssrCtx, currentContent)
+			if err != nil {
+				return fmt.Errorf("\nCan't create HTML for %s %w", currentContent.contentFilepath, err)
+			}
+
+			fmt.Println("Paginating")
+			allPaginatedContent, err := paginate(ssrCtx, currentContent, contentJSPath)
+			if err != nil {
+				return err
+			}
+			for _, paginatedContent := range allPaginatedContent {
+				if ssrCtx, err = createProps(ssrCtx, paginatedContent, allContentStr, env); err != nil {
+					return err
+				}
+
+				if err = createHTML(ssrCtx, paginatedContent); err != nil {
+					return err
+				}
+
+			}
+			ssrCtx.Close()
+			//ssrCtx.Isolate().TerminateExecution()
+			//ssrCtx.Isolate().Dispose()
+			return nil
+		}(currentContent, &wg)
 
 	}
+	wg.Wait()
 
 	Log("Number of content files used: " + fmt.Sprint(contentFileCounter))
 	// Complete the content.js file.
@@ -223,6 +244,60 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 	}
 	return nil
 
+}
+
+func createSSRCtx() (*v8go.Context, error) {
+	ssrCtx := v8go.NewContext(nil)
+	// Fix "ReferenceError: exports is not defined" errors on line 1319 (exports.current_component;).
+	if _, err := ssrCtx.RunScript("var exports = {};", "create_ssr"); err != nil {
+		return nil, err
+	}
+
+	var svelteLibs = [6]string{
+		"node_modules/svelte/animate/index.js",
+		"node_modules/svelte/easing/index.js",
+		"node_modules/svelte/internal/index.js",
+		"node_modules/svelte/motion/index.js",
+		"node_modules/svelte/store/index.js",
+		"node_modules/svelte/transition/index.js",
+	}
+
+	for _, svelteLib := range svelteLibs {
+		// Use v8go and add create_ssr_component() function.
+		createSsrComponent, err := getVirtualFileIfThemeBuild(svelteLib)
+		if err != nil {
+			return nil, err
+
+		}
+		// Fix: TypeError: Cannot read properties of undefined (reading 'noop')
+		createSsrStr := strings.ReplaceAll(string(createSsrComponent), "internal.noop", "noop")
+		_, err = ssrCtx.RunScript(createSsrStr, "create_ssr")
+		/*
+			// TODO: Can't check error because `ReferenceError: require is not defined` error on build so cannot quit ...
+			if err != nil {
+				fmt.Println(fmt.Errorf("Could not add create_ssr_component() func from svelte/internal for file %s: %w%s\n", svelteLib, err, common.Caller()))
+			}
+		*/
+
+	}
+	// Add all SSR components to context for HTML rendering
+	if err := afero.Walk(SSRFs, ".", func(layoutPath string, layoutFileInfo os.FileInfo, err error) error {
+		//fmt.Println("virtual file: " + layoutPath)
+		if layoutFileInfo.IsDir() {
+			return nil
+		}
+		ssrBytes, err := afero.ReadFile(SSRFs, layoutPath)
+		ssrStr := string(ssrBytes)
+		//fmt.Println(ssrStr)
+		_, err = ssrCtx.RunScript(ssrStr, "create_ssr")
+		if err != nil {
+			return fmt.Errorf("Could not add SSR Component for %s: %w\n", layoutPath, err)
+		}
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("\nCould not get layout from virtual theme build %w", err)
+	}
+	return ssrCtx, nil
 }
 
 func getContent(path string, info os.FileInfo, err error, siteConfig readers.SiteConfig,
@@ -442,9 +517,10 @@ func removeExtraSlashes(path string) string {
 	return path
 }
 
-func createProps(currentContent content, allContentStr string, env env) error {
+func createProps(ssrCtx *v8go.Context, currentContent content, allContentStr string, env env) (*v8go.Context, error) {
 	componentSignature := "layouts_content_" + currentContent.contentType + "_svelte"
-	_, err := SSRctx.RunScript("var props = {content: "+currentContent.contentDetails+
+	//fmt.Println("create props: " + componentSignature)
+	_, err := ssrCtx.RunScript("var props = {content: "+currentContent.contentDetails+
 		", layout: "+componentSignature+
 		", allContent: "+allContentStr+
 		", shadowContent: {}"+
@@ -456,7 +532,7 @@ func createProps(currentContent content, allContentStr string, env env) error {
 		"', branch: '"+env.cms.branch+
 		"'}}};", "create_ssr")
 	if err != nil {
-		return fmt.Errorf("\nCould not create props for %s\n%+v", componentSignature, err)
+		return nil, fmt.Errorf("\nCould not create props for %s\n%+v", componentSignature, err)
 	}
 	// Render the HTML with props needed for the current content.
 	entrySignature := strings.ReplaceAll(
@@ -464,16 +540,16 @@ func createProps(currentContent content, allContentStr string, env env) error {
 			"layouts/"+env.entrypoint,
 			"/", "_"),
 		".", "_")
-	_, err = SSRctx.RunScript(fmt.Sprintf("var { html, css: staticCss} = %s.render(props);", entrySignature), "create_ssr")
+	_, err = ssrCtx.RunScript(fmt.Sprintf("var { html, css: staticCss} = %s.render(props);", entrySignature), "create_ssr")
 	if err != nil {
-		return fmt.Errorf("\nCan't render htmlComponent for %s\n%+v", componentSignature, err)
+		return nil, fmt.Errorf("\nCan't render htmlComponent for %s\n%+v", componentSignature, err)
 	}
-	return nil
+	return ssrCtx, nil
 }
 
-func createHTML(currentContent content) error {
+func createHTML(ssrCtx *v8go.Context, currentContent content) error {
 	// Get the rendered HTML from v8go.
-	renderedHTML, err := SSRctx.RunScript("html;", "create_ssr")
+	renderedHTML, err := ssrCtx.RunScript("html;", "create_ssr")
 	if err != nil {
 		return fmt.Errorf("V8go could not execute js default: %w\n", err)
 
@@ -502,7 +578,7 @@ func createHTML(currentContent content) error {
 	return nil
 }
 
-func paginate(currentContent content, contentJSPath string) ([]content, error) {
+func paginate(ssrCtx *v8go.Context, currentContent content, contentJSPath string) ([]content, error) {
 	paginatedContent, _ := getPagination()
 	var err error
 	allNewContent := []content{}
@@ -511,7 +587,7 @@ func paginate(currentContent content, contentJSPath string) ([]content, error) {
 		// Check if the config file specifies pagination for this Type.
 		if len(pager.paginationVars) > 0 && pager.contentType == currentContent.contentType {
 			// Increment the pager.
-			allNewContent, err = incrementPager(pager.paginationVars, currentContent, contentJSPath, allNewContent)
+			allNewContent, err = incrementPager(ssrCtx, pager.paginationVars, currentContent, contentJSPath, allNewContent)
 			if err != nil {
 				return nil, err
 			}
@@ -520,13 +596,13 @@ func paginate(currentContent content, contentJSPath string) ([]content, error) {
 	return allNewContent, err
 }
 
-func incrementPager(paginationVars []string, currentContent content, contentJSPath string, allNewContent []content) ([]content, error) {
+func incrementPager(ssrCtx *v8go.Context, paginationVars []string, currentContent content, contentJSPath string, allNewContent []content) ([]content, error) {
 	// Pop first item from the list.
 	paginationVar, paginationVars := paginationVars[0], paginationVars[1:]
 	// Copy the current content so we can increment the pager.
 	newContent := currentContent
 	// Get the number of pages for the pager.
-	totalPagesInt, err := getTotalPages(paginationVar)
+	totalPagesInt, err := getTotalPages(ssrCtx, paginationVar)
 	if err != nil {
 		return nil, err
 	}
@@ -548,7 +624,7 @@ func incrementPager(paginationVars []string, currentContent content, contentJSPa
 		if len(paginationVars) > 0 {
 			// Recursively call func to increment second pager.
 			// todo: a better approach
-			allNewContentTmp, err := incrementPager(paginationVars, newContent, contentJSPath, allNewContent)
+			allNewContentTmp, err := incrementPager(ssrCtx, paginationVars, newContent, contentJSPath, allNewContent)
 			if err != nil {
 				return nil, err
 			}
@@ -589,8 +665,8 @@ func incrementPager(paginationVars []string, currentContent content, contentJSPa
 	return allNewContent, nil
 }
 
-func getTotalPages(paginationVar string) (int, error) {
-	totalPages, err := SSRctx.RunScript("plenti_global_pager_"+paginationVar, "create_ssr")
+func getTotalPages(ssrCtx *v8go.Context, paginationVar string) (int, error) {
+	totalPages, err := ssrCtx.RunScript("plenti_global_pager_"+paginationVar, "create_ssr")
 	if err != nil {
 		return 0, fmt.Errorf("Could not get value of '%v' used in pager: %w\n", paginationVar, err)
 	}
