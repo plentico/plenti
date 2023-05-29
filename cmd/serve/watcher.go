@@ -39,16 +39,21 @@ func Gowatch(buildPath string, Build buildFunc) {
 
 // Watch looks for updates to filesystem to prompt a site rebuild.
 func (w *watcher) watch(buildPath string, Build buildFunc) {
-	// Watch project for changes.
-	if err := filepath.WalkDir(".", w.watchDir(buildPath)); err != nil {
-		// Die on any error or will loop infinitely
-		log.Fatal("Error watching for changes: %w", err)
+	// Add watchers for project directories.
+	watchingDirs := []string{"core", "content", "layouts", "media", "static"}
+	for _, dir := range watchingDirs {
+		if err := filepath.WalkDir(dir, w.watchDir()); err != nil {
+			// Die on any error or will loop infinitely
+			log.Fatal("Error watching for changes: %w", err)
+		}
+
 	}
-	if err := w.Add("plenti.json"); err != nil {
-		log.Fatal("couldn't add 'plenti.json' to watcher %w", err)
-	}
-	if err := w.Add("package.json"); err != nil {
-		log.Fatal("couldn't add 'package.json' to watcher %w", err)
+	// Add watchers for top-level project files.
+	watchingFiles := []string{"plenti.json", "package.json"}
+	for _, file := range watchingFiles {
+		if err := w.Add(file); err != nil {
+			log.Fatal("couldn't add '%w' to watcher %w", file, err)
+		}
 	}
 
 	done := make(chan bool)
@@ -88,29 +93,14 @@ func (w *watcher) watch(buildPath string, Build buildFunc) {
 }
 
 // Closure that enables passing buildPath as arg to callback.
-func (w *watcher) watchDir(buildPath string) fs.WalkDirFunc {
+func (w *watcher) watchDir() fs.WalkDirFunc {
 	// Callback for walk func: searches for directories to add watchers to.
 	return func(path string, fi fs.DirEntry, err error) error {
-		// Skip the "public" build dir to avoid infinite loops.
-		if fi.IsDir() && fi.Name() == buildPath {
-			return filepath.SkipDir
-		}
-		// Add watchers only to nested directory.
-		watchingDirs := []string{"core", "content", "layouts", "media", "static"}
-		if fi.IsDir() && contains(watchingDirs, fi.Name()) {
+		if fi.IsDir() {
 			return w.Add(path)
 		}
 		return nil
 	}
-}
-
-func contains(s []string, e string) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
 }
 
 func logEvent(event fsnotify.Event, w *watcher) {
