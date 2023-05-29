@@ -44,6 +44,12 @@ func (w *watcher) watch(buildPath string, Build buildFunc) {
 		// Die on any error or will loop infinitely
 		log.Fatal("Error watching for changes: %w", err)
 	}
+	if err := w.Add("plenti.json"); err != nil {
+		log.Fatal("couldn't add 'plenti.json' to watcher %w", err)
+	}
+	if err := w.Add("package.json"); err != nil {
+		log.Fatal("couldn't add 'package.json' to watcher %w", err)
+	}
 
 	done := make(chan bool)
 
@@ -90,11 +96,21 @@ func (w *watcher) watchDir(buildPath string) fs.WalkDirFunc {
 			return filepath.SkipDir
 		}
 		// Add watchers only to nested directory.
-		if fi.IsDir() {
+		watchingDirs := []string{"core", "content", "layouts", "media", "static"}
+		if fi.IsDir() && contains(watchingDirs, fi.Name()) {
 			return w.Add(path)
 		}
 		return nil
 	}
+}
+
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }
 
 func logEvent(event fsnotify.Event, w *watcher) {
