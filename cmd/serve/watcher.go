@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/fs"
 	"log"
+	"os"
 	"path/filepath"
 
 	"github.com/plentico/plenti/cmd/build"
@@ -42,17 +43,21 @@ func (w *watcher) watch(buildPath string, Build buildFunc) {
 	// Add watchers for project directories.
 	watchingDirs := []string{"core", "content", "layouts", "media", "static"}
 	for _, dir := range watchingDirs {
-		if err := filepath.WalkDir(dir, w.watchDir()); err != nil {
-			// Die on any error or will loop infinitely
-			log.Fatal("Error watching for changes: %w", err)
+		if _, err := os.Stat(dir); !os.IsNotExist(err) {
+			// The project directory exists, start watching it.
+			if err := filepath.WalkDir(dir, w.watchDir()); err != nil {
+				log.Fatal("Error watching 'content/' folder for changes: %w", err)
+			}
 		}
-
 	}
 	// Add watchers for top-level project files.
 	watchingFiles := []string{"plenti.json", "package.json"}
 	for _, file := range watchingFiles {
-		if err := w.Add(file); err != nil {
-			log.Fatal("couldn't add '%w' to watcher %w", file, err)
+		if _, err := os.Stat(file); !os.IsNotExist(err) {
+			// The file exists, watch it for changes.
+			if err := w.Add(file); err != nil {
+				log.Fatal("couldn't add '%w' to watcher %w", file, err)
+			}
 		}
 	}
 
