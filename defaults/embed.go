@@ -2,7 +2,7 @@ package defaults
 
 import "embed"
 
-//go:embed all:compiler/*
+//go:embed compiler/generated/compiler.js
 var CompilerFS embed.FS
 
 //go:embed all:core/*

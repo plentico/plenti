@@ -51,7 +51,7 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string,
 	}
 
 	// Compile component with Svelte.
-	scriptDOM := fmt.Sprintf(`;__svelte__.compile({ path: %q, code: %q, target: "dom", css: false })`, layoutPath, componentStr)
+	scriptDOM := fmt.Sprintf(`;__svelte__.compile({ path: %q, code: %q, target: "dom", css: false, name: "Component" })`, layoutPath, componentStr)
 	resultDOM, err := ctx.RunScript(scriptDOM, "compile_svelte")
 	if err != nil {
 		return fmt.Errorf("\nDOM: Can't compile component file %s\n%w", layoutPath, err)
@@ -84,7 +84,7 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string,
 	}
 
 	// Get Server Side Rendered (SSR) JS.
-	scriptSSR := fmt.Sprintf(`;__svelte__.compile({ path: %q, code: %q, target: "ssr", css: false})`, layoutPath, componentStr)
+	scriptSSR := fmt.Sprintf(`;__svelte__.compile({ path: %q, code: %q, target: "ssr", css: false, name: "Component" })`, layoutPath, componentStr)
 	resultSSR, err := ctx.RunScript(scriptSSR, "compile_svelte")
 	if err != nil {
 		return fmt.Errorf("\nSSR: Can't compile component file %s\n%w", layoutPath, err)

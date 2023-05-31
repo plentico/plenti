@@ -39,7 +39,7 @@ func Client(buildPath string, coreFS embed.FS, compilerFS embed.FS) error {
 	compiledComponentCounter := 0
 
 	// Get transformed svelte compiler code from embedded filesystem.
-	compiler, err := compilerFS.ReadFile("compiler/compiler.js")
+	compiler, err := compilerFS.ReadFile("compiler/generated/compiler.js")
 	if err != nil {
 		return err
 	}
