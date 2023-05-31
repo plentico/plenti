@@ -26580,6 +26580,7 @@ ${frame}`
   function compile2(input) {
     const { code, path, target, dev, css } = input;
     const svelte = compile(code, {
+      name: "Component",
       filename: path,
       generate: target,
       hydratable: true,

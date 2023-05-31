@@ -23,8 +23,8 @@ var (
 	reConst = regexp.MustCompile(`(?m)^const\s`)
 	// Only use comp signatures inside JS template literal placeholders.
 	reTemplatePlaceholder = regexp.MustCompile(`(?s)\$\{validate_component\(.*\)\}`)
-	// Match: var Compname = create_ssr_component(
-	reSSRComp = regexp.MustCompile(`(var\s)[A-Za-z0-9_-]*(\s=\screate_ssr_component\()`)
+	// Match: var Component = create_ssr_component(
+	reSSRComp = regexp.MustCompile(`(var\s)Component(\s=\screate_ssr_component\()`)
 	// Only add named imports to create_ssr_component().
 	reCreateFunc = regexp.MustCompile(`(create_ssr_component\(\(.*\)\s=>\s\{)`)
 	// Match: allLayouts.layouts_components_grid_svelte
@@ -51,7 +51,7 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string,
 	}
 
 	// Compile component with Svelte.
-	scriptDOM := fmt.Sprintf(`;__svelte__.compile({ "path": %q, "code": %q, "target": "dom", "css": false, hydratable: true })`, layoutPath, componentStr)
+	scriptDOM := fmt.Sprintf(`;__svelte__.compile({ path: %q, code: %q, target: "dom", css: false })`, layoutPath, componentStr)
 	resultDOM, err := ctx.RunScript(scriptDOM, "compile_svelte")
 	if err != nil {
 		return fmt.Errorf("\nDOM: Can't compile component file %s\n%w", layoutPath, err)
@@ -84,7 +84,7 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string,
 	}
 
 	// Get Server Side Rendered (SSR) JS.
-	scriptSSR := fmt.Sprintf(`;__svelte__.compile({ "path": %q, "code": %q, "target": "ssr", "css": false })`, layoutPath, componentStr)
+	scriptSSR := fmt.Sprintf(`;__svelte__.compile({ path: %q, code: %q, target: "ssr", css: false})`, layoutPath, componentStr)
 	resultSSR, err := ctx.RunScript(scriptSSR, "compile_svelte")
 	if err != nil {
 		return fmt.Errorf("\nSSR: Can't compile component file %s\n%w", layoutPath, err)
