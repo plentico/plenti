@@ -31,7 +31,7 @@ jobs:
         env:
           SNAPCRAFT_TOKEN: ${{ secrets.snapcraft_token }}
         run: |
-          snapcraft login --with <(echo "$SNAPCRAFT_TOKEN")
+          export SNAPCRAFT_STORE_CREDENTIALS=$SNAPCRAFT_TOKEN
       -
         name: Dockerhub Login
         run: |
