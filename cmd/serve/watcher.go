@@ -5,7 +5,9 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/plentico/plenti/cmd/build"
 
@@ -17,8 +19,6 @@ import (
 type watcher struct {
 	*fsnotify.Watcher
 }
-
-var lock uint32
 
 type buildFunc func() error
 
@@ -46,7 +46,7 @@ func (w *watcher) watch(buildPath string, Build buildFunc) {
 		if _, err := os.Stat(dir); !os.IsNotExist(err) {
 			// The project directory exists, start watching it.
 			if err := filepath.WalkDir(dir, w.watchDir()); err != nil {
-				log.Fatal("Error watching 'content/' folder for changes: %w", err)
+				log.Fatal("\nError watching '%w' folder for changes: %w", dir, err)
 			}
 		}
 	}
@@ -56,7 +56,7 @@ func (w *watcher) watch(buildPath string, Build buildFunc) {
 		if _, err := os.Stat(file); !os.IsNotExist(err) {
 			// The file exists, watch it for changes.
 			if err := w.Add(file); err != nil {
-				log.Fatal("couldn't add '%w' to watcher %w", file, err)
+				log.Fatal("\nCouldn't add '%w' to watcher %w", file, err)
 			}
 		}
 	}
@@ -71,8 +71,8 @@ func (w *watcher) watch(buildPath string, Build buildFunc) {
 			select {
 			// Watch for events.
 			case event := <-w.Events:
-				// Don't rebuild when build dir is added or deleted.
-				if event.Name != "./"+buildPath {
+				// Don't rebuild for public build dir or hidden dot file changes
+				if event.Name != "./"+buildPath && !strings.HasPrefix(path.Base(event.Name), ".") {
 					// Time resets on every event called, so it waits interval before triggering build
 					timer.Reset(time.Millisecond * 300)
 					// Display messages for each event that's triggered
@@ -102,6 +102,7 @@ func (w *watcher) watchDir() fs.WalkDirFunc {
 	// Callback for walk func: searches for directories to add watchers to.
 	return func(path string, fi fs.DirEntry, err error) error {
 		if fi.IsDir() {
+			// Watches whole dir, so it picks up when new files are added.
 			return w.Add(path)
 		}
 		return nil
