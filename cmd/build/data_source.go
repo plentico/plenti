@@ -59,10 +59,11 @@ type content struct {
 
 // Holds sitewide environment variables.
 type env struct {
-	local      string
-	baseurl    string
-	entrypoint string
-	cms        cms
+	local       string
+	baseurl     string
+	entrypoint  string
+	loadLayouts []string
+	cms         cms
 }
 type cms struct {
 	repo        string
@@ -82,9 +83,10 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 	contentJSPath := buildPath + "/spa/generated/content.js"
 	envPath := buildPath + "/spa/generated/env.js"
 	env := env{
-		local:      strconv.FormatBool(Local),
-		baseurl:    siteConfig.BaseURL,
-		entrypoint: siteConfig.EntryPoint,
+		local:       strconv.FormatBool(Local),
+		baseurl:     siteConfig.BaseURL,
+		entrypoint:  siteConfig.EntryPoint,
+		loadLayouts: siteConfig.LoadLayouts,
 		cms: cms{
 			repo:        siteConfig.CMS.Repo,
 			redirectUrl: siteConfig.CMS.RedirectUrl,
@@ -93,11 +95,17 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 		},
 	}
 
+	loadLayoutsStr := ""
+	for _, layout := range env.loadLayouts {
+		loadLayoutsStr += "'" + layout + "',"
+	}
+
 	// Create env magic prop.
 	envStr := "export let env = { local: " + env.local +
 		", baseurl: '" + env.baseurl +
 		"', entrypoint: '" + env.entrypoint +
-		"', cms: { repo: '" + env.cms.repo +
+		"', loadLayouts: [" + loadLayoutsStr +
+		"], cms: { repo: '" + env.cms.repo +
 		"', redirectUrl: '" + env.cms.redirectUrl +
 		"', appId: '" + env.cms.appId +
 		"', branch: '" + env.cms.branch +
@@ -447,6 +455,7 @@ func createProps(currentContent content, allContentStr string, env env) error {
 	_, err := SSRctx.RunScript("var props = {content: "+currentContent.contentDetails+
 		", layout: "+componentSignature+
 		", allContent: "+allContentStr+
+		", allLayouts: { load: l => ''}"+
 		", shadowContent: {}"+
 		", env: {local: "+env.local+
 		", baseurl: '"+env.baseurl+

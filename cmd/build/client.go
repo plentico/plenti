@@ -33,7 +33,11 @@ func Client(buildPath string, coreFS embed.FS, compilerFS embed.FS) error {
 	stylePath := buildPath + "/spa/bundle.css"
 	allLayoutsPath := buildPath + "/spa/generated/layouts.js"
 	// Initialize string for layouts.js component list.
-	var allLayoutsStr string
+	allLayoutsStr := `let allLayouts = {};
+	const loadLayout = async name => {
+		if (name in allLayouts) {
+			return
+		}`
 
 	// Set up counter for logging output.
 	compiledComponentCounter := 0
@@ -172,6 +176,10 @@ func Client(buildPath string, coreFS embed.FS, compilerFS embed.FS) error {
 		}
 	}
 
+	// Finish allLayouts by adding load func
+	allLayoutsStr = allLayoutsStr + `}
+	allLayouts.load = loadLayout;
+	export default allLayouts;`
 	// Write layouts.js to filesystem.
 	err = ioutil.WriteFile(allLayoutsPath, []byte(allLayoutsStr), os.ModePerm)
 	if err != nil {
@@ -233,7 +241,12 @@ func compileComponent(err error, layoutPath string, layoutFileInfo os.FileInfo, 
 		// Create entry for layouts.js.
 		layoutSignature := strings.ReplaceAll(strings.ReplaceAll((layoutPath), "/", "_"), ".", "_")
 		// Compose entry for layouts.js file.
-		allLayoutsStr = allLayoutsStr + "export {default as " + layoutSignature + "} from '../" + layoutPath + "';\n"
+		allLayoutsStr = allLayoutsStr + `
+		if (name === '` + layoutSignature + `' || name === '*') {
+			console.log('loading ' + name);
+			import('../` + layoutPath + `').then(res => allLayouts['` + layoutSignature + `'] = res.default);
+		}`
+
 		// Increment counter for each compiled component.
 		compiledComponentCounter++
 	}

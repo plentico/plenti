@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/fs"
 	"io/ioutil"
 	"os"
 	"path"
@@ -53,11 +54,19 @@ func Gopack(buildPath, entrypoint string) error {
 	// Clear web_modules from previous build.
 	alreadyConvertedFiles = []string{}
 
-	// Start at the entry point for the app
-	err := runPack(buildPath, entrypoint)
-	if err != nil {
-		return err
-	}
+	filepath.WalkDir(entrypoint, func(path string, file fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if file.IsDir() {
+			return nil
+		}
+		err = runPack(buildPath, path)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
 
 	return nil
 }
@@ -182,16 +191,15 @@ func runPack(buildPath, convertPath string) error {
 					fmt.Printf("Could not make path to NPM dependency relative: %s", err)
 				}
 			}
-		}
-
-		// Do not convert files that have already been converted to avoid loops.
-		if !alreadyConverted(fullPathStr, alreadyConvertedFiles) {
-			// Add the current file to list of already converted files.
-			alreadyConvertedFiles = append(alreadyConvertedFiles, fullPathStr)
-			// Use fullPathStr recursively to find its imports.
-			err = runPack(buildPath, fullPathStr)
-			if err != nil {
-				return fmt.Errorf("\nCan't runPack on %s %w", fullPathStr, err)
+			// Do not convert npm files that have already been converted to avoid loops.
+			if !alreadyConverted(fullPathStr, alreadyConvertedFiles) {
+				// Add the current file to list of already converted files.
+				alreadyConvertedFiles = append(alreadyConvertedFiles, fullPathStr)
+				// Use fullPathStr recursively to find its imports.
+				err = runPack(buildPath, fullPathStr)
+				if err != nil {
+					return fmt.Errorf("\nCan't runPack on %s %w", fullPathStr, err)
+				}
 			}
 		}
 

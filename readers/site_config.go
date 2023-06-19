@@ -16,6 +16,7 @@ type SiteConfig struct {
 	BaseURL     string                  `json:"baseurl"`
 	Theme       string                  `json:"theme"`
 	EntryPoint  string                  `json:"entrypoint"`
+	LoadLayouts []string                `json:"loadLayouts"`
 	ThemeConfig map[string]ThemeOptions `json:"theme_config"`
 	Local       struct {
 		Port int `json:"port"`
@@ -80,8 +81,14 @@ func GetSiteConfig(basePath string) (SiteConfig, string) {
 		siteConfig.Local.Port = 3000
 	}
 
+	// If entrypoint is not set in config, use default
 	if siteConfig.EntryPoint == "" {
 		siteConfig.EntryPoint = "global/html.svelte"
+	}
+
+	// If loadComponents is not set in config, use default
+	if len(siteConfig.LoadLayouts) == 0 {
+		siteConfig.LoadLayouts = []string{"*"}
 	}
 
 	return siteConfig, configPath

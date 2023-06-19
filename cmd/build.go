@@ -165,15 +165,9 @@ func Build() error {
 	}
 
 	// Run Gopack (custom Snowpack alternative) on dynamically imported adminMenu.
-	err = build.Gopack(buildPath, buildPath+"/spa/core/cms/admin_menu.js")
+	err = build.Gopack(buildPath, buildPath+"/spa/")
 	if err != nil {
 		log.Fatal("\nError in Gopack admin_menu.svelte build step", err)
-	}
-
-	// Run Gopack manually on dynamic imports
-	err = build.GopackDynamic(buildPath)
-	if err != nil {
-		log.Fatal("\nError in GopackDynamic build step", err)
 	}
 
 	// Run Minification
