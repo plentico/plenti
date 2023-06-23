@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"path"
@@ -38,6 +39,18 @@ var SSLFlag bool
 
 // LocalFlag can be set to false to emulate a remote environment
 var LocalFlag bool
+
+func checkPortAvailability(port int) bool {
+	address := fmt.Sprintf("localhost:%d", port)
+	listener, err := net.Listen("tcp", address)
+
+	if err == nil {
+		return false // Port is already in use
+	}
+	defer listener.Close()
+
+	return true // Port is available
+}
 
 func setPort(siteConfig readers.SiteConfig) int {
 	// default to  use value from config file
@@ -72,6 +85,18 @@ var serveCmd = &cobra.Command{
 	`),
 	Run: func(cmd *cobra.Command, args []string) {
 
+		// Get settings from config file.
+		siteConfig, _ := readers.GetSiteConfig(".")
+
+		// Check flags and config for local server port
+		port := setPort(siteConfig)
+
+		if !checkPortAvailability(port) {
+			log.Printf("Port \"%d\" is already in use. Override with the -p flag or change your plenti.json file.\n", port)
+
+			log.Fatal("Cannot start the server.")
+		}
+
 		s := spinner.New(spinner.CharSets[35], 100*time.Millisecond)
 
 		s.Suffix = " Building..."
@@ -86,9 +111,6 @@ var serveCmd = &cobra.Command{
 			// Run build command before starting server
 			buildCmd.Run(cmd, args)
 		}
-
-		// Get settings from config file.
-		siteConfig, _ := readers.GetSiteConfig(".")
 
 		// Check flags and config for directory to build to
 		buildDir := setBuildDir(siteConfig)
@@ -111,8 +133,6 @@ var serveCmd = &cobra.Command{
 			webroot = siteConfig.BaseURL
 		}
 
-		// Check flags and config for local server port
-		port := setPort(siteConfig)
 		// Check flags for local protocol
 		protocol := setProtocol(SSLFlag)
 		// Local URL that can be visited in browser
