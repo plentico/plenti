@@ -42,14 +42,14 @@ var LocalFlag bool
 
 func checkPortAvailability(port int) bool {
 	address := fmt.Sprintf("localhost:%d", port)
-	listener, err := net.Listen("tcp", address)
+	conn, err := net.Dial("tcp", address)
 
-	if err == nil {
-		return false // Port is already in use
+	if err != nil {
+		return true // Port is available
 	}
-	defer listener.Close()
+	defer conn.Close()
 
-	return true // Port is available
+	return false // Port is already in use
 }
 
 func setPort(siteConfig readers.SiteConfig) int {
