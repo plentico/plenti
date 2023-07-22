@@ -31,14 +31,15 @@ builds:
 universal_binaries:
 - replace: true
 archives:
-  - id: default
-    name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
-    replacements:
-      darwin: Mac
-      linux: Linux
-      #windows: Windows
-      386: 32-bit
-      amd64: 64-bit
+  - name_template: >-
+      {{ .ProjectName }}_
+      {{ .Version }}_
+      {{- if eq .Os "darwin" }}mac_
+      {{- else }}{{- tolower .Os }}_{{end}}
+      {{- if eq .Arch "amd64" }}64-bit
+      {{- else if eq .Arch "386" }}32-bit
+      {{- else }}{{ .Arch }}
+      {{ if .Arm }}v{{ .Arm }}{{ end }}
 checksum:
   name_template: 'checksums.txt'
 snapshot:
