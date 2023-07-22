@@ -10,6 +10,6 @@
 
   <script type="module" src="/spa/core/main.js"></script>
 
-  <link rel="icon" type="image/svg+xml" href="/assets/logo.svg">
+  <link rel="icon" type="image/svg+xml" href="/media/logo.svg">
   <link rel='stylesheet' href='/spa/bundle.css'>
 </head>
