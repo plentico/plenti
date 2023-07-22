@@ -35,11 +35,10 @@ archives:
       {{ .ProjectName }}_
       {{ .Version }}_
       {{- if eq .Os "darwin" }}mac_
-      {{- else }}{{- tolower .Os }}_{{end}}
+      {{- else }}{{- title .Os }}_{{end}}
       {{- if eq .Arch "amd64" }}64-bit
       {{- else if eq .Arch "386" }}32-bit
-      {{- else }}{{ .Arch }}
-      {{ if .Arm }}v{{ .Arm }}{{ end }}
+      {{- else }}{{ .Arch }}{{ end }}
 checksum:
   name_template: 'checksums.txt'
 snapshot:
