@@ -30,9 +30,9 @@ builds:
   - arm64
 universal_binaries:
   -
-  ids:
-    - darwin-build
-  replace: true
+    ids:
+      - darwin-build
+    replace: true
 archives:
   - name_template: >-
       {{ .ProjectName }}_
