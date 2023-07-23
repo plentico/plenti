@@ -29,13 +29,16 @@ builds:
   - amd64
   - arm64
 universal_binaries:
-- replace: true
+  -
+  ids:
+    - darwin-build
+  replace: true
 archives:
   - name_template: >-
       {{ .ProjectName }}_
-      {{ .RawVersion }}_
+      {{ .Tag }}_
       {{- if eq .Os "darwin" }}mac_
-      {{- else }}{{- title .Os }}_{{end}}
+      {{- else }}{{- tolower .Os }}_{{end}}
       {{- if eq .Arch "amd64" }}64-bit
       {{- else if eq .Arch "386" }}32-bit
       {{- else }}{{ .Arch }}{{ end }}
