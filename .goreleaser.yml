@@ -33,7 +33,7 @@ universal_binaries:
 archives:
   - name_template: >-
       {{ .ProjectName }}_
-      {{ .Version }}_
+      {{ .RawVersion }}_
       {{- if eq .Os "darwin" }}mac_
       {{- else }}{{- title .Os }}_{{end}}
       {{- if eq .Arch "amd64" }}64-bit
