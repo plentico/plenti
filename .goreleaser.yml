@@ -36,6 +36,7 @@ universal_binaries:
 archives:
   - name_template: >-
       {{ .ProjectName }}_
+      {{- trimprefix .Version "." }}_
       {{- if eq .Os "darwin" }}mac_
       {{- else }}{{- tolower .Os }}_{{end}}
       {{- if eq .Arch "amd64" }}64-bit
