@@ -36,10 +36,11 @@ universal_binaries:
 archives:
   - name_template: >-
       {{ .ProjectName }}_
-      {{ .Tag }}_
+      {{ .Version }}_
       {{- if eq .Os "darwin" }}mac_
       {{- else }}{{- tolower .Os }}_{{end}}
       {{- if eq .Arch "amd64" }}64-bit
+      {{- else if eq .Arch "all" }}64-bit
       {{- else if eq .Arch "386" }}32-bit
       {{- else }}{{ .Arch }}{{ end }}
 checksum:
