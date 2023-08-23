@@ -34,6 +34,7 @@
         font-family: sans-serif;
         font-size: small;
         white-space: pre-wrap;
+        word-break: break-all;
     }
     .textarea.disabled {
         resize: none;
