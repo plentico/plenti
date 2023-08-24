@@ -42,9 +42,9 @@
 {#if label !== "plenti_salt"}
     <div class="field {label}">
         {#if label}
-            <label for="{label}">{label}</label>    
+            <label for="{label}">{label}</label>
         {/if}
-        {#if field === null}
+        {#if field === null && !schema}
             <div>field is null</div>
         {:else if field === undefined}
             <div>field is undefined</div>
@@ -73,7 +73,7 @@
             {/if}
         {:else if typeof field === "boolean"}
             <Boolean bind:field {label} />
-        {:else if field.constructor === [].constructor}
+        {:else if field?.constructor === [].constructor}
             <Component
                 bind:field
                 {label}
@@ -83,7 +83,7 @@
                 {parentKeys}
                 {schema}
             />
-        {:else if field.constructor === ({}).constructor}
+        {:else if field?.constructor === ({}).constructor}
             <Fieldset
                 bind:field
                 {label}
@@ -94,7 +94,7 @@
                 {schema}
             />
         {/if}
-    </div> 
+    </div>
 {/if}
 
 <style>
