@@ -21,7 +21,6 @@ require (
 	github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be // indirect
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e // indirect
 	github.com/emirpasic/gods v1.12.0 // indirect
-	github.com/evanw/esbuild v0.17.19 // indirect
 	github.com/fatih/color v1.10.0 // indirect
 	github.com/gliderlabs/ssh v0.3.2 // indirect
 	github.com/go-git/gcfg v1.5.0 // indirect
@@ -46,5 +45,5 @@ require (
 	golang.org/x/text v0.7.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.0 // indirect
 )
