@@ -112,6 +112,7 @@ func Build() error {
 
 	// Get the full path for the build directory of the site.
 	buildPath := filepath.Join(".", buildDir)
+	spaPath := buildPath + "/" + siteConfig.EntryPointJS + "/"
 
 	// Clear out any previous build dir of the same name.
 	if _, buildPathExistsErr := os.Stat(buildPath); buildPathExistsErr == nil {
@@ -129,7 +130,7 @@ func Build() error {
 	}
 
 	// Directly copy .js that don't need compiling to the build dir.
-	err = build.EjectCopy(buildPath, defaults.CoreFS)
+	err = build.EjectCopy(spaPath, defaults.CoreFS)
 	if err != nil {
 		log.Fatal("\nError in EjectCopy build step", err)
 	}
@@ -141,37 +142,37 @@ func Build() error {
 	}
 
 	// Directly copy media to the build dir.
-	err = build.MediaCopy(buildPath)
+	err = build.MediaCopy(buildPath, spaPath)
 	if err != nil {
 		log.Fatal("\nError in MediaCopy build step", err)
 	}
 
 	// Prep the client SPA.
-	err = build.Client(buildPath, defaults.CoreFS, defaults.CompilerFS)
+	err = build.Client(spaPath, defaults.CoreFS, defaults.CompilerFS)
 	if err != nil {
 		log.Fatal("\nError in Client build step", err)
 	}
 
 	// Build JSON from "content/" directory.
-	err = build.DataSource(buildPath, siteConfig)
+	err = build.DataSource(buildPath, spaPath, siteConfig)
 	if err != nil {
 		log.Fatal("\nError in DataSource build step", err)
 	}
 
 	// Run Gopack (custom Snowpack alternative) on app for ESM support.
-	err = build.Gopack(buildPath, buildPath+"/spa/core/main.js")
+	err = build.Gopack(buildPath, spaPath, spaPath+"core/main.js")
 	if err != nil {
 		log.Fatal("\nError in Gopack main.js build step", err)
 	}
 
 	// Run Gopack (custom Snowpack alternative) on dynamically imported adminMenu.
-	err = build.Gopack(buildPath, buildPath+"/spa/core/cms/admin_menu.js")
+	err = build.Gopack(buildPath, spaPath, spaPath+"core/cms/admin_menu.js")
 	if err != nil {
 		log.Fatal("\nError in Gopack admin_menu.svelte build step", err)
 	}
 
 	// Run Gopack manually on dynamic imports
-	err = build.GopackDynamic(buildPath)
+	err = build.GopackDynamic(buildPath, spaPath)
 	if err != nil {
 		log.Fatal("\nError in GopackDynamic build step", err)
 	}

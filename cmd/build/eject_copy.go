@@ -11,7 +11,7 @@ import (
 )
 
 // EjectCopy does a direct copy of any ejectable js files needed in spa build dir.
-func EjectCopy(buildPath string, coreFS embed.FS) error {
+func EjectCopy(destPath string, coreFS embed.FS) error {
 
 	defer Benchmark(time.Now(), "Copying ejectable core files for build")
 
@@ -24,7 +24,6 @@ func EjectCopy(buildPath string, coreFS embed.FS) error {
 		return fmt.Errorf("Unable to get ejected defaults: %w\n", err)
 	}
 
-	destPath := buildPath + "/spa/"
 	ejectedFilesErr := fs.WalkDir(coreDefaults, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return fmt.Errorf("can't stat %s: %w", path, err)

@@ -59,10 +59,11 @@ type content struct {
 
 // Holds sitewide environment variables.
 type env struct {
-	local      string
-	baseurl    string
-	entrypoint string
-	cms        cms
+	local          string
+	baseurl        string
+	entrypointHTML string
+	entrypointJS   string
+	cms            cms
 }
 type cms struct {
 	repo        string
@@ -72,19 +73,20 @@ type cms struct {
 }
 
 // DataSource builds json list from "content/" directory.
-func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
+func DataSource(buildPath string, spaPath string, siteConfig readers.SiteConfig) error {
 
 	defer Benchmark(time.Now(), "Creating data_source")
 
 	Log("\nGathering data source from 'content/' folder")
 
 	// Set some defaults
-	contentJSPath := buildPath + "/spa/generated/content.js"
-	envPath := buildPath + "/spa/generated/env.js"
+	contentJSPath := spaPath + "generated/content.js"
+	envPath := spaPath + "generated/env.js"
 	env := env{
-		local:      strconv.FormatBool(Local),
-		baseurl:    siteConfig.BaseURL,
-		entrypoint: siteConfig.EntryPoint,
+		local:          strconv.FormatBool(Local),
+		baseurl:        siteConfig.BaseURL,
+		entrypointHTML: siteConfig.EntryPointHTML,
+		entrypointJS:   siteConfig.EntryPointJS,
 		cms: cms{
 			repo:        siteConfig.CMS.Repo,
 			redirectUrl: siteConfig.CMS.RedirectUrl,
@@ -96,7 +98,8 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 	// Create env magic prop.
 	envStr := "export let env = { local: " + env.local +
 		", baseurl: '" + env.baseurl +
-		"', entrypoint: '" + env.entrypoint +
+		"', entrypointHTML: '" + env.entrypointHTML +
+		"', entrypointJS: '" + env.entrypointJS +
 		"', cms: { repo: '" + env.cms.repo +
 		"', redirectUrl: '" + env.cms.redirectUrl +
 		"', appId: '" + env.cms.appId +
@@ -164,25 +167,25 @@ func DataSource(buildPath string, siteConfig readers.SiteConfig) error {
 	allContentStr = strings.TrimSuffix(allContentStr, ",") + "]"
 	// End the string that will be used in allDefaults object.
 	allDefaultsStr = strings.TrimSuffix(allDefaultsStr, ",") + "];\n\nexport default allDefaults;"
-	err = writeContentJS(buildPath+"/spa/generated/defaults.js", allDefaultsStr)
+	err = writeContentJS(spaPath+"generated/defaults.js", allDefaultsStr)
 	if err != nil {
 		return fmt.Errorf("\nCould not write defaults.js file")
 	}
 	// End the string that will be used in allSchemas object.
 	allSchemasStr = strings.TrimSuffix(allSchemasStr, ",") + "\n};\n\nexport default allSchemas;"
-	err = writeContentJS(buildPath+"/spa/generated/schemas.js", allSchemasStr)
+	err = writeContentJS(spaPath+"generated/schemas.js", allSchemasStr)
 	if err != nil {
 		return fmt.Errorf("\nCould not write schemas.js file")
 	}
 	// End the string that will be used in allComponentDefaults object.
 	allComponentDefaultsStr = strings.TrimSuffix(allComponentDefaultsStr, ",") + "\n};\n\nexport default allComponentDefaults;"
-	err = writeContentJS(buildPath+"/spa/generated/component_defaults.js", allComponentDefaultsStr)
+	err = writeContentJS(spaPath+"generated/component_defaults.js", allComponentDefaultsStr)
 	if err != nil {
 		return fmt.Errorf("\nCould not write component_defaults.js file")
 	}
 	// End the string that will be used in allComponentSchemas object.
 	allComponentSchemasStr = strings.TrimSuffix(allComponentSchemasStr, ",") + "\n};\n\nexport default allComponentSchemas;"
-	err = writeContentJS(buildPath+"/spa/generated/component_schemas.js", allComponentSchemasStr)
+	err = writeContentJS(spaPath+"generated/component_schemas.js", allComponentSchemasStr)
 	if err != nil {
 		return fmt.Errorf("\nCould not write component_schemas.js file")
 	}
@@ -450,6 +453,7 @@ func createProps(currentContent content, allContentStr string, env env) error {
 		", shadowContent: {}"+
 		", env: {local: "+env.local+
 		", baseurl: '"+env.baseurl+
+		"', entrypointJS: '"+env.entrypointJS+
 		"', cms: { repo: '"+env.cms.repo+
 		"', redirectUrl: '"+env.cms.redirectUrl+
 		"', appId: '"+env.cms.appId+
@@ -461,7 +465,7 @@ func createProps(currentContent content, allContentStr string, env env) error {
 	// Render the HTML with props needed for the current content.
 	entrySignature := strings.ReplaceAll(
 		strings.ReplaceAll(
-			"layouts/"+env.entrypoint,
+			"layouts/"+env.entrypointHTML,
 			"/", "_"),
 		".", "_")
 	_, err = SSRctx.RunScript(fmt.Sprintf("var { html, css: staticCss} = %s.render(props);", entrySignature), "create_ssr")

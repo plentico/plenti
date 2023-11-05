@@ -5,19 +5,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"os"
+	"time"
 
 	"github.com/MakeNowJust/heredoc/v2"
 )
 
 // SiteConfig is the site's configuration file values.
 type SiteConfig struct {
-	BuildDir    string                  `json:"build"`
-	BaseURL     string                  `json:"baseurl"`
-	Theme       string                  `json:"theme"`
-	EntryPoint  string                  `json:"entrypoint"`
-	ThemeConfig map[string]ThemeOptions `json:"theme_config"`
-	Local       struct {
+	BuildDir       string                  `json:"build"`
+	BaseURL        string                  `json:"baseurl"`
+	Theme          string                  `json:"theme"`
+	EntryPointHTML string                  `json:"entrypoint_html"`
+	EntryPointJS   string                  `json:"entrypoint_js"`
+	ThemeConfig    map[string]ThemeOptions `json:"theme_config"`
+	Local          struct {
 		Port int `json:"port"`
 	} `json:"local"`
 	Routes map[string]string `json:"routes"`
@@ -80,9 +83,30 @@ func GetSiteConfig(basePath string) (SiteConfig, string) {
 		siteConfig.Local.Port = 3000
 	}
 
-	if siteConfig.EntryPoint == "" {
-		siteConfig.EntryPoint = "global/html.svelte"
+	if siteConfig.EntryPointHTML == "" {
+		siteConfig.EntryPointHTML = "global/html.svelte"
+	}
+
+	if siteConfig.EntryPointJS == "" {
+		siteConfig.EntryPointJS = "spa"
+	} else if siteConfig.EntryPointJS == ":fingerprint" {
+		// Generate a new random string
+		siteConfig.EntryPointJS = createRandomString()
 	}
 
 	return siteConfig, configPath
+}
+
+func createRandomString() string {
+	// Create a new random number generator with a custom seed (e.g., current time)
+	source := rand.NewSource(time.Now().UnixNano())
+	r := rand.New(source)
+	letters := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	shuffled := r.Perm(len(letters))
+	result := make([]byte, len(letters))
+	for i, randIndex := range shuffled {
+		result[i] = letters[randIndex]
+	}
+	rand_str := string(result)[:10]
+	return rand_str
 }

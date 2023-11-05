@@ -24,14 +24,14 @@ import (
 var SSRctx *v8go.Context
 
 // Client builds the SPA.
-func Client(buildPath string, coreFS embed.FS, compilerFS embed.FS) error {
+func Client(spaPath string, coreFS embed.FS, compilerFS embed.FS) error {
 
 	defer Benchmark(time.Now(), "Compiling client SPA with Svelte")
 
 	Log("\nCompiling client SPA with svelte")
 
-	stylePath := buildPath + "/spa/bundle.css"
-	allLayoutsPath := buildPath + "/spa/generated/layouts.js"
+	stylePath := spaPath + "bundle.css"
+	allLayoutsPath := spaPath + "generated/layouts.js"
 	// Initialize string for layouts.js component list.
 	var allLayoutsStr string
 
@@ -125,7 +125,7 @@ func Client(buildPath string, coreFS embed.FS, compilerFS embed.FS) error {
 			}
 			componentStr = string(componentBytes)
 		}
-		destPath := buildPath + "/spa/" + strings.TrimSuffix(path, ".svelte") + ".js"
+		destPath := spaPath + strings.TrimSuffix(path, ".svelte") + ".js"
 		err = (compileSvelte(ctx, SSRctx, path, componentStr, destPath, stylePath))
 		if err != nil {
 			fmt.Printf("Could not compile '%s' Svelte component: %s", path, err)
@@ -140,11 +140,11 @@ func Client(buildPath string, coreFS embed.FS, compilerFS embed.FS) error {
 			if layoutFileInfo.IsDir() {
 				return nil
 			}
-			err = copyNonSvelteFiles(layoutPath, buildPath)
+			err = copyNonSvelteFiles(layoutPath, spaPath)
 			if err != nil {
 				return err
 			}
-			compiledComponentCounter, allLayoutsStr, err = compileComponent(err, layoutPath, layoutFileInfo, buildPath, ctx, SSRctx, stylePath, allLayoutsStr, compiledComponentCounter)
+			compiledComponentCounter, allLayoutsStr, err = compileComponent(err, layoutPath, layoutFileInfo, spaPath, ctx, SSRctx, stylePath, allLayoutsStr, compiledComponentCounter)
 			if err != nil {
 				return err
 			}
@@ -158,11 +158,11 @@ func Client(buildPath string, coreFS embed.FS, compilerFS embed.FS) error {
 			if layoutFileInfo.IsDir() {
 				return nil
 			}
-			err = copyNonSvelteFiles(layoutPath, buildPath)
+			err = copyNonSvelteFiles(layoutPath, spaPath)
 			if err != nil {
 				return err
 			}
-			compiledComponentCounter, allLayoutsStr, err = compileComponent(err, layoutPath, layoutFileInfo, buildPath, ctx, SSRctx, stylePath, allLayoutsStr, compiledComponentCounter)
+			compiledComponentCounter, allLayoutsStr, err = compileComponent(err, layoutPath, layoutFileInfo, spaPath, ctx, SSRctx, stylePath, allLayoutsStr, compiledComponentCounter)
 			if err != nil {
 				return err
 			}
@@ -182,7 +182,7 @@ func Client(buildPath string, coreFS embed.FS, compilerFS embed.FS) error {
 	return nil
 }
 
-func copyNonSvelteFiles(layoutPath string, buildPath string) error {
+func copyNonSvelteFiles(layoutPath string, spaPath string) error {
 	if filepath.Ext(layoutPath) != ".svelte" {
 		from, err := os.Open(layoutPath)
 		if err != nil {
@@ -190,7 +190,7 @@ func copyNonSvelteFiles(layoutPath string, buildPath string) error {
 		}
 		defer from.Close()
 
-		destPath := buildPath + "/spa/" + layoutPath
+		destPath := spaPath + layoutPath
 		// Create any sub directories need for filepath.
 		if err := os.MkdirAll(filepath.Dir(destPath), os.ModePerm); err != nil {
 			return fmt.Errorf("can't make folders for '%s': %w\n", destPath, err)
@@ -210,12 +210,12 @@ func copyNonSvelteFiles(layoutPath string, buildPath string) error {
 	return nil
 }
 
-func compileComponent(err error, layoutPath string, layoutFileInfo os.FileInfo, buildPath string, ctx *v8go.Context, SSRctx *v8go.Context, stylePath string, allLayoutsStr string, compiledComponentCounter int) (int, string, error) {
+func compileComponent(err error, layoutPath string, layoutFileInfo os.FileInfo, spaPath string, ctx *v8go.Context, SSRctx *v8go.Context, stylePath string, allLayoutsStr string, compiledComponentCounter int) (int, string, error) {
 	if err != nil {
 		return compiledComponentCounter, allLayoutsStr, fmt.Errorf("can't stat %s: %w", layoutPath, err)
 	}
 	// Create destination path.
-	destFile := buildPath + "/spa/" + layoutPath
+	destFile := spaPath + layoutPath
 	// If the file is in .svelte format, compile it to .js
 	if filepath.Ext(layoutPath) == ".svelte" {
 		// Replace .svelte file extension with .js.

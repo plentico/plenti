@@ -44,7 +44,7 @@ var (
 var alreadyConvertedFiles []string
 
 // Gopack ensures ESM support for NPM dependencies.
-func Gopack(buildPath, entrypoint string) error {
+func Gopack(buildPath, spaPath, entrypoint string) error {
 
 	defer Benchmark(time.Now(), "Running Gopack")
 
@@ -54,7 +54,7 @@ func Gopack(buildPath, entrypoint string) error {
 	alreadyConvertedFiles = []string{}
 
 	// Start at the entry point for the app
-	err := runPack(buildPath, entrypoint)
+	err := runPack(buildPath, spaPath, entrypoint)
 	if err != nil {
 		return err
 	}
@@ -62,9 +62,9 @@ func Gopack(buildPath, entrypoint string) error {
 	return nil
 }
 
-func runPack(buildPath, convertPath string) error {
+func runPack(buildPath, spaPath, convertPath string) error {
 	// Destination path for dependencies
-	gopackDir := buildPath + "/spa/web_modules"
+	gopackDir := spaPath + "web_modules"
 
 	// Get the actual contents of the file we want to convert
 	contentBytes, err := ioutil.ReadFile(convertPath)
@@ -152,7 +152,7 @@ func runPack(buildPath, convertPath string) error {
 				foundPath = pathStr
 			} else if strings.HasPrefix(convertPath, gopackDir) {
 				// The relative import is coming from a web_module itself
-				// Change out of public/spa/web_modules and go into node_modules
+				// Change out of public/{spaPath}/web_modules and go into node_modules
 				modulePath := "node_modules" + strings.TrimPrefix(fullPathStr, gopackDir)
 				// Get the module from npm
 				err = copyFile(modulePath, fullPathStr)
@@ -170,7 +170,7 @@ func runPack(buildPath, convertPath string) error {
 		// Make sure the import/export path doesn't start with a dot (.) or double dot (..)
 		// and make sure that the path doesn't have a file extension.
 		if len(pathStr) > 0 && pathStr[:1] != "." && filepath.Ext(pathStr) == "" {
-			// Copy the npm file from /node_modules to /spa/web_modules
+			// Copy the npm file from /node_modules to /{spaPath}/web_modules
 			fullPathStr, err = copyNpmModule(pathStr, gopackDir)
 			if err != nil {
 				fmt.Printf("Can't copy npm module: %s", err)
@@ -189,7 +189,7 @@ func runPack(buildPath, convertPath string) error {
 			// Add the current file to list of already converted files.
 			alreadyConvertedFiles = append(alreadyConvertedFiles, fullPathStr)
 			// Use fullPathStr recursively to find its imports.
-			err = runPack(buildPath, fullPathStr)
+			err = runPack(buildPath, spaPath, fullPathStr)
 			if err != nil {
 				return fmt.Errorf("\nCan't runPack on %s %w", fullPathStr, err)
 			}

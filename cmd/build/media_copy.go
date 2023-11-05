@@ -14,7 +14,7 @@ import (
 )
 
 // MediaCopy does a direct copy of any media files (e.g. images, PDFs).
-func MediaCopy(buildPath string) error {
+func MediaCopy(buildPath string, spaPath string) error {
 
 	defer Benchmark(time.Now(), "Copying media files into build dir")
 
@@ -40,8 +40,8 @@ func MediaCopy(buildPath string) error {
 		}
 	}
 
-	// Create the spa/ejected/cms/media.js file
-	err = createMediaIndex(buildPath, index)
+	// Create the {spaPath}/ejected/cms/media.js file
+	err = createMediaIndex(spaPath, index)
 	if err != nil {
 		return err
 	}
@@ -144,7 +144,7 @@ func copyMediaFromProject(mediaDir string, buildPath string, index []string, cop
 	return index, copiedSourceCounter, nil
 }
 
-func createMediaIndex(buildPath string, index []string) error {
+func createMediaIndex(spaPath string, index []string) error {
 	result, err := json.MarshalIndent(index, "", "\t")
 	if err != nil {
 		return fmt.Errorf("Unable to marshal JSON: %w", err)
@@ -153,7 +153,7 @@ func createMediaIndex(buildPath string, index []string) error {
 		result = []byte("[]")
 	}
 	result = append(append([]byte("let allMedia = "), result...), []byte(";\nexport default allMedia;")...)
-	mediaPath := buildPath + "/spa/generated/media.js"
+	mediaPath := spaPath + "generated/media.js"
 	// Create any sub directories need for filepath.
 	if err := os.MkdirAll(filepath.Dir(mediaPath), os.ModePerm); err != nil {
 		return fmt.Errorf("can't make folders for '%s': %w\n", mediaPath, err)

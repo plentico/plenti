@@ -9,10 +9,10 @@
   <title>{ title }</title>
 
   <base href="{env.baseurl}">
-  <script type="module" src="spa/core/main.js"></script>
+  <script type="module" src={env.entrypointJS + "/core/main.js"}></script>
 
   <link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="logo.svg">
   <link rel='stylesheet' href='global.css'>
-  <link rel='stylesheet' href='spa/bundle.css'>
+  <link rel='stylesheet' href={env.entrypointJS + '/bundle.css'}>
 </head>

@@ -5,7 +5,8 @@
 	},
 	"baseurl": "/",
 	"build": "public",
-	"entrypoint": "global/html.svelte",
+	"entrypoint_html": "global/html.svelte",
+	"entrypoint_js": ":fingerprint",
 	"local": {
 		"port": 3000
 	},
