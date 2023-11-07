@@ -24,6 +24,7 @@ require (
 	github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be // indirect
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e // indirect
 	github.com/emirpasic/gods v1.12.0 // indirect
+	github.com/evanw/esbuild v0.19.5 // indirect
 	github.com/fatih/color v1.10.0 // indirect
 	github.com/gliderlabs/ssh v0.3.2 // indirect
 	github.com/go-git/gcfg v1.5.0 // indirect
