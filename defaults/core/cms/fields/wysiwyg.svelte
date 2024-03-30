@@ -2,7 +2,7 @@
     export let schema, parentKeys, field;
 
     let textarea;
-    
+
     let linkURL, linkText, linkOptions;
     const createLink = () => {
         linkURL = prompt('Enter a URL:', 'http://');
@@ -142,6 +142,7 @@
 <style>
     .editor {
         display: flex;
+        flex-wrap: wrap;
     }
     .editor button {
         background: transparent;
