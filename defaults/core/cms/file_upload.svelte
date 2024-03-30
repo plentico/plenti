@@ -4,7 +4,7 @@
     import ButtonWrapper from './button_wrapper.svelte';
     import Button from './button.svelte';
 
-    export let media, changingMedia, showMediaModal, localMediaList, mediaPrefix;
+    export let media, changingMedia, showMediaModal, localMediaList, mediaPrefix, user;
     let enabledFilters = [];
 
     const createMediaList = file => {
@@ -90,6 +90,7 @@
                 buttonText="Save Media"
                 action="create"
                 encoding="base64"
+                {user}
             />
             {#if selectedMedia.length > 0}
                 <Button

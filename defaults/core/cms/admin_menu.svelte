@@ -136,7 +136,14 @@
       {#if activeMedia === 'library'}
         <MediaBrowser bind:media bind:changingMedia bind:showMediaModal />
       {:else}
-        <FileUpload bind:media bind:changingMedia bind:showMediaModal bind:localMediaList {mediaPrefix} />
+        <FileUpload
+          bind:media
+          bind:changingMedia
+          bind:showMediaModal
+          bind:localMediaList
+          {mediaPrefix}
+          {user}
+        />
       {/if}
     </div>
   </div>
