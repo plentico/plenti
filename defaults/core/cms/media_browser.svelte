@@ -4,7 +4,7 @@
     import ButtonWrapper from './button_wrapper.svelte';
     import Button from './button.svelte';
 
-    export let media, changingMedia, showMediaModal;
+    export let media, changingMedia, showMediaModal, user;
     let filters = [];
     let enabledFilters = [];
     let selectedMedia = [];
@@ -49,6 +49,7 @@
             buttonStyle="secondary"
             action="delete"
             encoding="text"
+            {user}
         />
     </ButtonWrapper>
 {/if}
