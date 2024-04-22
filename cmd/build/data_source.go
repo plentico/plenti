@@ -197,7 +197,7 @@ func DataSource(buildPath string, spaPath string, siteConfig readers.SiteConfig)
 			return fmt.Errorf("\nCan't create props for %s %w", currentContent.contentFilepath, err)
 		}
 
-		err = createHTML(currentContent)
+		err = createHTML(currentContent, env)
 		if err != nil {
 			return fmt.Errorf("\nCan't create HTML for %s %w", currentContent.contentFilepath, err)
 		}
@@ -211,7 +211,7 @@ func DataSource(buildPath string, spaPath string, siteConfig readers.SiteConfig)
 				return err
 			}
 
-			if err = createHTML(paginatedContent); err != nil {
+			if err = createHTML(paginatedContent, env); err != nil {
 				return err
 			}
 
@@ -475,7 +475,7 @@ func createProps(currentContent content, allContentStr string, env env) error {
 	return nil
 }
 
-func createHTML(currentContent content) error {
+func createHTML(currentContent content, env env) error {
 	// Get the rendered HTML from v8go.
 	renderedHTML, err := SSRctx.RunScript("html;", "create_ssr")
 	if err != nil {
@@ -492,7 +492,12 @@ func createHTML(currentContent content) error {
 	htmlBytes = bytes.Replace(htmlBytes, []byte("<html"), []byte("<html data-content-filepath='"+currentContent.contentFilepath+"' "), 1)
 	if Doreload {
 		// Inject live-reload script (stored in ejected core).
-		htmlBytes = bytes.Replace(htmlBytes, []byte("</body>"), []byte("<script type='text/javascript' src='/spa/ejected/live-reload.js'></script></body>"), 1)
+		htmlBytes = bytes.Replace(
+			htmlBytes,
+			[]byte("</body>"),
+			[]byte("<script type='text/javascript' src='"+env.baseurl+env.entrypointJS+"/core/live-reload.js'></script></body>"),
+			1,
+		)
 	}
 	// Create any folders need to write file.
 	if err := os.MkdirAll(strings.TrimSuffix(currentContent.contentDest, path.Base(currentContent.contentDest)), os.ModePerm); err != nil {

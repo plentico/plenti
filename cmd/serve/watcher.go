@@ -82,7 +82,10 @@ func (w *watcher) watch(buildPath string, Build buildFunc) {
 			case <-timer.C:
 				fmt.Println("Change detected, rebuilding site")
 				// TODO: cancel build if new change is made before finishing
-				Build()
+				err := Build()
+				if err == nil && build.Doreload {
+					reloadC <- struct{}{}
+				}
 
 			// Watch for errors.
 			case err := <-w.Errors:
