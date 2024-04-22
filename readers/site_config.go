@@ -78,11 +78,6 @@ func GetSiteConfig(basePath string) (SiteConfig, string) {
 		siteConfig.BuildDir = "public"
 	}
 
-	// If baseurl is not set in config, use "/" for resolving URLs like core/live-reload.js
-	if siteConfig.BaseURL == "" {
-		siteConfig.BaseURL = "/"
-	}
-
 	// If local server port is not set in config, use default
 	if siteConfig.Local.Port <= 0 {
 		siteConfig.Local.Port = 3000

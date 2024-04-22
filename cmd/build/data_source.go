@@ -491,6 +491,10 @@ func createHTML(currentContent content, env env) error {
 	// Inject data-content-filepath attribute
 	htmlBytes = bytes.Replace(htmlBytes, []byte("<html"), []byte("<html data-content-filepath='"+currentContent.contentFilepath+"' "), 1)
 	if Doreload {
+		if env.baseurl == "" {
+			// Fix live-reload.js path if baseurl isn't set
+			env.baseurl = "/"
+		}
 		// Inject live-reload script (stored in ejected core).
 		htmlBytes = bytes.Replace(
 			htmlBytes,
