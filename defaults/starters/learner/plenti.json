@@ -6,7 +6,7 @@
 	"baseurl": "/",
 	"build": "public",
 	"entrypoint_html": "global/html.svelte",
-	"entrypoint_js": ":fingerprint",
+	"entrypoint_js": "custom-spa-folder",
 	"local": {
 		"port": 3000
 	},

@@ -14,6 +14,7 @@ import (
 
 // SiteConfig is the site's configuration file values.
 type SiteConfig struct {
+	Fingerprint    string
 	BuildDir       string                  `json:"build"`
 	BaseURL        string                  `json:"baseurl"`
 	Theme          string                  `json:"theme"`
@@ -87,11 +88,13 @@ func GetSiteConfig(basePath string) (SiteConfig, string) {
 		siteConfig.EntryPointHTML = "global/html.svelte"
 	}
 
+	// Generate a new random string
+	siteConfig.Fingerprint = createRandomString()
+
 	if siteConfig.EntryPointJS == "" {
 		siteConfig.EntryPointJS = "spa"
 	} else if siteConfig.EntryPointJS == ":fingerprint" {
-		// Generate a new random string
-		siteConfig.EntryPointJS = createRandomString()
+		siteConfig.EntryPointJS = siteConfig.Fingerprint
 	}
 
 	return siteConfig, configPath

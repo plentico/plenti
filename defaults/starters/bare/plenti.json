@@ -1,6 +1,5 @@
 {
 	"build": "public",
-	"entrypoint_js": ":fingerprint",
 	"local": {
 		"port": 3000
 	}

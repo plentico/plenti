@@ -61,6 +61,7 @@ type content struct {
 type env struct {
 	local          string
 	baseurl        string
+	fingerprint    string
 	entrypointHTML string
 	entrypointJS   string
 	cms            cms
@@ -85,6 +86,7 @@ func DataSource(buildPath string, spaPath string, siteConfig readers.SiteConfig)
 	env := env{
 		local:          strconv.FormatBool(Local),
 		baseurl:        siteConfig.BaseURL,
+		fingerprint:    siteConfig.Fingerprint,
 		entrypointHTML: siteConfig.EntryPointHTML,
 		entrypointJS:   siteConfig.EntryPointJS,
 		cms: cms{
@@ -98,6 +100,7 @@ func DataSource(buildPath string, spaPath string, siteConfig readers.SiteConfig)
 	// Create env magic prop.
 	envStr := "export let env = { local: " + env.local +
 		", baseurl: '" + env.baseurl +
+		"', fingerprint: '" + env.fingerprint +
 		"', entrypointHTML: '" + env.entrypointHTML +
 		"', entrypointJS: '" + env.entrypointJS +
 		"', cms: { repo: '" + env.cms.repo +
@@ -453,6 +456,7 @@ func createProps(currentContent content, allContentStr string, env env) error {
 		", shadowContent: {}"+
 		", env: {local: "+env.local+
 		", baseurl: '"+env.baseurl+
+		"', fingerprint: '"+env.fingerprint+
 		"', entrypointJS: '"+env.entrypointJS+
 		"', cms: { repo: '"+env.cms.repo+
 		"', redirectUrl: '"+env.cms.redirectUrl+

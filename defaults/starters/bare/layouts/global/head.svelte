@@ -8,8 +8,8 @@
 
   <title>{ title }</title>
 
-  <script type="module" src={`/${env.entrypointJS}/core/main.js`}></script>
+  <script type="module" src="/spa/core/main.js?{env.fingerprint}"></script>
 
   <link rel="icon" type="image/svg+xml" href="/media/logo.svg">
-  <link rel='stylesheet' href={`/${env.entrypointJS}/bundle.css`}>
+  <link rel='stylesheet' href="/spa/bundle.css?{env.fingerprint}">
 </head>
