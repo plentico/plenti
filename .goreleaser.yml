@@ -61,20 +61,20 @@ brews:
       name: homebrew-plenti
     homepage: "https://plenti.co/"
     description: "Dead simple SSG with Svelte frontend and Go CLI."
-snapcrafts:
-  -
-    id: plenti
-    name: plenti
-    publish: true # publish the snap to the snapcraft store.
-    summary: A simple static site generator for the JAMstack. 
-    description: Dead simple SSG with Svelte frontend and Go CLI.
-    grade: stable
-    confinement: strict
-    license: Apache-2.0
-    # allow read/write to user's filesystem.
-    apps:
-      plenti:
-        plugs: ["home", "network-bind", "removable-media"]
+#snapcrafts:
+#  -
+#    id: plenti
+#    name: plenti
+#    publish: true # publish the snap to the snapcraft store.
+#    summary: A simple static site generator for the JAMstack. 
+#    description: Dead simple SSG with Svelte frontend and Go CLI.
+#    grade: stable
+#    confinement: strict
+#    license: Apache-2.0
+#    # allow read/write to user's filesystem.
+#    apps:
+#      plenti:
+#        plugs: ["home", "network-bind", "removable-media"]
 #scoop:
 #  bucket:
 #    owner: plentico
