@@ -24,7 +24,7 @@ jobs:
         name: Set up Snapcraft
         run: |
           sudo apt-get update
-          sudo apt-get -yq --no-install-suggests --no-install-recommends install snapcraft
+          sudo apt-get -yq --no-install-suggests --no-install-recommends install snapcraft=8.1.0
       -
         name: Dockerhub Login
         run: |
@@ -45,7 +45,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v1
         with:
           version: latest
-          args: release --rm-dist --debug --parallelism=1
+          args: release --rm-dist --debug
           key: ${{ secrets.YOUR_PRIVATE_KEY }}
         env:
           GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
