@@ -24,7 +24,7 @@ jobs:
         name: Set up Snapcraft
         run: |
           sudo apt-get update
-          sudo apt-get -yq --no-install-suggests --no-install-recommends install snapcraft=8.1.0
+          sudo apt-get -yq --no-install-suggests --no-install-recommends install snapcraft=8.0.5
       -
         name: Dockerhub Login
         run: |
