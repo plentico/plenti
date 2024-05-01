@@ -1,4 +1,6 @@
 <script>
+    import { plaintextPaste } from "../html_sanitizer.svelte";
+
     export let schema, parentKeys, field;
 
     let textarea;
@@ -137,7 +139,13 @@
     {/if}
 </div>
 
-<div class="textarea" contenteditable=true bind:innerHTML={field} bind:this={textarea}></div>
+<div 
+    class="textarea"
+    contenteditable=true
+    bind:innerHTML={field}
+    bind:this={textarea}
+    on:paste={plaintextPaste}
+></div>
 
 <style>
     .editor {

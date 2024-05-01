@@ -1,4 +1,6 @@
 <script>
+    import { plaintextPaste } from "../html_sanitizer.svelte";
+
     export let schema, parentKeys, field;
 
     let disabled, hidden;
@@ -14,6 +16,7 @@
         role="textbox"
         contenteditable=false
         bind:textContent={field}
+        on:paste={plaintextPaste}
     ></div>
 {:else if !hidden}
     <div
@@ -21,6 +24,7 @@
         role="textbox"
         contenteditable=true
         bind:textContent={field}
+        on:paste={plaintextPaste}
     ></div>
 {/if}
 
