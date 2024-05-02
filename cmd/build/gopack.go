@@ -44,7 +44,7 @@ var (
 var alreadyConvertedFiles []string
 
 // Gopack ensures ESM support for NPM dependencies.
-func Gopack(buildPath, spaPath, entrypoint, fingerprint string) error {
+func Gopack(buildPath, spaPath, entrypoint string) error {
 
 	defer Benchmark(time.Now(), "Running Gopack")
 
@@ -54,7 +54,7 @@ func Gopack(buildPath, spaPath, entrypoint, fingerprint string) error {
 	alreadyConvertedFiles = []string{}
 
 	// Start at the entry point for the app
-	err := runPack(buildPath, spaPath, entrypoint, fingerprint)
+	err := runPack(buildPath, spaPath, entrypoint)
 	if err != nil {
 		return err
 	}
@@ -62,12 +62,10 @@ func Gopack(buildPath, spaPath, entrypoint, fingerprint string) error {
 	return nil
 }
 
-func runPack(buildPath, spaPath, convertPath, fingerprint string) error {
+func runPack(buildPath, spaPath, convertPath string) error {
 	// Destination path for dependencies
 	gopackDir := spaPath + "web_modules"
 
-	// Remove query string to read file
-	convertPath = strings.Split(convertPath, "?")[0]
 	// Get the actual contents of the file we want to convert
 	contentBytes, err := ioutil.ReadFile(convertPath)
 	if err != nil {
@@ -99,8 +97,6 @@ func runPack(buildPath, spaPath, convertPath, fingerprint string) error {
 		pathStr := string(pathBytes)
 		// Remove single or double quotes around path.
 		pathStr = strings.Trim(pathStr, `'"`)
-		// Remove query string so path can be found
-		pathStr = strings.Split(pathStr, "?")[0]
 		// Intitialize the string that determines if we found the import path.
 		var foundPath string
 		// Initialize the full path of the import.
@@ -193,7 +189,7 @@ func runPack(buildPath, spaPath, convertPath, fingerprint string) error {
 			// Add the current file to list of already converted files.
 			alreadyConvertedFiles = append(alreadyConvertedFiles, fullPathStr)
 			// Use fullPathStr recursively to find its imports.
-			err = runPack(buildPath, spaPath, fullPathStr, fingerprint)
+			err = runPack(buildPath, spaPath, fullPathStr)
 			if err != nil {
 				return fmt.Errorf("\nCan't runPack on %s %w", fullPathStr, err)
 			}
@@ -202,8 +198,8 @@ func runPack(buildPath, spaPath, convertPath, fingerprint string) error {
 		if foundPath != "" {
 			// Remove "public" build dir from path.
 			replacePath := strings.Replace(foundPath, buildPath, "", 1)
-			// Wrap path in quotes and add query params to break cache.
-			replacePath = "'" + replacePath + "?" + fingerprint + "'"
+			// Wrap path in quotes.
+			replacePath = "'" + replacePath + "'"
 			// Convert string path to bytes.
 			replacePathBytes := []byte(replacePath)
 			// Actually replace the path to the dependency in the source content.
