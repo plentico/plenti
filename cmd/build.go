@@ -160,19 +160,19 @@ func Build() error {
 	}
 
 	// Run Gopack (custom Snowpack alternative) on app for ESM support.
-	err = build.Gopack(buildPath, spaPath, spaPath+"core/main.js")
+	err = build.Gopack(buildPath, spaPath, spaPath+"core/main.js", siteConfig.Fingerprint)
 	if err != nil {
 		log.Fatal("\nError in Gopack main.js build step", err)
 	}
 
 	// Run Gopack (custom Snowpack alternative) on dynamically imported adminMenu.
-	err = build.Gopack(buildPath, spaPath, spaPath+"core/cms/admin_menu.js")
+	err = build.Gopack(buildPath, spaPath, spaPath+"core/cms/admin_menu.js", siteConfig.Fingerprint)
 	if err != nil {
 		log.Fatal("\nError in Gopack admin_menu.svelte build step", err)
 	}
 
 	// Run Gopack manually on dynamic imports
-	err = build.GopackDynamic(buildPath, spaPath)
+	err = build.GopackDynamic(buildPath, spaPath, siteConfig.Fingerprint)
 	if err != nil {
 		log.Fatal("\nError in GopackDynamic build step", err)
 	}

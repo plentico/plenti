@@ -44,7 +44,7 @@ var (
 var alreadyConvertedFiles []string
 
 // Gopack ensures ESM support for NPM dependencies.
-func Gopack(buildPath, spaPath, entrypoint string) error {
+func Gopack(buildPath, spaPath, entrypoint, fingerprint string) error {
 
 	defer Benchmark(time.Now(), "Running Gopack")
 
@@ -54,7 +54,7 @@ func Gopack(buildPath, spaPath, entrypoint string) error {
 	alreadyConvertedFiles = []string{}
 
 	// Start at the entry point for the app
-	err := runPack(buildPath, spaPath, entrypoint)
+	err := runPack(buildPath, spaPath, entrypoint, fingerprint)
 	if err != nil {
 		return err
 	}
@@ -62,7 +62,7 @@ func Gopack(buildPath, spaPath, entrypoint string) error {
 	return nil
 }
 
-func runPack(buildPath, spaPath, convertPath string) error {
+func runPack(buildPath, spaPath, convertPath, fingerprint string) error {
 	// Destination path for dependencies
 	gopackDir := spaPath + "web_modules"
 
@@ -193,7 +193,7 @@ func runPack(buildPath, spaPath, convertPath string) error {
 			// Add the current file to list of already converted files.
 			alreadyConvertedFiles = append(alreadyConvertedFiles, fullPathStr)
 			// Use fullPathStr recursively to find its imports.
-			err = runPack(buildPath, spaPath, fullPathStr)
+			err = runPack(buildPath, spaPath, fullPathStr, fingerprint)
 			if err != nil {
 				return fmt.Errorf("\nCan't runPack on %s %w", fullPathStr, err)
 			}
@@ -202,10 +202,8 @@ func runPack(buildPath, spaPath, convertPath string) error {
 		if foundPath != "" {
 			// Remove "public" build dir from path.
 			replacePath := strings.Replace(foundPath, buildPath, "", 1)
-			// Load plenti.json config
-			siteConfig, _ := readers.GetSiteConfig(".")
 			// Wrap path in quotes and add query params to break cache.
-			replacePath = "'" + replacePath + "?" + siteConfig.Fingerprint + "'"
+			replacePath = "'" + replacePath + "?" + fingerprint + "'"
 			// Convert string path to bytes.
 			replacePathBytes := []byte(replacePath)
 			// Actually replace the path to the dependency in the source content.
