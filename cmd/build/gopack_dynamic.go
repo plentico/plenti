@@ -8,7 +8,7 @@ import (
 )
 
 // Create ESM support for files that don't have static imports in the app
-func GopackDynamic(buildPath, spaPath, fingerprint string) error {
+func GopackDynamic(buildPath, spaPath string) error {
 
 	defer Benchmark(time.Now(), "Running GopackDynamic")
 
@@ -27,7 +27,7 @@ func GopackDynamic(buildPath, spaPath, fingerprint string) error {
 			if info.IsDir() {
 				return nil
 			}
-			err = Gopack(buildPath, spaPath, spaPath+fieldWidgetPath+"/"+path, fingerprint)
+			err = Gopack(buildPath, spaPath, spaPath+fieldWidgetPath+"/"+path)
 			if err != nil {
 				return fmt.Errorf("\nError running Gopack for custom FieldWidget: %w", err)
 			}
