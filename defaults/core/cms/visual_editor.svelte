@@ -7,6 +7,7 @@
 
     $: schema = schemas[content.type];
 
+    let missingRequired = [];
 </script>
 
 <form>
@@ -22,6 +23,7 @@
                             bind:showMediaModal
                             bind:changingMedia
                             bind:localMediaList
+                            bind:missingRequired
                             parentKeys={schema_field[0]}
                             {schema}
                         />
@@ -34,6 +36,7 @@
                 bind:showMediaModal
                 bind:changingMedia
                 bind:localMediaList
+                bind:missingRequired
                 parentKeys={label}
                 {schema}
             />
@@ -47,6 +50,7 @@
                             bind:showMediaModal
                             bind:changingMedia
                             bind:localMediaList
+                            bind:missingRequired
                             parentKeys={schema_field[0]}
                             {schema}
                         />
@@ -56,6 +60,7 @@
         {/each}
         <ButtonWrapper>
             <Button
+                status={missingRequired?.length > 0 ? "missing_required" : undefined}
                 commitList={[
                     {
                         file: content.filepath,

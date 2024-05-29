@@ -20,7 +20,7 @@
     import References from './fields/references.svelte';
     import ID from './fields/id.svelte';
 
-    export let field, label, showMediaModal, changingMedia, localMediaList, parentKeys, schema;
+    export let field, label, showMediaModal, changingMedia, localMediaList, parentKeys, schema, missingRequired;
     export let shadowContent = false;
 
     $: if (shadowContent !== false) {
@@ -37,12 +37,25 @@
             }
         }
     })();
+
+    let required = false;
+    $: field, evalRequired();
+    const evalRequired = () => {
+        if (schema && schema[parentKeys]?.options) {
+            required = schema[parentKeys].options.includes("required");
+            if (required && field === "") {
+                missingRequired = [...missingRequired, label];
+            } else if (required && field !== "") {
+                missingRequired = missingRequired?.filter(r => r !== label);
+            }
+        }
+    }
 </script>
 
 {#if label !== "plenti_salt"}
     <div class="field {label}">
         {#if label}
-            <label for="{label}">{label}</label>
+            <label for="{label}" class:required>{label}</label>
         {/if}
         {#if field === null && !schema}
             <div>field is null</div>
@@ -56,6 +69,7 @@
                 bind:showMediaModal
                 bind:changingMedia
                 bind:localMediaList
+                bind:missingRequired
                 {parentKeys}
                 {schema}
             />
@@ -80,6 +94,7 @@
                 bind:showMediaModal
                 bind:changingMedia
                 bind:localMediaList
+                bind:missingRequired
                 {parentKeys}
                 {schema}
             />
@@ -90,6 +105,7 @@
                 bind:showMediaModal
                 bind:changingMedia
                 bind:localMediaList
+                bind:missingRequired
                 {parentKeys}
                 {schema}
             />
@@ -100,6 +116,10 @@
 <style>
     label {
         display: block;
+    }
+    label.required::after {
+        content:" *";
+        color: red;
     }
     .field {
         margin-bottom: 20px;

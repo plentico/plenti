@@ -4,11 +4,11 @@
     import { env } from '../../generated/env.js';
     import { findFileReferences } from './file_references.js';
 
-    export let commitList, shadowContent, buttonText, action, encoding, user, afterSubmit;
+    export let commitList, shadowContent, buttonText, action, encoding, user, afterSubmit, status;
     export let buttonStyle = "primary";
     const local = env.local ?? false;
-    let status, confirmTooltip;
 
+    let confirmTooltip;
     const onSubmit = async () => {
         confirmTooltip = false;
         status = "sending";
@@ -82,6 +82,8 @@
             Error saving
         {:else if status == "sent"}
             Changes committed
+        {:else if status == "missing_required"}
+            Missing Required
         {:else}
             {buttonText}
         {/if}
@@ -102,6 +104,10 @@
     }
     button.failed {
         background-color: darkred;
+    }
+    button[disabled] {
+        background: gray;
+        cursor: not-allowed;
     }
     button {
         width: 100%;
