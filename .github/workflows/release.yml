@@ -46,7 +46,6 @@ jobs:
         with:
           version: latest
           args: release --clean --verbose
-          key: ${{ secrets.YOUR_PRIVATE_KEY }}
         env:
           GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.snapcraft_token }}
