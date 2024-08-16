@@ -1,7 +1,18 @@
 <script>
     import { isDate, makeDate, formatDate } from '../date_checker.js';
 
-    export let field;
+    export let schema, parentKeys, field;
+
+    let today;
+    if (schema && schema[parentKeys]?.options) {
+        today = schema[parentKeys].options.includes("today");
+    }
+
+    if (today) {
+        let date = new Date();
+        date = makeDate(date);
+        field = formatDate(date, field);
+    }
 
     const bindDate = date => {
         field = formatDate(date, field);
