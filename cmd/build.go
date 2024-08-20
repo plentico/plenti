@@ -181,16 +181,16 @@ func Build() error {
 		log.Fatal("\nError in GopackDynamic build step", err)
 	}
 
-	// Run Minification
-	err = build.Minify(buildPath)
-	if err != nil {
-		log.Fatal("\nError in Minify build step", err)
-	}
-
 	// Run Bundler
 	err = build.Bundle(spaPath)
 	if err != nil {
 		log.Fatal("\nError in Bundle build step", err)
+	}
+
+	// Run Minification
+	err = build.Minify(buildPath)
+	if err != nil {
+		log.Fatal("\nError in Minify build step", err)
 	}
 
 	Building = false
