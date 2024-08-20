@@ -7,6 +7,7 @@ toolchain go1.21.1
 require (
 	github.com/MakeNowJust/heredoc/v2 v2.0.1
 	github.com/briandowns/spinner v1.12.0
+	github.com/evanw/esbuild v0.23.1
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/gerald1248/httpscerts v0.0.0-20170315065746-2c461ceb29ee
 	github.com/go-git/go-git/v5 v5.11.0
@@ -28,7 +29,6 @@ require (
 	github.com/cloudflare/circl v1.3.7 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
-	github.com/evanw/esbuild v0.21.0 // indirect
 	github.com/fatih/color v1.10.0 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.5.0 // indirect

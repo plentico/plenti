@@ -27,6 +27,9 @@ var BenchmarkFlag bool
 // MinifyFlag condenses the JavaScript output so it runs faster in the browser.
 var MinifyFlag bool
 
+// BundleFlag uses esbuild to bundle the single page application (SPA) into a single file, improving the first page load time.
+var BundleFlag bool
+
 // ConfigFileFlag allows you to point to a nonstandard sitewide configuration file for the build (instead of plenti.json).
 var ConfigFileFlag string
 
@@ -65,6 +68,7 @@ func Build() error {
 	build.CheckVerboseFlag(VerboseFlag)
 	build.CheckBenchmarkFlag(BenchmarkFlag)
 	build.CheckMinifyFlag(MinifyFlag)
+	build.CheckBundleFlag(BundleFlag)
 
 	var err error
 	// Handle panic when someone tries building outside of a valid Plenti site.
@@ -183,6 +187,12 @@ func Build() error {
 		log.Fatal("\nError in Minify build step", err)
 	}
 
+	// Run Bundler
+	err = build.Bundle(spaPath)
+	if err != nil {
+		log.Fatal("\nError in Bundle build step", err)
+	}
+
 	Building = false
 
 	// only relates to defer recover
@@ -204,7 +214,8 @@ func init() {
 	// buildCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	buildCmd.Flags().StringVarP(&OutputDirFlag, "output", "o", "", "change name of the public build directory")
 	buildCmd.Flags().BoolVarP(&VerboseFlag, "verbose", "v", false, "show log messages")
-	buildCmd.Flags().BoolVarP(&BenchmarkFlag, "benchmark", "b", false, "display build time statistics")
+	buildCmd.Flags().BoolVarP(&BenchmarkFlag, "profile", "P", false, "display build time statistics")
 	buildCmd.Flags().BoolVarP(&MinifyFlag, "minify", "m", true, "minify JS output for faster performance")
+	buildCmd.Flags().BoolVarP(&BundleFlag, "bundle", "b", false, "bundle the JS output for faster initial load times")
 	buildCmd.Flags().StringVarP(&ConfigFileFlag, "config", "c", "plenti.json", "use a custom sitewide configuration file")
 }
