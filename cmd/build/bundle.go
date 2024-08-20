@@ -78,22 +78,6 @@ func Bundle(spaPath string) error {
 		if err := copyFile(tmpOutputFilePath, mainJsFilePath); err != nil {
 			return fmt.Errorf("\nCould not copy temp file to main.js in bundle process: %w\n", err)
 		}
-
-		tmpOutFile, err := os.Open(tmpOutputFilePath)
-		if err != nil {
-			return fmt.Errorf("\nCould not open temporary bundle output file: %w\n", err)
-		}
-		defer tmpOutFile.Close()
-
-		mainJsFile, err := os.OpenFile(mainJsFilePath, os.O_CREATE|os.O_WRONLY, 0755)
-		if err != nil {
-			return fmt.Errorf("\nCould recreate main.js file in bundle process: %w\n", err)
-		}
-		defer mainJsFile.Close()
-
-		if _, err := io.Copy(mainJsFile, tmpOutFile); err != nil {
-		return fmt.Errorf("\nCould write to main.js file in bundle process: %w\n", err)
-		}
 	}
 	return nil
 }
