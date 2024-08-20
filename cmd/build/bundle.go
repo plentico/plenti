@@ -53,26 +53,22 @@ func Bundle(spaPath string) error {
 			return fmt.Errorf("\nCould not bundle js output:\n%w\n", errors.Join(errs...))
 		}
 
-		// Not sure if this should be done, so putting in a true if block for right now
-		const cleanupSpaDir = true
-		if cleanupSpaDir {
-			styleFilePath := path.Join(spaPath, "bundle.css")
-			tmpSytleFilePath := path.Join(tmpDir, "bundle.css")
-			if err := copyFile(styleFilePath, tmpSytleFilePath); err != nil {
-				return fmt.Errorf("\nCould not copy bundle.css to temp file in bundle process: %w\n", err)
-			}
+		styleFilePath := path.Join(spaPath, "bundle.css")
+		tmpSytleFilePath := path.Join(tmpDir, "bundle.css")
+		if err := copyFile(styleFilePath, tmpSytleFilePath); err != nil {
+			return fmt.Errorf("\nCould not copy bundle.css to temp file in bundle process: %w\n", err)
+		}
 	
-			if err := os.RemoveAll(spaPath); err != nil {
-				return fmt.Errorf("\nCould clear spa directory in bundle process: %w\n", err)
-			}
+		if err := os.RemoveAll(spaPath); err != nil {
+			return fmt.Errorf("\nCould clear spa directory in bundle process: %w\n", err)
+		}
 
-			if err := os.MkdirAll(path.Join(spaPath, "core"), 0755); err != nil {
-				return fmt.Errorf("\nCould recreate spa directory in bundle process: %w\n", err)
-			}
+		if err := os.MkdirAll(path.Join(spaPath, "core"), 0755); err != nil {
+			return fmt.Errorf("\nCould recreate spa directory in bundle process: %w\n", err)
+		}
 
-			if err := copyFile(tmpSytleFilePath, styleFilePath); err != nil {
-				return fmt.Errorf("\nCould not copy bundle.css to temp file in bundle process: %w\n", err)
-			}
+		if err := copyFile(tmpSytleFilePath, styleFilePath); err != nil {
+			return fmt.Errorf("\nCould not copy bundle.css to temp file in bundle process: %w\n", err)
 		}
 
 		if err := copyFile(tmpOutputFilePath, mainJsFilePath); err != nil {
