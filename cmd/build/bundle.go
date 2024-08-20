@@ -30,19 +30,9 @@ func Bundle(spaPath string) error {
 			return err
 		}
 
-		tmpDir, err := os.MkdirTemp("", "*")
-		if err != nil {
-			return fmt.Errorf("\nCould not create temporary directory for bundle output: %w\n", err)
-		}
-		defer os.RemoveAll(tmpDir)
-
-		tmpOutputFilePath := path.Join(tmpDir, "out.js")
-
 		result := api.Build(api.BuildOptions{
 			EntryPoints:    []string{mainJsFilePath},
 			Bundle:         true,
-			Outfile:        tmpOutputFilePath,
-			Write:          true,
 		})
 		if len(result.Errors) != 0 {
 			errs := make([]error, 0, len(result.Errors))
@@ -52,27 +42,30 @@ func Bundle(spaPath string) error {
 			return fmt.Errorf("\nCould not bundle js output:\n%w\n", errors.Join(errs...))
 		}
 
+		outFileContent := result.OutputFiles[0].Contents
+
 		styleFilePath := path.Join(spaPath, "bundle.css")
-		tmpSytleFilePath := path.Join(tmpDir, "bundle.css")
-		if err := copyFile(styleFilePath, tmpSytleFilePath); err != nil {
-			return fmt.Errorf("\nCould not copy bundle.css to temp file in bundle process: %w\n", err)
+		styleFileContent, err := os.ReadFile(styleFilePath)
+		if err != nil {
+			return fmt.Errorf("\nCould not read bundle.css in bundle process: %w\n", err)
 		}
 	
 		if err := os.RemoveAll(spaPath); err != nil {
-			return fmt.Errorf("\nCould clear spa directory in bundle process: %w\n", err)
+			return fmt.Errorf("\nCould not clear spa directory in bundle process: %w\n", err)
 		}
 
 		if err := os.MkdirAll(path.Join(spaPath, "core"), 0755); err != nil {
 			return fmt.Errorf("\nCould recreate spa directory in bundle process: %w\n", err)
 		}
 
-		if err := copyFile(tmpSytleFilePath, styleFilePath); err != nil {
-			return fmt.Errorf("\nCould not copy bundle.css to temp file in bundle process: %w\n", err)
+		if err := os.WriteFile(mainJsFilePath, outFileContent, os.ModePerm); err != nil {
+			return fmt.Errorf("\nCould not write js to output file in bundle process: %w\n", err)
 		}
 
-		if err := copyFile(tmpOutputFilePath, mainJsFilePath); err != nil {
-			return fmt.Errorf("\nCould not copy temp file to main.js in bundle process: %w\n", err)
+		if err := os.WriteFile(styleFilePath, styleFileContent, os.ModePerm); err != nil {
+			return fmt.Errorf("\nCould not write bundle.css to spa dir in bundle process: %w\n", err)
 		}
+
 	}
 	return nil
 }
