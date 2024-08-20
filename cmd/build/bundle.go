@@ -3,7 +3,6 @@ package build
 import (
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path"
 	"time"
