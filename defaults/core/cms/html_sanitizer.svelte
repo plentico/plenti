@@ -8,11 +8,9 @@
 	// https://developer.mozilla.org/en-US/docs/Web/API/Element/paste_event
 	export const plaintextPaste = e => {
 		e.preventDefault();
-		const rawHtmlPaste = (e.clipboardData || window.clipboardData).getData("text/html");
-		if (rawHtmlPaste === "") {
-			return;
-		}
-		const paste = HtmlSanitizer.SanitizeHtml(rawHtmlPaste);
+		const data = e.clipboardData || window.clipboardData;
+		const raw = data.getData("text/html") || data.getData("text");
+		const paste = HtmlSanitizer.SanitizeHtml(raw);
 		document.execCommand("insertHTML", false, paste);
 	}
 	
