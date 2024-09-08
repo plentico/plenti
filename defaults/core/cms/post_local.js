@@ -1,4 +1,5 @@
 import { env } from '../../generated/env.js';
+import evaluateRoute from './route_eval.js';
 
 export async function postLocal(commitList, shadowContent, action, encoding) {
     let url = '/postlocal';
@@ -21,6 +22,13 @@ export async function postLocal(commitList, shadowContent, action, encoding) {
         body: JSON.stringify(body),
     });
     if (response.ok) {
+        if (commitList.length === 1 && action === 'create') {
+            let evaluatedRoute = evaluateRoute(commitList[0]);
+            history.pushState({
+                isNew: true,
+                route: evaluatedRoute
+            }, '', evaluatedRoute);
+        }
         if (action === 'create' || action === 'update') {
             shadowContent?.onSave?.();
         }

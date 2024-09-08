@@ -1,5 +1,6 @@
 import { env } from '../../generated/env.js';
 import { makeUrl } from './url_checker.js';
+import evaluateRoute from './route_eval.js';
 
 const repoUrl = makeUrl(env.cms.repo);
 const apiBaseUrl = `${repoUrl.origin}/api/v4`;
@@ -63,6 +64,13 @@ export async function publish(commitList, shadowContent, action, encoding, user)
         body: JSON.stringify(payload),
     });
     if (response.ok) {
+        if (commitList.length === 1 && action === 'create') {
+            let evaluatedRoute = evaluateRoute(commitList[0]);
+            history.pushState({
+                isNew: true,
+                route: evaluatedRoute
+            }, '', evaluatedRoute);
+        }
         if (action === 'create' || action === 'update') {
             shadowContent?.onSave?.();
         }

@@ -60,6 +60,7 @@ type content struct {
 // Holds sitewide environment variables.
 type env struct {
 	local          string
+	routes         map[string]string
 	baseurl        string
 	fingerprint    string
 	entrypointHTML string
@@ -85,6 +86,7 @@ func DataSource(buildPath string, spaPath string, siteConfig readers.SiteConfig)
 	envPath := spaPath + "generated/env.js"
 	env := env{
 		local:          strconv.FormatBool(Local),
+		routes:         siteConfig.Routes,
 		baseurl:        siteConfig.BaseURL,
 		fingerprint:    siteConfig.Fingerprint,
 		entrypointHTML: siteConfig.EntryPointHTML,
@@ -97,10 +99,17 @@ func DataSource(buildPath string, spaPath string, siteConfig readers.SiteConfig)
 		},
 	}
 
+	flattenRoutes := "{"
+	for content_type, route := range env.routes {
+		flattenRoutes += content_type + ": '" + route + "', "
+	}
+	flattenRoutes = strings.TrimSuffix(flattenRoutes, ", ") + "}"
+
 	// Create env magic prop.
 	envStr := "export let env = { local: " + env.local +
 		", baseurl: '" + env.baseurl +
-		"', fingerprint: '" + env.fingerprint +
+		"', routes: " + flattenRoutes +
+		", fingerprint: '" + env.fingerprint +
 		"', entrypointHTML: '" + env.entrypointHTML +
 		"', entrypointJS: '" + env.entrypointJS +
 		"', cms: { repo: '" + env.cms.repo +
@@ -269,7 +278,7 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 	for configContentType, slug := range siteConfig.Routes {
 		if configContentType == contentType {
 			// Replace :filename.
-			slug = strings.Replace(slug, ":filename", fileName, -1)
+			slug = strings.Replace(slug, ":filename", strings.TrimSuffix(fileName, ".json"), -1)
 
 			// Replace :fields().
 			fieldReplacements := reField.FindAllStringSubmatch(slug, -1)

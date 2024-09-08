@@ -24,6 +24,13 @@
   }
 
   function track(obj) {
+    if (obj?.uri?.isNew) {
+      // Add newly generated route to router
+      router.on(obj?.uri?.route, () => {
+        // Additional edits should be updates
+        content.isNew = false;
+      });
+    }
     path = obj.state || obj.uri || location.pathname;
     params = new URLSearchParams(location.search);
   }
