@@ -1,8 +1,9 @@
 import { env } from '../../generated/env.js';
 
 export default function evaluateRoute(commitItem) {
-    let content_type = window.location.hash.split("/")[1];
-    let filename = window.location.hash.split("/")[2];
+    let content_type = commitItem.file.split("/")[1];
+    let filenameWithExt = commitItem.file.split("/")[2]; // Should probably account for nested content folders
+    let filename = filenameWithExt.substring(0, filenameWithExt.lastIndexOf('.json'));
     let filepath = commitItem.file;
     let fields = JSON.parse(commitItem.contents);
     let default_route = "/" + content_type + "/" + filename;

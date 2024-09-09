@@ -22,15 +22,19 @@ export async function postLocal(commitList, shadowContent, action, encoding) {
         body: JSON.stringify(body),
     });
     if (response.ok) {
-        if (commitList.length === 1 && action === 'create') {
-            let evaluatedRoute = evaluateRoute(commitList[0]);
-            history.pushState({
-                isNew: true,
-                route: evaluatedRoute
-            }, '', evaluatedRoute);
-        }
         if (action === 'create' || action === 'update') {
             shadowContent?.onSave?.();
+            // Make sure saving single content file, not list of media items
+            if (commitList.length === 1 && commitList[0].file.lastIndexOf('.json') > 0) {
+                let evaluatedRoute = evaluateRoute(commitList[0]);
+                // Redirect only if new route is being created
+                if (evaluatedRoute !== location.pathname) {
+                    history.pushState({
+                        isNew: true,
+                        route: evaluatedRoute
+                    }, '', evaluatedRoute);
+                }
+            }
         }
         if (action === 'delete') {
             shadowContent?.onDelete?.();
