@@ -278,7 +278,7 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 	for configContentType, slug := range siteConfig.Routes {
 		if configContentType == contentType {
 			// Replace :filename.
-			slug = strings.Replace(slug, ":filename", fileName, -1)
+			slug = strings.Replace(slug, ":filename", strings.TrimSuffix(fileName, ".json"), -1)
 
 			// Replace :fields().
 			fieldReplacements := reField.FindAllStringSubmatch(slug, -1)
@@ -412,7 +412,6 @@ func getFileInfo(path string) (string, string, string) {
 	parts := strings.Split(path, "/")
 	contentType := parts[1]
 	fileName := parts[len(parts)-1]
-	fileName = strings.TrimSuffix(fileName, ".json")
 	return filePath, contentType, fileName
 }
 
@@ -420,9 +419,12 @@ func makeWebPath(path string, fileName string) string {
 	// Remove the "content/" folder from path.
 	path = strings.TrimPrefix(path, "content/")
 	// Check for index file at any level.
-	if fileName == "_index" {
+	if fileName == "_index.json" {
 		// Remove entire filename from path.
 		path = strings.TrimSuffix(path, fileName)
+	} else {
+		// Remove file extension only from path for files other than index.json.
+		path = strings.TrimSuffix(path, ".json")
 	}
 	return path
 }
