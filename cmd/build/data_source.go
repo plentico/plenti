@@ -99,16 +99,26 @@ func DataSource(buildPath string, spaPath string, siteConfig readers.SiteConfig)
 		},
 	}
 
-	flattenRoutes := "{"
+	flattenedRoutes := "{"
 	for content_type, route := range env.routes {
-		flattenRoutes += content_type + ": '" + route + "', "
+		flattenedRoutes += content_type + ": '" + route + "', "
 	}
-	flattenRoutes = strings.TrimSuffix(flattenRoutes, ", ") + "}"
+	flattenedRoutes = strings.TrimSuffix(flattenedRoutes, ", ") + "}"
+
+	types, singleTypes, err := getTypes()
+	if err != nil {
+		fmt.Errorf("Could not get types for env")
+	}
+
+	flattenedTypes := flattenSliceToJSArray(types)
+	flattenedSingleTypes := flattenSliceToJSArray(singleTypes)
 
 	// Create env magic prop.
 	envStr := "export let env = { local: " + env.local +
 		", baseurl: '" + env.baseurl +
-		"', routes: " + flattenRoutes +
+		"', routes: " + flattenedRoutes +
+		", types: " + flattenedTypes +
+		", singleTypes: " + flattenedSingleTypes +
 		", fingerprint: '" + env.fingerprint +
 		"', entrypointHTML: '" + env.entrypointHTML +
 		"', entrypointJS: '" + env.entrypointJS +
@@ -119,7 +129,7 @@ func DataSource(buildPath string, spaPath string, siteConfig readers.SiteConfig)
 		"' } };"
 
 	// Start the new content.js file.
-	err := ioutil.WriteFile(contentJSPath, []byte(`const allContent = [`), 0755)
+	err = ioutil.WriteFile(contentJSPath, []byte(`const allContent = [`), 0755)
 	if err != nil {
 		fmt.Printf("Unable to write content.js file: %v", err)
 		return err
@@ -238,6 +248,34 @@ func DataSource(buildPath string, spaPath string, siteConfig readers.SiteConfig)
 	}
 	return nil
 
+}
+
+func getTypes() ([]string, []string, error) {
+	contentDir := filepath.Join(".", "content")
+	files, err := ioutil.ReadDir(contentDir)
+	if err != nil {
+		return nil, nil, err
+	}
+	var types []string
+	var single_types []string
+	for _, file := range files {
+		if file.IsDir() {
+			if !strings.HasPrefix(file.Name(), "_") {
+				types = append(types, file.Name())
+			}
+		} else {
+			single_types = append(single_types, strings.TrimSuffix(file.Name(), ".json"))
+		}
+	}
+	return types, single_types, nil
+}
+
+func flattenSliceToJSArray(slice []string) string {
+	quoted := make([]string, len(slice))
+	for i, item := range slice {
+		quoted[i] = fmt.Sprintf(`"%s"`, item)
+	}
+	return "[" + strings.Join(quoted, ", ") + "]"
 }
 
 func getContent(path string, info os.FileInfo, err error, siteConfig readers.SiteConfig,
