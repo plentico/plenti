@@ -1,6 +1,5 @@
 <script>
     export let user, content, shadowContent;
-    import AddContent from "./add_content.svelte";
     import ModalWrapper from "./modals/modal_wrapper.svelte";
     import MediaModal from "./modals/media_modal.svelte";
     import ContentModal from "./modals/content_modal.svelte";
@@ -22,8 +21,6 @@
     const toggleEditor = () => {
         showEditor = !showEditor;
     }
-
-    let showAdd = false;
 
     const horizontalSlide = () => {
       return 	{
@@ -66,15 +63,6 @@
     {/if}
   </a>
   <span class="gap"></span>
-  <a href="." class="add" on:click|preventDefault={() => { showAdd = true; }}>
-    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-circle-plus" width="30" height="30" viewBox="0 0 24 24" stroke-width="2" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
-      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-      <circle cx="12" cy="12" r="9" />
-      <line x1="9" y1="12" x2="15" y2="12" />
-      <line x1="12" y1="9" x2="12" y2="15" />
-    </svg>
-    Add
-  </a>
   <a href="." class="content" on:click|preventDefault={() => showContentModal = !showContentModal}>
     <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icons-tabler-outline icon-tabler-file-text" width="30" height="30" viewBox="0 0 24 24" stroke-width="2" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -108,7 +96,7 @@
 
 {#if showContentModal}
   <ModalWrapper on:click={() => showContentModal = !showContentModal}>
-    <ContentModal bind:showAdd bind:showEditor {env} />
+    <ContentModal bind:showContentModal bind:showEditor {env} />
   </ModalWrapper>
 {/if}
 
@@ -123,22 +111,6 @@
       {user}
     />
   </ModalWrapper>
-{/if}
-
-{#if showAdd}
-  <div class="modal-wrapper" on:click={() => { showAdd = false; }}>
-    <div class="modal-close">
-        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-x" width="35" height="35" viewBox="5 5 14 14" stroke-width="1.5" stroke="white" fill="none" stroke-linecap="round" stroke-linejoin="round">
-            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
-    </div>
-    <div class="modal small" on:click|stopPropagation>
-      <AddContent bind:showAdd bind:showEditor {env} />
-    </div>
-  </div>
-  
 {/if}
 
 <div class={showEditor ? "sidenav-wrapper" : ""}>

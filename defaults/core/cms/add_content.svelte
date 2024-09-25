@@ -3,11 +3,10 @@
     import ButtonWrapper from './button_wrapper.svelte';
     import validateFilename from './validate_filename.js';
 
-    export let showAdd, showEditor, env;
+    export let showContentModal, showAdd, showEditor, env, selectedType;
     let filename = "";
     let baseurl = env.baseurl ? env.baseurl : '/';
 
-    let selectedType;
     const setType = type => {
         selectedType = type;
     }
@@ -17,6 +16,7 @@
         validationErrors = validateFilename(filename, selectedType);
         // No errors, redirect to "add" page
         if (validationErrors.length === 0) {
+            showContentModal = false;
             redirectAndEdit(baseurl + '#add/' + selectedType + '/' + filename);
         }
     }
@@ -49,7 +49,10 @@
     {/if}
     <ButtonWrapper>
         <button on:click={checkFilename} class="primary">Set Filename</button>
-        <button on:click={() => setType(null)}>Go back</button>
+        <button on:click={() => {
+            showAdd = false;
+            setType("");
+        }}>Go back</button>
     </ButtonWrapper>
 {:else}
     <h1>Add content of type:</h1>
