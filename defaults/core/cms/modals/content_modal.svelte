@@ -6,6 +6,14 @@
     let selectedType = "";
     let filteredContent = allContent;
     let showAdd = false;
+
+    function truncate(str, maxLength) {
+        return str.length > maxLength ? str.slice(0, maxLength) + '...' : str;
+    }
+    function removeExtension(str, ext) {
+        const fullExt = ext.startsWith('.') ? ext : '.' + ext;
+        return str.endsWith(fullExt) ? str.slice(0, -fullExt.length) : str;
+    }
 </script>
 
 <div class="plenti-content plenti-modal" on:click|stopPropagation>
@@ -58,30 +66,32 @@
         {#if showAdd && !env?.singleTypes?.includes(selectedType)}
             <AddContent bind:showContentModal bind:showAdd bind:showEditor bind:selectedType {env} />
         {:else}
-        <div class="plenti-content-items">
-            {#if !env?.singleTypes?.includes(selectedType)}
-                <button
-                    class="add-new" 
-                    on:click={() => showAdd = true}
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-circle-plus" width="30" height="30" viewBox="0 0 24 24" stroke-width="2" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                        <circle cx="12" cy="12" r="9" />
-                        <line x1="9" y1="12" x2="15" y2="12" />
-                        <line x1="12" y1="9" x2="12" y2="15" />
-                    </svg>
-                    Add {selectedType}
-                </button>
-            {/if}
-            {#each filteredContent as c}
-                <a href="{c?.path}" class="plenti-content-item">
-                    <div class="plenti-content-item-filename">{c?.filename}</div>
-                    <div class="plenti-content-item-path">
-                        <svg  xmlns="http://www.w3.org/2000/svg"  width="18"  height="18"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-link"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 15l6 -6" /><path d="M11 6l.463 -.536a5 5 0 0 1 7.071 7.072l-.534 .464" /><path d="M13 18l-.397 .534a5.068 5.068 0 0 1 -7.127 0a4.972 4.972 0 0 1 0 -7.071l.524 -.463" /></svg>
-                        <span>{c?.path}</span>
-                    </div>
-                </a>
-            {/each}
+            <div class="plenti-content-items">
+                <div class="plenti-content-items-grid">
+                    {#if !env?.singleTypes?.includes(selectedType)}
+                        <button
+                            class="add-new" 
+                            on:click={() => showAdd = true}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-circle-plus" width="30" height="30" viewBox="0 0 24 24" stroke-width="2" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <circle cx="12" cy="12" r="9" />
+                                <line x1="9" y1="12" x2="15" y2="12" />
+                                <line x1="12" y1="9" x2="12" y2="15" />
+                            </svg>
+                            Add {selectedType}
+                        </button>
+                    {/if}
+                    {#each filteredContent as c}
+                        <a href="{c?.path}" class="plenti-content-item">
+                            <div class="plenti-content-item-filename">{truncate(removeExtension(c?.filename, ".json"), 28)}</div>
+                            <div class="plenti-content-item-path">
+                                <svg  xmlns="http://www.w3.org/2000/svg"  width="18"  height="18"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-link"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 15l6 -6" /><path d="M11 6l.463 -.536a5 5 0 0 1 7.071 7.072l-.534 .464" /><path d="M13 18l-.397 .534a5.068 5.068 0 0 1 -7.127 0a4.972 4.972 0 0 1 0 -7.071l.524 -.463" /></svg>
+                                <span>{truncate(c?.path, 32)}</span>
+                            </div>
+                        </a>
+                    {/each}
+                </div>
             </div>
         {/if}
     </div>
@@ -128,12 +138,15 @@
         background-color: gainsboro;
     }
     .plenti-content-items {
+        overflow-y: auto;
+        max-height: 100%;
+    }
+    .plenti-content-items-grid {
         display: grid;
         grid-template-columns: 1fr 1fr 1fr;
         gap: 10px;
-        overflow-y: scroll;
-        max-height: 100%;
         word-break: break-all;
+        grid-auto-rows: 1fr;
     }
     .plenti-content-item {
         text-decoration: none;
