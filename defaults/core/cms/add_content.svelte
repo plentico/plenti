@@ -30,7 +30,7 @@
 </script>
 
 {#if selectedType}
-    <h1>Set {selectedType} filename:</h1>
+    <h1>Add {selectedType}:</h1>
     <div class="filename">
         <span>content/{selectedType}/</span>
         <input placeholder="filename" autofocus bind:value={filename} class="{validationErrors.length > 0 ? 'error' : ''}" />

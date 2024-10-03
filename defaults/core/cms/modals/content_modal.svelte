@@ -63,6 +63,29 @@
         </div>
     </div>
     <div class="plenti-column-2">
+        <div class="plenti-selectors">
+            <div class="plenti-selector {showAdd ? '' : 'active'}" on:click={() => showAdd = false}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#2c3e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-list">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M9 6l11 0" />
+                    <path d="M9 12l11 0" />
+                    <path d="M9 18l11 0" />
+                    <path d="M5 6l0 .01" />
+                    <path d="M5 12l0 .01" />
+                    <path d="M5 18l0 .01" />
+                </svg>
+                <span>Listing</span>
+            </div>
+            <div class="plenti-selector {showAdd ? 'active' : ''}" on:click={() => showAdd = true}>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-circle-plus" width="30" height="30" viewBox="0 0 24 24" stroke-width="1.5" stroke="#2c3e50" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <circle cx="12" cy="12" r="9" />
+                    <line x1="9" y1="12" x2="15" y2="12" />
+                    <line x1="12" y1="9" x2="12" y2="15" />
+                </svg>
+                <span>Add New</span>
+            </div>
+        </div>
         {#if showAdd && !env?.singleTypes?.includes(selectedType)}
             <AddContent bind:showContentModal bind:showAdd bind:showEditor bind:selectedType {env} />
         {:else}
@@ -87,7 +110,7 @@
                             <div class="plenti-content-item-filename">{truncate(removeExtension(c?.filename, ".json"), 28)}</div>
                             <div class="plenti-content-item-path">
                                 <svg  xmlns="http://www.w3.org/2000/svg"  width="18"  height="18"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-link"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 15l6 -6" /><path d="M11 6l.463 -.536a5 5 0 0 1 7.071 7.072l-.534 .464" /><path d="M13 18l-.397 .534a5.068 5.068 0 0 1 -7.127 0a4.972 4.972 0 0 1 0 -7.071l.524 -.463" /></svg>
-                                <span>{truncate(c?.path, 32)}</span>
+                                <span>{truncate(c?.path, 30)}</span>
                             </div>
                         </a>
                     {/each}
@@ -133,13 +156,15 @@
         align-items: center;
         justify-content: center;
         gap: 5px;
+        min-height: 80px;
     }
     button.add-new:hover {
         background-color: gainsboro;
     }
     .plenti-content-items {
         overflow-y: auto;
-        max-height: 100%;
+        max-height: calc(100% - 63px);
+        margin: 20px 0;
     }
     .plenti-content-items-grid {
         display: grid;
