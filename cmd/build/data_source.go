@@ -310,43 +310,9 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, allComponentDefaultsStr, allComponentSchemasStr, fmt.Errorf("\nError getting content from %s %w", filePath, err)
 	}
 
-	// Setup regex to find field name.
-	reField := regexp.MustCompile(`:fields\((.*?)\)`)
-	// Check for path overrides from plenti.json config file.
-	for configContentType, slug := range siteConfig.Routes {
-		if configContentType == contentType {
-			// Replace :filename.
-			slug = strings.Replace(slug, ":filename", fileName, -1)
-
-			// Replace :fields().
-			fieldReplacements := reField.FindAllStringSubmatch(slug, -1)
-			// Loop through all :fields() replacements found in config file.
-			for _, replacement := range fieldReplacements {
-				// Loop through all top level keys found in content source file.
-				for field, fieldValue := range typeFields.Fields {
-					// Check if field name in the replacement pattern is found in data source.
-					if replacement[1] == field {
-						// Use the field value in the path.
-						slug = strings.ReplaceAll(slug, replacement[0], fieldValue)
-					}
-				}
-			}
-			path = slug
-		}
-	}
-
-	// Initialize vars for path with replacement patterns still intact.
-	var pagerPath string
-	var pagerDestPath string
-	// If there is a /:paginate() replacement found.
-	if rePaginate.MatchString(path) {
-		// Save path before slugifying to preserve pagination.
-		pagerPath = path
-		// Get Destination path before slugifying to preserve pagination.
-		pagerDestPath = buildPath + "/" + path + "/index.html"
-		// Remove /:pagination()
-		path = rePaginate.ReplaceAllString(path, "")
-	}
+	// Swap replacement patterns, like :fields() and :filename, with actual values
+	path = evalRouteReplacementPatterns(path, siteConfig.Routes, contentType, fileName, typeFields)
+	path, pagerPath, pagerDestPath := evalRoutePagerReplacementPatterns(path, buildPath)
 
 	// Convert path to a route the browser can understand
 	path = makeWebPath(path, fileName)
@@ -354,12 +320,16 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 	path = fixBlankPaths(path)
 	path = removeExtraSlashes(path)
 
+	// Make root relative paths if no baseurl
+	if siteConfig.BaseURL == "" && !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+
 	// Add "public" folder and remove wildcards
 	destPath := buildPath + "/" + strings.Replace(path, "*", "", -1)
 
 	if !strings.HasSuffix(destPath, ".html") {
 		destPath = destPath + "/index.html"
-		//fmt.Println(destPath)
 	}
 
 	// Set 404 path for local webserver
@@ -442,6 +412,50 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 	contentFileCounter++
 
 	return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, allComponentDefaultsStr, allComponentSchemasStr, nil
+}
+
+func evalRouteReplacementPatterns(path string, routes map[string]string, contentType string, fileName string, typeFields readers.ContentType) string {
+	// Setup regex to find field name.
+	reField := regexp.MustCompile(`:fields\((.*?)\)`)
+	// Check for path overrides from plenti.json config file.
+	for configContentType, slug := range routes {
+		if configContentType == contentType {
+			// Replace :filename.
+			slug = strings.Replace(slug, ":filename", fileName, -1)
+
+			// Replace :fields().
+			fieldReplacements := reField.FindAllStringSubmatch(slug, -1)
+			// Loop through all :fields() replacements found in config file.
+			for _, replacement := range fieldReplacements {
+				// Loop through all top level keys found in content source file.
+				for field, fieldValue := range typeFields.Fields {
+					// Check if field name in the replacement pattern is found in data source.
+					if replacement[1] == field {
+						// Use the field value in the path.
+						slug = strings.ReplaceAll(slug, replacement[0], fieldValue)
+					}
+				}
+			}
+			path = slug
+		}
+	}
+	return path
+}
+
+func evalRoutePagerReplacementPatterns(path string, buildPath string) (string, string, string) {
+	// Initialize vars for path with replacement patterns still intact.
+	var pagerPath string
+	var pagerDestPath string
+	// If there is a /:paginate() replacement found.
+	if rePaginate.MatchString(path) {
+		// Save path before slugifying to preserve pagination.
+		pagerPath = path
+		// Get Destination path before slugifying to preserve pagination.
+		pagerDestPath = buildPath + "/" + path + "/index.html"
+		// Remove /:pagination()
+		path = rePaginate.ReplaceAllString(path, "")
+	}
+	return path, pagerPath, pagerDestPath
 }
 
 func getFileInfo(path string) (string, string, string) {
