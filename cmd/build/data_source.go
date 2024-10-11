@@ -27,7 +27,7 @@ var Path404 string
 var Doreload bool
 var (
 	// Setup regex to find field name.
-	reField = regexp.MustCompile(`:field\((.*?)\)`)
+	reField = regexp.MustCompile(`:fields\((.*?)\)`)
 	// Setup regex to find pagination and a leading forward slash.
 	rePaginate = regexp.MustCompile(`:paginate\((.*?)\)`)
 
@@ -278,15 +278,15 @@ func flattenSliceToJSArray(slice []string) string {
 	return "[" + strings.Join(quoted, ", ") + "]"
 }
 
-func getContent(path string, info os.FileInfo, err error, siteConfig readers.SiteConfig,
+func getContent(filePath string, info os.FileInfo, err error, siteConfig readers.SiteConfig,
 	buildPath string, contentJSPath string, allContentStr string, allContent []content,
 	contentFileCounter int, allDefaultsStr string, allSchemasStr string, allComponentDefaultsStr string, allComponentSchemasStr string) (int, string, []content, string, string, string, string, error) {
 
 	if err != nil {
-		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, allComponentDefaultsStr, allComponentSchemasStr, fmt.Errorf("can't stat %s: %w", path, err)
+		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, allComponentDefaultsStr, allComponentSchemasStr, fmt.Errorf("can't stat %s: %w", filePath, err)
 	}
 
-	filePath, contentType, fileName := getFileInfo(path)
+	contentType, fileName := getFileInfo(filePath)
 
 	// Don't process hidden files, like .DS_Store
 	if fileName[:1] == "." {
@@ -295,9 +295,9 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 	}
 
 	// Get the contents of the file.
-	fileContentBytes, err := getVirtualFileIfThemeBuild(path)
+	fileContentBytes, err := getVirtualFileIfThemeBuild(filePath)
 	if err != nil {
-		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, allComponentDefaultsStr, allComponentSchemasStr, fmt.Errorf("file: %s %w\n", path, err)
+		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, allComponentDefaultsStr, allComponentSchemasStr, fmt.Errorf("file: %s %w\n", filePath, err)
 	}
 	fileContentStr := string(fileContentBytes)
 
@@ -310,9 +310,22 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, allComponentDefaultsStr, allComponentSchemasStr, fmt.Errorf("\nError getting content from %s %w", filePath, err)
 	}
 
-	// Swap replacement patterns, like :fields() and :filename, with actual values
-	path = evalRouteReplacementPatterns(path, siteConfig.Routes, contentType, fileName, typeFields)
-	path, pagerPath, pagerDestPath := evalRoutePagerReplacementPatterns(path, buildPath)
+	// Initialize path to filepath that will get slugified if not overridden in config
+	path := strings.TrimPrefix(filePath, "content/")
+
+	// Check for path overrides from plenti.json config file.
+	if configPathOverride, exists := siteConfig.Routes[contentType]; exists {
+		// Use overridden path instead of fileName
+		path = configPathOverride
+	} else {
+		// Only if not overridden, make root relative path if no baseurl
+		if siteConfig.BaseURL == "" && !strings.HasPrefix(path, "/") {
+			path = "/" + path
+		}
+	}
+
+	// Swap replacement patterns, like :filename, :fields() and :paginate(), with actual values
+	path, pagerPath := evalRouteReplacementPatterns(path, fileName, typeFields)
 
 	// Convert path to a route the browser can understand
 	path = makeWebPath(path, fileName)
@@ -320,13 +333,9 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 	path = fixBlankPaths(path)
 	path = removeExtraSlashes(path)
 
-	// Make root relative paths if no baseurl
-	if siteConfig.BaseURL == "" && !strings.HasPrefix(path, "/") {
-		path = "/" + path
-	}
-
 	// Add "public" folder and remove wildcards
 	destPath := buildPath + "/" + strings.Replace(path, "*", "", -1)
+	pagerDestPath := buildPath + "/" + pagerPath + "/index.html"
 
 	if !strings.HasSuffix(destPath, ".html") {
 		destPath = destPath + "/index.html"
@@ -414,62 +423,46 @@ func getContent(path string, info os.FileInfo, err error, siteConfig readers.Sit
 	return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, allComponentDefaultsStr, allComponentSchemasStr, nil
 }
 
-func evalRouteReplacementPatterns(path string, routes map[string]string, contentType string, fileName string, typeFields readers.ContentType) string {
-	// Setup regex to find field name.
-	reField := regexp.MustCompile(`:fields\((.*?)\)`)
-	// Check for path overrides from plenti.json config file.
-	for configContentType, slug := range routes {
-		if configContentType == contentType {
-			// Replace :filename.
-			slug = strings.Replace(slug, ":filename", fileName, -1)
+func evalRouteReplacementPatterns(path string, fileName string, typeFields readers.ContentType) (string, string) {
+	// Replace :filename.
+	path = strings.Replace(path, ":filename", fileName, -1)
 
-			// Replace :fields().
-			fieldReplacements := reField.FindAllStringSubmatch(slug, -1)
-			// Loop through all :fields() replacements found in config file.
-			for _, replacement := range fieldReplacements {
-				// Loop through all top level keys found in content source file.
-				for field, fieldValue := range typeFields.Fields {
-					// Check if field name in the replacement pattern is found in data source.
-					if replacement[1] == field {
-						// Use the field value in the path.
-						slug = strings.ReplaceAll(slug, replacement[0], fieldValue)
-					}
-				}
+	// Replace :fields().
+	fieldReplacements := reField.FindAllStringSubmatch(path, -1)
+	// Loop through all :fields() replacements found in config file.
+	for _, replacement := range fieldReplacements {
+		// Loop through all top level keys found in content source file.
+		for field, fieldValue := range typeFields.Fields {
+			// Check if field name in the replacement pattern is found in data source.
+			if replacement[1] == field {
+				// Use the field value in the path.
+				path = strings.ReplaceAll(path, replacement[0], fieldValue)
 			}
-			path = slug
 		}
 	}
-	return path
-}
 
-func evalRoutePagerReplacementPatterns(path string, buildPath string) (string, string, string) {
-	// Initialize vars for path with replacement patterns still intact.
-	var pagerPath string
-	var pagerDestPath string
+	// Replace :paginate().
+	var pagerPath string // Initialize var for path with replacement patterns still intact.
 	// If there is a /:paginate() replacement found.
 	if rePaginate.MatchString(path) {
 		// Save path before slugifying to preserve pagination.
 		pagerPath = path
-		// Get Destination path before slugifying to preserve pagination.
-		pagerDestPath = buildPath + "/" + path + "/index.html"
-		// Remove /:pagination()
+		// Remove /:paginate()
 		path = rePaginate.ReplaceAllString(path, "")
 	}
-	return path, pagerPath, pagerDestPath
+
+	return path, pagerPath
 }
 
-func getFileInfo(path string) (string, string, string) {
-	filePath := path
+func getFileInfo(filePath string) (string, string) {
 	// Get individual path arguments.
-	parts := strings.Split(path, "/")
+	parts := strings.Split(filePath, "/")
 	contentType := parts[1]
 	fileName := parts[len(parts)-1]
-	return filePath, contentType, fileName
+	return contentType, fileName
 }
 
 func makeWebPath(path string, fileName string) string {
-	// Remove the "content/" folder from path.
-	path = strings.TrimPrefix(path, "content/")
 	// Check for index file at any level.
 	if fileName == "_index.json" {
 		// Remove entire filename from path.
