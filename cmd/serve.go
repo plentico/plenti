@@ -214,7 +214,10 @@ func postLocal(w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("Could not unmarshal JSON data: %v", err)
 		}
 		var contents []byte
+		currentDir, _ := os.Getwd()
 		for _, change := range localChanges {
+			change.File = filepath.Join(currentDir, filepath.Clean("/"+change.File))
+
 			if change.Action == "create" || change.Action == "update" {
 				contents = []byte(change.Contents)
 				if change.Encoding == "base64" {
@@ -223,18 +226,14 @@ func postLocal(w http.ResponseWriter, r *http.Request) {
 						fmt.Printf("Could not decode base64 asset: %v", err)
 					}
 				}
-				if len(change.File) > 0 && change.File[0:1] == "/" {
-					// Make sure path is relative to project
-					change.File = "." + change.File
-				}
 				err = os.WriteFile(change.File, contents, os.ModePerm)
 				if err != nil {
 					fmt.Printf("Unable to write to local file: %v", err)
 				}
 			}
+
 			if change.Action == "delete" {
-				currentDir, _ := os.Getwd()
-				err = os.Remove(filepath.Join(currentDir, change.File))
+				err = os.Remove(change.File)
 				if err != nil {
 					fmt.Printf("Unable to delete local file: %v", err)
 				}
