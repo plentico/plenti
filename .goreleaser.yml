@@ -5,6 +5,7 @@ before:
     - go mod download
     - go generate ./...
     - git diff
+    - export PATH=/home/runner/work/osxcross/target/bin:$PATH
 builds:
 - id: linux-build
   ldflags:
