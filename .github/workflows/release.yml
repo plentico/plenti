@@ -29,6 +29,7 @@ jobs:
         run: |
           mkdir ../../osxcross
           git clone https://github.com/plentico/osxcross-target.git ../../osxcross/target
+          echo "/home/runner/work/osxcross/target/bin" >> $GITHUB_PATH
       -
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
