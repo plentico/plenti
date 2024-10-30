@@ -23,8 +23,7 @@ jobs:
       -
         name: Set up Snapcraft
         run: |
-          sudo apt update
-          sudo apt install snapcraft -y
+          snap install snapcraft
       -
         name: Dockerhub Login
         run: |
