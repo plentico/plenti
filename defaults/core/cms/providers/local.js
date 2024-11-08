@@ -1,5 +1,5 @@
-import { env } from '../../generated/env.js';
-import evaluateRoute from './route_eval.js';
+import { env } from '../../../generated/env.js';
+import evaluateRoute from '../route_eval.js';
 
 export async function postLocal(commitList, shadowContent, action, encoding) {
     let url = '/postlocal';

@@ -1,6 +1,6 @@
-import { env } from '../../generated/env.js';
-import { makeUrl } from './url_checker.js';
-import evaluateRoute from './route_eval.js';
+import { env } from '../../../generated/env.js';
+import { makeUrl } from '../url_checker.js';
+import evaluateRoute from '../route_eval.js';
 
 const repoUrl = makeUrl(env.cms.repo);
 const apiBaseUrl = `${repoUrl.origin}/api/v4`;
@@ -14,7 +14,7 @@ const capitalizeFirstLetter = string => {
  * @param {string} contents
  * @param {string} action
  */
-export async function publish(commitList, shadowContent, action, encoding, user) {
+export async function commitGitlab(commitList, shadowContent, action, encoding, user) {
     // Keep track of current user and promise it's availability.
     let currentUser;
     const userAvailable = new Promise(resolve => {

@@ -1,12 +1,14 @@
 <script>
-    import { publish } from './publish.js';
-    import { postLocal } from './post_local.js';
+    import { commitGitlab } from './providers/gitlab.js';
+    import { commitGitea } from './providers/gitea.js';
+    import { postLocal } from './providers/local.js';
     import { env } from '../../generated/env.js';
     import { findFileReferences } from './file_references.js';
 
     export let commitList, shadowContent, buttonText, action, encoding, user, afterSubmit, status;
     export let buttonStyle = "primary";
     const local = env.local ?? false;
+    const provider = env.cms.provider.toLowerCase();
 
     let confirmTooltip;
     const onSubmit = async () => {
@@ -15,8 +17,10 @@
         try {
             if (local) {
                 await postLocal(commitList, shadowContent, action, encoding, user);
-            } else {
-                await publish(commitList, shadowContent, action, encoding, user);
+            } else if (!provider || provider === "gitlab") {
+                await commitGitlab(commitList, shadowContent, action, encoding, user);
+            } else if (provider === "gitea" || provider === "forgejo") {
+                await commitGitea(commitList, shadowContent, action, encoding, user);
             }
             status = "sent";
             afterSubmit?.();

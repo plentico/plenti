@@ -68,6 +68,7 @@ type env struct {
 	cms            cms
 }
 type cms struct {
+	provider    string
 	repo        string
 	redirectUrl string
 	appId       string
@@ -92,6 +93,7 @@ func DataSource(buildPath string, spaPath string, siteConfig readers.SiteConfig)
 		entrypointHTML: siteConfig.EntryPointHTML,
 		entrypointJS:   siteConfig.EntryPointJS,
 		cms: cms{
+			provider:    siteConfig.CMS.Provider,
 			repo:        siteConfig.CMS.Repo,
 			redirectUrl: siteConfig.CMS.RedirectUrl,
 			appId:       siteConfig.CMS.AppId,
@@ -122,7 +124,8 @@ func DataSource(buildPath string, spaPath string, siteConfig readers.SiteConfig)
 		", fingerprint: '" + env.fingerprint +
 		"', entrypointHTML: '" + env.entrypointHTML +
 		"', entrypointJS: '" + env.entrypointJS +
-		"', cms: { repo: '" + env.cms.repo +
+		"', cms: { provider: '" + env.cms.provider +
+		"', repo: '" + env.cms.repo +
 		"', redirectUrl: '" + env.cms.redirectUrl +
 		"', appId: '" + env.cms.appId +
 		"', branch: '" + env.cms.branch +
@@ -522,7 +525,8 @@ func createProps(currentContent content, allContentStr string, env env) error {
 		", baseurl: '"+env.baseurl+
 		"', fingerprint: '"+env.fingerprint+
 		"', entrypointJS: '"+env.entrypointJS+
-		"', cms: { repo: '"+env.cms.repo+
+		"', cms: { provider: '"+env.cms.provider+
+		"', repo: '"+env.cms.repo+
 		"', redirectUrl: '"+env.cms.redirectUrl+
 		"', appId: '"+env.cms.appId+
 		"', branch: '"+env.cms.branch+

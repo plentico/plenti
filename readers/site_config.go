@@ -26,6 +26,7 @@ type SiteConfig struct {
 	} `json:"local"`
 	Routes map[string]string `json:"routes"`
 	CMS    struct {
+		Provider    string `json:"provider"`
 		Repo        string `json:"repo"`
 		RedirectUrl string `json:"redirect_url"`
 		AppId       string `json:"app_id"`

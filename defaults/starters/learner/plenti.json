@@ -11,7 +11,8 @@
 		"port": 3000
 	},
 	"cms": {
-		"repo": "https://gitlab.com/YourGroup/YourRepo",
+		"provider": "gitlab",
+		"repo": "https://gitlab.com/your-group/your-repo",
 		"redirect_url": "http://localhost:3000/admin/",
 		"app_id": "",
 		"branch": "main"
