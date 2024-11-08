@@ -141,7 +141,12 @@ const requestAccessToken = async code => {
         + "&grant_type=authorization_code"
         + "&redirect_uri=" + encodeURIComponent(redirectUrl)
         + "&code_verifier=" + encodeURIComponent(codeVerifier),
-        { method: 'POST' }
+        {
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded"
+            }
+        }
     );
     const tokens = await response.json();
     if (tokens.error) {
@@ -161,7 +166,12 @@ const requestRefreshToken = async () => {
         + "&grant_type=refresh_token"
         + "&redirect_uri=" + encodeURIComponent(redirectUrl)
         + "&code_verifier=" + encodeURIComponent(codeVerifier),
-        { method: 'POST' }
+        {
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded"
+            }
+        }
     );
     const refreshedTokens = await response.json();
     if (refreshedTokens.error) {
