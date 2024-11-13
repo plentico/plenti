@@ -18,6 +18,12 @@ if (provider === "gitea" || provider === "forgejo") {
     authorization_endpoint = "/login/oauth/authorize";
     access_token_endpoint = "/login/oauth/access_token";
 }
+if (provider === "bitbucket") {
+    //authorization_endpoint = "/rest/oauth2/latest/authorize";
+    //access_token_endpoint = "/rest/oauth2/latest/token";
+    authorization_endpoint = "/site/oauth2/authorize";
+    access_token_endpoint = "/site/oauth2/access_token";
+}
 
 const settings = {
     provider: provider,
@@ -135,17 +141,27 @@ const requestAuthCode = async () => {
 
 const requestAccessToken = async code => {
     const { access_token_endpoint, server, redirectUrl, appId } = settings;
+    const params = new URLSearchParams({
+        client_id: appId,
+        code: code,
+        grant_type: 'authorization_code',
+        redirect_uri: redirectUrl,
+        code_verifier: codeVerifier
+    });
     const response = await fetch(server + access_token_endpoint
+        /*
         + "?client_id=" + encodeURIComponent(appId) 
         + "&code=" + encodeURIComponent(code) 
         + "&grant_type=authorization_code"
         + "&redirect_uri=" + encodeURIComponent(redirectUrl)
         + "&code_verifier=" + encodeURIComponent(codeVerifier),
-        {
+        */
+        ,{
             method: 'POST',
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded"
-            }
+            },
+            body: params.toString()
         }
     );
     const tokens = await response.json();
