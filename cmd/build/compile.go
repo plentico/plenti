@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-
 	"rogchap.com/v8go"
 )
 
@@ -104,7 +103,7 @@ func compileSvelte(ctx *v8go.Context, SSRctx *v8go.Context, layoutPath string,
 	// Create custom variable name for component based on the file path for the layout.
 	componentSignature := strings.ReplaceAll(strings.ReplaceAll(layoutPath, "/", "_"), ".", "_")
 	// Use signature instead of specific component name (e.g. var Html = create_ssr_component(($$result, $$props, $$bindings, slots) => {)
-	ssrStr = reSSRComp.ReplaceAllString(ssrStr, "${1}"+componentSignature+"${2}")
+  ssrStr = reSSRComp.ReplaceAllString(ssrStr, "${1}"+componentSignature+"${2}")
 
 	namedExports := reStaticExport.FindAllStringSubmatch(ssrStr, -1)
 	// Loop through all export statements.

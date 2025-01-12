@@ -1,0 +1,13 @@
+{
+	"title": "CMS Preview",
+	"description": [
+		"The Git-CMS is still under active development and is experimental.",
+		"Make sure to add your GitLab backend CMS info to plenti.json to test it out.",
+		"If you want things to move faster, please consider showing <a href='https://github.com/sponsors/plentico' target='blank' rel='noopener noreferrer'>your support</a>. Thanks!"
+	],
+	"cms": true,
+	"source": {
+		"layout": true,
+		"content": true
+	}
+}

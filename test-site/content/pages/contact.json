@@ -1,0 +1,12 @@
+{
+	"title": "Contact Us",
+	"description": [
+		"Plenti is 100% free and open source!",
+		"You can fork it for your own purposes, or help us out by reporting bugs / contributing code on <a href='https://github.com/plentico/plenti' target='blank' rel='noopener noreferrer'>Our GitHub</a>.",
+		"Give us <a href='https://twitter.com/plentico' target='blank' rel='noopener noreferrer'>a tweet</a> if you like what you see!"
+	],
+	"source": {
+		"layout": true,
+		"content": true
+	}
+}

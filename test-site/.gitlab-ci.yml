@@ -1,0 +1,12 @@
+image:
+  name: plentico/plenti:latest
+  entrypoint: [""]
+
+pages:
+  script:
+    - /plenti build
+  artifacts:
+    paths:
+      - public
+  only:
+    - main

@@ -1,0 +1,16 @@
+{
+	"title": "About Plenti",
+	"description": [
+		"Plenti is a minimalist <a href='https://jamstack.org/' target='blank' rel='noopener noreferrer'>JAMstack</a> framework that's flexible and easy to use.",
+		"We've cut out as many dependencies as possible so you can focus on being productive instead of wrestling with tools.",
+		"The <a href='https://svelte.dev/' target='blank' rel='noopener noreferrer'>Svelte</a> frontend gives users get a snappy experience, and the <a href='https://golang.org/' target='blank' rel='noopener noreferrer'>Go</a> backend builds fast so you can get more done."
+	],
+	"image": {
+		"src": "media/perry.webp",
+		"alt": "Perry the planarian mascot"
+	},
+	"source": {
+		"layout": true,
+		"content": true
+	}
+}

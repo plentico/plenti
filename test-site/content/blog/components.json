@@ -1,0 +1,18 @@
+{
+    "title": "Dynamic components example",
+    "author": "Jim Fisk",
+    "date": "12/9/2020",
+    "body": "<div>The <a href=\"https://plenti.co/docs/alllayouts\">allLayouts</a> helper object holds references to all svelte templates on your site.</div><br><div>This allows you to load components from your JSON data source without explicitly importing them.</div><br><div>Just remember to use a <em>component signature</em> (e.g. layouts/components/ball.svelte becomes layouts_components_ball_svelte).</div>",
+	"components": [
+		{
+			"name": "ball"
+		},
+		{
+			"name": "block"
+		}
+	],
+    "source": {
+        "layout": true,
+        "content": true
+    }
+}
