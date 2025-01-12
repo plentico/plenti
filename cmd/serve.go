@@ -209,7 +209,7 @@ type localChange struct {
 
 // Custom validation for file path. Only allow files in the layouts and content directories.
 func FilePathValidation(fl validator.FieldLevel) bool {
-  reFilePath := regexp.MustCompile(`^(layouts|content)[a-zA-Z0-9_\-\/]*(.svelte|.js|json)$`)
+  reFilePath := regexp.MustCompile(`^(layouts|content)[a-zA-Z0-9_\-\/]*(.svelte|.js|.json)$`)
   fmt.Println(fl.Field().String())
   return reFilePath.MatchString(fl.Field().String())
 }
