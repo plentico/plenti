@@ -11,10 +11,10 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
-  "regexp"
 
 	"github.com/plentico/plenti/cmd/build"
 	"github.com/plentico/plenti/cmd/serve"
@@ -24,8 +24,8 @@ import (
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/briandowns/spinner"
 	"github.com/gerald1248/httpscerts"
+	"github.com/go-playground/validator/v10"
 	"github.com/spf13/cobra"
-  "github.com/go-playground/validator/v10"
 	"golang.org/x/net/websocket"
 )
 
@@ -170,7 +170,7 @@ var serveCmd = &cobra.Command{
 
 		// Start the HTTP webserver
 		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
-    
+
 	},
 }
 
@@ -201,25 +201,25 @@ func init() {
 
 // Validate user supplied values
 type localChange struct {
-  Action   string `json:"action" validate:"required,oneof=create update delete"`
-  Encoding string `json:"encoding" validate:"required,oneof=base64 text"`
-  File     string `json:"file" validate:"file-path"`
-  Contents string `json:"contents" validate:"required"`
+	Action   string `json:"action" validate:"required,oneof=create update delete"`
+	Encoding string `json:"encoding" validate:"required,oneof=base64 text"`
+	File     string `json:"file" validate:"file-path"`
+	Contents string `json:"contents" validate:"required"`
 }
 
 // Custom validation for file path. Only allow files in the layouts and content directories.
 func FilePathValidation(fl validator.FieldLevel) bool {
-  reFilePath := regexp.MustCompile(`^(layouts|content)[a-zA-Z0-9_\-\/]*(.svelte|.js|.json)$`)
-  fmt.Println(fl.Field().String())
-  return reFilePath.MatchString(fl.Field().String())
+	reFilePath := regexp.MustCompile(`^(layouts|content)[a-zA-Z0-9_\-\/]*(.svelte|.js|.json)$`)
+	fmt.Println(fl.Field().String())
+	return reFilePath.MatchString(fl.Field().String())
 }
 
 func postLocal(w http.ResponseWriter, r *http.Request) {
-  // Register custom rules to validator
-  validate = validator.New()
-  validate.RegisterValidation("file-path", FilePathValidation)
-	
-  if r.Method == "POST" {
+	// Register custom rules to validator
+	validate = validator.New()
+	validate.RegisterValidation("file-path", FilePathValidation)
+
+	if r.Method == "POST" {
 		b, err := io.ReadAll(r.Body)
 		if err != nil {
 			fmt.Printf("Could not read 'body' from local edit: %v", err)
@@ -232,13 +232,13 @@ func postLocal(w http.ResponseWriter, r *http.Request) {
 
 		var contents []byte
 		for _, change := range localChanges {
-			      
-      // Validate user input, there is any error, return 400 Bad Request
-      err := validate.Struct(change)
-      if err != nil {
-        http.Error(w, err.Error(), http.StatusBadRequest)
-        return
-      }
+
+			// Validate user input, there is any error, return 400 Bad Request
+			err := validate.Struct(change)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 
 			if change.Action == "create" || change.Action == "update" {
 				contents = []byte(change.Contents)
