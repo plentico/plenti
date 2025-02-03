@@ -5,13 +5,13 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net"
 	"net/http"
 	"os"
 	"path"
-	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -24,6 +24,7 @@ import (
 	"github.com/MakeNowJust/heredoc/v2"
 	"github.com/briandowns/spinner"
 	"github.com/gerald1248/httpscerts"
+	"github.com/go-playground/validator/v10"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/websocket"
 )
@@ -39,6 +40,9 @@ var SSLFlag bool
 
 // LocalFlag can be set to false to emulate a remote environment
 var LocalFlag bool
+
+// Valditor for input validation
+var validate *validator.Validate
 
 func checkPortAvailability(port int) bool {
 	address := fmt.Sprintf("localhost:%d", port)
@@ -195,16 +199,28 @@ func init() {
 	serveCmd.Flags().StringVarP(&ConfigFileFlag, "config", "c", "plenti.json", "use a custom sitewide configuration file")
 }
 
+// Validate user supplied values
 type localChange struct {
-	Action   string
-	Encoding string
-	File     string
-	Contents string
+	Action   string `json:"action" validate:"required,oneof=create update delete"`
+	Encoding string `json:"encoding" validate:"required,oneof=base64 text"`
+	File     string `json:"file" validate:"file-path"`
+	Contents string `json:"contents" validate:"required"`
+}
+
+// Custom validation for file path. Only allow files in the layouts and content directories.
+func FilePathValidation(fl validator.FieldLevel) bool {
+	reFilePath := regexp.MustCompile(`^(content)[a-zA-Z0-9_\-\/]*(.json)$`)
+	fmt.Println(fl.Field().String())
+	return reFilePath.MatchString(fl.Field().String())
 }
 
 func postLocal(w http.ResponseWriter, r *http.Request) {
+	// Register custom rules to validator
+	validate = validator.New()
+	validate.RegisterValidation("file-path", FilePathValidation)
+
 	if r.Method == "POST" {
-		b, err := ioutil.ReadAll(r.Body)
+		b, err := io.ReadAll(r.Body)
 		if err != nil {
 			fmt.Printf("Could not read 'body' from local edit: %v", err)
 		}
@@ -213,10 +229,16 @@ func postLocal(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			fmt.Printf("Could not unmarshal JSON data: %v", err)
 		}
+
 		var contents []byte
-		currentDir, _ := os.Getwd()
 		for _, change := range localChanges {
-			change.File = filepath.Join(currentDir, filepath.Clean("/"+change.File))
+
+			// Validate user input, there is any error, return 400 Bad Request
+			err := validate.Struct(change)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 
 			if change.Action == "create" || change.Action == "update" {
 				contents = []byte(change.Contents)
@@ -267,7 +289,7 @@ func serveSSL(port int) {
 		Handler:        nil,
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
-		ErrorLog:       log.New(ioutil.Discard, "", 0),
+		ErrorLog:       log.New(io.Discard, "", 0),
 		MaxHeaderBytes: 1 << 20,
 		TLSConfig:      cfg,
 	}
