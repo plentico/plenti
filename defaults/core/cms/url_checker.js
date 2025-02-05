@@ -5,3 +5,8 @@ export const makeUrl = string => {
     return new URL("https://gitlab.com");
   }
 }
+
+export const normalizeRoute = route => {
+  // Remove leading and trailing slashes
+  return route.replace(/^\/+|\/+$/g, '');
+}

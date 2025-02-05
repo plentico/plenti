@@ -1,5 +1,5 @@
 import { env } from '../../../generated/env.js';
-import { makeUrl } from '../url_checker.js';
+import { makeUrl, normalizeRoute } from '../url_checker.js';
 import evaluateRoute from '../route_eval.js';
 
 const repoUrl = makeUrl(env.cms.repo);
@@ -70,7 +70,7 @@ export async function commitGitlab(commitList, shadowContent, action, encoding, 
             if (commitList.length === 1 && commitList[0].file.lastIndexOf('.json') > 0) {
                 let evaluatedRoute = evaluateRoute(commitList[0]);
                 // Redirect only if new route is being created
-                if (evaluatedRoute !== location.pathname) {
+                if (normalizeRoute(evaluatedRoute) !== normalizeRoute(location.pathname)) {
                     history.pushState({
                         isNew: true,
                         route: evaluatedRoute
