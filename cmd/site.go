@@ -104,6 +104,7 @@ var siteCmd = &cobra.Command{
 			repo := addTheme(themeDir, themeFlag, repoName)
 			commitHash := getCommitHash(repo)
 			setThemeConfig(projectDir, themeFlag, commitHash, repoName)
+			cleanThemeGit(themeDir)
 
 			// Enable the theme.
 			enableTheme(themeDir, projectDir, repoName)
