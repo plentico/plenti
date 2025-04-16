@@ -14,7 +14,7 @@ import (
 
 // SiteConfig is the site's configuration file values.
 type SiteConfig struct {
-	Fingerprint    string
+	Fingerprint    string                  `json:"fingerprint"`
 	BuildDir       string                  `json:"build"`
 	BaseURL        string                  `json:"baseurl"`
 	Theme          string                  `json:"theme"`
