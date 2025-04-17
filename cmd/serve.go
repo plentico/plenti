@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -247,6 +248,13 @@ func postLocal(w http.ResponseWriter, r *http.Request) {
 					if err != nil {
 						fmt.Printf("Could not decode base64 asset: %v", err)
 					}
+				}
+				// Get the directory path
+				dir := filepath.Dir(change.File)
+				// Create the directory and its parents if they don't exist
+				err := os.MkdirAll(dir, os.ModePerm)
+				if err != nil {
+					fmt.Printf("Unable to create local directory path: %v", err)
 				}
 				err = os.WriteFile(change.File, contents, os.ModePerm)
 				if err != nil {
