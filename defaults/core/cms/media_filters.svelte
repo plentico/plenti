@@ -5,6 +5,7 @@
     export let enabledFilters = [];
     export let filteredMedia = []; 
     export let singleSelect = false;
+    let searchInput = '';
 
     const mediaPathToArray = media => {
         // Create an array of path segments.
@@ -50,9 +51,12 @@
 
     // Filter media
     $: filteredMedia = media.filter(mediaFile => {
-        // Show all media if no filter is applied, or
+        // Show all media if no filter or search input is applied, or
         // Show specific media file if it's in the enabled filters
-        return !enabledFilters.length || mediaMatchesFilter(mediaPathToArray(mediaFile), enabledFilters);
+        const matchesFolder = !enabledFilters.length || mediaMatchesFilter(mediaPathToArray(mediaFile), enabledFilters);
+        // Show media if file path contains search input string
+        const matchesSearch = !searchInput || mediaFile.toLowerCase().includes(searchInput.toLowerCase());
+        return matchesFolder && matchesSearch;
     });
 
     const getFilterSubGroup = (filter, filterGroup) => {
@@ -113,6 +117,9 @@
         </button>
     {/if}
 </div>
+<div class="plenti-media-search-wrapper">
+    <input id="plenti-media-search" type="text" placeholder="Search" bind:value={searchInput} />
+</div>
 
 <style>
     .filters-wrapper {
@@ -153,5 +160,8 @@
         background-color: transparent;
         border: none;
         cursor: pointer;
+    }
+    #plenti-media-search {
+        margin-top: 15px;
     }
 </style>
