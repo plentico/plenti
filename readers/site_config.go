@@ -25,6 +25,7 @@ type SiteConfig struct {
 		Port int `json:"port"`
 	} `json:"local"`
 	Routes map[string]string `json:"routes"`
+	SiteVars map[string]interface{} `json:"sitevars"`
 	CMS    struct {
 		Provider    string `json:"provider"`
 		Repo        string `json:"repo"`

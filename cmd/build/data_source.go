@@ -2,6 +2,7 @@ package build
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -65,6 +66,7 @@ type env struct {
 	fingerprint    string
 	entrypointHTML string
 	entrypointJS   string
+	sitevars       map[string]interface{}
 	cms            cms
 }
 type cms struct {
@@ -92,6 +94,7 @@ func DataSource(buildPath string, spaPath string, siteConfig readers.SiteConfig)
 		fingerprint:    siteConfig.Fingerprint,
 		entrypointHTML: siteConfig.EntryPointHTML,
 		entrypointJS:   siteConfig.EntryPointJS,
+		sitevars:       siteConfig.SiteVars,
 		cms: cms{
 			provider:    siteConfig.CMS.Provider,
 			repo:        siteConfig.CMS.Repo,
@@ -115,6 +118,11 @@ func DataSource(buildPath string, spaPath string, siteConfig readers.SiteConfig)
 	flattenedTypes := flattenSliceToJSArray(types)
 	flattenedSingleTypes := flattenSliceToJSArray(singleTypes)
 
+	sitevarsJSON, err := json.Marshal(env.sitevars)
+	if err != nil {
+		return fmt.Errorf("Could not marshal sitevars: %w", err)
+	}
+
 	// Create env magic prop.
 	envStr := "export let env = { local: " + env.local +
 		", baseurl: '" + env.baseurl +
@@ -124,7 +132,8 @@ func DataSource(buildPath string, spaPath string, siteConfig readers.SiteConfig)
 		", fingerprint: '" + env.fingerprint +
 		"', entrypointHTML: '" + env.entrypointHTML +
 		"', entrypointJS: '" + env.entrypointJS +
-		"', cms: { provider: '" + env.cms.provider +
+		"', sitevars: " + string(sitevarsJSON) +
+		", cms: { provider: '" + env.cms.provider +
 		"', repo: '" + env.cms.repo +
 		"', redirectUrl: '" + env.cms.redirectUrl +
 		"', appId: '" + env.cms.appId +
@@ -286,7 +295,7 @@ func getContent(filePath string, info os.FileInfo, err error, siteConfig readers
 	contentFileCounter int, allDefaultsStr string, allSchemasStr string, allComponentDefaultsStr string, allComponentSchemasStr string) (int, string, []content, string, string, string, string, error) {
 
 	if err != nil {
-		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, allComponentDefaultsStr, allComponentSchemasStr, fmt.Errorf("can't stat %s: %w", filePath, err)
+		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, allComponentDefaultsStr, allComponentSchemasStr, fmt.Errorf("can't stat %s: %w\n", filePath, err)
 	}
 
 	contentType, fileName := getFileInfo(filePath)
@@ -517,20 +526,33 @@ func removeExtraSlashes(path string) string {
 
 func createProps(currentContent content, allContentStr string, env env) error {
 	componentSignature := "layouts_content_" + currentContent.contentType + "_svelte"
-	_, err := SSRctx.RunScript("var props = {content: "+currentContent.contentDetails+
+	sitevarsJSON, err := json.Marshal(env.sitevars)
+	if err != nil {
+		return fmt.Errorf("Could not marshal sitevars for props: %w", err)
+	}
+	flattenedRoutes := "{"
+	for content_type, route := range env.routes {
+		flattenedRoutes += content_type + ": '" + route + "', "
+	}
+	flattenedRoutes = strings.TrimSuffix(flattenedRoutes, ", ") + "}"
+
+	_, err = SSRctx.RunScript("var props = {content: "+currentContent.contentDetails+
 		", layout: "+componentSignature+
 		", allContent: "+allContentStr+
 		", shadowContent: {}"+
-		", env: {local: "+env.local+
+		"};"+
+		"var env = {local: "+env.local+
 		", baseurl: '"+env.baseurl+
 		"', fingerprint: '"+env.fingerprint+
 		"', entrypointJS: '"+env.entrypointJS+
-		"', cms: { provider: '"+env.cms.provider+
+		"', sitevars: "+string(sitevarsJSON)+
+		", routes: "+flattenedRoutes+
+		", cms: { provider: '"+env.cms.provider+
 		"', repo: '"+env.cms.repo+
 		"', redirectUrl: '"+env.cms.redirectUrl+
 		"', appId: '"+env.cms.appId+
 		"', branch: '"+env.cms.branch+
-		"'}}};", "create_ssr")
+		"'}}", "create_ssr")
 	if err != nil {
 		return fmt.Errorf("\nCould not create props for %s\n%+v", componentSignature, err)
 	}
@@ -562,6 +584,13 @@ func createHTML(currentContent content, env env) error {
 	htmlBytes = bytes.Replace(htmlBytes, []byte("<html"), []byte("<!DOCTYPE html><html"), 1)
 	// Inject data-content-filepath attribute
 	htmlBytes = bytes.Replace(htmlBytes, []byte("<html"), []byte("<html data-content-filepath='"+currentContent.contentFilepath+"' "), 1)
+	// Get env for injection
+	envScript, err := SSRctx.RunScript("JSON.stringify(env)", "create_ssr")
+	if err != nil {
+		return fmt.Errorf("V8go could not get env: %w", err)
+	}
+	// Inject env
+	htmlBytes = bytes.Replace(htmlBytes, []byte("<head>"), []byte("<head><script>window.env = "+envScript.String()+";</script>"), 1)
 	if Doreload {
 		if env.baseurl == "" {
 			// Fix live-reload.js path if baseurl isn't set
