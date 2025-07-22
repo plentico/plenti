@@ -24,8 +24,9 @@ type SiteConfig struct {
 	Local          struct {
 		Port int `json:"port"`
 	} `json:"local"`
-	Routes map[string]string `json:"routes"`
-	CMS    struct {
+	Routes   map[string]string `json:"routes"`
+	SiteVars map[string]any    `json:"sitevars"`
+	CMS      struct {
 		Provider    string `json:"provider"`
 		Repo        string `json:"repo"`
 		RedirectUrl string `json:"redirect_url"`

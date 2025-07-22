@@ -2,6 +2,7 @@ package build
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -60,11 +61,12 @@ type content struct {
 // Holds sitewide environment variables.
 type env struct {
 	local          string
-	routes         map[string]string
+	routes         string
 	baseurl        string
 	fingerprint    string
 	entrypointHTML string
 	entrypointJS   string
+	sitevars       string
 	cms            cms
 }
 type cms struct {
@@ -82,16 +84,26 @@ func DataSource(buildPath string, spaPath string, siteConfig readers.SiteConfig)
 
 	Log("\nGathering data source from 'content/' folder")
 
+	routesJSON, err := json.Marshal(siteConfig.Routes)
+	if err != nil {
+		return fmt.Errorf("Could not marshal routes: %w", err)
+	}
+	sitevarsJSON, err := json.Marshal(siteConfig.SiteVars)
+	if err != nil {
+		return fmt.Errorf("Could not marshal sitevars: %w", err)
+	}
+
 	// Set some defaults
 	contentJSPath := spaPath + "generated/content.js"
 	envPath := spaPath + "generated/env.js"
 	env := env{
 		local:          strconv.FormatBool(Local),
-		routes:         siteConfig.Routes,
+		routes:         string(routesJSON),
 		baseurl:        siteConfig.BaseURL,
 		fingerprint:    siteConfig.Fingerprint,
 		entrypointHTML: siteConfig.EntryPointHTML,
 		entrypointJS:   siteConfig.EntryPointJS,
+		sitevars:       string(sitevarsJSON),
 		cms: cms{
 			provider:    siteConfig.CMS.Provider,
 			repo:        siteConfig.CMS.Repo,
@@ -101,30 +113,26 @@ func DataSource(buildPath string, spaPath string, siteConfig readers.SiteConfig)
 		},
 	}
 
-	flattenedRoutes := "{"
-	for content_type, route := range env.routes {
-		flattenedRoutes += content_type + ": '" + route + "', "
-	}
-	flattenedRoutes = strings.TrimSuffix(flattenedRoutes, ", ") + "}"
-
 	types, singleTypes, err := getTypes()
 	if err != nil {
-		fmt.Errorf("Could not get types for env")
+		return fmt.Errorf("Could not get types for env: %w", err)
 	}
 
 	flattenedTypes := flattenSliceToJSArray(types)
 	flattenedSingleTypes := flattenSliceToJSArray(singleTypes)
+	//flattenedRoutes := flattenMaptoJSObj(env.routes)
 
 	// Create env magic prop.
 	envStr := "export let env = { local: " + env.local +
 		", baseurl: '" + env.baseurl +
-		"', routes: " + flattenedRoutes +
+		"', routes: " + env.routes +
 		", types: " + flattenedTypes +
 		", singleTypes: " + flattenedSingleTypes +
 		", fingerprint: '" + env.fingerprint +
 		"', entrypointHTML: '" + env.entrypointHTML +
 		"', entrypointJS: '" + env.entrypointJS +
-		"', cms: { provider: '" + env.cms.provider +
+		"', sitevars: " + env.sitevars +
+		", cms: { provider: '" + env.cms.provider +
 		"', repo: '" + env.cms.repo +
 		"', redirectUrl: '" + env.cms.redirectUrl +
 		"', appId: '" + env.cms.appId +
@@ -280,13 +288,21 @@ func flattenSliceToJSArray(slice []string) string {
 	}
 	return "[" + strings.Join(quoted, ", ") + "]"
 }
+func flattenMaptoJSObj(go_map map[string]string) string {
+	flattenedObj := "{"
+	for key, val := range go_map {
+		flattenedObj += key + ": '" + val + "', "
+	}
+	flattenedObj = strings.TrimSuffix(flattenedObj, ", ") + "}"
+	return flattenedObj
+}
 
 func getContent(filePath string, info os.FileInfo, err error, siteConfig readers.SiteConfig,
 	buildPath string, contentJSPath string, allContentStr string, allContent []content,
 	contentFileCounter int, allDefaultsStr string, allSchemasStr string, allComponentDefaultsStr string, allComponentSchemasStr string) (int, string, []content, string, string, string, string, error) {
 
 	if err != nil {
-		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, allComponentDefaultsStr, allComponentSchemasStr, fmt.Errorf("can't stat %s: %w", filePath, err)
+		return contentFileCounter, allContentStr, allContent, allDefaultsStr, allSchemasStr, allComponentDefaultsStr, allComponentSchemasStr, fmt.Errorf("can't stat %s: %w\n", filePath, err)
 	}
 
 	contentType, fileName := getFileInfo(filePath)
@@ -525,7 +541,9 @@ func createProps(currentContent content, allContentStr string, env env) error {
 		", baseurl: '"+env.baseurl+
 		"', fingerprint: '"+env.fingerprint+
 		"', entrypointJS: '"+env.entrypointJS+
-		"', cms: { provider: '"+env.cms.provider+
+		"', sitevars: "+env.sitevars+
+		", routes: "+env.routes+
+		", cms: { provider: '"+env.cms.provider+
 		"', repo: '"+env.cms.repo+
 		"', redirectUrl: '"+env.cms.redirectUrl+
 		"', appId: '"+env.cms.appId+
