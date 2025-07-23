@@ -46,13 +46,15 @@ archives:
       {{- else }}{{ .Arch }}{{ end }}
 checksum:
   name_template: 'checksums.txt'
+snapshot:
+  version_template: "{{ .Tag }}-next"
 changelog:
   sort: asc
   filters:
     exclude:
     - '^docs:'
     - '^test:'
-homebrew:
+homebrew_casks:
   -
     name: plenti
     repository:
