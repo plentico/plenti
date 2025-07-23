@@ -38,7 +38,7 @@ jobs:
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
-          version: latest
+          version: v2.10.2
           args: release --clean --verbose
         env:
           GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
