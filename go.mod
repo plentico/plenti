@@ -1,8 +1,6 @@
 module github.com/plentico/plenti
 
-go 1.23.0
-
-toolchain go1.23.7
+go 1.24.0
 
 require (
 	github.com/MakeNowJust/heredoc/v2 v2.0.1
@@ -17,7 +15,7 @@ require (
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cobra v1.1.3
 	github.com/tdewolff/minify/v2 v2.20.20
-	golang.org/x/net v0.38.0
+	golang.org/x/net v0.47.0
 	rogchap.com/v8go v0.8.0
 )
 
@@ -53,11 +51,11 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tdewolff/parse/v2 v2.7.13 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
-	golang.org/x/crypto v0.36.0 // indirect
-	golang.org/x/mod v0.17.0 // indirect
-	golang.org/x/sync v0.12.0 // indirect
-	golang.org/x/sys v0.31.0 // indirect
-	golang.org/x/text v0.23.0 // indirect
-	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect
+	golang.org/x/crypto v0.45.0 // indirect
+	golang.org/x/mod v0.29.0 // indirect
+	golang.org/x/sync v0.18.0 // indirect
+	golang.org/x/sys v0.38.0 // indirect
+	golang.org/x/text v0.31.0 // indirect
+	golang.org/x/tools v0.38.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
