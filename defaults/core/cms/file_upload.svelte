@@ -16,9 +16,9 @@
     import { onDestroy } from 'svelte';
     import ImageCropModal from './fields/image_crop_modal.svelte';
     import { transformImage, blobToDataURL } from './crop-engine.js';
-    import { LIBRARY_OPTIMISE_DEFAULTS } from './crop-engine.js';
+    import { LIBRARY_OPTIMIZE_DEFAULTS } from './crop-engine.js';
     import { conformsToImageOptions } from './crop-engine.js';
-    import { libraryFingerprint, libraryOutputPath } from './library_optimise.js';
+    import { libraryFingerprint, libraryOutputPath } from './library_optimize.js';
     import { pendingMedia } from './pending_media.js';
     import { STANDALONE_UPLOAD_CONTEXT } from './upload_context.js';
     import { classifyFile } from './upload_queue.js';
@@ -53,6 +53,16 @@
     $: failedItems = queue ? queue.failedItems() : [];
     $: pendingReviewCount = unresolvedCount - failedItems.length;
     $: remainingSkippable = queue ? queue.skippableCount : 0;
+    // "Format media" is a standalone-only, opt-in pass over the staged uploads.
+    // With an active selection it scopes to the selected items only (mirroring
+    // "Discard selected") and the button reads "Format selected media".
+    $: formatCandidates = selectedMedia.length > 0
+        ? localMediaList.filter(i => selectedMedia.includes(i.contents))
+        : localMediaList;
+    $: canFormat = !queue && !formatItems
+        && formatCandidates.some(i => String(i.contents || '').startsWith('data:image/'));
+    $: formatPosition = formatItems && formatItems.length > 1
+        ? { index: formatIndex + 1, total: formatItems.length } : null;
     // "Image X of Y" over image-type items only (passthrough is not modal-driven).
     $: queuePosition = (() => {
         if (!queue || !currentItem || currentItem.type !== 'image') return null;
@@ -61,17 +71,24 @@
         return index > 0 ? { index, total: images.length } : null;
     })();
 
-    // ── the optimise-gateway modal driver ─────────────────────────────────────
+    // ── the optimize-gateway modal driver ─────────────────────────────────────
     let showCropModal = false;
     // Field mode: a component-owned object URL (created + revoked here).
     // Standalone: an alias of the queue-owned item.objectUrl — never revoked here.
     let cropSourceUrl = '';
-    let cropSourceFile = null; // the File being optimised (for the fingerprint)
+    let cropSourceFile = null; // the File being optimized (for the fingerprint)
     let sourcePath = '';      // media/<name> the OUTPUT path is derived from
     let cropError = '';
     let fieldNote = '';       // field multi-drop notice (shown via the modal's error slot)
     let processing = false;
     let currentItem = null;   // the queue item this view is presenting
+    // ── the "Format media" run (standalone, opt-in) ───────────────────────────
+    // A one-at-a-time review of the STAGED uploads through the optimizer modal.
+    // Entries reference their localMediaList item so a confirmed derivative
+    // REPLACES the raw staged upload in place. Object URLs here are
+    // component-owned (created + revoked by this run — never the queue's).
+    let formatItems = null;   // [{ item, file }] | null (null = no run active)
+    let formatIndex = 0;
     let destroyed = false;
     let mounted = false;
     let fieldUploadRequest = 0;
@@ -84,7 +101,7 @@
     // ── ingestion conformance (#364, owner-confirmed) ─────────────────────────
     // A source that ALREADY meets the library defaults (target format, within
     // the max edge) must never be silently re-encoded: a deliberately
-    // pre-optimised asset (e.g. an aggressively compressed 15 KB WebP) can come
+    // pre-optimized asset (e.g. an aggressively compressed 15 KB WebP) can come
     // out LARGER from the canvas. Such files are offered/added AS-IS — original
     // bytes, ORIGINAL name (the raw-passthrough naming contract, not the hashed
     // derivative identity), action 'create'. Gitea/GitLab reject same-name
@@ -100,7 +117,7 @@
     function conformsToLibraryDefaults(probe, name) {
         return conformsToImageOptions(
             { width: probe.naturalWidth, height: probe.naturalHeight, path: name },
-            LIBRARY_OPTIMISE_DEFAULTS,
+            LIBRARY_OPTIMIZE_DEFAULTS,
         );
     }
 
@@ -108,7 +125,7 @@
     // the standalone queue builds a TRANSPORT (data URL) for its staged batch;
     // the field flow stages the BLOB in pendingMedia (deferred to the page save).
     async function deriveLibraryAsset({ image, selection, overrides, file, sourcePath }) {
-        const options = { ...LIBRARY_OPTIMISE_DEFAULTS, ...(overrides || {}) };
+        const options = { ...LIBRARY_OPTIMIZE_DEFAULTS, ...(overrides || {}) };
         const result = await transformImage(image, selection, options, sourcePath);
         const fingerprint = await libraryFingerprint({ file, sourceRect: result.sourceRect, options });
         const filePath = libraryOutputPath({
@@ -210,13 +227,14 @@
     onMount(() => { mounted = true; driveQueue(); });
     // Tab switches must NOT tear the session down — media_modal owns teardown on
     // ITS destroy. Field-mode preview URLs are this component's to revoke.
-    onDestroy(() => { destroyed = true; if (isFieldUpload) revokeCropUrl(); });
+    onDestroy(() => { destroyed = true; endFormatRun(); if (isFieldUpload) revokeCropUrl(); });
     $: if (mounted && session) resumeIfIdle(session);
     function resumeIfIdle(_session) {
         if (!destroyed && !processing) driveQueue();
     }
 
     async function onLibraryCropConfirm(event) {
+        if (formatItems) { await onFormatConfirm(event); return; }
         if (processing) return;
         processing = true;
         cropError = '';
@@ -284,6 +302,7 @@
     function onLibraryCropCancel() {
         if (processing) return;
         cropError = '';
+        if (formatItems) { advanceFormat(); return; }   // "Skip this file"
         if (isFieldUpload || !queue) {
             revokeCropUrl();
             showCropModal = false;
@@ -300,14 +319,111 @@
     function onSkipRemaining() {
         if (processing) return;
         cropError = '';
+        if (formatItems) { endFormatRun(); return; }
         sessionOps.skipRemaining();
         cropSourceUrl = '';
         currentItem = null;
         showCropModal = false;
     }
 
+    // ── "Format media" (standalone): review staged uploads in the optimizer ──
+    // Rebuilds a File from each staged image transport (data URL → Blob), so
+    // the run works even after a tab-switch remount (localMediaList is owned by
+    // admin_menu and survives; component-local File refs would not).
+    async function startFormat() {
+        if (processing || showCropModal || formatItems || queue) return;
+        const entries = [];
+        for (const item of formatCandidates) {
+            const dataUrl = String(item.contents || '');
+            if (!dataUrl.startsWith('data:image/')) continue;
+            try {
+                const blob = await (await fetch(dataUrl)).blob();
+                const name = item.file.slice(item.file.lastIndexOf('/') + 1);
+                const file = new File([blob], name, { type: blob.type });
+                if (classifyFile(file) !== 'image') continue;   // SVG/GIF stay as-is
+                entries.push({ item, file });
+            } catch (_) { /* skip unreadable entries */ }
+        }
+        if (!entries.length) return;
+        formatItems = entries;
+        formatIndex = 0;
+        presentFormatItem();
+    }
+
+    async function presentFormatItem() {
+        const entry = formatItems && formatItems[formatIndex];
+        if (!entry) { endFormatRun(); return; }
+        cropError = '';
+        cropSourceFile = entry.file;
+        cropSourceUrl = URL.createObjectURL(entry.file);
+        sourcePath = entry.item.file;   // derivative lands beside the raw upload
+        // Same one-time conformance probe as the queue flow: an already
+        // conforming image is offered as-is, never silently re-encoded.
+        let conforms = false;
+        try {
+            conforms = conformsToLibraryDefaults(
+                await loadProbeImage(cropSourceUrl), entry.file.name);
+        } catch (_) { /* leave false — the modal surfaces the load error */ }
+        if (!formatItems) {   // discarded while probing
+            URL.revokeObjectURL(cropSourceUrl);
+            cropSourceUrl = '';
+            return;
+        }
+        currentItem = { file: entry.file, conformsToLibrary: conforms };
+        showCropModal = true;
+    }
+
+    function advanceFormat() {
+        if (cropSourceUrl) { URL.revokeObjectURL(cropSourceUrl); cropSourceUrl = ''; }
+        formatIndex++;
+        presentFormatItem();
+    }
+
+    function endFormatRun() {
+        if (formatItems && cropSourceUrl) URL.revokeObjectURL(cropSourceUrl);
+        cropSourceUrl = '';
+        cropSourceFile = null;
+        currentItem = null;
+        showCropModal = false;
+        formatItems = null;
+        formatIndex = 0;
+        // Formatted items were REPLACED by their derivatives, so any selection
+        // over the old raw transports is now stale — drop it.
+        selectedMedia = [];
+    }
+
+    async function onFormatConfirm(event) {
+        if (processing) return;
+        processing = true;
+        cropError = '';
+        const entry = formatItems[formatIndex];
+        try {
+            // Conforming image confirmed without a crop → keep the staged raw
+            // upload unchanged (original bytes, original name).
+            const addAsIs = currentItem?.conformsToLibrary === true && !event.detail.selection;
+            if (!addAsIs) {
+                const transport = await buildDerivativeItem({
+                    image: event.detail.image, selection: event.detail.selection,
+                    overrides: event.detail.overrides, file: entry.file,
+                    sourcePath: entry.item.file,
+                });
+                const i = localMediaList.indexOf(entry.item);
+                if (i !== -1) {
+                    localMediaList = [...localMediaList.slice(0, i), transport, ...localMediaList.slice(i + 1)];
+                }
+            }
+        } catch (error) {
+            // Keep the run on this item so the user can retry.
+            cropError = error instanceof Error ? error.message : 'The image could not be processed.';
+            processing = false;
+            return;
+        }
+        processing = false;
+        advanceFormat();
+    }
+
     // ── FIELD-LAUNCHED single-file path (no queue, no session) ────────────────
-    function optimiseLibraryFile(file) {
+    function optimizeLibraryFile(file) {
         cropError = '';
         cropSourceFile = file;
         cropSourceUrl = URL.createObjectURL(file);
@@ -315,7 +431,7 @@
         showCropModal = true;
     }
     // Ingestion conformance, field flavour: an already-conforming image skips
-    // the optimise modal entirely and defers AS-IS through the raw-passthrough
+    // the optimize modal entirely and defers AS-IS through the raw-passthrough
     // path (original bytes + name, 'create'). The field's own selection logic
     // still applies its schema — a crop-configured field opens its placement
     // crop on the returned path exactly as for a Library pick.
@@ -331,7 +447,7 @@
         // decoding. A stale probe must neither stage bytes nor hand off a path.
         if (destroyed || uploadContext !== context || request !== fieldUploadRequest) return;
         if (conforms) passthroughFieldFile(file);
-        else optimiseLibraryFile(file);
+        else optimizeLibraryFile(file);
     }
     function passthroughFieldFile(file) {
         const filePath = mediaPrefix + "media/" + file.name;
@@ -359,7 +475,22 @@
             else passthroughFieldFile(file);
             return;
         }
-        sessionOps?.start(list);
+        // Standalone: stage the raw uploads straight into the review list (the
+        // classic screen with folder filters + Save Media / Discard all). The
+        // optimizer is OPT-IN afterwards via the "Format media" button — never
+        // modal-first.
+        void (async () => {
+            for (const file of list) {
+                try {
+                    const contents = await blobToDataURL(file);   // a File IS a Blob
+                    localMediaList = [...localMediaList, {
+                        action: 'create', encoding: 'base64',
+                        file: mediaPrefix + "media/" + file.name,
+                        contents,
+                    }];
+                } catch (_) { /* an unreadable file is simply not staged */ }
+            }
+        })();
     };
 
     let filePrefix = mediaPrefix + "media/";
@@ -467,6 +598,12 @@
                 retainCommitListOnFailure={true}
                 {user}
             />
+            <Button
+                on:click={startFormat}
+                buttonText={selectedMedia.length > 0 ? "Format selected media" : "Format media"}
+                buttonStyle="secondary"
+                disabled={!canFormat}
+            />
             {#if selectedMedia.length > 0}
                 <Button
                     on:click="{removeSelectedMedia}"
@@ -475,7 +612,7 @@
                 />
             {:else}
                 <Button
-                    on:click="{() => { if (sessionOps) sessionOps.discardAll(); else localMediaList = []; }}"
+                    on:click="{() => { endFormatRun(); if (sessionOps) sessionOps.discardAll(); else localMediaList = []; }}"
                     buttonText="Discard all"
                     buttonStyle="secondary"
                 />
@@ -518,16 +655,17 @@
     {#key cropSourceUrl}
         <ImageCropModal
             imageUrl={cropSourceUrl}
-            options={LIBRARY_OPTIMISE_DEFAULTS}
+            options={LIBRARY_OPTIMIZE_DEFAULTS}
             libraryMode={true}
             allowCropToggle={!isFieldUpload}
             conforming={!!currentItem?.conformsToLibrary}
-            confirmLabel={isFieldUpload ? 'Use optimised image'
-                : (currentItem?.conformsToLibrary ? '' : 'Add optimised image')}
-            queueMode={!!queue}
-            queuePosition={queuePosition}
-            cancelLabel={queue ? 'Skip this file' : 'Cancel'}
-            showCancelAll={!!queue && remainingSkippable > 1}
+            confirmLabel={isFieldUpload ? 'Use optimized image'
+                : (currentItem?.conformsToLibrary ? '' : 'Add optimized image')}
+            queueMode={!!queue || !!formatItems}
+            queuePosition={queuePosition || formatPosition}
+            cancelLabel={(queue || formatItems) ? 'Skip this file' : 'Cancel'}
+            showCancelAll={(!!queue && remainingSkippable > 1)
+                || (!!formatItems && formatItems.length - formatIndex > 1)}
             batchFailures={failedItems.map(f => ({ name: f.file.name,
                 message: f.error instanceof Error ? f.error.message
                     : String(f.error || 'could not be processed') }))}

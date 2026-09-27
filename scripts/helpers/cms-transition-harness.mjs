@@ -27,7 +27,7 @@ const modules = {
     'media_checker.js': await import(await moduleURL('media_checker.js')),
     'upload_context.js': await import(await moduleURL('upload_context.js')),
     'upload_queue.js': await import(await moduleURL('upload_queue.js')),
-    'library_optimise.js': await import(await moduleURL('library_optimise.js')),
+    'library_optimize.js': await import(await moduleURL('library_optimize.js')),
 };
 
 export async function component(file, props, bridge, fixtures = {}) {

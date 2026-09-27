@@ -30,7 +30,7 @@
     }
     // Only CROP is a field-level control (maintainer-confirmed #364): automatic
     // scale/convert processing is silent — deterministic, applied on selection,
-    // skipped when the asset already conforms — so there is no Optimise button.
+    // skipped when the asset already conforms — so there is no Optimize button.
     $: canCrop = !!imageOptions && imageOptions.crop !== false && isImagePath(fieldSrc);
     // Show a pending derivative's in-memory preview until it's saved to disk.
     $: displaySrc = ($pendingMedia, pendingMedia.previewUrl(fieldSrc)) || fieldSrc;
@@ -127,7 +127,7 @@
             setFieldSrc(newPath);                  // candidate; modal enforces the crop
             openCropFor(loadUrl, newPath, recrop, null);
         } else {
-            optimiseToField(loadUrl, newPath, recrop, null, probe, request);
+            optimizeToField(loadUrl, newPath, recrop, null, probe, request);
         }
     }
 
@@ -167,10 +167,10 @@
         }
     }
 
-    // crop:false automatic optimisation (contain/convert), no modal. Keeps the
+    // crop:false automatic optimization (contain/convert), no modal. Keeps the
     // previous field value untouched if the transform fails. `preloaded` skips a
     // second decode when the caller already probed the image (conformance check).
-    async function optimiseToField(loadUrl, namePath, recrop, objectUrl, preloaded, request) {
+    async function optimizeToField(loadUrl, namePath, recrop, objectUrl, preloaded, request) {
         if (processing) return;
         const previous = field;
         processing = true;
@@ -195,7 +195,7 @@
     // A field-launched upload was staged by the Media gateway, which handed
     // back its canonical path (via admin_menu's finishFieldUpload).
     // Feed that path into the SAME selection logic a Library-tab pick uses, so the
-    // field's schema processing (crop/optimise) still runs. This handler OWNS its
+    // field's schema processing (crop/optimize) still runs. This handler OWNS its
     // errors: the canonical asset remains staged, and the previous field value
     // is retained on processing failure. Nothing is persisted until page save.
     // onSavedPath is the existing handoff name; it does not imply persistence.
@@ -256,7 +256,7 @@
         {/if}
     </div>
     {#if processing && !showCropModal}
-        <div class="processing">Optimising…</div>
+        <div class="processing">Optimizing…</div>
     {/if}
 </div>
 {#if cropError && !showCropModal}

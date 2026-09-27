@@ -13,7 +13,7 @@
     // Display-only failures elsewhere in the batch; removal belongs to the queue.
     export let batchFailures = [];
     export let processing = false;
-    // Library-gateway mode: shows the optimise preview by default with an OPTIONAL
+    // Library-gateway mode: shows the optimize preview by default with an OPTIONAL
     // "Crop image" toggle (standalone only — field-launched keeps allowCropToggle
     // false so the field's own placement crop is the single interactive step).
     export let libraryMode = false;
@@ -152,7 +152,7 @@
     $: dims = natural.w ? outputDims(sel) : null;
 
     // In library mode, fold the crop toggle into `overrides` the parent merges over
-    // LIBRARY_OPTIMISE_DEFAULTS. crop:false selection is null (whole-image optimise).
+    // LIBRARY_OPTIMIZE_DEFAULTS. crop:false selection is null (whole-image optimize).
     const confirm = () => dispatch('confirm', {
         image: imageElement,
         selection: doCrop ? selectionRect() : null,
@@ -176,12 +176,12 @@
      commit/transform) — only field mode, at rest, treats it as a plain cancel. -->
 <div class="crop-modal" use:portal on:mousedown|self={() => { if (!processing && !queueMode) cancel(); }}>
     <div class="panel">
-        <h3>{doCrop ? 'Crop image' : 'Optimise image'}</h3>
+        <h3>{doCrop ? 'Crop image' : 'Optimize image'}</h3>
         {#if queuePosition && queuePosition.total > 1}
             <p class="queue-pos">Image {queuePosition.index} of {queuePosition.total}</p>
         {/if}
         <p class="hint">{doCrop ? 'Drag to pan • scroll or buttons to zoom'
-            : (conforming ? 'Already optimised — will be added unchanged' : 'Preview of the optimised output')}</p>
+            : (conforming ? 'Already optimized — will be added unchanged' : 'Preview of the optimized output')}</p>
 
         {#if batchFailures.length}
             <div class="batch-warning" role="status">

@@ -18,10 +18,14 @@ export async function postLocal(commitList, shadowContent, action, encoding) {
         // 'upsert' (create-or-replace a media derivative) maps to 'create' here —
         // the server validator only knows create/update/delete.
         const wireAction = itemAction === 'upsert' ? 'create' : itemAction;
+        // commitItem.file carries the DISPLAY prefix (mediaPrefix is '/' when the
+        // site has no baseurl), but /postlocal paths must be site-relative —
+        // the server validator rejects absolute paths outright (400 file-path).
+        const wireFile = commitItem.file.startsWith('/') ? commitItem.file.slice(1) : commitItem.file;
         body.push({
             action: wireAction,
             encoding: itemEncoding,
-            file: commitItem.file,
+            file: wireFile,
             contents: itemEncoding === "base64" ? makeDataStr(commitItem.contents) : commitItem.contents
         });
     });

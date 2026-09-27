@@ -1,6 +1,6 @@
-// library_optimise.js — Media Library upload GATEWAY helpers.
+// library_optimize.js — Media Library upload GATEWAY helpers.
 //
-// Collision-resistant persisted identity for an optimised library derivative.
+// Collision-resistant persisted identity for an optimized library derivative.
 // The engine's outputFilename() names by source stem + output dims, which
 // collides across different sources or crops that yield the same name
 // (photo.jpg + photo.png -> both photo-2048x1365.webp). With upsert that would

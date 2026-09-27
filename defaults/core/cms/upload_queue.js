@@ -11,7 +11,7 @@
 // Terminal: failed, cancelled.
 //
 // File TYPE is a classification, not a state:
-//   'image'       — JPEG/PNG/WebP/AVIF (canvas-processable: optimise/crop)
+//   'image'       — JPEG/PNG/WebP/AVIF (canvas-processable: optimize/crop)
 //   'passthrough' — PDF/SVG/GIF (byte-preserving: original bytes + extension)
 //
 // Run ownership is SESSION-WIDE, not component-local: an advance/confirm chain

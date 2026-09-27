@@ -124,7 +124,7 @@ await test('an active conforming upload stages the original file and hands off i
     view.destroy();
 });
 
-await test('an active nonconforming upload still opens the optimise modal', async images => {
+await test('an active nonconforming upload still opens the optimize modal', async images => {
     const view = await upload();
     view.choose([new File(['image'], 'active.png', { type: 'image/png' })]);
     images.resolve(images.loads[0]); await settle();

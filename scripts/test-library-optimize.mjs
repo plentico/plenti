@@ -1,5 +1,5 @@
 // Dependency-free tests for the Media Library gateway helpers
-// (defaults/core/cms/library_optimise.js). Run: node scripts/test-library-optimise.mjs
+// (defaults/core/cms/library_optimize.js). Run: node scripts/test-library-optimize.mjs
 // (also deno run -A). Uses Web Crypto (available in node >=15, deno, browsers).
 
 import { readFile } from 'node:fs/promises';
@@ -9,7 +9,7 @@ const eq = (n, got, want) => (JSON.stringify(got) === JSON.stringify(want) ? (co
 const ok = (n, v, d) => (v ? (console.log(`  PASS  ${n}`), pass++) : (console.log(`  FAIL  ${n}${d ? ' — ' + d : ''}`), fail++));
 
 // load the module source (no build-only imports here, so a plain data: import works)
-const src = await readFile(new URL('../defaults/core/cms/library_optimise.js', import.meta.url), 'utf8');
+const src = await readFile(new URL('../defaults/core/cms/library_optimize.js', import.meta.url), 'utf8');
 const { libraryFingerprint, libraryOutputPath, extForMime } = await import('data:text/javascript,' + encodeURIComponent(src));
 
 // a fake File: arrayBuffer() over given bytes

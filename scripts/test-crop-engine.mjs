@@ -39,7 +39,7 @@ globalThis.document = {
 
 const src = await readFile(new URL('../defaults/core/cms/crop-engine.js', import.meta.url), 'utf8');
 const { sourceExtension, extToMime, parseImageOptions, renderImage, outputFilename, transformImage,
-        conformsToImageOptions, LIBRARY_OPTIMISE_DEFAULTS } =
+        conformsToImageOptions, LIBRARY_OPTIMIZE_DEFAULTS } =
     await import('data:text/javascript,' + encodeURIComponent(src));
 
 let pass = 0, fail = 0;
@@ -151,10 +151,10 @@ eq(conf(400, 300, 'media/a.png', { crop: false, scale: true, width: 500, height:
 eq(conf(400, 300, 'media/a.jpeg', { crop: false, scale: false, convert: 'jpg' }), true, 'C-CONF4b jpeg conforms to convert:jpg');
 // C-ING: ingestion conformance against the LIBRARY defaults (the add-as-is gate,
 // owner-confirmed): already-webp within the max edge is added byte-identical.
-eq(conf(500, 300, 'media/500x300_Rubiaceae.webp', LIBRARY_OPTIMISE_DEFAULTS), true, 'C-ING1 conforming webp within bounds');
-eq(conf(500, 300, 'media/photo.png', LIBRARY_OPTIMISE_DEFAULTS), false, 'C-ING2 wrong format never as-is');
-eq(conf(2500, 1000, 'media/wide.webp', LIBRARY_OPTIMISE_DEFAULTS), false, 'C-ING3 over the max edge never as-is');
-eq(conf(2048, 2048, 'media/edge.webp', LIBRARY_OPTIMISE_DEFAULTS), true, 'C-ING4 exactly at the max edge conforms');
+eq(conf(500, 300, 'media/500x300_Rubiaceae.webp', LIBRARY_OPTIMIZE_DEFAULTS), true, 'C-ING1 conforming webp within bounds');
+eq(conf(500, 300, 'media/photo.png', LIBRARY_OPTIMIZE_DEFAULTS), false, 'C-ING2 wrong format never as-is');
+eq(conf(2500, 1000, 'media/wide.webp', LIBRARY_OPTIMIZE_DEFAULTS), false, 'C-ING3 over the max edge never as-is');
+eq(conf(2048, 2048, 'media/edge.webp', LIBRARY_OPTIMIZE_DEFAULTS), true, 'C-ING4 exactly at the max edge conforms');
 eq(conf(400, 300, 'media/a.png', { crop: false, scale: false }), true, 'C-CONF4c no convert -> format always conforms');
 // C-CONF5: scale:false -> format-only spec; missing dims -> never conforms.
 eq(conf(9999, 9999, 'media/a.webp', { crop: false, scale: false, convert: 'webp' }), true, 'C-CONF5 scale:false ignores dimensions');

@@ -28,11 +28,11 @@ const OUTPUT_FORMATS = ['jpg', 'png', 'webp', 'avif']; // canvas encoders; gif i
 const MAX_OUTPUT_PIXELS = 40000000; // 40 MP guard against runaway schema dimensions
 const ASPECT_TOLERANCE = 0.01;      // 1% — tolerate integer-rounding, reject gross distortion
 
-// Defaults for the Media Library upload GATEWAY (schema-free general optimisation): convert to a
+// Defaults for the Media Library upload GATEWAY (schema-free general optimization): convert to a
 // web-ready format and contain within a MAXIMUM edge (downscale oversized images, never upscale).
 // crop:false = whole image by default; the standalone modal may toggle crop on. maxWidth/maxHeight
 // are a MAX bound (contain), NOT a forced exact 2048x2048 — see transformImage's matrix.
-export const LIBRARY_OPTIMISE_DEFAULTS = Object.freeze({
+export const LIBRARY_OPTIMIZE_DEFAULTS = Object.freeze({
     crop: false,
     scale: true,
     convert: 'webp',
