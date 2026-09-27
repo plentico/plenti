@@ -16,6 +16,9 @@
 # Test binary, built with `go test -c`
 *.test
 
+# Local dev binaries (e.g. feature builds for manual testing)
+/bin/
+
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 

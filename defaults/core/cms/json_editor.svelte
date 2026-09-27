@@ -1,6 +1,7 @@
 <script>
     import ButtonWrapper from './button_wrapper.svelte';
     import Button from './button.svelte';
+    import { pendingMedia } from './pending_media.js';
 
     export let content, user;
 
@@ -58,6 +59,8 @@
             buttonText="Save"
             action={content.isNew ? 'create' : 'update'}
             encoding="text"
+            beforeSubmit={() => pendingMedia.toCommitItems()}
+            afterSubmit={() => pendingMedia.markCommitted()}
             {user}
         />
         <Button

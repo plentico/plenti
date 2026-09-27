@@ -1,6 +1,6 @@
 <script>
     import DynamicFormInput from "../dynamic_form_input.svelte";
-    export let field, showMediaModal, changingMedia, localMediaList, missingRequired, parentKeys, schema;
+    export let field, showMediaModal, changingMedia, uploadContext, localMediaList, missingRequired, parentKeys, schema;
 </script>
 
 <fieldset>
@@ -10,6 +10,7 @@
             label={key}
             bind:showMediaModal
             bind:changingMedia
+            bind:uploadContext
             bind:localMediaList
             bind:missingRequired
             parentKeys={parentKeys === "" ? key : parentKeys + '.' + key}

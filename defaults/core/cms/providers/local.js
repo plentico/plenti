@@ -10,11 +10,19 @@ export async function postLocal(commitList, shadowContent, action, encoding) {
     const makeDataStr = base64Str => base64Str.split(',')[1];
     let body = [];
     commitList.forEach(commitItem => {
+        // Per-item action/encoding (falling back to the call-level values) so one
+        // commit can mix content (update/text) and media derivatives (create/base64).
+        const itemAction = commitItem.action ?? action;
+        const itemEncoding = commitItem.encoding ?? encoding;
+        // The local /postlocal write overwrites in place, so the provider-neutral
+        // 'upsert' (create-or-replace a media derivative) maps to 'create' here —
+        // the server validator only knows create/update/delete.
+        const wireAction = itemAction === 'upsert' ? 'create' : itemAction;
         body.push({
-            action, action,
-            encoding: encoding,
+            action: wireAction,
+            encoding: itemEncoding,
             file: commitItem.file,
-            contents: encoding === "base64" ? makeDataStr(commitItem.contents) : commitItem.contents
+            contents: itemEncoding === "base64" ? makeDataStr(commitItem.contents) : commitItem.contents
         });
     });
     const response = await fetch(url, {
@@ -42,7 +50,10 @@ export async function postLocal(commitList, shadowContent, action, encoding) {
             history.pushState(null, '', env.baseurl && !env.local ? env.baseurl : '/');
         }
     } else {
-        const { error, message } = await response.json();
-        throw new Error(`Publish failed: ${error || message}`);
+        // The local /postlocal endpoint returns plain-text errors (http.Error),
+        // not JSON — read text so the message survives instead of throwing on a
+        // JSON parse ("Unexpected token ...").
+        const message = await response.text();
+        throw new Error(`Save failed (${response.status}): ${message.trim() || response.statusText}`);
     }
 }

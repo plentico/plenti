@@ -2,7 +2,7 @@
     import JSONEditor from "./json_editor.svelte";
     import VisualEditor from "./visual_editor.svelte";
 
-    export let content, showMediaModal, changingMedia, localMediaList, shadowContent, user
+    export let content, showMediaModal, changingMedia, uploadContext, localMediaList, shadowContent, user
 
     let activeEditor = "visual";
     const setActiveEditor = selected => {
@@ -33,10 +33,11 @@
     {#if activeEditor === 'code'}
       <JSONEditor bind:content {user} />
     {:else}
-      <VisualEditor 
+      <VisualEditor
         bind:content
         bind:showMediaModal
         bind:changingMedia
+        bind:uploadContext
         bind:localMediaList
         bind:shadowContent
         {user}

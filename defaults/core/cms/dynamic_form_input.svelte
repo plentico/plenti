@@ -20,7 +20,7 @@
     import References from './fields/references.svelte';
     import ID from './fields/id.svelte';
 
-    export let field, label, showMediaModal, changingMedia, localMediaList, parentKeys, schema, missingRequired;
+    export let field, label, showMediaModal, changingMedia, uploadContext, localMediaList, parentKeys, schema, missingRequired;
     export let shadowContent = false;
 
     $: if (shadowContent !== false) {
@@ -68,6 +68,7 @@
                 {label}
                 bind:showMediaModal
                 bind:changingMedia
+                bind:uploadContext
                 bind:localMediaList
                 bind:missingRequired
                 {parentKeys}
@@ -81,7 +82,7 @@
             {:else if isTime(field)}
                 <Time bind:field />
             {:else if isMediaPath(field)}
-                <Media bind:field bind:showMediaModal bind:changingMedia bind:localMediaList />
+                <Media bind:field bind:showMediaModal bind:changingMedia bind:uploadContext bind:localMediaList {schema} {parentKeys} />
             {:else}
                 <Text bind:field />
             {/if}
@@ -93,6 +94,7 @@
                 {label}
                 bind:showMediaModal
                 bind:changingMedia
+                bind:uploadContext
                 bind:localMediaList
                 bind:missingRequired
                 {parentKeys}
@@ -104,6 +106,7 @@
                 {label}
                 bind:showMediaModal
                 bind:changingMedia
+                bind:uploadContext
                 bind:localMediaList
                 bind:missingRequired
                 {parentKeys}

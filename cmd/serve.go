@@ -12,7 +12,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -43,7 +42,19 @@ var SSLFlag bool
 var LocalFlag bool
 
 // Valditor for input validation
-var validate *validator.Validate
+// maxPostLocalRequestBytes caps the /postlocal request body. Base64 inflates a
+// ~30 MiB image to ~40 MiB plus JSON overhead, so 64 MiB leaves headroom while
+// bounding exposure now that media (not just small JSON) can be written.
+const maxPostLocalRequestBytes = 64 << 20
+
+// validate is the shared validator for /postlocal payloads, built once.
+var validate = newLocalChangeValidator()
+
+func newLocalChangeValidator() *validator.Validate {
+	v := validator.New()
+	v.RegisterValidation("file-path", FilePathValidation)
+	return v
+}
 
 func checkPortAvailability(port int) bool {
 	address := fmt.Sprintf("localhost:%d", port)
@@ -205,68 +216,98 @@ type localChange struct {
 	Action   string `json:"action" validate:"required,oneof=create update delete"`
 	Encoding string `json:"encoding" validate:"required,oneof=base64 text"`
 	File     string `json:"file" validate:"file-path"`
-	Contents string `json:"contents" validate:"required"`
+	// A delete carries no contents (the client sends only action/encoding/file),
+	// so a plain 'required' would 400 every local media delete — a pre-existing
+	// upstream flaw; contents stay mandatory for create/update.
+	Contents string `json:"contents" validate:"required_unless=Action delete"`
 }
 
-// Custom validation for file path. Only allow files in the layouts and content directories.
+// mediaWriteExtensions mirrors the image + doc set in
+// defaults/core/cms/media_checker.js, so this restores Plenti's existing upload
+// policy rather than inventing a new one, and keeps the server and CMS agreeing
+// on what counts as media. Keep the two lists in sync.
+//
+// This deliberately matches the pre-existing media_checker.js policy; it does
+// NOT assert every type is safe. SVG in particular can carry script and is
+// served as-is — sanitising user-uploaded SVG is a separate concern, out of
+// scope here.
+var mediaWriteExtensions = map[string]bool{
+	".jpg": true, ".jpeg": true, ".png": true, ".webp": true, ".gif": true,
+	".svg": true, ".avif": true, ".apng": true, ".pdf": true, ".msword": true,
+}
+
+// FilePathValidation restricts /postlocal writes to content JSON files and
+// media assets. It rejects empty or absolute paths and any path that changes
+// under filepath.Clean (which blocks ".." traversal), then allowlists by prefix
+// and extension.
 func FilePathValidation(fl validator.FieldLevel) bool {
-	reFilePath := regexp.MustCompile(`^(content)[a-zA-Z0-9_\-\/]*(.json)$`)
-	fmt.Println(fl.Field().String())
-	return reFilePath.MatchString(fl.Field().String())
+	raw := fl.Field().String()
+	if raw == "" || filepath.IsAbs(raw) {
+		return false
+	}
+	clean := filepath.ToSlash(filepath.Clean(raw))
+	if clean != filepath.ToSlash(raw) {
+		return false
+	}
+	ext := strings.ToLower(path.Ext(clean))
+	if strings.HasPrefix(clean, "content/") {
+		return ext == ".json"
+	}
+	if strings.HasPrefix(clean, "media/") {
+		return mediaWriteExtensions[ext]
+	}
+	return false
 }
 
 func postLocal(w http.ResponseWriter, r *http.Request) {
-	// Register custom rules to validator
-	validate = validator.New()
-	validate.RegisterValidation("file-path", FilePathValidation)
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 
-	if r.Method == "POST" {
-		b, err := io.ReadAll(r.Body)
-		if err != nil {
-			fmt.Printf("Could not read 'body' from local edit: %v", err)
+	r.Body = http.MaxBytesReader(w, r.Body, maxPostLocalRequestBytes)
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "request body too large or unreadable", http.StatusRequestEntityTooLarge)
+		return
+	}
+
+	var localChanges []localChange
+	if err := json.Unmarshal(b, &localChanges); err != nil {
+		http.Error(w, "invalid JSON body", http.StatusBadRequest)
+		return
+	}
+
+	for _, change := range localChanges {
+		// Validate user input; on any error return 400 Bad Request.
+		if err := validate.Struct(change); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
 		}
-		var localChanges []localChange
-		err = json.Unmarshal(b, &localChanges)
-		if err != nil {
-			fmt.Printf("Could not unmarshal JSON data: %v", err)
-		}
 
-		var contents []byte
-		for _, change := range localChanges {
-
-			// Validate user input, there is any error, return 400 Bad Request
-			err := validate.Struct(change)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+		switch change.Action {
+		case "create", "update":
+			contents := []byte(change.Contents)
+			if change.Encoding == "base64" {
+				decoded, err := base64.StdEncoding.DecodeString(change.Contents)
+				if err != nil {
+					http.Error(w, "could not decode base64 contents", http.StatusBadRequest)
+					return
+				}
+				contents = decoded
+			}
+			if err := os.MkdirAll(filepath.Dir(change.File), 0755); err != nil {
+				http.Error(w, "could not create directory", http.StatusInternalServerError)
 				return
 			}
-
-			if change.Action == "create" || change.Action == "update" {
-				contents = []byte(change.Contents)
-				if change.Encoding == "base64" {
-					contents, err = base64.StdEncoding.DecodeString(change.Contents)
-					if err != nil {
-						fmt.Printf("Could not decode base64 asset: %v", err)
-					}
-				}
-				// Get the directory path
-				dir := filepath.Dir(change.File)
-				// Create the directory and its parents if they don't exist
-				err := os.MkdirAll(dir, os.ModePerm)
-				if err != nil {
-					fmt.Printf("Unable to create local directory path: %v", err)
-				}
-				err = os.WriteFile(change.File, contents, os.ModePerm)
-				if err != nil {
-					fmt.Printf("Unable to write to local file: %v", err)
-				}
+			if err := os.WriteFile(change.File, contents, 0644); err != nil {
+				http.Error(w, "could not write file", http.StatusInternalServerError)
+				return
 			}
-
-			if change.Action == "delete" {
-				err = os.Remove(change.File)
-				if err != nil {
-					fmt.Printf("Unable to delete local file: %v", err)
-				}
+		case "delete":
+			if err := os.Remove(change.File); err != nil {
+				http.Error(w, "could not delete file", http.StatusInternalServerError)
+				return
 			}
 		}
 	}

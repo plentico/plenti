@@ -1,27 +1,29 @@
 <script>
-    import { commitGitlab } from './providers/gitlab.js';
-    import { commitGitea } from './providers/gitea.js';
-    import { postLocal } from './providers/local.js';
-    import { env } from '../../generated/env.js';
+    import { commit } from './providers/commit.js';
     import { findFileReferences } from './file_references.js';
 
-    export let commitList, shadowContent, buttonText, action, encoding, user, afterSubmit, status;
+    export let commitList, shadowContent, buttonText, action, encoding, user, afterSubmit, beforeSubmit, status;
     export let buttonStyle = "primary";
-    const local = env.local ?? false;
-    const provider = env.cms.provider.toLowerCase();
+    // Optional external gate (e.g. Media uploads still under review): disables the
+    // button and short-circuits submit. Defaults false → existing call sites unchanged.
+    export let disabled = false;
+    // OPT-IN: keep the commit list when the commit FAILS so the caller can retry
+    // (the Media "Save Media" batch passes true — losing staged uploads on a
+    // provider failure destroys the user's reviewed work). Defaults false →
+    // every other call site (deletes, page saves) keeps today's contract.
+    export let retainCommitListOnFailure = false;
 
     let confirmTooltip;
     const onSubmit = async () => {
         confirmTooltip = false;
         status = "sending";
         try {
-            if (local) {
-                await postLocal(commitList, shadowContent, action, encoding, user);
-            } else if (!provider || provider === "gitlab") {
-                await commitGitlab(commitList, shadowContent, action, encoding, user);
-            } else if (provider === "gitea" || provider === "forgejo") {
-                await commitGitea(commitList, shadowContent, action, encoding, user);
-            }
+            // beforeSubmit returns EXTRA commit items (e.g. cropped derivatives) to
+            // merge into one provider save operation; it must not commit itself.
+            // GitLab is atomic; Gitea writes sequentially. The hook may throw
+            // before any writes, leaving editor + pending media intact.
+            const extraChanges = (await beforeSubmit?.()) ?? [];
+            await commit([...commitList, ...extraChanges], shadowContent, action, encoding, user);
             status = "sent";
             afterSubmit?.();
             resetStatus();
@@ -32,9 +34,10 @@
         }
     }
     const resetStatus = () => {
+        const failed = status === "failed";
         setTimeout(() => {
             status = "";
-            commitList = [];
+            if (!(failed && retainCommitListOnFailure)) commitList = [];
         }, 900);
     }
 </script>
@@ -73,11 +76,11 @@
             </div>
         </div>
     {/if}
-    <button 
-        on:click|preventDefault={() => action === "delete" ? confirmTooltip = true : action ? onSubmit() : null}
+    <button
+        on:click|preventDefault={() => disabled ? null : action === "delete" ? confirmTooltip = true : action ? onSubmit() : null}
         on:click
         type="submit"
-        disabled={status}
+        disabled={status || disabled}
         class="{status} {buttonStyle}"
     >
         {#if status == "sending"}

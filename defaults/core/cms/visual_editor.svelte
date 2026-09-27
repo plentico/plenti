@@ -1,9 +1,10 @@
 <script>
-    export let content, showMediaModal, changingMedia, localMediaList, shadowContent, user;
+    export let content, showMediaModal, changingMedia, uploadContext, localMediaList, shadowContent, user;
     import DynamicFormInput from './dynamic_form_input.svelte';
     import ButtonWrapper from './button_wrapper.svelte';
     import Button from './button.svelte';
     import schemas from '../../generated/schemas.js';
+    import { pendingMedia } from './pending_media.js';
 
     $: schema = schemas[content.type];
 
@@ -22,6 +23,7 @@
                             label={schema_field[0]}
                             bind:showMediaModal
                             bind:changingMedia
+                            bind:uploadContext
                             bind:localMediaList
                             bind:missingRequired
                             parentKeys={schema_field[0]}
@@ -35,6 +37,7 @@
                 {label}
                 bind:showMediaModal
                 bind:changingMedia
+                bind:uploadContext
                 bind:localMediaList
                 bind:missingRequired
                 parentKeys={label}
@@ -49,6 +52,7 @@
                             label={schema_field[0]}
                             bind:showMediaModal
                             bind:changingMedia
+                            bind:uploadContext
                             bind:localMediaList
                             bind:missingRequired
                             parentKeys={schema_field[0]}
@@ -71,6 +75,8 @@
                 buttonText="Save"
                 action={content.isNew ? 'create' : 'update'}
                 encoding="text"
+                beforeSubmit={() => pendingMedia.toCommitItems()}
+                afterSubmit={() => pendingMedia.markCommitted()}
                 {user}
             />
             <Button

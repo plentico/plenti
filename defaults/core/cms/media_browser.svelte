@@ -3,6 +3,7 @@
     import MediaGrid from './media_grid.svelte';
     import ButtonWrapper from './button_wrapper.svelte';
     import Button from './button.svelte';
+    import { pendingMedia } from './pending_media.js';
 
     export let media, changingMedia, showMediaModal, user;
     let filters = [];
@@ -25,6 +26,14 @@
     });
 
     const removeMedia = () => {
+        // This is the delete Button's success-only callback. Retire committed
+        // previews so admin_menu cannot append the deleted asset again. Keep
+        // any unsaved replacement: it belongs to a future page save.
+        // Library display paths can have a leading slash; pending paths need not.
+        const deletedPaths = new Set(selectedMedia.map(path => path.replace(/^\/+/, '')));
+        $pendingMedia
+            .filter(item => item.committed && deletedPaths.has(item.file.replace(/^\/+/, '')))
+            .forEach(item => pendingMedia.remove(item.file));
         selectedMedia.forEach(m => {
             media = media.filter(i => i != m);
         });
