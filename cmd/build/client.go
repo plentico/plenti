@@ -44,14 +44,26 @@ func Client(spaPath string, coreFS embed.FS, compilerFS embed.FS) error {
 		return err
 	}
 	compilerStr := string(compiler)
-	ctx := v8go.NewContext(nil)
+	// Each isolate must be disposed explicitly, otherwise every rebuild in
+	// "plenti serve" leaks isolates until V8 aborts with an OOM.
+	compilerIso := v8go.NewIsolate()
+	defer compilerIso.Dispose()
+	ctx := v8go.NewContext(compilerIso)
+	defer ctx.Close()
 	_, err = ctx.RunScript(compilerStr, "compile_svelte")
 	if err != nil {
 		return fmt.Errorf("Could not add svelte compiler: %w\n", err)
 
 	}
 
-	SSRctx = v8go.NewContext(nil)
+	// SSRctx is still used by DataSource after this returns, so free the
+	// previous build's context here instead of deferring.
+	if SSRctx != nil {
+		ssrIso := SSRctx.Isolate()
+		SSRctx.Close()
+		ssrIso.Dispose()
+	}
+	SSRctx = v8go.NewContext(v8go.NewIsolate())
 	// Fix "ReferenceError: exports is not defined" errors on line 1319 (exports.current_component;).
 	if _, err := SSRctx.RunScript("var exports = {};", "create_ssr"); err != nil {
 		return err
