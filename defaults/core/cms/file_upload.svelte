@@ -52,7 +52,6 @@
     $: unresolvedCount = queue ? queue.unresolvedCount : 0;
     $: failedItems = queue ? queue.failedItems() : [];
     $: pendingReviewCount = unresolvedCount - failedItems.length;
-    $: remainingSkippable = queue ? queue.skippableCount : 0;
     // "Format media" is a standalone-only, opt-in pass over the staged uploads.
     // With an active selection it scopes to the selected items only (mirroring
     // "Discard selected") and the button reads "Format selected media".
@@ -63,13 +62,6 @@
         && formatCandidates.some(i => String(i.contents || '').startsWith('data:image/'));
     $: formatPosition = formatItems && formatItems.length > 1
         ? { index: formatIndex + 1, total: formatItems.length } : null;
-    // "Image X of Y" over image-type items only (passthrough is not modal-driven).
-    $: queuePosition = (() => {
-        if (!queue || !currentItem || currentItem.type !== 'image') return null;
-        const images = queue.items.filter(i => i.type === 'image');
-        const index = images.indexOf(currentItem) + 1;
-        return index > 0 ? { index, total: images.length } : null;
-    })();
 
     // ── the optimize-gateway modal driver ─────────────────────────────────────
     let showCropModal = false;
@@ -89,6 +81,11 @@
     // component-owned (created + revoked by this run — never the queue's).
     let formatItems = null;   // [{ item, file }] | null (null = no run active)
     let formatIndex = 0;
+    // Deferred per-item edits: null = untouched (keep the staged raw upload);
+    // { transport, state } = replace with the derivative / modal settings to
+    // restore when navigating back. Applied to localMediaList when the run
+    // finishes (last "Next") or is closed.
+    let formatEdits = [];
     let destroyed = false;
     let mounted = false;
     let fieldUploadRequest = 0;
@@ -126,6 +123,9 @@
     // the field flow stages the BLOB in pendingMedia (deferred to the page save).
     async function deriveLibraryAsset({ image, selection, overrides, file, sourcePath }) {
         const options = { ...LIBRARY_OPTIMIZE_DEFAULTS, ...(overrides || {}) };
+        // Exact dims (the format editor's output size) are mutually exclusive
+        // with the library defaults' max bounds — the engine rejects both at once.
+        if (options.width || options.height) { options.maxWidth = null; options.maxHeight = null; }
         const result = await transformImage(image, selection, options, sourcePath);
         const fingerprint = await libraryFingerprint({ file, sourceRect: result.sourceRect, options });
         const filePath = libraryOutputPath({
@@ -233,16 +233,26 @@
         if (!destroyed && !processing) driveQueue();
     }
 
-    async function onLibraryCropConfirm(event) {
-        if (formatItems) { await onFormatConfirm(event); return; }
+    // Modal "Next": apply the current image's edits and move forward. The new
+    // editor sends overrides ONLY when the user changed something — an untouched
+    // image keeps its ORIGINAL bytes (field: deferred raw passthrough; queue:
+    // raw-passthrough transport; format run: staged upload left unchanged).
+    async function onModalNext(event) {
+        if (formatItems) { await onFormatNext(event); return; }
         if (processing) return;
         processing = true;
         cropError = '';
+        const { image, selection, overrides } = event.detail ?? {};
         if (isFieldUpload) {
             try {
+                if (!overrides) {
+                    // Untouched — keep the original image exactly as uploaded.
+                    passthroughFieldFile(cropSourceFile);
+                    revokeCropUrl();
+                    return;
+                }
                 const { filePath, blob } = await deriveLibraryAsset({
-                    image: event.detail.image, selection: event.detail.selection,
-                    overrides: event.detail.overrides, file: cropSourceFile, sourcePath,
+                    image, selection, overrides, file: cropSourceFile, sourcePath,
                 });
                 // DEFERRED (maintainer-confirmed, #364): stage the canonical asset
                 // in pendingMedia instead of committing now. It flushes WITH the
@@ -267,18 +277,16 @@
         const token = q ? q.claimRun(item) : null;
         if (!token) { processing = false; return; }
         try {
-            // Conforming item confirmed WITHOUT a crop → add the ORIGINAL BYTES
-            // under the original name ('create': Gitea/GitLab reject conflicts;
-            // the local dev endpoint still overwrites). Ticking Crop opts back into
-            // the derivative flow — cropping inherently re-encodes.
-            const addAsIs = item.conformsToLibrary === true && !event.detail.selection;
-            const transport = addAsIs
+            // Untouched (no overrides) → add the ORIGINAL BYTES under the
+            // original name ('create': Gitea/GitLab reject conflicts; the local
+            // dev endpoint still overwrites). Any edit → the derivative flow
+            // (cropping/re-encoding inherently produces a new asset).
+            const transport = !overrides
                 ? { action: 'create', encoding: 'base64',
                     file: mediaPrefix + "media/" + item.file.name,
                     contents: await blobToDataURL(item.file) }
                 : await buildDerivativeItem({
-                    image: event.detail.image, selection: event.detail.selection,
-                    overrides: event.detail.overrides, file: item.file,
+                    image, selection, overrides, file: item.file,
                     sourcePath: mediaPrefix + "media/" + item.file.name,
                 });
             if (session?.queue !== q || !q.ownsRun(item, token)) { processing = false; return; }
@@ -296,22 +304,29 @@
         driveQueue();              // next item (or drained → the modal closes)
     }
 
-    // Modal "Cancel": field mode closes; standalone = SKIP THIS FILE (explicit,
-    // buttons-only — the backdrop is inert in queue mode). Belt-and-braces
-    // processing guard: the UI is disabled during processing anyway.
-    function onLibraryCropCancel() {
+    // Modal "close" (the × button or a backdrop click): a format run applies
+    // the edits gathered so far and ends; field mode simply closes; an active
+    // queue keeps approved items and drops the rest ("skip remaining").
+    function onModalClose() {
         if (processing) return;
         cropError = '';
-        if (formatItems) { advanceFormat(); return; }   // "Skip this file"
+        if (formatItems) { applyFormatEdits(); endFormatRun(); return; }
         if (isFieldUpload || !queue) {
             revokeCropUrl();
             showCropModal = false;
             return;
         }
-        if (currentItem) sessionOps.skipCurrent(currentItem);   // cancels + revokes + clears claim
-        cropSourceUrl = '';
-        showCropModal = false;
-        driveQueue();
+        onSkipRemaining();
+    }
+
+    // Modal "Previous" (format run only): step back one image. Its prior edits
+    // were kept in formatEdits, and the modal restores them via initialState.
+    function onFormatPrevious() {
+        if (!formatItems || formatIndex <= 0 || processing) return;
+        cropError = '';
+        if (cropSourceUrl) { URL.revokeObjectURL(cropSourceUrl); cropSourceUrl = ''; }
+        formatIndex--;
+        presentFormatItem();
     }
 
     // "Skip remaining": approved items stay staged and savable; every pending
@@ -319,7 +334,7 @@
     function onSkipRemaining() {
         if (processing) return;
         cropError = '';
-        if (formatItems) { endFormatRun(); return; }
+        if (formatItems) { applyFormatEdits(); endFormatRun(); return; }
         sessionOps.skipRemaining();
         cropSourceUrl = '';
         currentItem = null;
@@ -347,30 +362,31 @@
         if (!entries.length) return;
         formatItems = entries;
         formatIndex = 0;
+        formatEdits = entries.map(() => null);
         presentFormatItem();
     }
 
-    async function presentFormatItem() {
+    function presentFormatItem() {
         const entry = formatItems && formatItems[formatIndex];
-        if (!entry) { endFormatRun(); return; }
+        if (!entry) { applyFormatEdits(); endFormatRun(); return; }
         cropError = '';
         cropSourceFile = entry.file;
         cropSourceUrl = URL.createObjectURL(entry.file);
         sourcePath = entry.item.file;   // derivative lands beside the raw upload
-        // Same one-time conformance probe as the queue flow: an already
-        // conforming image is offered as-is, never silently re-encoded.
-        let conforms = false;
-        try {
-            conforms = conformsToLibraryDefaults(
-                await loadProbeImage(cropSourceUrl), entry.file.name);
-        } catch (_) { /* leave false — the modal surfaces the load error */ }
-        if (!formatItems) {   // discarded while probing
-            URL.revokeObjectURL(cropSourceUrl);
-            cropSourceUrl = '';
-            return;
-        }
-        currentItem = { file: entry.file, conformsToLibrary: conforms };
         showCropModal = true;
+    }
+
+    // Replace each edited staged upload with its derivative transport (in
+    // place). Untouched items (null edits) keep their raw upload.
+    function applyFormatEdits() {
+        if (!formatItems) return;
+        formatEdits.forEach((edit, i) => {
+            if (!edit?.transport) return;
+            const at = localMediaList.indexOf(formatItems[i].item);
+            if (at !== -1) {
+                localMediaList = [...localMediaList.slice(0, at), edit.transport, ...localMediaList.slice(at + 1)];
+            }
+        });
     }
 
     function advanceFormat() {
@@ -387,31 +403,33 @@
         showCropModal = false;
         formatItems = null;
         formatIndex = 0;
+        formatEdits = [];
         // Formatted items were REPLACED by their derivatives, so any selection
         // over the old raw transports is now stale — drop it.
         selectedMedia = [];
     }
 
-    async function onFormatConfirm(event) {
+    // Format-run "Next": record this image's edit (null transport = untouched,
+    // the staged raw upload stays) and advance; the LAST image applies every
+    // gathered edit and ends the run. Edits are applied at the end (not as we
+    // go) so "Previous" can revisit an image and regenerate its derivative
+    // from the ORIGINAL pixels.
+    async function onFormatNext(event) {
         if (processing) return;
         processing = true;
         cropError = '';
         const entry = formatItems[formatIndex];
+        const { image, selection, overrides, state } = event.detail ?? {};
         try {
-            // Conforming image confirmed without a crop → keep the staged raw
-            // upload unchanged (original bytes, original name).
-            const addAsIs = currentItem?.conformsToLibrary === true && !event.detail.selection;
-            if (!addAsIs) {
-                const transport = await buildDerivativeItem({
-                    image: event.detail.image, selection: event.detail.selection,
-                    overrides: event.detail.overrides, file: entry.file,
+            const transport = overrides
+                ? await buildDerivativeItem({
+                    image, selection, overrides, file: entry.file,
                     sourcePath: entry.item.file,
-                });
-                const i = localMediaList.indexOf(entry.item);
-                if (i !== -1) {
-                    localMediaList = [...localMediaList.slice(0, i), transport, ...localMediaList.slice(i + 1)];
-                }
-            }
+                })
+                : null;
+            // Keep restorable state only for EDITED items — an untouched item
+            // must come back untouched (a restored state reads as "edited").
+            formatEdits[formatIndex] = { transport, state: overrides ? state : null };
         } catch (error) {
             // Keep the run on this item so the user can retry.
             cropError = error instanceof Error ? error.message : 'The image could not be processed.';
@@ -419,7 +437,8 @@
             return;
         }
         processing = false;
-        advanceFormat();
+        if (formatIndex < formatItems.length - 1) advanceFormat();
+        else { applyFormatEdits(); endFormatRun(); }
     }
 
     // ── FIELD-LAUNCHED single-file path (no queue, no session) ────────────────
@@ -657,23 +676,14 @@
             imageUrl={cropSourceUrl}
             options={LIBRARY_OPTIMIZE_DEFAULTS}
             libraryMode={true}
-            allowCropToggle={!isFieldUpload}
-            conforming={!!currentItem?.conformsToLibrary}
-            confirmLabel={isFieldUpload ? 'Use optimized image'
-                : (currentItem?.conformsToLibrary ? '' : 'Add optimized image')}
-            queueMode={!!queue || !!formatItems}
-            queuePosition={queuePosition || formatPosition}
-            cancelLabel={(queue || formatItems) ? 'Skip this file' : 'Cancel'}
-            showCancelAll={(!!queue && remainingSkippable > 1)
-                || (!!formatItems && formatItems.length - formatIndex > 1)}
-            batchFailures={failedItems.map(f => ({ name: f.file.name,
-                message: f.error instanceof Error ? f.error.message
-                    : String(f.error || 'could not be processed') }))}
+            sourceName={cropSourceFile?.name ?? ''}
+            initialState={formatItems ? (formatEdits[formatIndex]?.state ?? null) : null}
+            queuePosition={formatItems ? formatPosition : null}
             error={cropError || fieldNote}
             {processing}
-            on:confirm={onLibraryCropConfirm}
-            on:cancel={onLibraryCropCancel}
-            on:cancelAll={onSkipRemaining}
+            on:next={onModalNext}
+            on:previous={onFormatPrevious}
+            on:close={onModalClose}
         />
     {/key}
 {/if}
