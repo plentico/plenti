@@ -172,6 +172,59 @@
     let format = '';        // '' = leave original
     let touched = false;    // any user edit; untouched keeps the ORIGINAL image
     let drag = null;        // { mode, startX, startY, rect0 } while dragging
+    let aspectLocked = false; // W↔H link: keep the aspect when resizing/typing
+
+    // Resize with the aspect ratio locked, anchored at the corner/edge OPPOSITE
+    // the dragged handle. `m` is the handle id ('nw'…'se' or a single letter).
+    function resizeLocked(m, r, dx, dy) {
+        const a = r.w / r.h;
+        const ax = m.includes('w') ? r.x + r.w : r.x;   // anchor x (opposite edge)
+        const ay = m.includes('n') ? r.y + r.h : r.y;   // anchor y
+        // Width is the driver; pure n/s drags derive it from the height change.
+        let w = m === 'n' ? (r.h - dy) * a
+              : m === 's' ? (r.h + dy) * a
+              : m.includes('w') ? r.w - dx : r.w + dx;
+        let h = w / a;
+        if (w < MIN_CROP) { w = MIN_CROP; h = w / a; }
+        // Clamp to the stage, keeping the anchor fixed and the aspect intact.
+        const maxW = m.includes('w') ? ax : dispW - ax;
+        const maxH = m.includes('n') ? ay : dispH - ay;
+        if (w > maxW) { w = maxW; h = w / a; }
+        if (h > maxH) { h = maxH; w = h * a; }
+        return { x: m.includes('w') ? ax - w : ax, y: m.includes('n') ? ay - h : ay, w, h };
+    }
+
+    // Direct dimension entry: the inputs show OUTPUT px (crop × slider), and
+    // typing resizes the CROP RECT so the output lands on the typed value —
+    // native crop px = typed output px ÷ (pct/100). Linked: the other dimension
+    // follows the crop's aspect; unlinked: independent. The rect keeps its
+    // center and clamps to the image (inputs snap to the achievable value).
+    function applyOutDim(which, rawValue) {
+        if (!rect || !libNatural) return;
+        const v = Math.round(Number(rawValue));
+        if (!Number.isFinite(v) || v < 1) return;
+        const toDisp = v * (100 / pct) * libScale;
+        let w = which === 'w' ? toDisp : rect.w;
+        let h = which === 'h' ? toDisp : rect.h;
+        if (aspectLocked) {
+            const a = rect.w / rect.h;
+            if (which === 'w') h = w / a; else w = h * a;
+            if (w > dispW) { w = dispW; h = w / a; }
+            if (h > dispH) { h = dispH; w = h * a; }
+        } else {
+            w = Math.min(dispW, w);
+            h = Math.min(dispH, h);
+        }
+        w = Math.max(MIN_CROP, w);
+        h = Math.max(MIN_CROP, h);
+        const cx = rect.x + rect.w / 2, cy = rect.y + rect.h / 2;
+        touched = true;
+        rect = {
+            x: Math.min(dispW - w, Math.max(0, cx - w / 2)),
+            y: Math.min(dispH - h, Math.max(0, cy - h / 2)),
+            w, h,
+        };
+    }
 
     function fitLib() {
         if (!imageElement) return;
@@ -187,11 +240,13 @@
             rect = { ...initialState.rect };
             pct = initialState.pct ?? 100;
             format = initialState.format ?? '';
+            aspectLocked = initialState.aspectLocked ?? false;
             touched = true;
         } else {
             rect = { x: 0, y: 0, w: dispW, h: dispH };
             pct = 100;
             format = '';
+            aspectLocked = false;
             touched = false;
         }
     }
@@ -233,6 +288,8 @@
         if (m === 'move') {
             x = Math.min(dispW - w, Math.max(0, r.x + dx));
             y = Math.min(dispH - h, Math.max(0, r.y + dy));
+        } else if (aspectLocked) {
+            ({ x, y, w, h } = resizeLocked(m, r, dx, dy));
         } else {
             if (m.includes('e')) w = r.w + dx;
             if (m.includes('s')) h = r.h + dy;
@@ -263,7 +320,7 @@
                 maxWidth: null,
                 maxHeight: null,
             } : null,
-            state: { rect: rect ? { ...rect } : null, pct, format },
+            state: { rect: rect ? { ...rect } : null, pct, format, aspectLocked },
         });
     }
     function previous() { dispatch('previous'); }
@@ -304,7 +361,38 @@
                 {/if}
             </div>
             {#if libSel}
-                <div class="readout">Output: {outW}×{outH}px</div>
+                <div class="dims-row">
+                    <label>W
+                        <input type="number" min="1" value={outW}
+                               on:change={e => applyOutDim('w', e.currentTarget.value)}
+                               disabled={processing} />
+                    </label>
+                    <span class="times">×</span>
+                    <label>H
+                        <input type="number" min="1" value={outH}
+                               on:change={e => applyOutDim('h', e.currentTarget.value)}
+                               disabled={processing} />
+                    </label>
+                    <button type="button" class="link" class:linked={aspectLocked}
+                            on:click|preventDefault={() => (aspectLocked = !aspectLocked)}
+                            disabled={processing}
+                            title={aspectLocked ? 'Unlink width and height (free resize)' : 'Link width and height (keep aspect ratio)'}
+                            aria-label={aspectLocked ? 'Unlink width and height' : 'Link width and height'}>
+                        {#if aspectLocked}
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16"
+                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="4" y="10" width="16" height="10" rx="2" />
+                                <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                            </svg>
+                        {:else}
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16"
+                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="4" y="10" width="16" height="10" rx="2" />
+                                <path d="M8 10V7a4 4 0 0 1 7.7-1.4" />
+                            </svg>
+                        {/if}
+                    </button>
+                </div>
             {/if}
             <div class="size-row">
                 <span>Output size</span>
@@ -473,6 +561,31 @@
     }
     .grid i { border: 1px solid rgba(255, 255, 255, .4); }
     .readout { margin: 10px 0 0; font-size: .8rem; color: #333; }
+    .dims-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 8px 0 0; font-size: .9rem; }
+    .dims-row label { display: flex; align-items: center; gap: 4px; color: #555; }
+    .dims-row input {
+        width: 72px;
+        padding: 4px 6px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: .9rem;
+        text-align: right;
+    }
+    .dims-row .times { color: #888; }
+    .dims-row .link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background: #fff;
+        color: #777;
+        cursor: pointer;
+    }
+    .dims-row .link.linked { color: #fff; background: #1c7fc7; border-color: #1c7fc7; }
+    .dims-row .link:disabled { opacity: .5; cursor: default; }
     .zoom { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 12px 0; }
     .zoom button { width: 32px; height: 32px; border: 1px solid #ccc; border-radius: 4px; background: #fff; cursor: pointer; }
     .zoom .reset { width: auto; padding: 0 12px; }
