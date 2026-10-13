@@ -22,6 +22,14 @@ import { blobToDataURL } from './crop-engine.js';
 // PROVENANCE BOUNDARY: sourceOf() spans the current editing session only. After
 // a reload the field holds just the derivative path, so a later re-crop uses
 // that derivative. Persistent cross-session provenance is future work.
+// Path hygiene: a staged path must be a clean relative POSIX-style path.
+// A doubled slash (or any malformed path) that ever enters the store would be
+// replayed on EVERY page save (failed saves don't mark entries committed) and
+// permanently wedge saving — exactly the "zombie entry" failure mode. Collapse
+// duplicate slashes at BOTH boundaries (staging and commit) so no producer bug
+// can poison the ledger.
+const normalizePath = p => String(p || '').replace(/\/{2,}/g, '/');
+
 function createPendingMedia() {
     const store = writable([]); // [{ file, blob, sourcePath, url, committed }]
     const { subscribe, update } = store;
@@ -37,6 +45,8 @@ function createPendingMedia() {
         // deferred RAW passthrough files pass 'create' so Gitea/GitLab surface
         // same-name conflicts. The existing local dev endpoint still overwrites.
         add(file, blob, sourcePath, action = 'upsert') {
+            file = normalizePath(file);
+            sourcePath = normalizePath(sourcePath);
             update(list => {
                 const existing = list.find(i => i.file === file);
                 if (existing) revoke(existing);
@@ -49,6 +59,7 @@ function createPendingMedia() {
         // Standalone uploads already persisted. Retain their own preview before
         // the upload queue is torn down; never mark unrelated page edits saved.
         rememberSaved(file, contents) {
+            file = normalizePath(file);
             const comma = contents.indexOf(',');
             const mime = contents.slice(5, contents.indexOf(';'));
             const bytes = Uint8Array.from(atob(contents.slice(comma + 1)), c => c.charCodeAt(0));
@@ -104,7 +115,7 @@ function createPendingMedia() {
             return Promise.all(get(store).filter(i => !i.committed).map(async i => ({
                 action: i.action ?? 'upsert',
                 encoding: 'base64',
-                file: i.file,
+                file: normalizePath(i.file),
                 contents: await blobToDataURL(i.blob),
             })));
         },

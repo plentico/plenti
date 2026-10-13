@@ -279,9 +279,16 @@ func postLocal(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, change := range localChanges {
+		// Tolerate accidental duplicate slashes in the client-sent path (a CMS
+		// path-join bug once produced "media//name" and wedged every save).
+		// Traversal ("..") is still rejected by the Clean check in
+		// FilePathValidation — this only collapses empty segments.
+		for strings.Contains(change.File, "//") {
+			change.File = strings.ReplaceAll(change.File, "//", "/")
+		}
 		// Validate user input; on any error return 400 Bad Request.
 		if err := validate.Struct(change); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, fmt.Sprintf("%s (file: %q)", err.Error(), change.File), http.StatusBadRequest)
 			return
 		}
 
