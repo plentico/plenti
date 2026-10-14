@@ -204,7 +204,7 @@ export async function scheduledMedia(props) {
         return '';
     });
     code = code.replace(/instance,\s*create_fragment,/, 'instance, null,');
-    code = code.replace(/\n\s*add_css,/, '\nnull,');
+    code = code.replace(/\n\s*add_css(,?)/, '\nnull$1');
     code = code.replace('export default Component;', 'return Component;');
     const Component = new Function(...Object.keys(bindings), code)(...Object.values(bindings));
     internal.set_current_component({ $$: { root: {}, context: new Map() } });

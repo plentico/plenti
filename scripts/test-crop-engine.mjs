@@ -39,7 +39,7 @@ globalThis.document = {
 
 const src = await readFile(new URL('../defaults/core/cms/crop-engine.js', import.meta.url), 'utf8');
 const { sourceExtension, extToMime, parseImageOptions, renderImage, outputFilename, transformImage,
-        conformsToImageOptions, LIBRARY_OPTIMIZE_DEFAULTS } =
+        conformsToImageOptions, centerCoverSelection, LIBRARY_OPTIMIZE_DEFAULTS } =
     await import('data:text/javascript,' + encodeURIComponent(src));
 
 let pass = 0, fail = 0;
@@ -68,6 +68,11 @@ eq(parseImageOptions({ x: { type: 'media' } }, 'x'), null, 'parseImageOptions no
 eq(parseImageOptions({ x: { type: 'media', options: [{ convert: 'gif' }] } }, 'x').convert, null, 'normalizeFormat rejects gif output');
 eq(parseImageOptions({ x: { type: 'media', options: [{ convert: 'IMAGE/WEBP' }] } }, 'x').convert, 'webp', 'normalizeFormat anchored (no fooimage bug)');
 eq(outputFilename('media/perry-cropped-1x1.webp', { width: 500, height: 300, ext: 'png' }), 'media/perry-500x300.png', 'outputFilename strips prior suffix');
+eq(centerCoverSelection(img, { width: 400, height: 400 }), { x: 100, y: 0, width: 600, height: 600 }, 'centerCoverSelection square cover on landscape');
+eq(centerCoverSelection({ naturalWidth: 600, naturalHeight: 800 }, { width: 400, height: 400 }), { x: 0, y: 100, width: 600, height: 600 }, 'centerCoverSelection square cover on portrait');
+eq(centerCoverSelection(img, { width: 800, height: 600 }), { x: 0, y: 0, width: 800, height: 600 }, 'centerCoverSelection matching aspect -> full image');
+eq(centerCoverSelection(img, { convert: 'webp' }), { x: 0, y: 0, width: 800, height: 600 }, 'centerCoverSelection no dims -> full image');
+eq(centerCoverSelection(img, { width: 400, height: 400 }).width / centerCoverSelection(img, { width: 400, height: 400 }).height, 1, 'centerCoverSelection aspect matches config');
 
 console.log('\n--- renderImage / transformImage (ADR test checklist 1-10) ---');
 
@@ -91,6 +96,10 @@ eq([drawCall.sw, drawCall.sh, res.width, res.height], [800, 600, 500, 375], 'C4 
 
 // 5. crop:true with no selection -> error
 await throwsAsync(() => transformImage(img, null, { crop: true, scale: true, width: 400, height: 300 }, 'media/p.png'), 'C5 crop:true no selection throws');
+
+// 5b. silent machine default: centered cover selection -> exact configured dims
+res = await transformImage(img, centerCoverSelection(img, { width: 400, height: 400 }), { crop: true, scale: true, width: 400, height: 400 }, 'media/p.png');
+eq([res.width, res.height], [400, 400], 'C5b silent centered cover -> exact dims');
 
 // 6. fractional dims -> integers
 res = await transformImage(img, { x: 0, y: 0, width: 400, height: 400 }, { crop: true, scale: true, width: 250.7, height: 250.7 }, 'media/p.png');

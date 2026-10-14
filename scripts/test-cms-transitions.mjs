@@ -24,7 +24,7 @@ const mediaField = (props = {}) => component('fields/media.svelte', {
 }, `
     pick(path) { swapMedia(); flush(); changingMedia = path; flush(); },
     reopen() { swapMedia(); flush(); },
-    read() { flush(); return { field, cropError, showCropModal, processing }; }
+    read() { flush(); return { field, cropError, processing }; }
 `);
 
 await test('latest field selection wins when image A decodes after B', async images => {

@@ -37,6 +37,9 @@
     export let session = null;
     export let sessionOps = null;
     $: isFieldUpload = uploadContext?.kind === 'field';   // REACTIVE, not a cached const
+    // A schema-configured field hands its specs through the pick context; the
+    // upload review modal pre-applies them (instead of the library defaults).
+    $: fieldSchema = isFieldUpload ? (uploadContext?.imageOptions ?? null) : null;
     let enabledFilters = [];
 
     // ── derived session state (recomputes on every owner notify) ─────────────
@@ -246,7 +249,11 @@
         if (isFieldUpload) {
             try {
                 if (!overrides) {
-                    // Untouched — keep the original image exactly as uploaded.
+                    // Untouched — i.e. the user pressed "Reset" to restore the
+                    // ORIGINAL (a schema preset marks the modal touched). Keep
+                    // the original exactly as uploaded and tell the field NOT
+                    // to re-apply its schema to this raw passthrough.
+                    if (uploadContext?.kind === 'field') uploadContext.bypassSchema = true;
                     passthroughFieldFile(cropSourceFile);
                     revokeCropUrl();
                     return;
@@ -312,6 +319,12 @@
         cropError = '';
         if (formatItems) { applyFormatEdits(); endFormatRun(); return; }
         if (isFieldUpload || !queue) {
+            // Schema-configured field: closing the review WITHOUT confirming
+            // still applies the schema — hand the raw upload to the field,
+            // which silently applies the machine default (no bypass flag).
+            if (isFieldUpload && fieldSchema && cropSourceFile) {
+                passthroughFieldFile(cropSourceFile);
+            }
             revokeCropUrl();
             showCropModal = false;
             return;
@@ -456,6 +469,15 @@
     // crop on the returned path exactly as for a Library pick.
     async function routeFieldImage(file, request) {
         const context = uploadContext;
+        // Schema-configured field: ALWAYS open the review modal with the field's
+        // specs pre-applied (library-conformance passthrough would skip it).
+        // Confirming applies what's shown; closing still applies the machine
+        // default; Reset + confirm keeps the original (bypass flag).
+        if (fieldSchema) {
+            if (destroyed || uploadContext !== context || request !== fieldUploadRequest) return;
+            optimizeLibraryFile(file);
+            return;
+        }
         const url = URL.createObjectURL(file);
         let conforms = false;
         try {
@@ -674,8 +696,9 @@
     {#key cropSourceUrl}
         <ImageCropModal
             imageUrl={cropSourceUrl}
-            options={LIBRARY_OPTIMIZE_DEFAULTS}
+            options={fieldSchema ?? LIBRARY_OPTIMIZE_DEFAULTS}
             libraryMode={true}
+            schemaPreset={!!fieldSchema && !formatItems}
             sourceName={cropSourceFile?.name ?? ''}
             initialState={formatItems ? (formatEdits[formatIndex]?.state ?? null) : null}
             queuePosition={formatItems ? formatPosition : null}

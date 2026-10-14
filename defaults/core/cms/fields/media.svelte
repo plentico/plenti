@@ -1,10 +1,9 @@
 <script>
     import { onDestroy, tick } from 'svelte';
     import { isImagePath, isDocPath } from '../media_checker.js';
-    import { parseImageOptions, transformImage } from '../crop-engine.js';
+    import { parseImageOptions, transformImage, centerCoverSelection } from '../crop-engine.js';
     import { conformsToImageOptions } from '../crop-engine.js';
     import { pendingMedia } from '../pending_media.js';
-    import ImageCropModal from './image_crop_modal.svelte';
 
     export let field, showMediaModal, changingMedia, localMediaList;
     export let uploadContext;   // set to a field context in swapMedia(); admin_menu owns/resets it
@@ -15,6 +14,11 @@
     function resolveFieldKey(schema, parentKeys) {
         if (!schema || !parentKeys) return null;
         if (schema[parentKeys]) return parentKeys;
+        // Component schemas are keyed relative to the component's `fields`
+        // object, but the form path includes it ("fields.image.src") — accept
+        // both conventions so an unprefixed _schema.json key still applies.
+        const unwrapped = parentKeys.replace(/^fields\./, '');
+        if (schema[unwrapped]) return unwrapped;
         const dot = parentKeys.lastIndexOf('.');
         if (dot > -1 && schema[parentKeys.slice(0, dot)]) return parentKeys.slice(0, dot);
         return null;
@@ -28,21 +32,12 @@
     function setFieldSrc(newSrc) {
         field = (field && typeof field === 'object') ? { ...field, src: newSrc } : newSrc;
     }
-    // Only CROP is a field-level control (maintainer-confirmed #364): automatic
-    // scale/convert processing is silent — deterministic, applied on selection,
-    // skipped when the asset already conforms — so there is no Optimize button.
-    $: canCrop = !!imageOptions && imageOptions.crop !== false && isImagePath(fieldSrc);
-    // Show a pending derivative's in-memory preview until it's saved to disk.
+    // Schema specs are applied silently on selection (machine default) — there
+    // is no field-level format control; review lives in the upload modal.
     $: displaySrc = ($pendingMedia, pendingMedia.previewUrl(fieldSrc)) || fieldSrc;
 
-    let showCropModal = false;
-    let cropSourceUrl = '';   // URL the modal/transform LOADS (a path or blob: object URL)
-    let cropNamePath = '';    // path the OUTPUT filename is derived from
-    let cropRecrop = null;    // re-crop source stored in pendingMedia (a real path), or null
-    let cropObjectUrl = null; // object URL to revoke when the crop modal closes
     let cropError = '';
     let processing = false;
-    let cropRevertTo;         // value to restore if an auto-opened crop is cancelled
 
     function loadImage(src) {
         return new Promise((resolve, reject) => {
@@ -51,17 +46,6 @@
             img.onerror = () => reject(new Error('Could not load the source image.'));
             img.src = src;
         });
-    }
-    function revokeCropUrl() {
-        if (cropObjectUrl) { URL.revokeObjectURL(cropObjectUrl); cropObjectUrl = null; }
-    }
-    function openCropFor(loadUrl, namePath, recrop, objectUrl) {
-        cropError = '';
-        cropSourceUrl = loadUrl;
-        cropNamePath = namePath;
-        cropRecrop = recrop;
-        cropObjectUrl = objectUrl;
-        showCropModal = true;
     }
 
     // #364 core: enforce the field's schema when a NEW image path enters the field
@@ -80,7 +64,7 @@
     let lastHandled;
     let selectionRequest = 0;
     let destroyed = false;
-    onDestroy(() => { destroyed = true; selectionRequest++; revokeCropUrl(); });
+    onDestroy(() => { destroyed = true; selectionRequest++; });
     $: if (changingMedia && uploadContext === myPickContext && field === originalMedia
             && changingMedia !== fieldSrc && changingMedia !== lastHandled) {
         lastHandled = changingMedia;
@@ -95,7 +79,12 @@
         // A just-staged (deferred) asset isn't served from media/ yet — LOAD it
         // from its in-memory preview; the PATH stays the persisted identity.
         const loadUrl = pendingMedia.previewUrl(newPath) ?? newPath;
-        if (!imageOptions || !isImagePath(newPath)) {
+        // Explicit "keep the original" from the upload review modal (Reset +
+        // confirm): the field's schema must NOT be re-applied to this raw
+        // passthrough. One-shot flag on this instance's own pick context.
+        const bypassSchema = !!myPickContext?.bypassSchema;
+        if (myPickContext) myPickContext.bypassSchema = false;
+        if (!imageOptions || !isImagePath(newPath) || bypassSchema) {
             // A Library pick runs inside a reactive flush, after fieldSrc was
             // computed. Resume in the next flush so indirect field assignment
             // also invalidates the thumbnail (direct uploads run outside it).
@@ -122,54 +111,18 @@
             setFieldSrc(newPath);
             return;
         }
-        if (imageOptions.crop !== false) {
-            cropRevertTo = field;
-            setFieldSrc(newPath);                  // candidate; modal enforces the crop
-            openCropFor(loadUrl, newPath, recrop, null);
-        } else {
-            optimizeToField(loadUrl, newPath, recrop, null, probe, request);
-        }
+        // Silent machine default: centered cover crop to the configured aspect
+        // (when crop is enabled) + scale/convert — NO forced modal. The upload
+        // review modal pre-applies the same specs for optional adjustment,
+        // re-cropping from the staged ORIGINAL (recrop) at full fidelity.
+        optimizeToField(loadUrl, newPath, recrop, null, probe, request);
     }
 
-    function openCrop() {
-        // Manual re-crop from the field's current value (cancel keeps it). The
-        // recrop source may itself be a deferred asset — load its preview blob.
-        const src = pendingMedia.sourceOf(fieldSrc) ?? fieldSrc;
-        const loadUrl = pendingMedia.previewUrl(src) ?? src;
-        cropRevertTo = undefined;
-        openCropFor(loadUrl, src, src, null);
-    }
-    async function onCropConfirm(e) {
-        if (processing) return;
-        processing = true;
-        cropError = '';
-        try {
-            const { image, selection } = e.detail;
-            const result = await transformImage(image, selection, imageOptions, cropNamePath);
-            // Only after BOTH transform and queue succeed do we touch the field.
-            pendingMedia.add(result.filePath, result.blob, cropRecrop ?? result.filePath);
-            setFieldSrc(result.filePath);
-            cropRevertTo = undefined;
-            revokeCropUrl();
-            showCropModal = false;
-        } catch (error) {
-            cropError = error instanceof Error ? error.message : 'The image could not be processed.';
-        } finally {
-            processing = false;
-        }
-    }
-    function cancelCrop() {
-        showCropModal = false;
-        revokeCropUrl();
-        if (cropRevertTo !== undefined) {
-            field = cropRevertTo;          // a cancelled auto-crop keeps the previous image
-            cropRevertTo = undefined;
-        }
-    }
-
-    // crop:false automatic optimization (contain/convert), no modal. Keeps the
-    // previous field value untouched if the transform fails. `preloaded` skips a
-    // second decode when the caller already probed the image (conformance check).
+    // Silent automatic processing (machine default), no modal. Crop-enabled
+    // specs use a centered cover selection matching the configured aspect;
+    // crop:false specs contain-scale. Keeps the previous field value untouched
+    // if the transform fails. `preloaded` skips a second decode when the caller
+    // already probed the image (conformance check).
     async function optimizeToField(loadUrl, namePath, recrop, objectUrl, preloaded, request) {
         if (processing) return;
         const previous = field;
@@ -178,7 +131,10 @@
         try {
             const image = preloaded ?? await loadImage(loadUrl);
             if (request !== selectionRequest) return;
-            const result = await transformImage(image, null, imageOptions, namePath);
+            const selection = imageOptions.crop !== false
+                ? centerCoverSelection(image, imageOptions)
+                : null;
+            const result = await transformImage(image, selection, imageOptions, namePath);
             if (request !== selectionRequest) return;
             pendingMedia.add(result.filePath, result.blob, recrop ?? result.filePath);
             setFieldSrc(result.filePath);
@@ -221,7 +177,7 @@
         // flows through the changingMedia reactive, gated on this exact context
         // object still being the current uploadContext (see the claim note
         // above). Either way the field only ever receives a path (never a File).
-        myPickContext = { kind: 'field', onSavedPath };
+        myPickContext = { kind: 'field', onSavedPath, imageOptions };
         uploadContext = myPickContext;
         changingMedia = fieldSrc;
         showMediaModal = true;
@@ -247,31 +203,18 @@
     {:else if isDocPath(fieldSrc)}
         <embed src="{displaySrc}" class="thumbnail" />
     {/if}
-    <!-- Split hover actions (prototype visual, rebuilt): Change Media always;
-         an explicit Crop beside it only on crop-configured fields. -->
+    <!-- Hover action: Change Media. Schema specs (when the field has them) are
+         applied SILENTLY on selection; review/adjust happens in the upload
+         review modal — no field-level format button. -->
     <div class="field-actions">
         <button class="swap" on:click|preventDefault={swapMedia}>Change Media</button>
-        {#if canCrop}
-            <button class="crop" on:click|preventDefault={openCrop}>Edit crop</button>
-        {/if}
     </div>
-    {#if processing && !showCropModal}
+    {#if processing}
         <div class="processing">Optimizing…</div>
     {/if}
 </div>
-{#if cropError && !showCropModal}
+{#if cropError}
     <div class="field-error">⚠️ {cropError}</div>
-{/if}
-
-{#if showCropModal}
-    <ImageCropModal
-        imageUrl={cropSourceUrl}
-        options={imageOptions}
-        error={cropError}
-        {processing}
-        on:confirm={onCropConfirm}
-        on:cancel={cancelCrop}
-    />
 {/if}
 
 <style>

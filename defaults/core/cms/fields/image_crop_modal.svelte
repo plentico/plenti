@@ -1,6 +1,6 @@
 <script>
     import { createEventDispatcher } from 'svelte';
-    import { sourceExtension } from '../crop-engine.js';
+    import { sourceExtension, centerCoverSelection } from '../crop-engine.js';
 
     // Presentation + interaction only. The parent owns transformation, the
     // pending queue, the field value, and the source-path distinction.
@@ -32,6 +32,11 @@
     export let sourceName = '';
     // Prior edits for this image when navigating back: { rect, pct, format }.
     export let initialState = null;
+    // Field-schema review (upload into a schema-configured field): pre-apply
+    // the field's specs (options) as the machine default on first load —
+    // centered cover crop + configured output dims/format. "Reset" restores
+    // the untouched ORIGINAL (the preset runs once, not on Reset).
+    export let schemaPreset = false;
 
     const dispatch = createEventDispatcher();
     const MAX = 360;      // field mode: max crop-box display edge (px)
@@ -173,6 +178,7 @@
     let touched = false;    // any user edit; untouched keeps the ORIGINAL image
     let drag = null;        // { mode, startX, startY, rect0 } while dragging
     let aspectLocked = false; // W↔H link: keep the aspect when resizing/typing
+    let presetApplied = false; // schemaPreset runs on first load only (Reset skips it)
 
     // Resize with the aspect ratio locked, anchored at the corner/edge OPPOSITE
     // the dragged handle. `m` is the handle id ('nw'…'se' or a single letter).
@@ -241,6 +247,28 @@
             pct = initialState.pct ?? 100;
             format = initialState.format ?? '';
             aspectLocked = initialState.aspectLocked ?? false;
+            touched = true;
+        } else if (schemaPreset && !presetApplied) {
+            // Schema-configured field upload: pre-apply the field's spec as the
+            // machine default — centered cover crop pinned to the configured
+            // aspect, output at the configured dims/format. Marked touched so
+            // a no-touch confirm still produces the derivative; "Reset"
+            // (re-running fitLib) falls through to the untouched ORIGINAL.
+            presetApplied = true;
+            const sel = opts?.crop === false
+                ? { x: 0, y: 0, width: w, height: h }
+                : centerCoverSelection(imageElement, opts ?? {});
+            rect = {
+                x: sel.x * libScale, y: sel.y * libScale,
+                w: sel.width * libScale, h: sel.height * libScale,
+            };
+            // One decimal of pct precision so outW lands on the configured dim.
+            pct = opts?.width
+                ? Math.max(1, Math.round(opts.width / sel.width * 1000) / 10)
+                : 100;
+            format = opts?.convert && dejpeg(opts.convert) !== dejpeg(sourceExt)
+                ? opts.convert : '';
+            aspectLocked = !!(opts?.width && opts?.height);
             touched = true;
         } else {
             rect = { x: 0, y: 0, w: dispW, h: dispH };

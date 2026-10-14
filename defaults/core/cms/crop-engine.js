@@ -203,6 +203,33 @@ export function outputFilename(srcPath, opts) {
 }
 
 /**
+ * Machine-default selection for SILENT schema enforcement (no interactive
+ * modal): the largest centered source rect matching the configured output
+ * aspect — i.e. a "cover" crop around the image center. Falls back to the
+ * full image when width/height aren't both configured (no aspect to match).
+ * transformImage() then scales that rect to the exact configured dims.
+ */
+export function centerCoverSelection(img, options = {}) {
+    const natW = Math.round(num(img && img.naturalWidth, 0));
+    const natH = Math.round(num(img && img.naturalHeight, 0));
+    if (!natW || !natH) return null;
+    const cfgW = positiveIntOrNull(options.width);
+    const cfgH = positiveIntOrNull(options.height);
+    if (!cfgW || !cfgH) return { x: 0, y: 0, width: natW, height: natH };
+    const target = cfgW / cfgH;
+    let w = natW;
+    let h = Math.round(w / target);
+    if (h > natH) { h = natH; w = Math.round(h * target); }
+    return {
+        x: Math.round((natW - w) / 2),
+        y: Math.round((natH - h) / 2),
+        width: w,
+        height: h,
+    };
+}
+
+
+/**
  * High-level: apply the crop x scale matrix (see ADR), render, and name the
  * file from what was ACTUALLY produced. Does NOT save — returns the encoded
  * result for the host shell to commit through the active provider.
