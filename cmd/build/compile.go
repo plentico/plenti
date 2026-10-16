@@ -13,12 +13,12 @@ import (
 
 var (
 	// Regex match static import statements.
-	reStaticImport = regexp.MustCompile(`import\s((.*)\sfrom(.*);|(((.*)\n){0,})\}\sfrom(.*);)`)
+	reStaticImport = regexp.MustCompile(`(?s)import\s(.*?\sfrom\s*(?:'[^']*'|"[^"]*");)`)
 	// Regex match static export statements.
 	reStaticExport = regexp.MustCompile(`export\s(.*);`)
 	// Replace import references with variable signatures.
 	reStaticImportPath = regexp.MustCompile(`(?:'|").*(?:'|")`)
-	reStaticImportName = regexp.MustCompile(`import\s(.*?)\sfrom`)
+	reStaticImportName = regexp.MustCompile(`(?s)import\s(.*?)\sfrom`)
 	// Use var instead of const so it can be redeclared multiple times.
 	reConst = regexp.MustCompile(`(?m)^const\s`)
 	// Only use comp signatures inside JS template literal placeholders.
