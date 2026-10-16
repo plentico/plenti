@@ -319,12 +319,10 @@
         cropError = '';
         if (formatItems) { applyFormatEdits(); endFormatRun(); return; }
         if (isFieldUpload || !queue) {
-            // Schema-configured field: closing the review WITHOUT confirming
-            // still applies the schema — hand the raw upload to the field,
-            // which silently applies the machine default (no bypass flag).
-            if (isFieldUpload && fieldSchema && cropSourceFile) {
-                passthroughFieldFile(cropSourceFile);
-            }
+            // Field upload: closing the review WITHOUT confirming CANCELS the
+            // swap — nothing is staged, no path is handed back, and the field
+            // keeps its previous value. (Confirming applies what's shown;
+            // Reset + confirm keeps the raw original via the bypass flag.)
             revokeCropUrl();
             showCropModal = false;
             return;
@@ -471,8 +469,8 @@
         const context = uploadContext;
         // Schema-configured field: ALWAYS open the review modal with the field's
         // specs pre-applied (library-conformance passthrough would skip it).
-        // Confirming applies what's shown; closing still applies the machine
-        // default; Reset + confirm keeps the original (bypass flag).
+        // Confirming applies what's shown; closing (X / backdrop) cancels the
+        // swap entirely; Reset + confirm keeps the original (bypass flag).
         if (fieldSchema) {
             if (destroyed || uploadContext !== context || request !== fieldUploadRequest) return;
             optimizeLibraryFile(file);

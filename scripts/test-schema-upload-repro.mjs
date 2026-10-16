@@ -84,20 +84,23 @@ try {
 
     console.log('PASS schema-field upload confirm chain');
 
-    // 4) Close (x / backdrop) without confirming -> raw passthrough, field silently applies the schema.
+    // 4) Close (x / backdrop) without confirming -> CANCELS the swap: nothing
+    //    is staged, no path is handed to the field, and the field value and the
+    //    pending queue stay untouched.
     pendingMedia.clear();
+    const savedBefore = view.events.filter(e => e.type === 'saved').length;
     view.choose([new File(['raw bytes'], 'raw.jpg', { type: 'image/jpeg' })]);
     await settle();
+    assert.equal(view.read().showCropModal, true, 'review modal opens again');
     view.close();
     await settle();
-    const rawSaved = view.events.filter(e => e.type === 'saved').at(-1);
-    assert.equal(rawSaved.detail, '/media/raw.jpg');
-    const p = field.save(rawSaved.detail);
-    images.resolve(images.loads.at(-1), 1800, 1200);
-    await p; await settle();
+    assert.equal(view.read().showCropModal, false, 'close dismisses the review modal');
+    assert.equal(view.events.filter(e => e.type === 'saved').length, savedBefore,
+        'cancel stages nothing and hands no path back');
+    assert.equal(field.read().field, saved.detail,
+        'field keeps its previous value: ' + field.read().field);
     assert.equal(field.read().cropError, '');
-    assert.match(field.read().field, /^\/media\/raw-25x25\.webp$/, 'silent machine default: ' + field.read().field);
-    console.log('PASS modal close still applies the schema silently');
+    console.log('PASS modal close cancels the swap (field untouched)');
 
     // 5) Reset + confirm (untouched) -> keep the original, no schema re-apply.
     pendingMedia.clear();
