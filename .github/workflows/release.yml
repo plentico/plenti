@@ -29,12 +29,6 @@ jobs:
         run: |
           echo '${{ secrets.DOCKER_PASSWORD }}' | docker login --username '${{ secrets.DOCKER_USERNAME }}' --password-stdin
       -
-        name: OSXCross for CGO Support
-        run: |
-          mkdir ../../osxcross
-          git clone https://github.com/plentico/osxcross-target.git ../../osxcross/target
-          echo "/home/runner/work/osxcross/target/bin" >> $GITHUB_PATH
-      -
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:

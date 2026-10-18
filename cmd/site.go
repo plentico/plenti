@@ -33,15 +33,12 @@ var siteCmd = &cobra.Command{
 	  - content/pages/ = regular site pages in json format.
 	  - content/pages/_defaults.json = template for the starting content of a page.
 	  - content/pages/_schema.json = defines the field types for the CMS editor.
-	  - content/pages/about.json = an example page.
-	  - content/pages/contact.json = another example page.
+	  - content/pages/index.json = the homepage.
 	  - layouts/ =  the html structure of the site.
 	  - layouts/content/ = node level structure that has a route and correspond to content.
 	  - layouts/components/ = smaller reusable structures that can be used within larger ones.
 	  - layouts/global/ = base level html wrappers.
 	  - media/ = holds user uploaded files like images or videos.
-	  - node_modules/ = frontend libraries managed by npm.
-	  - package.json = npm configuration file.
 	  - static/ = holds theme files like global.css or robots.txt.
 	`),
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -90,12 +87,8 @@ var siteCmd = &cobra.Command{
 				}
 			}
 
-			// Create NPM depedencies.
-			addNodeModules(projectDir)
-
 			// Create default project files.
 			writeDefaultFile("plenti.json", projectDir)
-			writeDefaultFile("package.json", projectDir)
 			writeDefaultFile(".gitignore", projectDir)
 
 			// Download and set up theme.
@@ -125,29 +118,13 @@ var siteCmd = &cobra.Command{
 
 		}
 
-		// Check for --bare flag.
-		bareFlag, err := cmd.Flags().GetBool("bare")
+		// Use the single default starter scaffolding.
+		scaffolding, err := fs.Sub(defaults.StarterFS, "starters/default")
 		if err != nil {
-			log.Fatal("Unable to get 'bare' flag: %w", err)
-		}
-
-		// set to Defaults and overwrite if bareFlag is set
-		scaffolding, err := fs.Sub(defaults.LearnerFS, "starters/learner")
-		if err != nil {
-			log.Fatal("Unable to get learner defaults: %w", err)
-		}
-		// Choose which scaffolding to use for new site.
-		if bareFlag {
-			scaffolding, err = fs.Sub(defaults.BareFS, "starters/bare")
-			if err != nil {
-				log.Fatal("Unable to get bare defaults: %w", err)
-			}
+			log.Fatal("Unable to get starter defaults: %w", err)
 		}
 		// Loop through site defaults to create site scaffolding
 		writeScaffolding(scaffolding, projectDir)
-
-		// Create NPM depedencies.
-		addNodeModules(projectDir)
 
 		fmt.Printf(heredoc.Docf(`
 
@@ -161,7 +138,7 @@ var siteCmd = &cobra.Command{
 }
 
 func writeDefaultFile(filename string, projectDir string) {
-	defaultFile, err := defaults.BareFS.ReadFile("starters/bare/" + filename)
+	defaultFile, err := defaults.StarterFS.ReadFile("starters/default/" + filename)
 	if err != nil {
 		fmt.Printf("Can't read default file '%s': %s\n", filename, err)
 	}
@@ -194,27 +171,8 @@ func writeScaffolding(defaults fs.FS, projectDir string) {
 
 }
 
-func addNodeModules(projectDir string) {
-	nodeModules, err := fs.Sub(defaults.NodeModulesFS, ".")
-	if err != nil {
-		log.Fatal("Unable to get node_modules defaults: %w", err)
-	}
-	// Loop through node_modules npm pacakges to include in scaffolding
-	writeScaffolding(nodeModules, projectDir)
-}
-
 func init() {
 	newCmd.AddCommand(siteCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// siteCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// siteCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	siteCmd.Flags().BoolP("bare", "b", false, "Omit default content from site scaffolding")
 	siteCmd.Flags().StringVarP(&themeFlag, "theme", "t", "", "start your project by inheriting from an existing theme")
 }

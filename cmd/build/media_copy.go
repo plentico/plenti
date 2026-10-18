@@ -1,20 +1,20 @@
 package build
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/afero"
 )
 
 // MediaCopy does a direct copy of any media files (e.g. images, PDFs).
-func MediaCopy(buildPath string, spaPath string) error {
+// It returns an index of copied media files for listing in the media browser.
+func MediaCopy(buildPath string) ([]string, error) {
 
 	defer Benchmark(time.Now(), "Copying media files into build dir")
 
@@ -31,23 +31,20 @@ func MediaCopy(buildPath string, spaPath string) error {
 	if ThemeFs != nil {
 		index, copiedSourceCounter, err = copyMediaFromTheme(mediaDir, buildPath, index, copiedSourceCounter)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	} else {
 		index, copiedSourceCounter, err = copyMediaFromProject(mediaDir, buildPath, index, copiedSourceCounter)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
-	// Create the {spaPath}/ejected/cms/media.js file
-	err = createMediaIndex(spaPath, index)
-	if err != nil {
-		return err
+	if index == nil {
+		index = []string{}
 	}
-
 	Log(fmt.Sprintf("Number of media files copied: %d", copiedSourceCounter))
-	return nil
+	return index, nil
 
 }
 
@@ -102,6 +99,10 @@ func copyMediaFromProject(mediaDir string, buildPath string, index []string, cop
 			if err != nil {
 				return fmt.Errorf("can't stat %s: %w", mediaPath, err)
 			}
+			// Skip dotfiles like .gitkeep.
+			if strings.HasPrefix(mediaFileInfo.Name(), ".") {
+				return nil
+			}
 			destPath := buildPath + "/" + mediaPath
 			if mediaFileInfo.IsDir() {
 				// Make directory if it doesn't exist.
@@ -142,25 +143,4 @@ func copyMediaFromProject(mediaDir string, buildPath string, index []string, cop
 	}
 
 	return index, copiedSourceCounter, nil
-}
-
-func createMediaIndex(spaPath string, index []string) error {
-	result, err := json.MarshalIndent(index, "", "\t")
-	if err != nil {
-		return fmt.Errorf("Unable to marshal JSON: %w", err)
-	}
-	if string(result) == "null" {
-		result = []byte("[]")
-	}
-	result = append(append([]byte("let allMedia = "), result...), []byte(";\nexport default allMedia;")...)
-	mediaPath := spaPath + "generated/media.js"
-	// Create any sub directories need for filepath.
-	if err := os.MkdirAll(filepath.Dir(mediaPath), os.ModePerm); err != nil {
-		return fmt.Errorf("can't make folders for '%s': %w\n", mediaPath, err)
-	}
-	err = ioutil.WriteFile(mediaPath, result, os.ModePerm)
-	if err != nil {
-		return fmt.Errorf("\nUnable to write to media index file: %w\n", err)
-	}
-	return nil
 }

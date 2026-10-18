@@ -1,0 +1,13 @@
+{
+  "baseurl": "/",
+  "build": "public",
+  "entrypoint_html": "global/html.pico",
+  "routes": {},
+  "sitevars": {},
+  "local": {
+    "port": 3000
+  },
+  "cms": {
+    "provider": "local"
+  }
+}

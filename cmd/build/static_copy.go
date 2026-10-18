@@ -90,6 +90,10 @@ func copyStaticFilesFromProject(staticDir string, buildPath string, copiedSource
 			if err != nil {
 				return fmt.Errorf("\ncan't stat %s: %w", staticPath, err)
 			}
+			// Skip dotfiles like .gitkeep.
+			if strings.HasPrefix(staticFileInfo.Name(), ".") {
+				return nil
+			}
 			destPath := buildPath + "/" + strings.TrimPrefix(staticPath, staticDir)
 			if staticFileInfo.IsDir() {
 				// Make directory if it doesn't exist.

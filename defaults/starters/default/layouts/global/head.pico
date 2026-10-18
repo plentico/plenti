@@ -1,0 +1,11 @@
+---
+prop env;
+prop content;
+---
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{content.fields.title}</title>
+  <link rel="stylesheet" href="/global.css" />
+</head>

@@ -3,15 +3,12 @@ version: 2
 before:
   hooks:
     - go mod download
-    - go generate ./...
-    - git diff
 builds:
 - id: linux-build
   ldflags:
   - -X github.com/plentico/plenti/cmd.Version={{.Tag}}
-  - -extldflags=-static
   env:
-  - CGO_ENABLED=1
+  - CGO_ENABLED=0
   goos:
   - linux
   goarch:
@@ -21,9 +18,7 @@ builds:
   - -s
   - -X github.com/plentico/plenti/cmd.Version={{.Tag}}
   env:
-  - CGO_ENABLED=1
-  - CC=/home/runner/work/osxcross/target/bin/o64-clang
-  - CXX=/home/runner/work/osxcross/target/bin/o64-clang++
+  - CGO_ENABLED=0
   goos:
   - darwin
   goarch:
@@ -61,14 +56,14 @@ homebrew_casks:
       owner: plentico
       name: homebrew-plenti
     homepage: "https://plenti.co/"
-    description: "Dead simple SSG with Svelte frontend and Go CLI."
+    description: "Dead simple SSG with Pico frontend and Go CLI."
 snapcrafts:
   -
     id: plenti
     name: plenti
     publish: true # publish the snap to the snapcraft store.
-    summary: A simple static site generator for the JAMstack. 
-    description: Dead simple SSG with Svelte frontend and Go CLI.
+    summary: A simple static site generator built with Pico. 
+    description: Dead simple SSG with Pico frontend and Go CLI.
     grade: stable
     confinement: strict
     license: Apache-2.0
@@ -80,7 +75,7 @@ snapcrafts:
 #  bucket:
 #    owner: plentico
 #    name: scoop-plenti
-#  description: "Dead simple SSG with Svelte frontend and Go CLI."
+#  description: "Dead simple SSG with Pico frontend and Go CLI."
 #  license: Apache-2.0
 dockers:
   -

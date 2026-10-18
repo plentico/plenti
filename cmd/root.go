@@ -21,11 +21,11 @@ var Version = "undefined"
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "plenti",
-	Short: "SSG with Go backend and Svelte frontend",
+	Short: "SSG with Go backend and Pico frontend",
 	Long: `
 Plenti is a dead simple SSG by Plentico.
 Go backend = speedy builds
-Svelte frontend = snappy displays
+Pico frontend = snappy displays
 	
 Learn more at https://plenti.co`,
 	// Uncomment the following line if your bare application

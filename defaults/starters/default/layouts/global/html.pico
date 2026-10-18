@@ -1,0 +1,17 @@
+---
+import Head from "./head.pico";
+prop contentLayout;
+prop fields;
+prop env;
+prop content;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <Head {env} {content} />
+  <body>
+    <main>
+      <='{contentLayout}' {fields} />
+    </main>
+  </body>
+</html>

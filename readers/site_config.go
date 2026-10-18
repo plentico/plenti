@@ -95,17 +95,11 @@ func GetSiteConfig(basePath string) (SiteConfig, string) {
 	}
 
 	if siteConfig.EntryPointHTML == "" {
-		siteConfig.EntryPointHTML = "global/html.svelte"
+		siteConfig.EntryPointHTML = "global/html.pico"
 	}
 
 	// Generate a new random string
 	siteConfig.Fingerprint = createRandomString()
-
-	if siteConfig.EntryPointJS == "" {
-		siteConfig.EntryPointJS = "spa"
-	} else if siteConfig.EntryPointJS == ":fingerprint" {
-		siteConfig.EntryPointJS = siteConfig.Fingerprint
-	}
 
 	return siteConfig, configPath
 }

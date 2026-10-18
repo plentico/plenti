@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// EndpointFlag disables the route for a content source by omitting the corresponding svelte template.
+// EndpointFlag disables the route for a content source by omitting the corresponding pico template.
 var EndpointFlag bool
 
 // SingleTypeFlag create a one time file at the top level of content.
@@ -32,7 +32,7 @@ You can define any type you'd like, with any field structure you desire.
 There are no required fields when creating your new type.
 
 Any individual file within a type can contain variations in its field structure.
-Just make sure to account for this in the corresponding '/layouts/content/<your_type>.svelte' file.
+Just make sure to account for this in the corresponding '/layouts/content/<your_type>.pico' file.
 
 Optionally add a _defaults.json file to define the default content for the type when creating a new instance.
 
@@ -68,7 +68,7 @@ Optionally add a _schema.json file to define the input widgets used in the edito
 
 		if EndpointFlag {
 
-			typeLayoutPath := fmt.Sprintf("layouts/content/%s.svelte", strings.Trim(typeName, " /"))
+			typeLayoutPath := fmt.Sprintf("layouts/content/%s.pico", strings.Trim(typeName, " /"))
 			if _, err := os.Stat(typeLayoutPath); !os.IsNotExist(err) {
 				fmt.Printf("A Type layout with the same name located at \"%s\" already exists\n", typeLayoutPath)
 				return

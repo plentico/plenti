@@ -204,7 +204,6 @@ func init() {
 	serveCmd.Flags().BoolVarP(&VerboseFlag, "verbose", "v", false, "show log messages")
 	serveCmd.Flags().BoolVarP(&BenchmarkFlag, "profile", "P", false, "display build time statistics")
 	serveCmd.Flags().BoolVarP(&MinifyFlag, "minify", "m", true, "minify JS output for faster performance")
-	serveCmd.Flags().BoolVarP(&BundleFlag, "bundle", "b", false, "bundle the JS output for faster initial load times")
 	serveCmd.Flags().BoolVarP(&SSLFlag, "ssl", "s", false, "ssl/tls encryption to serve localhost over https")
 	serveCmd.Flags().BoolVarP(&build.Doreload, "live-reload", "L", false, "Enable live reload")
 	serveCmd.Flags().BoolVarP(&LocalFlag, "local", "l", true, "set false to emulate remote server")

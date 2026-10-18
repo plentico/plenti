@@ -23,9 +23,9 @@ var ejectCmd = &cobra.Command{
 	Short: "Customize Plenti core files",
 	Long: `Ejecting allow you to have direct access to core files
 that are used to create a plenti app. Some examples include:
-- router.svelte (handles all paths for clientside app)
-- main.js (the entry point for the app + sets up hydration for spa)
-- build.js (runs the svelte compiler to turn class instances into js components and html)
+- pattr.js (the client-side reactivity runtime)
+- live-reload.js (refreshes the browser during local development)
+- cms/admin.pico, cms/cms.js, cms/cms.css (the CMS admin)
 
 You may want to edit this files directly if you need Plenti to do
 Something custom that it doesn't do out-of-the-box. However if you 

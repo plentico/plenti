@@ -1,0 +1,19 @@
+---
+prop env;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Plenti CMS</title>
+  <link rel="stylesheet" href="/core/cms/cms.css" />
+</head>
+<body class="plenti-cms">
+  <div id="plenti-cms-app">
+    <p class="plenti-loading">Loading Plenti CMS&hellip;</p>
+  </div>
+  <script src="/core/cms/cms.js"></script>
+</body>
+</html>
