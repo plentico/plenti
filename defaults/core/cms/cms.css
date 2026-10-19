@@ -168,18 +168,76 @@
   font-weight: 700;
 }
 .plenti-admin-bar .plenti-admin-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   color: #94a3b8;
+  transition: color .2s ease;
+}
+.plenti-admin-bar .plenti-admin-status.success {
+  color: #4ade80;
+}
+.plenti-admin-bar .plenti-admin-status.error {
+  color: #f87171;
+}
+.plenti-admin-bar .plenti-admin-status .plenti-check {
+  width: 14px;
+  height: 14px;
+  animation: plenti-check-pop .3s cubic-bezier(.34, 1.56, .64, 1) both;
+}
+.plenti-admin-bar .plenti-admin-status .plenti-check path {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  animation: plenti-check-draw .3s .1s ease-out forwards;
+}
+@keyframes plenti-check-pop {
+  from { transform: scale(.5); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+@keyframes plenti-check-draw {
+  to { stroke-dashoffset: 0; }
+}
+.plenti-admin-bar .plenti-admin-spacer {
+  flex: 1;
 }
 .plenti-admin-bar .plenti-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 4px 12px;
   border: 1px solid #475569;
   border-radius: 4px;
   background: #334155;
   color: #f1f5f9;
   cursor: pointer;
+  font: inherit;
+  transition: background .2s ease, border-color .2s ease;
 }
 .plenti-admin-bar .plenti-btn:hover {
   background: #475569;
+  border-color: #64748b;
+}
+
+/* Icons: subtle motion on hover, kimi.ai style. */
+.plenti-admin-bar .plenti-icon {
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+}
+.plenti-admin-bar .plenti-icon svg {
+  width: 100%;
+  height: 100%;
+  transition: transform .25s cubic-bezier(.34, 1.56, .64, 1);
+}
+.plenti-admin-bar .plenti-edit-toggle:hover .plenti-icon svg {
+  transform: rotate(-12deg) scale(1.1);
+}
+.plenti-admin-bar .plenti-logout:hover .plenti-icon svg {
+  transform: translateX(3px);
+}
+.plenti-admin-bar .plenti-logout:hover {
+  color: #fca5a5;
+  border-color: #7f1d1d;
 }
 
 body.plenti-admin-active {
@@ -193,6 +251,7 @@ body.plenti-admin-active {
   bottom: 0;
   z-index: 9998;
   width: 320px;
+  box-sizing: border-box;
   overflow-y: auto;
   padding: 16px;
   background: #fff;
@@ -200,6 +259,27 @@ body.plenti-admin-active {
   box-shadow: 2px 0 8px rgba(0, 0, 0, .15);
   font-family: system-ui, sans-serif;
   font-size: 14px;
+  color: #1e293b;
+  transform: translateX(-105%);
+  transition: transform .28s cubic-bezier(.4, 0, .2, 1);
+}
+.plenti-admin-tray.open {
+  transform: translateX(0);
+}
+body.plenti-tray-resizing {
+  cursor: ew-resize;
+  user-select: none;
+}
+body.plenti-tray-resizing .plenti-admin-tray {
+  transition: none;
+}
+.plenti-tray-resize {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: ew-resize;
 }
 .plenti-admin-tray h3 {
   margin: 0 0 12px;
@@ -207,6 +287,11 @@ body.plenti-admin-active {
 }
 .plenti-admin-tray .plenti-field {
   margin-bottom: 12px;
+  animation: plenti-field-in .2s ease both;
+}
+@keyframes plenti-field-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
 }
 .plenti-admin-tray label {
   display: block;
@@ -226,6 +311,14 @@ body.plenti-admin-active {
   border: 1px solid #cbd5e1;
   border-radius: 4px;
   font: inherit;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.plenti-admin-tray input:focus,
+.plenti-admin-tray select:focus,
+.plenti-admin-tray textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, .15);
 }
 .plenti-admin-tray textarea {
   min-height: 120px;
@@ -241,12 +334,17 @@ body.plenti-admin-active {
   border: 1px solid #cbd5e1;
   border-radius: 4px;
   background: #f1f5f9;
+  color: #1e293b;
   cursor: pointer;
+  transition: background .15s ease;
 }
 .plenti-admin-tray .plenti-admin-actions .plenti-btn.primary {
   background: #2563eb;
   border-color: #2563eb;
   color: #fff;
+}
+.plenti-admin-tray .plenti-admin-actions .plenti-btn.primary:hover {
+  background: #1d4ed8;
 }
 .plenti-admin-tray .plenti-admin-empty {
   color: #64748b;

@@ -15,7 +15,9 @@ prop user;
     {/if}
     <main>
       <='../content/{content.type}.pico' {content} />
-      <button onclick="{user.loggedIn ? user.logout() : user.login()}">{user.loggedIn ? "Logout" : "Login"}</button>
+      {if !user.loggedIn}
+        <button onclick="{user.login()}">Login</button>
+      {/if}
     </main>
   </body>
 </html>

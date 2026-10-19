@@ -1,6 +1,8 @@
 package build
 
 import (
+	"bytes"
+
 	"encoding/json"
 	"fmt"
 	"io/fs"
@@ -33,6 +35,52 @@ type ContentNode struct {
 	FilePath string         `json:"filepath"`
 	FileName string         `json:"filename"`
 	Fields   map[string]any `json:"fields"`
+	// FieldOrder preserves the key order of the source JSON file (maps
+	// marshal alphabetically) so the CMS can display and save fields in
+	// the order the author wrote them.
+	FieldOrder []string `json:"fieldOrder,omitempty"`
+}
+
+// jsonKeyOrder returns the top-level keys of a JSON object in document order.
+func jsonKeyOrder(data []byte) []string {
+	order := []string{}
+	dec := json.NewDecoder(bytes.NewReader(data))
+	// Consume opening '{'.
+	if t, err := dec.Token(); err != nil || t != json.Delim('{') {
+		return order
+	}
+	for dec.More() {
+		t, err := dec.Token()
+		if err != nil {
+			break
+		}
+		if key, ok := t.(string); ok {
+			order = append(order, key)
+		}
+		skipJSONValue(dec)
+	}
+	return order
+}
+
+// skipJSONValue consumes one JSON value (recursively for objects/arrays).
+func skipJSONValue(dec *json.Decoder) {
+	t, err := dec.Token()
+	if err != nil {
+		return
+	}
+	d, ok := t.(json.Delim)
+	if !ok || (d != '{' && d != '[') {
+		return
+	}
+	for dec.More() {
+		if d == '{' {
+			if _, err := dec.Token(); err != nil { // key
+				return
+			}
+		}
+		skipJSONValue(dec)
+	}
+	dec.Token() // closing delimiter
 }
 
 // DataSource builds a list of content nodes from the "content/" directory.
@@ -97,10 +145,11 @@ func DataSource(siteConfig readers.SiteConfig) ([]ContentNode, error) {
 		}
 
 		node := ContentNode{
-			Type:     contentType,
-			FilePath: relPath,
-			FileName: fileName,
-			Fields:   fields,
+			Type:       contentType,
+			FilePath:   relPath,
+			FileName:   fileName,
+			Fields:     fields,
+			FieldOrder: jsonKeyOrder(fileBytes),
 		}
 
 		// Check for a route override for this content type.

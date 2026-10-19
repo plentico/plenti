@@ -15,7 +15,6 @@
     jsonMode: false,
     jsonText: "",
     rootEl: null,      // element the full CMS app is mounted into
-    loggedOut: false,  // local provider only: user explicitly logged out
     trayItem: null,    // data.content node for the page shown in the tray
     trayFields: null,  // working copy of the tray's field values
     trayOpen: false
@@ -250,6 +249,20 @@
   function currentItem() { return state.data.content[state.current]; }
   function currentType() { return currentItem().type; }
 
+  // Rebuild a fields object with keys in the source JSON file's original
+  // order (Go marshals the fields map alphabetically in data.json).
+  function orderedFields(item, values) {
+    var src = values || (item && item.fields) || {};
+    var out = {};
+    ((item && item.fieldOrder) || []).forEach(function (k) {
+      if (Object.prototype.hasOwnProperty.call(src, k)) out[k] = src[k];
+    });
+    Object.keys(src).forEach(function (k) {
+      if (!Object.prototype.hasOwnProperty.call(out, k)) out[k] = src[k];
+    });
+    return out;
+  }
+
   /* ---------- Rendering ---------- */
 
   function notify(msg, isError) {
@@ -372,7 +385,7 @@
   function openItem(index) {
     state.view = "content";
     state.current = index;
-    state.fields = JSON.parse(JSON.stringify(state.data.content[index].fields || {}));
+    state.fields = JSON.parse(JSON.stringify(orderedFields(state.data.content[index])));
     state.jsonMode = false;
     state.notice = null;
     render();
@@ -422,7 +435,7 @@
       catch (err) { notify("Invalid JSON: " + err.message, true); return; }
     }
     var item = currentItem();
-    commit([{ file: "content/" + item.filepath, action: "update", contents: JSON.stringify(state.fields, null, 2) }])
+    commit([{ file: "content/" + item.filepath, action: "update", contents: JSON.stringify(orderedFields(item, state.fields), null, 2) }])
       .then(function () {
         item.fields = JSON.parse(JSON.stringify(state.fields));
         notify("Saved " + item.filepath);
@@ -451,9 +464,10 @@
 
   function isAuthenticated() {
     // The local provider needs no credentials, but only works against the
-    // dev server (which sets env.local).
+    // dev server (which sets env.local). An explicit local logout is
+    // remembered in localStorage so it survives page reloads.
     if (currentProvider() === "local") {
-      return !!(state.data && state.data.env.local) && !state.loggedOut;
+      return !!(state.data && state.data.env.local) && !localStorage.getItem("plenti_cms_local_logout");
     }
     return !!getToken();
   }
@@ -479,7 +493,7 @@
   function login() {
     var provider = currentProvider();
     if (provider === "local") {
-      state.loggedOut = false;
+      localStorage.removeItem("plenti_cms_local_logout");
     } else {
       var token = prompt("Enter a personal access token for " + provider + " (stored in this browser):");
       if (token) localStorage.setItem("plenti_cms_token", token);
@@ -489,7 +503,7 @@
 
   function logout() {
     localStorage.removeItem("plenti_cms_token");
-    if (currentProvider() === "local") state.loggedOut = true;
+    if (currentProvider() === "local") localStorage.setItem("plenti_cms_local_logout", "1");
     publishUser();
   }
 
@@ -543,7 +557,10 @@
   }
 
   function renderTray(tray, statusEl) {
+    // Clear previous content but keep the drag-resize handle in place.
+    var resizeHandle = tray.querySelector(".plenti-tray-resize");
     tray.innerHTML = "";
+    if (resizeHandle) tray.appendChild(resizeHandle);
     var item = state.trayItem;
     if (!item) {
       tray.appendChild(h("p", { class: "plenti-admin-empty" }, ["No content source found for this page."]));
@@ -576,14 +593,20 @@
     var item = state.trayItem;
     if (!item) return;
     statusEl.textContent = "Saving...";
-    commit([{ file: "content/" + item.filepath, action: "update", contents: JSON.stringify(state.trayFields, null, 2) }])
+    statusEl.classList.remove("success", "error");
+    commit([{ file: "content/" + item.filepath, action: "update", contents: JSON.stringify(orderedFields(item, state.trayFields), null, 2) }])
       .then(function () {
         item.fields = JSON.parse(JSON.stringify(state.trayFields));
-        statusEl.textContent = "Saved";
-        setTimeout(function () { statusEl.textContent = ""; }, 3000);
+        statusEl.innerHTML = ICONS.check + "Saved";
+        statusEl.classList.add("success");
+        setTimeout(function () {
+          statusEl.textContent = "";
+          statusEl.classList.remove("success");
+        }, 3000);
       })
       .catch(function (err) {
         statusEl.textContent = "Error: " + err.message;
+        statusEl.classList.add("error");
       });
   }
 
@@ -591,10 +614,56 @@
     state.trayOpen = open;
     var tray = document.querySelector(".plenti-admin-tray");
     var toggle = document.querySelector(".plenti-admin-bar .plenti-edit-toggle");
-    if (tray) tray.style.display = open ? "" : "none";
-    if (toggle) toggle.textContent = open ? "View" : "Edit";
-    document.body.classList.toggle("plenti-tray-open", open);
+    var label = toggle && toggle.querySelector(".plenti-label");
+    var iconEl = toggle && toggle.querySelector(".plenti-icon");
     if (open && tray) renderTray(tray, document.querySelector(".plenti-admin-status"));
+    if (tray) {
+      // Force a reflow so the slide transition runs on first open.
+      if (open) void tray.offsetWidth;
+      tray.classList.toggle("open", open);
+    }
+    if (label) label.textContent = open ? "View" : "Edit";
+    if (iconEl) iconEl.innerHTML = open ? ICONS.eye : ICONS.edit;
+    document.body.classList.toggle("plenti-tray-open", open);
+  }
+
+  var ICONS = {
+    edit: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z\"/></svg>",
+    eye: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg>",
+    logout: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4\"/><path d=\"m16 17 5-5-5-5\"/><path d=\"M21 12H9\"/></svg>",
+    check: "<svg class=\"plenti-check\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg>"
+  };
+
+  function icon(name) {
+    var span = h("span", { class: "plenti-icon" }, []);
+    span.innerHTML = ICONS[name];
+    return span;
+  }
+
+  function makeTrayResizable(tray) {
+    var saved = parseInt(localStorage.getItem("plenti_tray_width"), 10);
+    if (saved) tray.style.width = saved + "px";
+    var handle = h("div", { class: "plenti-tray-resize" }, []);
+    handle.addEventListener("mousedown", function (e) {
+      e.preventDefault();
+      // Remember where on the handle the user grabbed so the edge stays
+      // glued to the cursor (no jump on the first move).
+      var grabOffset = e.clientX - tray.getBoundingClientRect().right;
+      document.body.classList.add("plenti-tray-resizing");
+      function onMove(ev) {
+        var w = Math.min(640, Math.max(220, ev.clientX - grabOffset));
+        tray.style.width = w + "px";
+      }
+      function onUp() {
+        document.body.classList.remove("plenti-tray-resizing");
+        localStorage.setItem("plenti_tray_width", String(parseInt(tray.style.width, 10) || 320));
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+      }
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+    });
+    tray.appendChild(handle);
   }
 
   function mountAdminBar(el) {
@@ -602,17 +671,23 @@
     if (!el) return;
     el.innerHTML = "";
     state.trayItem = currentPageItem();
-    state.trayFields = JSON.parse(JSON.stringify((state.trayItem && state.trayItem.fields) || {}));
+    state.trayFields = JSON.parse(JSON.stringify(orderedFields(state.trayItem || { fields: {} })));
     var statusEl = h("span", { class: "plenti-admin-status" }, []);
     var bar = h("div", { class: "plenti-admin-bar" }, [
       h("span", { class: "plenti-admin-brand" }, ["Plenti"]),
       h("button", {
         class: "plenti-btn plenti-edit-toggle",
         onclick: function () { setTrayOpen(!state.trayOpen); }
-      }, ["Edit"]),
-      statusEl
+      }, [icon("edit"), h("span", { class: "plenti-label" }, ["Edit"])]),
+      statusEl,
+      h("span", { class: "plenti-admin-spacer" }, []),
+      h("button", {
+        class: "plenti-btn plenti-logout",
+        onclick: function () { logout(); }
+      }, [icon("logout"), h("span", { class: "plenti-label" }, ["Logout"])])
     ]);
-    var tray = h("div", { class: "plenti-admin-tray", style: "display:none" }, []);
+    var tray = h("div", { class: "plenti-admin-tray" }, []);
+    makeTrayResizable(tray);
     el.appendChild(bar);
     el.appendChild(tray);
     document.body.classList.add("plenti-admin-active");
