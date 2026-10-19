@@ -26,7 +26,6 @@ import (
 	"github.com/gerald1248/httpscerts"
 	"github.com/go-playground/validator/v10"
 	"github.com/spf13/cobra"
-	"golang.org/x/net/websocket"
 )
 
 // PortFlag allows users to override default port (3000) for local server
@@ -165,12 +164,6 @@ var serveCmd = &cobra.Command{
 		// Watch filesystem for changes.
 		serve.Gowatch(buildDir, Build)
 
-		if build.Doreload {
-			// websockets
-			http.Handle("/reload", websocket.Handler(serve.WebsocketHandler))
-
-		}
-
 		s.Stop()
 
 		fmt.Printf("Visit your site at %v\n", localUrl)
@@ -205,7 +198,6 @@ func init() {
 	serveCmd.Flags().BoolVarP(&BenchmarkFlag, "profile", "P", false, "display build time statistics")
 	serveCmd.Flags().BoolVarP(&MinifyFlag, "minify", "m", true, "minify JS output for faster performance")
 	serveCmd.Flags().BoolVarP(&SSLFlag, "ssl", "s", false, "ssl/tls encryption to serve localhost over https")
-	serveCmd.Flags().BoolVarP(&build.Doreload, "live-reload", "L", false, "Enable live reload")
 	serveCmd.Flags().BoolVarP(&LocalFlag, "local", "l", true, "set false to emulate remote server")
 	serveCmd.Flags().StringVarP(&ConfigFileFlag, "config", "c", "plenti.json", "use a custom sitewide configuration file")
 }

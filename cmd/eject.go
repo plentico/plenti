@@ -24,7 +24,6 @@ var ejectCmd = &cobra.Command{
 	Long: `Ejecting allow you to have direct access to core files
 that are used to create a plenti app. Some examples include:
 - pattr.js (the client-side reactivity runtime)
-- live-reload.js (refreshes the browser during local development)
 - cms/admin.pico, cms/cms.js, cms/cms.css (the CMS admin)
 
 You may want to edit this files directly if you need Plenti to do

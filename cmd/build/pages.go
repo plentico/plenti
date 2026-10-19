@@ -88,14 +88,8 @@ func Pages(buildPath string, siteConfig readers.SiteConfig, allContent []Content
 		}
 
 		props := map[string]any{
-			"env": envMap,
-			// Path to the content layout, relative to the global wrapper layout.
-			"contentLayout": "../content/" + node.Type + ".pico",
-			"content":       structToMap(node),
-			"fields":        node.Fields,
-		}
-		for k, v := range node.Fields {
-			props[k] = v
+			"env":     envMap,
+			"content": structToMap(node),
 		}
 
 		pageHTML, err := renderPage(rootLayout, props)
@@ -117,10 +111,8 @@ func Pages(buildPath string, siteConfig readers.SiteConfig, allContent []Content
 	notFoundLayout := filepath.Join(layoutsDir, "content", "404.pico")
 	if _, err := os.Stat(notFoundLayout); err == nil {
 		props := map[string]any{
-			"env":           envMap,
-			"contentLayout": "../content/404.pico",
-			"content":       map[string]any{"type": "404", "path": "/404"},
-			"fields":        map[string]any{},
+			"env":     envMap,
+			"content": map[string]any{"type": "404", "path": "/404", "fields": map[string]any{}},
 		}
 		pageHTML, err := renderPage(rootLayout, props)
 		if err != nil {
@@ -165,9 +157,6 @@ func renderPage(rootLayout string, props map[string]any) (string, error) {
 	bodyInject.WriteString("<script src=\"/core/pattr.js\"></script>\n")
 	if strings.TrimSpace(script) != "" {
 		bodyInject.WriteString("<script>\n" + script + "\n</script>\n")
-	}
-	if Local {
-		bodyInject.WriteString("<script src=\"/core/live-reload.js\"></script>\n")
 	}
 
 	html := markup

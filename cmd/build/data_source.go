@@ -19,9 +19,6 @@ var Local bool
 // Path404 stores path to 404 html fallback for use in local webserver
 var Path404 string
 
-// Doreload indicates the live-reload websocket is in use (set by serve).
-var Doreload bool
-
 var (
 	// Setup regex to find field name.
 	reField = regexp.MustCompile(`:fields\((.*?)\)`)

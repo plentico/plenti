@@ -1,7 +1,5 @@
 ---
 import Head from "./head.pico";
-prop contentLayout;
-prop fields;
 prop env;
 prop content;
 ---
@@ -11,7 +9,7 @@ prop content;
   <Head {env} {content} />
   <body>
     <main>
-      <='{contentLayout}' {fields} />
+      <='../content/{content.type}.pico' {content} />
     </main>
   </body>
 </html>

@@ -12,14 +12,11 @@ require (
 	github.com/go-git/go-git/v5 v5.13.0
 	github.com/go-playground/validator/v10 v10.23.0
 	github.com/manifoldco/promptui v0.8.0
-	github.com/plentico/pico v0.0.0
+	github.com/plentico/pico v0.0.2
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cobra v1.1.3
 	github.com/tdewolff/minify/v2 v2.20.20
-	golang.org/x/net v0.38.0
 )
-
-replace github.com/plentico/pico => ../pico
 
 require (
 	dario.cat/mergo v1.0.0 // indirect
@@ -56,6 +53,7 @@ require (
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/mod v0.17.0 // indirect
+	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/sync v0.12.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/text v0.23.0 // indirect

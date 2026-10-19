@@ -24,7 +24,7 @@ func Cms(buildPath string, siteConfig readers.SiteConfig, allContent []ContentNo
 
 	coreDest := filepath.Join(buildPath, "core")
 
-	// Copy core assets (pattr.js, live-reload.js, cms files) into the build,
+	// Copy core assets (pattr.js, cms files) into the build,
 	// preferring versions the user has ejected into their project.
 	err := fs.WalkDir(defaults.CoreFS, "core", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {

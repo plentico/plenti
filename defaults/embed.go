@@ -5,5 +5,5 @@ import "embed"
 //go:embed all:core/*
 var CoreFS embed.FS
 
-//go:embed all:starters/default/*
+//go:embed all:starter/*
 var StarterFS embed.FS

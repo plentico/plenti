@@ -1,0 +1,12 @@
+---
+prop content;
+---
+
+<h1>{content.fields.title}</h1>
+<div>{content.fields.body | html}</div>
+
+<style>
+  h1 {
+    color: rebeccapurple;
+  }
+</style>

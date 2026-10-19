@@ -119,7 +119,7 @@ var siteCmd = &cobra.Command{
 		}
 
 		// Use the single default starter scaffolding.
-		scaffolding, err := fs.Sub(defaults.StarterFS, "starters/default")
+		scaffolding, err := fs.Sub(defaults.StarterFS, "starter")
 		if err != nil {
 			log.Fatal("Unable to get starter defaults: %w", err)
 		}
@@ -138,7 +138,7 @@ var siteCmd = &cobra.Command{
 }
 
 func writeDefaultFile(filename string, projectDir string) {
-	defaultFile, err := defaults.StarterFS.ReadFile("starters/default/" + filename)
+	defaultFile, err := defaults.StarterFS.ReadFile("starter/" + filename)
 	if err != nil {
 		fmt.Printf("Can't read default file '%s': %s\n", filename, err)
 	}
