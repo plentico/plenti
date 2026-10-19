@@ -1,15 +1,21 @@
 ---
 import Head from "./head.pico";
+import Cms from "../core/cms.pico";
 prop env;
 prop content;
+prop user;
 ---
 
 <!DOCTYPE html>
 <html lang="en">
   <Head {env} {content} />
   <body>
+    {if user.loggedIn}
+      <Cms />
+    {/if}
     <main>
       <='../content/{content.type}.pico' {content} />
+      <button onclick="{user.loggedIn ? user.logout() : user.login()}">{user.loggedIn ? "Logout" : "Login"}</button>
     </main>
   </body>
 </html>

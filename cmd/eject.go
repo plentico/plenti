@@ -55,7 +55,7 @@ automatically).`,
 			for filePath, content := range ejectableFiles {
 				err := ejectFile(filePath, content)
 				if err != nil {
-					log.Fatal("Could not eject all core files %v\n", err)
+					log.Fatalf("Could not eject all core files %v\n", err)
 				}
 			}
 			return
@@ -83,7 +83,7 @@ automatically).`,
 			if confirmed == "Yes" {
 				err := ejectFile(result, ejectableFiles[result])
 				if err != nil {
-					log.Fatal("Can't eject file %v\n", err)
+					log.Fatalf("Can't eject file %v\n", err)
 				}
 			} else if confirmed == "No" {
 				fmt.Println("No file was ejected.")
@@ -105,7 +105,7 @@ automatically).`,
 				}
 				err := ejectFile(arg, ejectableFiles[arg])
 				if err != nil {
-					log.Fatal("Can't eject files %v\n", err)
+					log.Fatalf("Can't eject files %v\n", err)
 				}
 			}
 		}

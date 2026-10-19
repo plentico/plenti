@@ -74,7 +74,7 @@ var siteCmd = &cobra.Command{
 		}
 		// Create base directory for site
 		if err := os.MkdirAll(projectDir, os.ModePerm); err != nil {
-			log.Fatal("Unable to create directory %s: %w", projectDir, err)
+			log.Fatalf("Unable to create directory %s: %v", projectDir, err)
 		}
 
 		// Check for --theme flag.
@@ -83,7 +83,7 @@ var siteCmd = &cobra.Command{
 			defaultDirs := []string{"content", "layouts", "media", "static"}
 			for _, dir := range defaultDirs {
 				if err := os.MkdirAll(projectDir+"/"+dir, os.ModePerm); err != nil {
-					log.Fatal("Unable to create directory %s: %w", projectDir+"/"+dir, err)
+					log.Fatalf("Unable to create directory %s: %v", projectDir+"/"+dir, err)
 				}
 			}
 
@@ -144,7 +144,7 @@ func writeDefaultFile(filename string, projectDir string) {
 	}
 	// Create the current default file
 	if err := ioutil.WriteFile(projectDir+"/"+filename, defaultFile, os.ModePerm); err != nil {
-		log.Fatal("Unable to write file '%s': %w\n", filename, err)
+		log.Fatalf("Unable to write file '%s': %v\n", filename, err)
 	}
 }
 
@@ -156,7 +156,7 @@ func writeScaffolding(defaults fs.FS, projectDir string) {
 		if d.IsDir() {
 			// Create the directories needed for the current file
 			if err := os.MkdirAll(projectDir+"/"+path, os.ModePerm); err != nil {
-				log.Fatal("Unable to create path(s) %s: %v", path, err)
+				log.Fatalf("Unable to create path(s) %s: %v", path, err)
 			}
 			return nil
 		}

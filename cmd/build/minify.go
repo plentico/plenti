@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/tdewolff/minify/v2"
@@ -66,6 +67,11 @@ func Minify(buildPath string) error {
 				contentBytes, err = minifyBytes(m, "application/json", contentBytes)
 			}
 			if filepath.Ext(path) == ".js" {
+				// Already minified; re-minifying mangles locals referenced
+				// by name inside eval() calls and breaks the runtime.
+				if strings.HasSuffix(path, filepath.Join("core", "pattr.js")) {
+					return nil
+				}
 				contentBytes, err = minifyBytes(m, "text/javascript", contentBytes)
 			}
 			if err != nil {

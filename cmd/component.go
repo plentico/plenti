@@ -45,7 +45,7 @@ Optionally add a _schema.json file to define the input widgets used in the edito
 		componentName := args[0]
 		err := createComponent(componentName)
 		if err != nil {
-			log.Fatal("\nCould not create \"%s\" component: %w", componentName, err)
+			log.Fatalf("\nCould not create \"%s\" component: %v", componentName, err)
 		}
 	},
 }

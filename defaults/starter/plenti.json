@@ -1,7 +1,7 @@
 {
   "baseurl": "/",
   "build": "public",
-  "entrypoint_html": "global/html.pico",
+  "base_layout": "global/html.pico",
   "routes": {},
   "sitevars": {},
   "local": {

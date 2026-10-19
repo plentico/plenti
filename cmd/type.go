@@ -76,7 +76,7 @@ Optionally add a _schema.json file to define the input widgets used in the edito
 
 			fmt.Printf("Creating new Type layout: %s\n", typeLayoutPath)
 			if _, err := os.OpenFile(typeLayoutPath, os.O_RDONLY|os.O_CREATE, os.ModePerm); err != nil {
-				log.Fatal("Can't create layout for type \"%s\": %w", typeName, err)
+				log.Fatalf("Can't create layout for type \"%s\": %v", typeName, err)
 			}
 		}
 

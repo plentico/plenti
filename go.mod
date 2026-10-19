@@ -12,7 +12,7 @@ require (
 	github.com/go-git/go-git/v5 v5.13.0
 	github.com/go-playground/validator/v10 v10.23.0
 	github.com/manifoldco/promptui v0.8.0
-	github.com/plentico/pico v0.0.2
+	github.com/plentico/pico v0.0.4
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cobra v1.1.3
 	github.com/tdewolff/minify/v2 v2.20.20

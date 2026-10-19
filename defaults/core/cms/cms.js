@@ -13,7 +13,12 @@
     fields: null,      // working copy of the fields being edited
     notice: null,
     jsonMode: false,
-    jsonText: ""
+    jsonText: "",
+    rootEl: null,      // element the full CMS app is mounted into
+    loggedOut: false,  // local provider only: user explicitly logged out
+    trayItem: null,    // data.content node for the page shown in the tray
+    trayFields: null,  // working copy of the tray's field values
+    trayOpen: false
   };
 
   function h(tag, attrs, children) {
@@ -164,8 +169,8 @@
 
   /* ---------- Editor fields ---------- */
 
-  function fieldInput(key, type, value, onChange) {
-    var schema = state.data.schemas[currentType()] || {};
+  function fieldInput(key, type, value, onChange, schema) {
+    schema = schema || {};
     var def = schema[key];
     var options = def && def.options;
 
@@ -215,7 +220,7 @@
         } });
     }
     if (type === "wysiwyg" || type === "textarea") {
-      return h("textarea", { onchange: function (e) { onChange(e.target.value); } }, [value || ""]);
+      return h("textarea", { oninput: function (e) { onChange(e.target.value); } }, [value || ""]);
     }
     if (type === "id") {
       return h("input", { type: "text", value: value || "", disabled: "disabled" });
@@ -229,7 +234,7 @@
         }
       }, [JSON.stringify(value, null, 2)]);
     }
-    return h("input", { type: "text", value: value == null ? "" : value, onchange: function (e) { onChange(e.target.value); } });
+    return h("input", { type: "text", value: value == null ? "" : value, oninput: function (e) { onChange(e.target.value); } });
   }
 
   function schemaType(schema, key, value) {
@@ -305,7 +310,7 @@
         var type = schemaType(schema, key, state.fields[key]);
         children.push(h("div", { class: "plenti-field" }, [
           h("label", {}, [key]),
-          fieldInput(key, type, state.fields[key], function (v) { state.fields[key] = v; })
+          fieldInput(key, type, state.fields[key], function (v) { state.fields[key] = v; }, schema)
         ]));
       });
     }
@@ -355,7 +360,8 @@
   }
 
   function render() {
-    var root = document.getElementById("plenti-cms-app");
+    var root = state.rootEl;
+    if (!root) return;
     root.innerHTML = "";
     var main = state.view === "media" ? renderMedia() : renderEditor();
     root.appendChild(h("div", { class: "plenti-layout" }, [renderSidebar(), main]));
@@ -436,22 +442,200 @@
       .catch(function (err) { notify(err.message, true); });
   }
 
+  /* ---------- Auth ---------- */
+
+  function currentProvider() {
+    var cms = (state.data && state.data.env.cms) || {};
+    return (cms.provider || "local").toLowerCase();
+  }
+
+  function isAuthenticated() {
+    // The local provider needs no credentials, but only works against the
+    // dev server (which sets env.local).
+    if (currentProvider() === "local") {
+      return !!(state.data && state.data.env.local) && !state.loggedOut;
+    }
+    return !!getToken();
+  }
+
+  // Publish the magic `user` value. It is always an object so templates can
+  // safely use `user.loggedIn` (false during SSR and when logged out).
+  // Updating Pattr's root data makes any `{if user.loggedIn}` blocks in
+  // layouts re-render automatically.
+  function publishUser() {
+    var u = {
+      loggedIn: isAuthenticated(),
+      provider: currentProvider(),
+      login: login,
+      logout: logout
+    };
+    window.user = u;
+    if (window.Pattr && window.Pattr.data) {
+      try { window.Pattr.data.user = u; } catch (e) { /* scope is read-only */ }
+    }
+    window.dispatchEvent(new CustomEvent("plenti:cms-auth"));
+  }
+
+  function login() {
+    var provider = currentProvider();
+    if (provider === "local") {
+      state.loggedOut = false;
+    } else {
+      var token = prompt("Enter a personal access token for " + provider + " (stored in this browser):");
+      if (token) localStorage.setItem("plenti_cms_token", token);
+    }
+    publishUser();
+  }
+
+  function logout() {
+    localStorage.removeItem("plenti_cms_token");
+    if (currentProvider() === "local") state.loggedOut = true;
+    publishUser();
+  }
+
   /* ---------- Boot ---------- */
 
-  fetch("/admin/data.json")
-    .then(function (res) { return res.json(); })
-    .then(function (data) {
-      state.data = data;
-      var cms = data.env.cms || {};
-      var provider = (cms.provider || "local").toLowerCase();
-      if (!data.env.local && provider !== "local" && !getToken()) {
-        var token = prompt("Enter a personal access token for " + provider + " (stored in this browser):");
-        if (token) localStorage.setItem("plenti_cms_token", token);
-      }
-      if (data.content.length) openItem(0);
+  function loadData() {
+    if (state.data) return Promise.resolve(state.data);
+    return fetch("/admin/data.json")
+      .then(function (res) { return res.json(); })
+      .then(function (data) { state.data = data; return data; });
+  }
+
+  function mount(el) {
+    if (typeof el === "string") el = document.querySelector(el);
+    if (!el) return;
+    state.rootEl = el;
+    loadData().then(function () {
+      if (state.data.content.length) openItem(0);
       else { state.view = "media"; render(); }
-    })
-    .catch(function (err) {
-      document.getElementById("plenti-cms-app").textContent = "Could not load CMS data: " + err.message;
+    }).catch(function (err) {
+      el.textContent = "Could not load CMS data: " + err.message;
     });
+  }
+
+  /* ---------- Inline admin bar (embedded CMS) ---------- */
+
+  // Find the content node backing the page currently shown in the browser.
+  function currentPageItem() {
+    var path = window.location.pathname.replace(/\/+$/, "") || "/";
+    var items = state.data.content || [];
+    for (var i = 0; i < items.length; i++) {
+      if ((items[i].path || "").replace(/\/+$/, "") === path || items[i].path === path) return items[i];
+    }
+    // A page's path may be "/" while the browser shows "/index" and vice versa.
+    if (path === "/index") {
+      for (var j = 0; j < items.length; j++) if (items[j].path === "/") return items[j];
+    }
+    return null;
+  }
+
+  // Push an edit straight into Pattr's root data so the live page re-renders.
+  function liveUpdate(key, value) {
+    state.trayFields[key] = value;
+    if (window.Pattr && window.Pattr.data && window.Pattr.data.content) {
+      var c = window.Pattr.data.content;
+      c.fields = c.fields || {};
+      c.fields[key] = value;
+      // Reassign so Pattr's Proxy set() fires and walkDom re-renders bindings.
+      window.Pattr.data.content = Object.assign({}, c);
+    }
+  }
+
+  function renderTray(tray, statusEl) {
+    tray.innerHTML = "";
+    var item = state.trayItem;
+    if (!item) {
+      tray.appendChild(h("p", { class: "plenti-admin-empty" }, ["No content source found for this page."]));
+      return;
+    }
+    var schema = (state.data.schemas && state.data.schemas[item.type]) || {};
+    tray.appendChild(h("h3", {}, ["Edit " + (item.filepath || item.path)]));
+    Object.keys(state.trayFields).forEach(function (key) {
+      if (key === "components") return; // handled by layouts, not editable here
+      var type = schemaType(schema, key, state.trayFields[key]);
+      if (type === "media") type = "text"; // keep the tray simple: path inputs
+      tray.appendChild(h("div", { class: "plenti-field" }, [
+        h("label", {}, [key]),
+        fieldInput(key, type, state.trayFields[key], function (v) { liveUpdate(key, v); }, schema)
+      ]));
+    });
+    tray.appendChild(h("div", { class: "plenti-admin-actions" }, [
+      h("button", {
+        class: "plenti-btn primary",
+        onclick: function () { saveTray(statusEl); }
+      }, ["Save"]),
+      h("button", {
+        class: "plenti-btn",
+        onclick: function () { setTrayOpen(false); }
+      }, ["Close"])
+    ]));
+  }
+
+  function saveTray(statusEl) {
+    var item = state.trayItem;
+    if (!item) return;
+    statusEl.textContent = "Saving...";
+    commit([{ file: "content/" + item.filepath, action: "update", contents: JSON.stringify(state.trayFields, null, 2) }])
+      .then(function () {
+        item.fields = JSON.parse(JSON.stringify(state.trayFields));
+        statusEl.textContent = "Saved";
+        setTimeout(function () { statusEl.textContent = ""; }, 3000);
+      })
+      .catch(function (err) {
+        statusEl.textContent = "Error: " + err.message;
+      });
+  }
+
+  function setTrayOpen(open) {
+    state.trayOpen = open;
+    var tray = document.querySelector(".plenti-admin-tray");
+    var toggle = document.querySelector(".plenti-admin-bar .plenti-edit-toggle");
+    if (tray) tray.style.display = open ? "" : "none";
+    if (toggle) toggle.textContent = open ? "View" : "Edit";
+    document.body.classList.toggle("plenti-tray-open", open);
+    if (open && tray) renderTray(tray, document.querySelector(".plenti-admin-status"));
+  }
+
+  function mountAdminBar(el) {
+    if (typeof el === "string") el = document.querySelector(el);
+    if (!el) return;
+    el.innerHTML = "";
+    state.trayItem = currentPageItem();
+    state.trayFields = JSON.parse(JSON.stringify((state.trayItem && state.trayItem.fields) || {}));
+    var statusEl = h("span", { class: "plenti-admin-status" }, []);
+    var bar = h("div", { class: "plenti-admin-bar" }, [
+      h("span", { class: "plenti-admin-brand" }, ["Plenti"]),
+      h("button", {
+        class: "plenti-btn plenti-edit-toggle",
+        onclick: function () { setTrayOpen(!state.trayOpen); }
+      }, ["Edit"]),
+      statusEl
+    ]);
+    var tray = h("div", { class: "plenti-admin-tray", style: "display:none" }, []);
+    el.appendChild(bar);
+    el.appendChild(tray);
+    document.body.classList.add("plenti-admin-active");
+  }
+
+  function boot() {
+    var adminEl = document.getElementById("plenti-cms-app");
+    var el = adminEl || document.querySelector("[data-plenti-cms]");
+    loadData().then(function () {
+      publishUser();
+      // Only the dedicated admin page nags for a token; embedded instances
+      // wait for an explicit user.login() call.
+      if (adminEl && !isAuthenticated() && currentProvider() !== "local") login();
+      if (adminEl) mount(adminEl);
+      else if (el) mountAdminBar(el);
+    }).catch(function (err) {
+      if (el) el.textContent = "Could not load CMS data: " + err.message;
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
 })();

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/plentico/pico/pkg/pico"
+	"github.com/plentico/plenti/defaults"
 	"github.com/plentico/plenti/readers"
 )
 
@@ -62,6 +63,30 @@ func getLayoutsDir() string {
 	return "layouts"
 }
 
+// materializeCoreComponents copies core Pico components (e.g. the embeddable
+// CMS) into layouts/core/ so they can be imported like any other component.
+// Existing files are left untouched, so ejecting/editing them sticks.
+func materializeCoreComponents(layoutsDir string) error {
+	coreComponents := []string{"cms/cms.pico"}
+	for _, comp := range coreComponents {
+		dest := filepath.Join(layoutsDir, "core", filepath.Base(comp))
+		if _, err := os.Stat(dest); err == nil {
+			continue
+		}
+		content, err := defaults.CoreFS.ReadFile("core/" + comp)
+		if err != nil {
+			return fmt.Errorf("can't read core component %s: %w", comp, err)
+		}
+		if err := os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
+			return fmt.Errorf("can't create core layout dir for %s: %w", dest, err)
+		}
+		if err := os.WriteFile(dest, content, os.ModePerm); err != nil {
+			return fmt.Errorf("can't write core component %s: %w", dest, err)
+		}
+	}
+	return nil
+}
+
 // Pages renders static HTML pages for every content node using Pico.
 func Pages(buildPath string, siteConfig readers.SiteConfig, allContent []ContentNode) error {
 
@@ -70,10 +95,13 @@ func Pages(buildPath string, siteConfig readers.SiteConfig, allContent []Content
 	Log("\nRendering static pages:")
 
 	layoutsDir := getLayoutsDir()
-	entrypoint := siteConfig.EntryPointHTML
+	if err := materializeCoreComponents(layoutsDir); err != nil {
+		return err
+	}
+	entrypoint := siteConfig.BaseLayout
 	rootLayout := filepath.Join(layoutsDir, entrypoint)
 	if _, err := os.Stat(rootLayout); err != nil {
-		return fmt.Errorf("can't find entrypoint layout %s: %w", rootLayout, err)
+		return fmt.Errorf("can't find base layout %s: %w", rootLayout, err)
 	}
 
 	env := getEnvProps(siteConfig)
@@ -90,6 +118,10 @@ func Pages(buildPath string, siteConfig readers.SiteConfig, allContent []Content
 		props := map[string]any{
 			"env":     envMap,
 			"content": structToMap(node),
+			// Auth state lives in the browser, so SSR always renders a
+			// logged-out user; cms.js publishes the real value to Pattr
+			// after hydration.
+			"user": map[string]any{"loggedIn": false},
 		}
 
 		pageHTML, err := renderPage(rootLayout, props)
@@ -113,6 +145,7 @@ func Pages(buildPath string, siteConfig readers.SiteConfig, allContent []Content
 		props := map[string]any{
 			"env":     envMap,
 			"content": map[string]any{"type": "404", "path": "/404", "fields": map[string]any{}},
+			"user":    map[string]any{"loggedIn": false},
 		}
 		pageHTML, err := renderPage(rootLayout, props)
 		if err != nil {

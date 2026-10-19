@@ -18,8 +18,7 @@ type SiteConfig struct {
 	BuildDir       string                  `json:"build"`
 	BaseURL        string                  `json:"baseurl"`
 	Theme          string                  `json:"theme"`
-	EntryPointHTML string                  `json:"entrypoint_html"`
-	EntryPointJS   string                  `json:"entrypoint_js"`
+	BaseLayout     string                  `json:"base_layout"`
 	ThemeConfig    map[string]ThemeOptions `json:"theme_config"`
 	Local          struct {
 		Port int `json:"port"`
@@ -94,8 +93,8 @@ func GetSiteConfig(basePath string) (SiteConfig, string) {
 		siteConfig.Local.Port = 3000
 	}
 
-	if siteConfig.EntryPointHTML == "" {
-		siteConfig.EntryPointHTML = "global/html.pico"
+	if siteConfig.BaseLayout == "" {
+		siteConfig.BaseLayout = "global/html.pico"
 	}
 
 	// Generate a new random string
