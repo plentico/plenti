@@ -16,8 +16,10 @@
     jsonText: "",
     rootEl: null,      // element the full CMS app is mounted into
     trayItem: null,    // data.content node for the page shown in the tray
+    pendingFilename: null, // staged filename change, applied on Save
     trayFields: null,  // working copy of the tray's field values
     trayJsonMode: false, // tray shows raw JSON source instead of the form
+    trayInfoMode: false, // tray shows page info instead of the form
     trayOpen: false
   };
 
@@ -985,17 +987,32 @@
       class: "plenti-btn primary",
       onclick: function () { saveTray(statusEl); }
     }, ["Save"]);
+    var mode = state.trayJsonMode ? "json" : state.trayInfoMode ? "info" : "form";
     var header = h("div", { class: "plenti-tray-header" }, [
-      h("h3", {}, ["Edit " + (item.filepath || item.path)]),
-      h("button", {
-        class: "plenti-json-toggle" + (state.trayJsonMode ? " plenti-active" : ""),
-        title: state.trayJsonMode ? "Back to form" : "View JSON source",
-        onclick: function () { toggleTrayJson(tray, statusEl); }
-      }, [icon(state.trayJsonMode ? "form" : "braces")])
+      h("h3", {}, [mode === "json" ? "Code" : mode === "info" ? "Info" : "Form"]),
+      h("div", { class: "plenti-tray-tabs" }, [
+        h("button", {
+          class: "plenti-json-toggle" + (mode === "form" ? " plenti-active" : ""),
+          title: "Form",
+          onclick: function () { setTrayMode(tray, statusEl, "form"); }
+        }, [icon("form")]),
+        h("button", {
+          class: "plenti-json-toggle" + (mode === "info" ? " plenti-active" : ""),
+          title: "Page info",
+          onclick: function () { setTrayMode(tray, statusEl, "info"); }
+        }, [icon("info")]),
+        h("button", {
+          class: "plenti-json-toggle" + (mode === "json" ? " plenti-active" : ""),
+          title: "JSON source",
+          onclick: function () { setTrayMode(tray, statusEl, "json"); }
+        }, [icon("braces")])
+      ])
     ]);
     tray.appendChild(header);
     if (state.trayJsonMode) {
       renderTrayJson(tray, statusEl, saveBtn);
+    } else if (state.trayInfoMode) {
+      renderTrayInfo(tray, item, statusEl);
     } else {
       Object.keys(state.trayFields).forEach(function (key) {
         var value = state.trayFields[key];
@@ -1022,47 +1039,235 @@
     ]));
   }
 
-  // Switch the tray between the form and the raw JSON source. Switching back
-  // to the form requires valid JSON — a broken document can't be left behind.
-  function toggleTrayJson(tray, statusEl) {
-    if (state.trayJsonMode) {
+  // Mirror of cmd/build/data_source.go path resolution: route overrides from
+  // plenti.json (":fields(name)" tokens replaced with slugified field values),
+  // else the default type-folder/file-name path, with "index" files mapping
+  // to the root of their folder.
+  function computePath(type, relPathNoExt, fields) {
+    var slugify = function (s) { return String(s).toLowerCase().replace(/[^a-z0-9./*]+/g, "-"); };
+    var routes = (state.data.env && state.data.env.routes) || {};
+    var path = null;
+    Object.keys(routes).forEach(function (route) {
+      if (routes[route] !== type) return;
+      path = route.replace(/:fields\(([^)]*)\)/g, function (m, name) {
+        var v = fields ? fields[name] : null;
+        return slugify(v == null ? "" : v);
+      });
+    });
+    if (path == null) {
+      var parts = relPathNoExt.split("/");
+      path = parts.length > 1 ? "/" + parts.slice(1).join("/") : "/" + parts[0];
+    }
+    if (path === "/index") path = "/";
+    else if (path.slice(-6) === "/index") path = path.slice(0, -5);
+    return path;
+  }
+
+  // Generic custom modal confirm (never the browser default), styled like the
+  // media library delete confirm. msgChildren is an array of nodes/strings so
+  // paths can be rendered as inline code. Resolves true on OK, false on
+  // Cancel/Escape/backdrop click.
+  function confirmModal(title, msgChildren, okLabel) {
+    return new Promise(function (resolve) {
+      var overlay, onKey;
+      function done(val) {
+        document.removeEventListener("keydown", onKey, true);
+        overlay.classList.remove("open");
+        setTimeout(function () { overlay.remove(); }, 200);
+        resolve(val);
+      }
+      onKey = function (e) {
+        if (e.key === "Escape") { e.stopPropagation(); done(false); }
+        if (e.key === "Enter") { done(true); }
+      };
+      var okBtn = h("button", { class: "plenti-btn primary", onclick: function () { done(true); } }, [okLabel || "OK"]);
+      overlay = h("div", { class: "plenti-media-overlay plenti-confirm-overlay", onclick: function (e) { if (e.target === overlay) done(false); } }, [
+        h("div", { class: "plenti-media-modal plenti-confirm-dialog" }, [
+          h("p", { class: "plenti-confirm-msg" }, [h("strong", {}, [title])].concat([" "]).concat(msgChildren)),
+          h("div", { class: "plenti-confirm-actions" }, [
+            h("button", { class: "plenti-btn", onclick: function () { done(false); } }, ["Cancel"]),
+            okBtn
+          ])
+        ])
+      ]);
+      document.body.appendChild(overlay);
+      document.addEventListener("keydown", onKey, true);
+      void overlay.offsetWidth;
+      overlay.classList.add("open");
+      okBtn.focus();
+    });
+  }
+
+  // If the page's route is about to change, warn and give the user a chance
+  // to cancel. Resolves true when it's OK to proceed (including no change).
+  function confirmRouteChange(oldPath, newPath) {
+    if (oldPath === newPath) return Promise.resolve(true);
+    return confirmModal(
+      "Page URL will change.",
+      [
+        "This change moves the page from ",
+        h("code", { class: "plenti-inline-code" }, [oldPath]),
+        " to ",
+        h("code", { class: "plenti-inline-code" }, [newPath]),
+        ". You'll be redirected to the new URL after saving."
+      ]
+    );
+  }
+
+  // Built-in info about the current page (type, path, file location). The
+  // filename is editable via a small edit icon or by clicking the name;
+  // typing previews the new filepath/path in realtime and stages the rename,
+  // which is only applied when the user saves the page.
+  function renderTrayInfo(tray, item, statusEl) {
+    var fields = state.trayFields || item.fields;
+    var dir = item.filepath.indexOf("/") >= 0 ? item.filepath.slice(0, item.filepath.lastIndexOf("/")) : "";
+    var list = h("div", { class: "plenti-info" }, []);
+    list.appendChild(h("div", { class: "plenti-info-row" }, [
+      h("span", { class: "plenti-info-key" }, ["Type"]),
+      h("span", { class: "plenti-info-val" }, [item.type || ""])
+    ]));
+    var pathVal = h("span", { class: "plenti-info-val" }, [item.path]);
+    list.appendChild(h("div", { class: "plenti-info-row" }, [
+      h("span", { class: "plenti-info-key" }, ["Path"]),
+      pathVal
+    ]));
+    var filepathVal = h("span", { class: "plenti-info-val" }, [item.filepath]);
+    list.appendChild(h("div", { class: "plenti-info-row" }, [
+      h("span", { class: "plenti-info-key" }, ["Filepath"]),
+      filepathVal
+    ]));
+    var nameView = h("span", { class: "plenti-info-val" }, [state.pendingFilename || item.filename || ""]);
+    var input = h("input", {
+      class: "plenti-info-input",
+      type: "text",
+      value: state.pendingFilename || item.filename || "",
+      style: "display:none"
+    }, []);
+    function startEdit() {
+      viewWrap.style.display = "none";
+      input.style.display = "";
+      input.focus();
+      input.select();
+    }
+    var viewWrap = h("span", { class: "plenti-info-name", title: "Rename file", onclick: startEdit }, [
+      h("button", { class: "plenti-json-toggle plenti-info-edit", onclick: function (e) { e.stopPropagation(); startEdit(); } }, [icon("edit")]),
+      nameView
+    ]);
+    // Show the current (or staged) name back in view mode.
+    function showView() {
+      input.style.display = "none";
+      viewWrap.style.display = "";
+      var shown = state.pendingFilename || item.filename || "";
+      nameView.textContent = shown;
+      input.value = shown;
+    }
+    // Cancel the edit: discard the staged rename and restore the real values.
+    function revertPreview() {
+      state.pendingFilename = null;
+      showView();
+      filepathVal.textContent = item.filepath;
+      pathVal.textContent = item.path;
+    }
+    // Realtime preview of the new filepath and route while typing; a valid,
+    // changed name is staged and applied on Save.
+    input.addEventListener("input", function () {
+      var name = input.value.trim();
+      filepathVal.textContent = (dir ? dir + "/" : "") + name + ".json";
+      pathVal.textContent = computePath(item.type, (dir ? dir + "/" : "") + name, fields);
+      state.pendingFilename = (name && name !== item.filename && /^[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(name)) ? name : null;
+    });
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); input.blur(); }
+      if (e.key === "Escape") { revertPreview(); }
+    });
+    input.addEventListener("blur", function () {
+      var name = input.value.trim();
+      if (name && name !== item.filename && !/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(name)) {
+        notify("Invalid filename — letters, numbers, dashes and underscores only.", true);
+        revertPreview();
+        return;
+      }
+      showView();
+    });
+    list.appendChild(h("div", { class: "plenti-info-row" }, [
+      h("span", { class: "plenti-info-key" }, ["Filename"]),
+      h("span", { class: "plenti-info-cell" }, [viewWrap, input])
+    ]));
+    tray.appendChild(list);
+  }
+
+  // Rename the content file: handled in saveTray — the Info tab filename edit
+  // stages state.pendingFilename, and Save applies the create + delete pair
+  // (the commit API has no move action) after warning about route changes.
+
+  // Switch the tray between the form, page-info, and JSON source views.
+  // Leaving the JSON source requires valid JSON — a broken document can't
+  // be left behind.
+  function setTrayMode(tray, statusEl, mode) {
+    if (state.trayJsonMode && mode !== "json") {
       var errEl = tray.querySelector(".plenti-json-error");
       if (errEl && errEl.style.display !== "none") {
         errEl.classList.add("plenti-shake");
         setTimeout(function () { errEl.classList.remove("plenti-shake"); }, 400);
         return;
       }
-      state.trayJsonMode = false;
-    } else {
-      state.trayJsonMode = true;
     }
+    state.trayJsonMode = mode === "json";
+    state.trayInfoMode = mode === "info";
     renderTray(tray, statusEl);
   }
 
   function saveTray(statusEl) {
     var item = state.trayItem;
     if (!item) return;
-    statusEl.textContent = "Saving...";
-    statusEl.classList.remove("success", "error");
-    commit([{ file: "content/" + item.filepath, action: "update", contents: JSON.stringify(orderedFields(item, state.trayFields), null, 2) }])
-      .then(function () {
-        item.fields = JSON.parse(JSON.stringify(state.trayFields));
-        statusEl.innerHTML = ICONS.check + "Saved";
-        statusEl.classList.add("success");
-        setTimeout(function () {
-          statusEl.textContent = "";
-          statusEl.classList.remove("success");
-        }, 3000);
-      })
-      .catch(function (err) {
-        statusEl.textContent = "Error: " + err.message;
-        statusEl.classList.add("error");
-      });
+    var dir = item.filepath.indexOf("/") >= 0 ? item.filepath.slice(0, item.filepath.lastIndexOf("/")) : "";
+    var pending = state.pendingFilename;
+    var filepath = pending ? (dir ? dir + "/" : "") + pending + ".json" : item.filepath;
+    // The route may depend on field values (routes in plenti.json) and on the
+    // filename; warn and redirect when a save would move the page.
+    var newPath = computePath(item.type, filepath.replace(/\.json$/, ""), state.trayFields);
+    confirmRouteChange(item.path, newPath).then(function (ok) {
+      if (!ok) return;
+      statusEl.textContent = "Saving...";
+      statusEl.classList.remove("success", "error");
+      var contents = JSON.stringify(orderedFields(item, state.trayFields), null, 2);
+      // Renames are a create + delete pair (the commit API has no move action).
+      var files = pending
+        ? [
+            { file: "content/" + filepath, action: "create", contents: contents },
+            { file: "content/" + item.filepath, action: "delete" }
+          ]
+        : [{ file: "content/" + filepath, action: "update", contents: contents }];
+      commit(files)
+        .then(function () {
+          item.fields = JSON.parse(JSON.stringify(state.trayFields));
+          if (pending) {
+            item.filepath = filepath;
+            item.filename = pending;
+            state.pendingFilename = null;
+          }
+          var pathChanged = newPath !== item.path;
+          item.path = newPath;
+          statusEl.innerHTML = ICONS.check + "Saved";
+          statusEl.classList.add("success");
+          setTimeout(function () {
+            statusEl.textContent = "";
+            statusEl.classList.remove("success");
+          }, 3000);
+          if (pathChanged) {
+            setTimeout(function () { window.location.href = newPath; }, 400);
+          }
+        })
+        .catch(function (err) {
+          statusEl.textContent = "Error: " + err.message;
+          statusEl.classList.add("error");
+        });
+    });
   }
 
   function setTrayOpen(open) {
     state.trayOpen = open;
-    if (open) { state.trayJsonMode = false; state.trayArrayOpen = {}; state.trayItemOpen = {}; } // always reopen in form mode, groups/items default
+    if (open) { state.trayJsonMode = false; state.trayInfoMode = false; state.trayArrayOpen = {}; state.trayItemOpen = {}; state.pendingFilename = null; } // always reopen in form mode, groups/items default
     var tray = document.querySelector(".plenti-admin-tray");
     var toggle = document.querySelector(".plenti-admin-bar .plenti-edit-toggle");
     var label = toggle && toggle.querySelector(".plenti-label");
@@ -1097,6 +1302,7 @@
     crop: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 2v14a2 2 0 0 0 2 2h14\"/><path d=\"M18 22V8a2 2 0 0 0-2-2H2\"/></svg>",
     close: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M18 6 6 18\"/><path d=\"m6 6 12 12\"/></svg>",
     braces: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5c0 1.1.9 2 2 2h1\"/><path d=\"M16 21h1a2 2 0 0 0 2-2v-5c0-1.1.9-2 2-2a2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1\"/></svg>",
+    info: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M12 16v-4\"/><path d=\"M12 8h.01\"/></svg>",
     list: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M8 6h13\"/><path d=\"M8 12h13\"/><path d=\"M8 18h13\"/><path d=\"M3 6h.01\"/><path d=\"M3 12h.01\"/><path d=\"M3 18h.01\"/></svg>",
     form: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 6H3\"/><path d=\"M15 12H3\"/><path d=\"M17 18H3\"/></svg>",
     chevron: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"9 18 15 12 9 6\"/></svg>",
