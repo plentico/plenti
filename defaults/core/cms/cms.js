@@ -653,6 +653,189 @@
     validate();
   }
 
+  /* ---------- Tray: generic arrays (repeatable groups) ---------- */
+
+  function isPlainObject(v) {
+    return !!v && typeof v === "object" && !Array.isArray(v);
+  }
+
+  // Label for an array item: first non-empty string value, else "Item N".
+  // Purely cosmetic — no key carries special meaning.
+  function arrayItemLabel(item, i) {
+    var keys = Object.keys(item);
+    for (var n = 0; n < keys.length; n++) {
+      var v = item[keys[n]];
+      if (typeof v === "string" && v.trim()) {
+        return v.length > 28 ? v.slice(0, 28) + "…" : v;
+      }
+    }
+    return "Item " + (i + 1);
+  }
+
+  // Group open-state defaults: top-level arrays expanded, nested collapsed.
+  // Item open-state defaults: collapsed.
+  function arrayGroupOpen(path) {
+    state.trayArrayOpen = state.trayArrayOpen || {};
+    if (path in state.trayArrayOpen) return state.trayArrayOpen[path];
+    return path.indexOf(".") === -1;
+  }
+  function arrayItemOpen(path) {
+    state.trayItemOpen = state.trayItemOpen || {};
+    return !!state.trayItemOpen[path];
+  }
+
+  // Renders one value inside an array item. Objects render as a labeled group
+  // with an indented body; arrays of objects recurse as collapsible groups.
+  function renderArrayItemField(tray, statusEl, path, item, key, commit, schema, onEdit) {
+    var v = item[key];
+    if (Array.isArray(v) && v.every(isPlainObject)) {
+      return renderArrayField(tray, statusEl, path + "." + key, key, v, commit, schema);
+    }
+    if (isPlainObject(v)) {
+      var body = h("div", { class: "plenti-nested-body" }, []);
+      Object.keys(v).forEach(function (nk) {
+        if (isPlainObject(v[nk]) || Array.isArray(v[nk])) return; // one level is plenty
+        body.appendChild(h("div", { class: "plenti-field" }, [
+          h("label", {}, [nk]),
+          fieldInput(nk, schemaType(schema, nk, v[nk]), v[nk], function (val) {
+            v[nk] = val; commit(); onEdit();
+          }, schema)
+        ]));
+      });
+      return h("div", { class: "plenti-field plenti-field-nested" }, [
+        h("label", {}, [key]),
+        body
+      ]);
+    }
+    var type = schemaType(schema, key, v);
+    if (type === "media") type = "text";
+    return h("div", { class: "plenti-field" }, [
+      h("label", {}, [key]),
+      fieldInput(key, type, v, function (val) {
+        item[key] = val; commit(); onEdit();
+      }, schema)
+    ]);
+  }
+
+  // An array of objects = repeatable group. Top-level groups start expanded,
+  // nested groups and individual items start collapsed. Items can be
+  // reordered via up/down arrows or drag-and-drop, and removed via trash.
+  function renderArrayField(tray, statusEl, path, label, arr, commit, schema) {
+    var open = arrayGroupOpen(path);
+    function toggleGroup() {
+      state.trayArrayOpen[path] = !open;
+      renderTray(tray, statusEl);
+    }
+    var chevron = h("button", {
+      class: "plenti-array-chevron" + (open ? " plenti-open" : ""),
+      title: open ? "Collapse" : "Expand",
+      onclick: toggleGroup
+    }, [icon("chevron")]);
+    var body = h("div", { class: "plenti-array-items", style: open ? "" : "display:none" }, []);
+    if (open) {
+      if (!arr.length) body.appendChild(h("p", { class: "plenti-admin-empty" }, ["Empty."]));
+      arr.forEach(function (item, i) {
+        var itemPath = path + "." + i;
+        var itemOpen = arrayItemOpen(itemPath);
+        function rerender() { renderTray(tray, statusEl); }
+        function move(to) {
+          var x = arr.splice(i, 1)[0];
+          arr.splice(to, 0, x);
+          commit();
+          rerender();
+        }
+        var labelEl = h("span", { class: "plenti-array-item-label" }, [arrayItemLabel(item, i)]);
+        function onEdit() { labelEl.textContent = arrayItemLabel(item, i); }
+        var itemChevron = h("button", {
+          class: "plenti-array-chevron plenti-sm" + (itemOpen ? " plenti-open" : ""),
+          title: itemOpen ? "Collapse" : "Expand",
+          onclick: function () {
+            state.trayItemOpen[itemPath] = !itemOpen;
+            rerender();
+          }
+        }, [icon("chevron")]);
+        var fieldsEl = h("div", {
+          class: "plenti-array-item-fields",
+          style: itemOpen ? "" : "display:none"
+        }, []);
+        if (itemOpen) {
+          Object.keys(item).forEach(function (key) {
+            fieldsEl.appendChild(renderArrayItemField(tray, statusEl, itemPath, item, key, commit, schema, onEdit));
+          });
+        }
+        // Drag-and-drop reordering (drag by the item header).
+        var card = h("div", { class: "plenti-array-item" }, []);
+        var header = h("div", { class: "plenti-array-item-header", draggable: "true" }, [
+          itemChevron,
+          h("span", { class: "plenti-array-grip", title: "Drag to reorder" }, [icon("grip")]),
+          labelEl,
+          h("span", { class: "plenti-spacer" }, []),
+          h("button", {
+            class: "plenti-array-move", title: "Move up",
+            disabled: i === 0 ? "disabled" : null,
+            onclick: function () { move(i - 1); }
+          }, [icon("up")]),
+          h("button", {
+            class: "plenti-array-move", title: "Move down",
+            disabled: i === arr.length - 1 ? "disabled" : null,
+            onclick: function () { move(i + 1); }
+          }, [icon("down")]),
+          h("button", {
+            class: "plenti-array-move plenti-array-remove", title: "Remove",
+            onclick: function () {
+              arr.splice(i, 1);
+              commit();
+              rerender();
+            }
+          }, [icon("trash")])
+        ]);
+        header.addEventListener("dragstart", function (e) {
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/plain", String(i));
+          card.classList.add("plenti-dragging");
+        });
+        header.addEventListener("dragend", function () {
+          card.classList.remove("plenti-dragging");
+          body.querySelectorAll(".plenti-drag-over").forEach(function (el) {
+            el.classList.remove("plenti-drag-over");
+          });
+        });
+        card.addEventListener("dragover", function (e) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+          card.classList.add("plenti-drag-over");
+        });
+        card.addEventListener("dragleave", function () {
+          card.classList.remove("plenti-drag-over");
+        });
+        card.addEventListener("drop", function (e) {
+          e.preventDefault();
+          var from = parseInt(e.dataTransfer.getData("text/plain"), 10);
+          if (!isNaN(from) && from !== i) {
+            var x = arr.splice(from, 1)[0];
+            arr.splice(i, 0, x);
+            commit();
+            rerender();
+          }
+        });
+        card.appendChild(header);
+        card.appendChild(fieldsEl);
+        body.appendChild(card);
+      });
+    }
+    return h("div", { class: "plenti-array" }, [
+      h("div", { class: "plenti-array-header", onclick: function (e) {
+        if (e.target.closest(".plenti-array-chevron")) return;
+        chevron.click();
+      } }, [
+        chevron,
+        h("label", {}, [label]),
+        h("span", { class: "plenti-array-count" }, [arr.length + " item" + (arr.length === 1 ? "" : "s")])
+      ]),
+      body
+    ]);
+  }
+
   function renderTray(tray, statusEl) {
     // Clear previous content but keep the drag-resize handle in place.
     var resizeHandle = tray.querySelector(".plenti-tray-resize");
@@ -681,7 +864,13 @@
       renderTrayJson(tray, statusEl, saveBtn);
     } else {
       Object.keys(state.trayFields).forEach(function (key) {
-        if (key === "components") return; // handled by layouts, not editable here
+        var value = state.trayFields[key];
+        if (Array.isArray(value) && value.every(isPlainObject)) {
+          tray.appendChild(renderArrayField(tray, statusEl, key, key, value, function () {
+            liveUpdate(key, value);
+          }, schema));
+          return;
+        }
         var type = schemaType(schema, key, state.trayFields[key]);
         if (type === "media") type = "text"; // keep the tray simple: path inputs
         tray.appendChild(h("div", { class: "plenti-field" }, [
@@ -739,7 +928,7 @@
 
   function setTrayOpen(open) {
     state.trayOpen = open;
-    if (open) state.trayJsonMode = false; // always reopen in form mode
+    if (open) { state.trayJsonMode = false; state.trayArrayOpen = {}; state.trayItemOpen = {}; } // always reopen in form mode, groups/items default
     var tray = document.querySelector(".plenti-admin-tray");
     var toggle = document.querySelector(".plenti-admin-bar .plenti-edit-toggle");
     var label = toggle && toggle.querySelector(".plenti-label");
@@ -769,7 +958,11 @@
     close: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M18 6 6 18\"/><path d=\"m6 6 12 12\"/></svg>",
     braces: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5c0 1.1.9 2 2 2h1\"/><path d=\"M16 21h1a2 2 0 0 0 2-2v-5c0-1.1.9-2 2-2a2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1\"/></svg>",
     list: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M8 6h13\"/><path d=\"M8 12h13\"/><path d=\"M8 18h13\"/><path d=\"M3 6h.01\"/><path d=\"M3 12h.01\"/><path d=\"M3 18h.01\"/></svg>",
-    form: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 6H3\"/><path d=\"M15 12H3\"/><path d=\"M17 18H3\"/></svg>"
+    form: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 6H3\"/><path d=\"M15 12H3\"/><path d=\"M17 18H3\"/></svg>",
+    chevron: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"9 18 15 12 9 6\"/></svg>",
+    up: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 19V5\"/><polyline points=\"5 12 12 5 19 12\"/></svg>",
+    down: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 5v14\"/><polyline points=\"19 12 12 19 5 12\"/></svg>",
+    grip: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"9\" cy=\"6\" r=\"1\"/><circle cx=\"15\" cy=\"6\" r=\"1\"/><circle cx=\"9\" cy=\"12\" r=\"1\"/><circle cx=\"15\" cy=\"12\" r=\"1\"/><circle cx=\"9\" cy=\"18\" r=\"1\"/><circle cx=\"15\" cy=\"18\" r=\"1\"/></svg>"
   };
 
   function icon(name) {
