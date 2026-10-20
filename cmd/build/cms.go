@@ -86,7 +86,7 @@ type cmsData struct {
 	Env      envProps                  `json:"env"`
 	Content  []ContentNode             `json:"content"`
 	Schemas  map[string]map[string]any `json:"schemas"`
-	Defaults map[string]map[string]any `json:"defaults"`
+	Defaults map[string]json.RawMessage `json:"defaults"`
 	Media    []string                  `json:"media"`
 }
 
@@ -100,7 +100,7 @@ func writeCmsData(buildPath string, siteConfig readers.SiteConfig, allContent []
 		Env:      getEnvProps(siteConfig),
 		Content:  allContent,
 		Schemas:  map[string]map[string]any{},
-		Defaults: map[string]map[string]any{},
+		Defaults: map[string]json.RawMessage{},
 		Media:    mediaIndex,
 	}
 
@@ -128,7 +128,9 @@ func writeCmsData(buildPath string, siteConfig readers.SiteConfig, allContent []
 		if name == "_schema.json" {
 			data.Schemas[typeName] = parsed
 		} else {
-			data.Defaults[typeName] = parsed
+			// Keep the raw bytes so the CMS sees fields in the file's original
+			// key order (a map round-trip would sort them alphabetically).
+			data.Defaults[typeName] = json.RawMessage(fileBytes)
 		}
 		return nil
 	})
