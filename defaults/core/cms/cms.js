@@ -654,7 +654,12 @@
     logout: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4\"/><path d=\"m16 17 5-5-5-5\"/><path d=\"M21 12H9\"/></svg>",
     check: "<svg class=\"plenti-check\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg>",
     image: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\"/><circle cx=\"9\" cy=\"9\" r=\"2\"/><path d=\"m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21\"/></svg>",
-    upload: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><path d=\"m17 8-5-5-5 5\"/><path d=\"M12 3v12\"/></svg>"
+    upload: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><path d=\"m17 8-5-5-5 5\"/><path d=\"M12 3v12\"/></svg>",
+    download: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><path d=\"m7 10 5 5 5-5\"/><path d=\"M12 15V3\"/></svg>",
+    trash: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 6h18\"/><path d=\"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6\"/><path d=\"M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2\"/><path d=\"M10 11v6\"/><path d=\"M14 11v6\"/></svg>",
+    link: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71\"/><path d=\"M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71\"/></svg>",
+    crop: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 2v14a2 2 0 0 0 2 2h14\"/><path d=\"M18 22V8a2 2 0 0 0-2-2H2\"/></svg>",
+    close: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M18 6 6 18\"/><path d=\"m6 6 12 12\"/></svg>"
   };
 
   function icon(name) {
@@ -717,7 +722,7 @@
     next();
   }
 
-  function renderMediaLibrary(grid, onPick) {
+  function renderMediaLibrary(grid, onPick, onDelete, onCopy) {
     grid.innerHTML = "";
     var items = state.data.media || [];
     if (!items.length) {
@@ -726,6 +731,7 @@
     }
     items.forEach(function (m) {
       var full = state.data.env.baseurl.replace(/\/$/, "") + "/" + m.replace(/^\/+/, "");
+      var name = m.replace(/^\/+media\/+/, "");
       grid.appendChild(h("div", {
         class: "plenti-media-item",
         title: m,
@@ -734,9 +740,246 @@
         isImage(m)
           ? h("img", { src: full, alt: m, loading: "lazy" })
           : h("div", { class: "plenti-media-doc" }, ["\uD83D\uDCC4"]),
-        h("div", { class: "plenti-media-name" }, [m.replace(/^\/+media\/+/, "")])
+        h("div", { class: "plenti-media-name" }, [name]),
+        h("div", { class: "plenti-media-actions" }, [
+          h("button", {
+            class: "plenti-media-action",
+            title: "Copy path",
+            onclick: function (e) { e.stopPropagation(); onCopy(m); }
+          }, [icon("link")]),
+          h("a", {
+            class: "plenti-media-action",
+            href: full,
+            download: name,
+            title: "Download",
+            onclick: function (e) { e.stopPropagation(); }
+          }, [icon("download")]),
+          h("button", {
+            class: "plenti-media-action plenti-media-delete",
+            title: "Delete",
+            onclick: function (e) { e.stopPropagation(); onDelete(m, name); }
+          }, [icon("trash")])
+        ])
       ]));
     });
+  }
+
+  /* Custom styled confirm dialog (replaces window.confirm). */
+  function confirmDialog(message, confirmLabel) {
+    return new Promise(function (resolve) {
+      var overlay = h("div", { class: "plenti-media-overlay plenti-confirm-overlay" }, [
+        h("div", { class: "plenti-media-modal plenti-confirm-dialog" }, [
+          h("p", { class: "plenti-confirm-msg" }, [message]),
+          h("div", { class: "plenti-confirm-actions" }, [
+            h("button", { class: "plenti-btn", onclick: function () { done(false); } }, ["Cancel"]),
+            h("button", { class: "plenti-btn plenti-confirm-danger", onclick: function () { done(true); } }, [confirmLabel || "Delete"])
+          ])
+        ])
+      ]);
+      overlay.addEventListener("click", function (e) { if (e.target === overlay) done(false); });
+      function done(val) {
+        overlay.classList.remove("open");
+        setTimeout(function () { overlay.remove(); }, 200);
+        resolve(val);
+      }
+      document.body.appendChild(overlay);
+      void overlay.offsetWidth;
+      overlay.classList.add("open");
+    });
+  }
+
+  /* ---------- Image editor modal ---------- */
+
+  function openImageEditor(m, full, name, onSaved) {
+    if (document.querySelector(".plenti-editor-overlay")) return;
+    var statusEl = h("span", { class: "plenti-admin-status" }, []);
+    var canvas = h("canvas", { class: "plenti-editor-canvas" }, []);
+    var selection = h("div", { class: "plenti-editor-selection" }, []);
+    var stage = h("div", { class: "plenti-editor-stage" }, [canvas, selection]);
+
+    var img = new Image();
+    var origCanvas = null, workCanvas = null;
+    var scale = 100, format = (name.split(".").pop() || "png").toLowerCase();
+    if (format === "jpg") format = "jpeg";
+    if (["png", "jpeg", "webp"].indexOf(format) === -1) format = "png";
+    var sel = null; // {x, y, w, h} in workCanvas coords
+
+    function flash(msg, isError) {
+      statusEl.classList.remove("success", "error");
+      if (isError) { statusEl.textContent = "Error: " + msg; statusEl.classList.add("error"); return; }
+      statusEl.innerHTML = ICONS.check + msg;
+      statusEl.classList.add("success");
+      setTimeout(function () { statusEl.textContent = ""; statusEl.classList.remove("success"); }, 2500);
+    }
+
+    function render() {
+      var w = Math.max(1, Math.round(workCanvas.width * scale / 100));
+      var hgt = Math.max(1, Math.round(workCanvas.height * scale / 100));
+      canvas.width = w;
+      canvas.height = hgt;
+      canvas.getContext("2d").drawImage(workCanvas, 0, 0, w, hgt);
+      clearSel();
+    }
+    function clearSel() {
+      sel = null;
+      selection.style.display = "none";
+      cropBtn.disabled = true;
+    }
+    function sizeLabel() {
+      return workCanvas.width + " \u00D7 " + workCanvas.height + " \u2192 " +
+        Math.round(workCanvas.width * scale / 100) + " \u00D7 " + Math.round(workCanvas.height * scale / 100) + "px";
+    }
+    // Drag a crop marquee over the displayed (scaled) canvas.
+    var dragging = false, startX = 0, startY = 0;
+    canvas.addEventListener("mousedown", function (e) {
+      e.preventDefault();
+      var rect = canvas.getBoundingClientRect();
+      dragging = true;
+      startX = e.clientX - rect.left;
+      startY = e.clientY - rect.top;
+      selection.style.display = "none";
+    });
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    function onMove(e) {
+      if (!dragging) return;
+      var rect = canvas.getBoundingClientRect();
+      var x = Math.min(Math.max(e.clientX - rect.left, 0), rect.width);
+      var y = Math.min(Math.max(e.clientY - rect.top, 0), rect.height);
+      var rx = Math.min(startX, x), ry = Math.min(startY, y);
+      var rw = Math.abs(x - startX), rh = Math.abs(y - startY);
+      selection.style.display = "block";
+      selection.style.left = (canvas.offsetLeft + rx) + "px";
+      selection.style.top = (canvas.offsetTop + ry) + "px";
+      selection.style.width = rw + "px";
+      selection.style.height = rh + "px";
+      var kx = workCanvas.width / rect.width, ky = workCanvas.height / rect.height;
+      sel = { x: Math.round(rx * kx), y: Math.round(ry * ky), w: Math.round(rw * kx), h: Math.round(rh * ky) };
+      cropBtn.disabled = !(sel.w >= 2 && sel.h >= 2);
+    }
+    function onUp() { dragging = false; }
+
+    var cropBtn = h("button", { class: "plenti-btn", disabled: "disabled" }, [icon("crop"), h("span", { class: "plenti-label" }, ["Apply crop"])]);
+    cropBtn.addEventListener("click", applyCrop);
+    function applyCrop() {
+      if (!sel || sel.w < 2 || sel.h < 2) return;
+      var c = document.createElement("canvas");
+      c.width = sel.w; c.height = sel.h;
+      c.getContext("2d").drawImage(workCanvas, sel.x, sel.y, sel.w, sel.h, 0, 0, sel.w, sel.h);
+      workCanvas = c;
+      render();
+      dimsEl.textContent = sizeLabel();
+    }
+
+    var scaleSlider = h("input", { type: "range", min: "10", max: "300", value: "100", class: "plenti-editor-scale" }, []);
+    var scaleLabel = h("span", { class: "plenti-editor-scaleval" }, ["100%"]);
+    scaleSlider.addEventListener("input", function () {
+      scale = parseInt(scaleSlider.value, 10);
+      scaleLabel.textContent = scale + "%";
+      render();
+      dimsEl.textContent = sizeLabel();
+    });
+
+    var formatSel = h("select", { class: "plenti-editor-format" }, ["png", "jpeg", "webp"].map(function (f) {
+      return h("option", { value: f, selected: f === format ? "selected" : null }, [f === "jpeg" ? "jpg" : f]);
+    }));
+    formatSel.addEventListener("change", function () {
+      format = formatSel.value;
+      nameInput.value = nameInput.value.replace(/\.[a-z0-9]+$/i, "") + "." + (format === "jpeg" ? "jpg" : format);
+    });
+
+    var dimsEl = h("span", { class: "plenti-editor-dims" }, []);
+    var nameInput = h("input", { type: "text", class: "plenti-input plenti-editor-name", value: name }, []);
+    function exportDataURL() {
+      var w = Math.max(1, Math.round(workCanvas.width * scale / 100));
+      var hgt = Math.max(1, Math.round(workCanvas.height * scale / 100));
+      var c = document.createElement("canvas");
+      c.width = w; c.height = hgt;
+      var ctx = c.getContext("2d");
+      if (format === "jpeg") { ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, w, hgt); }
+      ctx.drawImage(workCanvas, 0, 0, w, hgt);
+      return c.toDataURL("image/" + format, 0.92);
+    }
+
+    function save(targetName, thenDelete) {
+      targetName = (targetName || "").trim().replace(/^\/+/, "").replace(/^media\/+/, "");
+      if (!targetName) { flash("Filename required", true); return; }
+      if (!/\.(png|jpe?g|webp)$/i.test(targetName)) {
+        targetName += "." + (format === "jpeg" ? "jpg" : format);
+      }
+      statusEl.classList.remove("success", "error");
+      statusEl.textContent = "Saving...";
+      var ops = [{ file: "media/" + targetName, action: "upsert", encoding: "base64", contents: exportDataURL() }];
+      commit(ops)
+        .then(function () {
+          if (thenDelete) return commit([{ file: "media/" + thenDelete, action: "delete" }]);
+        })
+        .then(function () {
+          var entry = "/media/" + targetName;
+          state.data.media = state.data.media || [];
+          if (thenDelete) {
+            var old = thenDelete.replace(/^\/+/, "");
+            state.data.media = state.data.media.filter(function (x) { return x.replace(/^\/+/, "") !== old; });
+          }
+          if (state.data.media.map(function (x) { return x.replace(/^\/+/, ""); }).indexOf(entry.replace(/^\/+/, "")) === -1) {
+            state.data.media.push(entry);
+            state.data.media.sort();
+          }
+          flash("Saved " + targetName);
+          onSaved();
+        })
+        .catch(function (err) { flash(err.message, true); });
+    }
+    var overlay = h("div", {
+      class: "plenti-media-overlay plenti-editor-overlay",
+      onclick: function (e) { if (e.target === overlay) close(); }
+    }, [
+      h("div", { class: "plenti-media-modal plenti-editor-modal" }, [
+        h("div", { class: "plenti-media-header" }, [
+          h("h3", {}, [name]),
+          dimsEl,
+          statusEl,
+          h("button", { class: "plenti-media-close", onclick: function () { close(); } }, ["×"])
+        ]),
+        stage,
+        h("div", { class: "plenti-editor-toolbar" }, [
+          cropBtn,
+          h("button", { class: "plenti-btn", onclick: function () { workCanvas = origCanvas; scale = 100; scaleSlider.value = "100"; scaleLabel.textContent = "100%"; render(); dimsEl.textContent = sizeLabel(); } }, ["Reset"]),
+          h("span", { class: "plenti-spacer" }, []),
+          h("label", {}, ["Scale"]), scaleSlider, scaleLabel,
+          h("label", {}, ["Format"]), formatSel
+        ]),
+        h("div", { class: "plenti-editor-savebar" }, [
+          nameInput,
+          h("button", { class: "plenti-btn", onclick: function () { save(nameInput.value, null); } }, ["Save as copy"]),
+          h("button", { class: "plenti-btn primary", onclick: function () {
+            var ext = format === "jpeg" ? "jpg" : format;
+            var target = name.replace(/\.[a-z0-9]+$/i, "") + "." + ext;
+            save(target, target.toLowerCase() === name.toLowerCase() ? null : name);
+          } }, ["Overwrite original"])
+        ])
+      ])
+    ]);
+    function close() {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      overlay.classList.remove("open");
+      setTimeout(function () { overlay.remove(); }, 200);
+    }
+    img.onload = function () {
+      origCanvas = document.createElement("canvas");
+      origCanvas.width = img.naturalWidth;
+      origCanvas.height = img.naturalHeight;
+      origCanvas.getContext("2d").drawImage(img, 0, 0);
+      workCanvas = origCanvas;
+      render();
+      dimsEl.textContent = sizeLabel();
+    };
+    img.onerror = function () { flash("Could not load image", true); };
+    img.src = full;
+    document.body.appendChild(overlay);
+    void overlay.offsetWidth;
+    overlay.classList.add("open");
   }
 
   function openMediaModal() {
@@ -745,16 +988,37 @@
     var grid = h("div", { class: "plenti-media-grid" }, []);
     var fileInput = h("input", { type: "file", multiple: "multiple", style: "display:none" }, []);
 
-    function refresh() { renderMediaLibrary(grid, pick); }
+    function refresh() { renderMediaLibrary(grid, pick, del, copyPath); }
+    function copyPath(m) {
+      if (!navigator.clipboard) return;
+      navigator.clipboard.writeText(m).then(function () {
+        statusEl.innerHTML = ICONS.check + "Copied " + m;
+        statusEl.classList.add("success");
+        setTimeout(function () { statusEl.textContent = ""; statusEl.classList.remove("success"); }, 2500);
+      }).catch(function () { /* clipboard permission denied */ });
+    }
     function pick(m, full) {
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(m).then(function () {
-          statusEl.innerHTML = ICONS.check + "Copied " + m;
-          statusEl.classList.add("success");
-          setTimeout(function () { statusEl.textContent = ""; statusEl.classList.remove("success"); }, 2500);
-        }).catch(function () { /* clipboard permission denied — tab still opened */ });
-      }
-      window.open(full, "_blank");
+      var name = m.replace(/^\/+media\/+/, "");
+      if (isImage(m)) openImageEditor(m, full, name, refresh);
+      else window.open(full, "_blank");
+    }
+    function del(m, name) {
+      confirmDialog("Delete " + name + "? This cannot be undone.").then(function (ok) {
+        if (!ok) return;
+        statusEl.classList.remove("success", "error");
+        commit([{ file: "media/" + name, action: "delete" }])
+          .then(function () {
+            state.data.media = (state.data.media || []).filter(function (x) { return x !== m; });
+            refresh();
+            statusEl.innerHTML = ICONS.check + "Deleted " + name;
+            statusEl.classList.add("success");
+            setTimeout(function () { statusEl.textContent = ""; statusEl.classList.remove("success"); }, 2500);
+          })
+          .catch(function (err) {
+            statusEl.textContent = "Error: " + err.message;
+            statusEl.classList.add("error");
+          });
+      });
     }
     function doUpload(files) {
       if (!files || !files.length) return;

@@ -444,6 +444,7 @@ body.plenti-tray-resizing .plenti-admin-tray {
   padding: 12px 0;
 }
 .plenti-media-item {
+  position: relative;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
   overflow: hidden;
@@ -475,4 +476,149 @@ body.plenti-tray-resizing .plenti-admin-tray {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.plenti-media-actions {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transform: translateY(-3px);
+  transition: opacity .15s ease, transform .15s ease;
+}
+.plenti-media-item:hover .plenti-media-actions {
+  opacity: 1;
+  transform: translateY(0);
+}
+.plenti-media-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: rgba(15, 23, 42, .65);
+  color: #fff;
+  cursor: pointer;
+  transition: background .15s ease;
+}
+.plenti-media-action:hover { background: rgba(15, 23, 42, .85); }
+.plenti-media-action .plenti-icon { display: inline-flex; width: 13px; height: 13px; }
+.plenti-media-action .plenti-icon svg { width: 100%; height: 100%; }
+.plenti-media-delete:hover { background: #dc2626; }
+
+/* ---------- Confirm dialog ---------- */
+.plenti-confirm-overlay { z-index: 10002; }
+.plenti-confirm-dialog {
+  width: min(360px, 90vw);
+  max-height: none;
+  padding: 20px 22px;
+}
+.plenti-confirm-msg { margin: 0 0 16px; font-size: 14px; }
+.plenti-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.plenti-confirm-dialog .plenti-btn {
+  padding: 7px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #1e293b;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background .15s ease;
+}
+.plenti-confirm-dialog .plenti-btn:hover { background: #e2e8f0; }
+.plenti-confirm-dialog .plenti-confirm-danger {
+  background: #dc2626;
+  border-color: #b91c1c;
+  color: #fff;
+}
+.plenti-confirm-dialog .plenti-confirm-danger:hover { background: #b91c1c; }
+
+/* ---------- Image editor ---------- */
+.plenti-editor-overlay { z-index: 10001; }
+.plenti-editor-modal {
+  width: min(900px, 94vw);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+.plenti-editor-dims {
+  font-size: 12px;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+.plenti-editor-stage {
+  position: relative;
+  overflow: auto;
+  flex: 1;
+  min-height: 200px;
+  background: repeating-conic-gradient(#f1f5f9 0% 25%, #fff 0% 50%) 0 0 / 16px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 12px;
+}
+.plenti-editor-canvas { cursor: crosshair; max-width: none; }
+.plenti-editor-selection {
+  position: absolute;
+  display: none;
+  border: 2px dashed #3b82f6;
+  background: rgba(59, 130, 246, .15);
+  pointer-events: none;
+}
+.plenti-editor-toolbar,
+.plenti-editor-savebar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.plenti-editor-toolbar label { font-size: 12px; color: #64748b; }
+.plenti-editor-toolbar .plenti-spacer { flex: 1; }
+.plenti-editor-modal .plenti-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #1e293b;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background .15s ease;
+}
+.plenti-editor-modal .plenti-btn:hover:not(:disabled) { background: #e2e8f0; }
+.plenti-editor-modal .plenti-btn:disabled { opacity: .45; cursor: default; }
+.plenti-editor-modal .plenti-btn.primary {
+  background: #2563eb;
+  border-color: #1d4ed8;
+  color: #fff;
+}
+.plenti-editor-modal .plenti-btn.primary:hover { background: #1d4ed8; }
+.plenti-editor-modal .plenti-btn .plenti-icon { display: inline-flex; width: 13px; height: 13px; }
+.plenti-editor-modal .plenti-btn .plenti-icon svg { width: 100%; height: 100%; }
+.plenti-editor-scale { width: 120px; }
+.plenti-editor-scaleval { font-size: 12px; color: #475569; min-width: 38px; }
+.plenti-editor-format {
+  padding: 5px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 13px;
+  background: #fff;
+  color: #1e293b;
+}
+.plenti-editor-name {
+  flex: 1;
+  min-width: 180px;
+  padding: 7px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 13px;
 }
