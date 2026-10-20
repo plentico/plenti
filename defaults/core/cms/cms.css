@@ -406,6 +406,10 @@ body.plenti-tray-resizing .plenti-admin-tray {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: none; }
 }
+/* Re-renders (e.g. after reordering array items) must not replay the
+   entrance animation on every field. */
+.plenti-admin-tray.plenti-rendered .plenti-field,
+.plenti-admin-tray.plenti-rendered .plenti-array-items { animation: none; }
 .plenti-admin-tray label {
   display: block;
   margin-bottom: 4px;

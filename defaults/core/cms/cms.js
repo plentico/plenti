@@ -972,6 +972,9 @@
     var resizeHandle = tray.querySelector(".plenti-tray-resize");
     tray.innerHTML = "";
     if (resizeHandle) tray.appendChild(resizeHandle);
+    // Mark as re-rendered so field entrance animations only play once
+    // (on tray open), not on every in-place re-render (reorders etc).
+    tray.classList.add("plenti-rendered");
     var item = state.trayItem;
     if (!item) {
       tray.appendChild(h("p", { class: "plenti-admin-empty" }, ["No content source found for this page."]));
@@ -1064,7 +1067,13 @@
     var toggle = document.querySelector(".plenti-admin-bar .plenti-edit-toggle");
     var label = toggle && toggle.querySelector(".plenti-label");
     var iconEl = toggle && toggle.querySelector(".plenti-icon");
-    if (open && tray) renderTray(tray, document.querySelector(".plenti-admin-status"));
+    if (open && tray) {
+      renderTray(tray, document.querySelector(".plenti-admin-status"));
+      // Fresh open: let fields animate in (renderTray marks the tray as
+      // re-rendered to suppress animations on later in-place re-renders;
+      // undo that marker now, before the first paint).
+      tray.classList.remove("plenti-rendered");
+    }
     if (tray) {
       // Force a reflow so the slide transition runs on first open.
       if (open) void tray.offsetWidth;
