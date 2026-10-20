@@ -976,8 +976,10 @@
           var entry = "/media/" + targetName;
           state.data.media = state.data.media || [];
           if (thenDelete) {
-            var old = thenDelete.replace(/^\/+/, "");
-            state.data.media = state.data.media.filter(function (x) { return x.replace(/^\/+/, "") !== old; });
+            var old = ("media/" + thenDelete).replace(/^\/+/, "").replace(/^media\/+/, "media/");
+            state.data.media = state.data.media.filter(function (x) {
+              return x.replace(/^\/+/, "") !== old;
+            });
           }
           if (state.data.media.map(function (x) { return x.replace(/^\/+/, ""); }).indexOf(entry.replace(/^\/+/, "")) === -1) {
             state.data.media.push(entry);
