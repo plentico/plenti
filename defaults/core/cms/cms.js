@@ -717,51 +717,148 @@
     ]);
   }
 
+  // Animate expand/collapse by transitioning height between 0 and the
+  // element's natural height (in-place; no re-render needed).
+  function slideToggle(el, show) {
+    if (el._slideAnim) return;
+    if (show) {
+      el.style.display = "";
+      var ht = el.scrollHeight;
+      if (!ht) return;
+      el._slideAnim = true;
+      el.style.overflow = "hidden";
+      el.style.height = "0px";
+      requestAnimationFrame(function () {
+        el.style.transition = "height .2s ease";
+        el.style.height = ht + "px";
+        el.addEventListener("transitionend", function done() {
+          el.removeEventListener("transitionend", done);
+          el.style.transition = ""; el.style.height = ""; el.style.overflow = "";
+          el._slideAnim = false;
+        });
+      });
+    } else {
+      var ht2 = el.scrollHeight;
+      if (!ht2) { el.style.display = "none"; return; }
+      el._slideAnim = true;
+      el.style.overflow = "hidden";
+      el.style.height = ht2 + "px";
+      requestAnimationFrame(function () {
+        el.style.transition = "height .2s ease";
+        el.style.height = "0px";
+        el.addEventListener("transitionend", function done() {
+          el.removeEventListener("transitionend", done);
+          el.style.display = "none";
+          el.style.transition = ""; el.style.height = ""; el.style.overflow = "";
+          el._slideAnim = false;
+        });
+      });
+    }
+  }
+
   // An array of objects = repeatable group. Top-level groups start expanded,
   // nested groups and individual items start collapsed. Items can be
   // reordered via up/down arrows or drag-and-drop, and removed via trash.
   function renderArrayField(tray, statusEl, path, label, arr, commit, schema) {
     var open = arrayGroupOpen(path);
-    function toggleGroup() {
-      state.trayArrayOpen[path] = !open;
-      renderTray(tray, statusEl);
-    }
     var chevron = h("button", {
       class: "plenti-array-chevron" + (open ? " plenti-open" : ""),
       title: open ? "Collapse" : "Expand",
-      onclick: toggleGroup
+      onclick: function () { toggleGroup(); }
     }, [icon("chevron")]);
     var body = h("div", { class: "plenti-array-items", style: open ? "" : "display:none" }, []);
-    if (open) {
-      if (!arr.length) body.appendChild(h("p", { class: "plenti-admin-empty" }, ["Empty."]));
-      arr.forEach(function (item, i) {
+    // Items are always rendered (hidden when collapsed) so toggles can
+    // animate in place without re-rendering the whole tray.
+    function toggleGroup() {
+      open = !open;
+      state.trayArrayOpen[path] = open;
+      chevron.classList.toggle("plenti-open", open);
+      chevron.title = open ? "Collapse" : "Expand";
+      slideToggle(body, open);
+    }
+    // FLIP animation helper: records each item card's position before a
+    // mutation, re-renders, then slides cards from old to new positions.
+    function flip(mutate) {
+      var cards = body.querySelectorAll(":scope > .plenti-array-item");
+      var before = arr.map(function (it, j) {
+        return { item: it, top: cards[j] ? cards[j].getBoundingClientRect().top : 0 };
+      });
+      mutate();
+      renderTray(tray, statusEl);
+      var grp = tray.querySelector('.plenti-array[data-path="' + path + '"]');
+      if (!grp) return;
+      var newCards = grp.querySelectorAll(":scope > .plenti-array-items > .plenti-array-item");
+      arr.forEach(function (it, j) {
+        var oldTop = null;
+        for (var k = 0; k < before.length; k++) if (before[k].item === it) oldTop = before[k].top;
+        if (oldTop == null || !newCards[j]) return;
+        var delta = oldTop - newCards[j].getBoundingClientRect().top;
+        if (!delta) return;
+        var c = newCards[j];
+        c.style.transition = "none";
+        c.style.transform = "translateY(" + delta + "px)";
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            c.style.transition = "transform .2s ease";
+            c.style.transform = "";
+          });
+        });
+      });
+    }
+    // Drag state shared by the items in this group. Reordering happens LIVE
+    // during dragover by physically moving card DOM nodes (the dragged node
+    // itself is never removed, so the drag session survives); the array is
+    // kept in sync and committed on each move. dragend just cleans up.
+    var dragFrom = -1;
+    var dragCard = null;
+    var justDragged = false;
+    function itemCards() {
+      return Array.prototype.slice.call(body.querySelectorAll(":scope > .plenti-array-item"));
+    }
+    function slideIn(el, delta) {
+      if (!delta) return;
+      el.style.transition = "none";
+      el.style.transform = "translateY(" + delta + "px)";
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          el.style.transition = "transform .18s ease";
+          el.style.transform = "";
+        });
+      });
+    }
+    if (!arr.length) body.appendChild(h("p", { class: "plenti-admin-empty" }, ["Empty."]));
+    arr.forEach(function (item, i) {
         var itemPath = path + "." + i;
         var itemOpen = arrayItemOpen(itemPath);
         function rerender() { renderTray(tray, statusEl); }
         function move(to) {
-          var x = arr.splice(i, 1)[0];
-          arr.splice(to, 0, x);
-          commit();
-          rerender();
+          flip(function () {
+            var x = arr.splice(i, 1)[0];
+            arr.splice(to, 0, x);
+            commit();
+          });
         }
         var labelEl = h("span", { class: "plenti-array-item-label" }, [arrayItemLabel(item, i)]);
         function onEdit() { labelEl.textContent = arrayItemLabel(item, i); }
         var itemChevron = h("button", {
           class: "plenti-array-chevron plenti-sm" + (itemOpen ? " plenti-open" : ""),
           title: itemOpen ? "Collapse" : "Expand",
-          onclick: function () {
-            state.trayItemOpen[itemPath] = !itemOpen;
-            rerender();
-          }
+          onclick: function () { toggleItem(); }
         }, [icon("chevron")]);
         var fieldsEl = h("div", {
           class: "plenti-array-item-fields",
           style: itemOpen ? "" : "display:none"
         }, []);
-        if (itemOpen) {
-          Object.keys(item).forEach(function (key) {
-            fieldsEl.appendChild(renderArrayItemField(tray, statusEl, itemPath, item, key, commit, schema, onEdit));
-          });
+        Object.keys(item).forEach(function (key) {
+          fieldsEl.appendChild(renderArrayItemField(tray, statusEl, itemPath, item, key, commit, schema, onEdit));
+        });
+        // Toggle in place (no re-render) so the fields slide open/closed.
+        function toggleItem() {
+          itemOpen = !itemOpen;
+          state.trayItemOpen[itemPath] = itemOpen;
+          itemChevron.classList.toggle("plenti-open", itemOpen);
+          itemChevron.title = itemOpen ? "Collapse" : "Expand";
+          slideToggle(fieldsEl, itemOpen);
         }
         // Drag-and-drop reordering (drag by the item header).
         var card = h("div", { class: "plenti-array-item" }, []);
@@ -783,47 +880,81 @@
           h("button", {
             class: "plenti-array-move plenti-array-remove", title: "Remove",
             onclick: function () {
-              arr.splice(i, 1);
-              commit();
-              rerender();
+              flip(function () {
+                arr.splice(i, 1);
+                commit();
+              });
             }
           }, [icon("trash")])
         ]);
+        // Click the empty middle of the header to toggle expand/collapse.
+        // (A real drag suppresses the click; justDragged covers edge cases.)
+        header.addEventListener("click", function (e) {
+          if (justDragged) return;
+          if (e.target.closest("button") || e.target.closest(".plenti-array-grip")) return;
+          toggleItem();
+        });
         header.addEventListener("dragstart", function (e) {
           e.dataTransfer.effectAllowed = "move";
           e.dataTransfer.setData("text/plain", String(i));
+          dragFrom = i;
+          dragCard = card;
           card.classList.add("plenti-dragging");
         });
         header.addEventListener("dragend", function () {
           card.classList.remove("plenti-dragging");
-          body.querySelectorAll(".plenti-drag-over").forEach(function (el) {
-            el.classList.remove("plenti-drag-over");
-          });
+          dragFrom = -1;
+          dragCard = null;
+          justDragged = true;
+          setTimeout(function () { justDragged = false; }, 100);
+          // Array was already reordered live; re-render to sync labels
+          // and arrow disabled states with the new positions.
+          rerender();
         });
         card.addEventListener("dragover", function (e) {
+          if (dragFrom < 0 || !dragCard || card === dragCard) return;
           e.preventDefault();
           e.dataTransfer.dropEffect = "move";
-          card.classList.add("plenti-drag-over");
-        });
-        card.addEventListener("dragleave", function () {
-          card.classList.remove("plenti-drag-over");
-        });
-        card.addEventListener("drop", function (e) {
-          e.preventDefault();
-          var from = parseInt(e.dataTransfer.getData("text/plain"), 10);
-          if (!isNaN(from) && from !== i) {
-            var x = arr.splice(from, 1)[0];
-            arr.splice(i, 0, x);
-            commit();
-            rerender();
-          }
+          // Current position of the hovered card (closure i is stale once
+          // cards start moving, so compute it live).
+          var cards = itemCards();
+          var to = cards.indexOf(card);
+          if (to < 0 || to === dragFrom) return;
+          // Only swap once the cursor crosses the target card's midpoint in
+          // the direction of travel — otherwise the displaced card slides
+          // back under the cursor and immediately re-triggers a swap
+          // (visible as the item "jumping back" when dragging upward).
+          var rect = card.getBoundingClientRect();
+          var mid = rect.top + rect.height / 2;
+          if (to > dragFrom && e.clientY < mid) return;
+          if (to < dragFrom && e.clientY > mid) return;
+          // Swap preview: physically move the dragged card past this one
+          // and slide this card into the vacated slot.
+          var top = card.getBoundingClientRect().top;
+          if (to > dragFrom) body.insertBefore(dragCard, card.nextSibling);
+          else body.insertBefore(dragCard, card);
+          slideIn(card, top - card.getBoundingClientRect().top);
+          var x = arr.splice(dragFrom, 1)[0];
+          arr.splice(to, 0, x);
+          dragFrom = to;
+          commit();
         });
         card.appendChild(header);
         card.appendChild(fieldsEl);
         body.appendChild(card);
       });
-    }
-    return h("div", { class: "plenti-array" }, [
+    // Allow dropping anywhere over the tray; the actual reorder already
+    // happened live during dragover, so drop just needs to not be rejected.
+    tray.addEventListener("dragover", function (e) {
+      if (dragFrom < 0) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+    });
+    tray.addEventListener("drop", function (e) {
+      if (dragFrom < 0) return;
+      e.preventDefault();
+    });
+    return h("div", { class: "plenti-array", "data-path": path }, [
       h("div", { class: "plenti-array-header", onclick: function (e) {
         if (e.target.closest(".plenti-array-chevron")) return;
         chevron.click();

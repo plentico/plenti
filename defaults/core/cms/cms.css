@@ -836,10 +836,7 @@ body.plenti-tray-resizing .plenti-admin-tray {
 .plenti-array-grip svg { width: 100%; height: 100%; }
 .plenti-array-chevron.plenti-sm { width: 20px; height: 20px; padding: 3px; }
 .plenti-array-item.plenti-dragging { opacity: .4; }
-.plenti-array-item.plenti-drag-over {
-  border-color: #2563eb;
-  box-shadow: 0 -2px 0 0 #2563eb;
-}
+.plenti-array-item { transition: transform .18s ease; }
 .plenti-array-item-label {
   font-size: 11px;
   color: #94a3b8;
