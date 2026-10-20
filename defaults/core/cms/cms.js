@@ -17,6 +17,7 @@
     rootEl: null,      // element the full CMS app is mounted into
     trayItem: null,    // data.content node for the page shown in the tray
     trayFields: null,  // working copy of the tray's field values
+    trayJsonMode: false, // tray shows raw JSON source instead of the form
     trayOpen: false
   };
 
@@ -577,6 +578,81 @@
     }
   }
 
+  /* ---------- Tray JSON source view ---------- */
+
+  function escapeHtml(s) {
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  // Regex tokenizer for JSON: keys, strings, numbers, booleans/null.
+  // Input is HTML-escaped first; matches are escaped per-token already.
+  function highlightJson(src) {
+    var esc = escapeHtml(src);
+    return esc.replace(/("(\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*")(\s*:)?|\b(true|false|null)\b|-?\d+(\.\d+)?([eE][+-]?\d+)?/g,
+      function (m, str, _esc, colon, bool) {
+        var cls = bool ? "bool" : (str ? (colon ? "key" : "str") : "num");
+        return "<span class=\"plenti-tok-" + cls + "\">" + m + "</span>";
+      });
+  }
+
+  // Turn a JSON.parse error into a line/column for the error bar.
+  function jsonErrorLocation(text, err) {
+    var m = /position (\d+)/.exec(err.message);
+    if (m) {
+      var pos = parseInt(m[1], 10);
+      var line = 1, col = 1;
+      for (var i = 0; i < pos && i < text.length; i++) {
+        if (text[i] === "\n") { line++; col = 1; } else col++;
+      }
+      return "line " + line + ", col " + col;
+    }
+    var lc = /line (\d+) column (\d+)/.exec(err.message);
+    if (lc) return "line " + lc[1] + ", col " + lc[2];
+    return null;
+  }
+
+  function renderTrayJson(tray, statusEl, saveBtn) {
+    var code = h("code", {}, []);
+    var pre = h("pre", { class: "plenti-json-highlight" }, [code]);
+    var input = h("textarea", {
+      class: "plenti-json-input",
+      spellcheck: "false",
+      wrap: "off",
+      oninput: validate,
+      onscroll: function () {
+        pre.scrollTop = input.scrollTop;
+        pre.scrollLeft = input.scrollLeft;
+      }
+    }, []);
+    input.value = JSON.stringify(state.trayFields, null, 2);
+    var errEl = h("div", { class: "plenti-json-error", style: "display:none" }, []);
+    var wrap = h("div", { class: "plenti-json-wrap" }, [pre, input]);
+    tray.appendChild(wrap);
+    tray.appendChild(errEl);
+
+    function validate() {
+      var text = input.value;
+      code.innerHTML = highlightJson(text) + "\n";
+      try {
+        state.trayFields = JSON.parse(text);
+        errEl.style.display = "none";
+        wrap.classList.remove("plenti-json-invalid");
+        if (saveBtn) saveBtn.disabled = false;
+        // Live-update the page from valid JSON edits.
+        Object.keys(state.trayFields).forEach(function (key) {
+          liveUpdate(key, state.trayFields[key]);
+        });
+      } catch (err) {
+        var loc = jsonErrorLocation(text, err);
+        errEl.textContent = "Invalid JSON" + (loc ? " (" + loc + ")" : "") + ": " + err.message;
+        errEl.style.display = "block";
+        wrap.classList.add("plenti-json-invalid");
+        if (saveBtn) saveBtn.disabled = true;
+      }
+    }
+    validate();
+  }
+
   function renderTray(tray, statusEl) {
     // Clear previous content but keep the drag-resize handle in place.
     var resizeHandle = tray.querySelector(".plenti-tray-resize");
@@ -588,26 +664,56 @@
       return;
     }
     var schema = (state.data.schemas && state.data.schemas[item.type]) || {};
-    tray.appendChild(h("h3", {}, ["Edit " + (item.filepath || item.path)]));
-    Object.keys(state.trayFields).forEach(function (key) {
-      if (key === "components") return; // handled by layouts, not editable here
-      var type = schemaType(schema, key, state.trayFields[key]);
-      if (type === "media") type = "text"; // keep the tray simple: path inputs
-      tray.appendChild(h("div", { class: "plenti-field" }, [
-        h("label", {}, [key]),
-        fieldInput(key, type, state.trayFields[key], function (v) { liveUpdate(key, v); }, schema)
-      ]));
-    });
-    tray.appendChild(h("div", { class: "plenti-admin-actions" }, [
+    var saveBtn = h("button", {
+      class: "plenti-btn primary",
+      onclick: function () { saveTray(statusEl); }
+    }, ["Save"]);
+    var header = h("div", { class: "plenti-tray-header" }, [
+      h("h3", {}, ["Edit " + (item.filepath || item.path)]),
       h("button", {
-        class: "plenti-btn primary",
-        onclick: function () { saveTray(statusEl); }
-      }, ["Save"]),
+        class: "plenti-json-toggle" + (state.trayJsonMode ? " plenti-active" : ""),
+        title: state.trayJsonMode ? "Back to form" : "View JSON source",
+        onclick: function () { toggleTrayJson(tray, statusEl); }
+      }, [icon(state.trayJsonMode ? "form" : "braces")])
+    ]);
+    tray.appendChild(header);
+    if (state.trayJsonMode) {
+      renderTrayJson(tray, statusEl, saveBtn);
+    } else {
+      Object.keys(state.trayFields).forEach(function (key) {
+        if (key === "components") return; // handled by layouts, not editable here
+        var type = schemaType(schema, key, state.trayFields[key]);
+        if (type === "media") type = "text"; // keep the tray simple: path inputs
+        tray.appendChild(h("div", { class: "plenti-field" }, [
+          h("label", {}, [key]),
+          fieldInput(key, type, state.trayFields[key], function (v) { liveUpdate(key, v); }, schema)
+        ]));
+      });
+    }
+    tray.appendChild(h("div", { class: "plenti-admin-actions" }, [
+      saveBtn,
       h("button", {
         class: "plenti-btn",
         onclick: function () { setTrayOpen(false); }
       }, ["Close"])
     ]));
+  }
+
+  // Switch the tray between the form and the raw JSON source. Switching back
+  // to the form requires valid JSON — a broken document can't be left behind.
+  function toggleTrayJson(tray, statusEl) {
+    if (state.trayJsonMode) {
+      var errEl = tray.querySelector(".plenti-json-error");
+      if (errEl && errEl.style.display !== "none") {
+        errEl.classList.add("plenti-shake");
+        setTimeout(function () { errEl.classList.remove("plenti-shake"); }, 400);
+        return;
+      }
+      state.trayJsonMode = false;
+    } else {
+      state.trayJsonMode = true;
+    }
+    renderTray(tray, statusEl);
   }
 
   function saveTray(statusEl) {
@@ -633,6 +739,7 @@
 
   function setTrayOpen(open) {
     state.trayOpen = open;
+    if (open) state.trayJsonMode = false; // always reopen in form mode
     var tray = document.querySelector(".plenti-admin-tray");
     var toggle = document.querySelector(".plenti-admin-bar .plenti-edit-toggle");
     var label = toggle && toggle.querySelector(".plenti-label");
@@ -659,7 +766,10 @@
     trash: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 6h18\"/><path d=\"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6\"/><path d=\"M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2\"/><path d=\"M10 11v6\"/><path d=\"M14 11v6\"/></svg>",
     link: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71\"/><path d=\"M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71\"/></svg>",
     crop: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 2v14a2 2 0 0 0 2 2h14\"/><path d=\"M18 22V8a2 2 0 0 0-2-2H2\"/></svg>",
-    close: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M18 6 6 18\"/><path d=\"m6 6 12 12\"/></svg>"
+    close: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M18 6 6 18\"/><path d=\"m6 6 12 12\"/></svg>",
+    braces: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5c0 1.1.9 2 2 2h1\"/><path d=\"M16 21h1a2 2 0 0 0 2-2v-5c0-1.1.9-2 2-2a2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1\"/></svg>",
+    list: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M8 6h13\"/><path d=\"M8 12h13\"/><path d=\"M8 18h13\"/><path d=\"M3 6h.01\"/><path d=\"M3 12h.01\"/><path d=\"M3 18h.01\"/></svg>",
+    form: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 6H3\"/><path d=\"M15 12H3\"/><path d=\"M17 18H3\"/></svg>"
   };
 
   function icon(name) {
