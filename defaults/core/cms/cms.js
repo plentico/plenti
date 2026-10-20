@@ -513,7 +513,28 @@
     if (state.data) return Promise.resolve(state.data);
     return fetch("/admin/data.json")
       .then(function (res) { return res.json(); })
-      .then(function (data) { state.data = data; return data; });
+      .then(function (data) {
+        state.data = data;
+        // In local dev, /plenti-media lists files on disk so the library
+        // reflects uploads made after the last build. Silently ignored
+        // elsewhere (endpoint only exists under `plenti serve`).
+        if (currentProvider() === "local") {
+          return fetch("/plenti-media")
+            .then(function (res) { return res.ok ? res.json() : []; })
+            .then(function (live) {
+              // Dedupe across sources: data.json uses "media/x" while
+              // /plenti-media and uploads use "/media/x" — normalize.
+              var merged = {};
+              (data.media || []).concat(live || []).forEach(function (m) {
+                merged["/" + m.replace(/^\/+/, "")] = true;
+              });
+              data.media = Object.keys(merged).sort();
+              return data;
+            })
+            .catch(function () { return data; });
+        }
+        return data;
+      });
   }
 
   function mount(el) {
@@ -631,7 +652,9 @@
     edit: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z\"/></svg>",
     eye: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg>",
     logout: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4\"/><path d=\"m16 17 5-5-5-5\"/><path d=\"M21 12H9\"/></svg>",
-    check: "<svg class=\"plenti-check\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg>"
+    check: "<svg class=\"plenti-check\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg>",
+    image: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\"/><circle cx=\"9\" cy=\"9\" r=\"2\"/><path d=\"m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21\"/></svg>",
+    upload: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><path d=\"m17 8-5-5-5 5\"/><path d=\"M12 3v12\"/></svg>"
   };
 
   function icon(name) {
@@ -666,6 +689,128 @@
     tray.appendChild(handle);
   }
 
+  /* ---------- Media modal (embedded CMS) ---------- */
+
+  function uploadMediaFiles(files, onStatus, onDone) {
+    var queue = Array.prototype.slice.call(files);
+    var uploaded = 0;
+    function next() {
+      if (!queue.length) { onDone(uploaded); return; }
+      var file = queue.shift();
+      onStatus("Uploading " + file.name + "...");
+      var reader = new FileReader();
+      reader.onload = function () {
+        commit([{ file: "media/" + file.name, action: "upsert", encoding: "base64", contents: reader.result }])
+          .then(function () {
+            state.data.media = state.data.media || [];
+            if (state.data.media.indexOf("/media/" + file.name) === -1) {
+              state.data.media.push("/media/" + file.name);
+            }
+            uploaded++;
+            next();
+          })
+          .catch(function (err) { onStatus("Error: " + err.message, true); onDone(uploaded); });
+      };
+      reader.onerror = function () { onStatus("Could not read " + file.name, true); onDone(uploaded); };
+      reader.readAsDataURL(file);
+    }
+    next();
+  }
+
+  function renderMediaLibrary(grid, onPick) {
+    grid.innerHTML = "";
+    var items = state.data.media || [];
+    if (!items.length) {
+      grid.appendChild(h("p", { class: "plenti-media-empty" }, ["No media yet — drop files above to upload."]));
+      return;
+    }
+    items.forEach(function (m) {
+      var full = state.data.env.baseurl.replace(/\/$/, "") + "/" + m.replace(/^\/+/, "");
+      grid.appendChild(h("div", {
+        class: "plenti-media-item",
+        title: m,
+        onclick: function () { onPick(m, full); }
+      }, [
+        isImage(m)
+          ? h("img", { src: full, alt: m, loading: "lazy" })
+          : h("div", { class: "plenti-media-doc" }, ["\uD83D\uDCC4"]),
+        h("div", { class: "plenti-media-name" }, [m.replace(/^\/+media\/+/, "")])
+      ]));
+    });
+  }
+
+  function openMediaModal() {
+    if (document.querySelector(".plenti-media-overlay")) return;
+    var statusEl = h("span", { class: "plenti-admin-status" }, []);
+    var grid = h("div", { class: "plenti-media-grid" }, []);
+    var fileInput = h("input", { type: "file", multiple: "multiple", style: "display:none" }, []);
+
+    function refresh() { renderMediaLibrary(grid, pick); }
+    function pick(m, full) {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(m).then(function () {
+          statusEl.innerHTML = ICONS.check + "Copied " + m;
+          statusEl.classList.add("success");
+          setTimeout(function () { statusEl.textContent = ""; statusEl.classList.remove("success"); }, 2500);
+        }).catch(function () { /* clipboard permission denied — tab still opened */ });
+      }
+      window.open(full, "_blank");
+    }
+    function doUpload(files) {
+      if (!files || !files.length) return;
+      statusEl.classList.remove("success", "error");
+      uploadMediaFiles(files,
+        function (msg, isError) { statusEl.textContent = msg; statusEl.classList.toggle("error", !!isError); },
+        function (n) {
+          if (n) {
+            statusEl.innerHTML = ICONS.check + "Uploaded " + n + " file" + (n > 1 ? "s" : "");
+            statusEl.classList.add("success");
+            refresh();
+          }
+        });
+    }
+
+    var dropzone = h("div", {
+      class: "plenti-media-dropzone",
+      onclick: function () { fileInput.click(); }
+    }, [
+      icon("upload"),
+      h("p", {}, ["Drag & drop files here, or click to browse"])
+    ]);
+    ["dragenter", "dragover"].forEach(function (ev) {
+      dropzone.addEventListener(ev, function (e) { e.preventDefault(); dropzone.classList.add("plenti-dragover"); });
+    });
+    ["dragleave", "drop"].forEach(function (ev) {
+      dropzone.addEventListener(ev, function (e) { e.preventDefault(); dropzone.classList.remove("plenti-dragover"); });
+    });
+    dropzone.addEventListener("drop", function (e) { doUpload(e.dataTransfer.files); });
+    fileInput.addEventListener("change", function () { doUpload(fileInput.files); fileInput.value = ""; });
+
+    var overlay = h("div", {
+      class: "plenti-media-overlay",
+      onclick: function (e) { if (e.target === overlay) close(); }
+    }, [
+      h("div", { class: "plenti-media-modal" }, [
+        h("div", { class: "plenti-media-header" }, [
+          h("h3", {}, ["Media"]),
+          statusEl,
+          h("button", { class: "plenti-media-close", onclick: function () { close(); } }, ["\u00D7"])
+        ]),
+        dropzone,
+        fileInput,
+        grid
+      ])
+    ]);
+    function close() {
+      overlay.classList.remove("open");
+      setTimeout(function () { overlay.remove(); }, 200);
+    }
+    document.body.appendChild(overlay);
+    refresh();
+    void overlay.offsetWidth; // reflow so the entrance transition runs
+    overlay.classList.add("open");
+  }
+
   function mountAdminBar(el) {
     if (typeof el === "string") el = document.querySelector(el);
     if (!el) return;
@@ -679,6 +824,10 @@
         class: "plenti-btn plenti-edit-toggle",
         onclick: function () { setTrayOpen(!state.trayOpen); }
       }, [icon("edit"), h("span", { class: "plenti-label" }, ["Edit"])]),
+      h("button", {
+        class: "plenti-btn plenti-media-toggle",
+        onclick: function () { openMediaModal(); }
+      }, [icon("image"), h("span", { class: "plenti-label" }, ["Media"])]),
       statusEl,
       h("span", { class: "plenti-admin-spacer" }, []),
       h("button", {

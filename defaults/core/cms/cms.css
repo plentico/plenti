@@ -167,25 +167,28 @@
 .plenti-admin-bar .plenti-admin-brand {
   font-weight: 700;
 }
-.plenti-admin-bar .plenti-admin-status {
+.plenti-admin-status {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   color: #94a3b8;
   transition: color .2s ease;
 }
-.plenti-admin-bar .plenti-admin-status.success {
+.plenti-media-modal .plenti-admin-status { color: #64748b; }
+.plenti-admin-status.success {
   color: #4ade80;
 }
-.plenti-admin-bar .plenti-admin-status.error {
+.plenti-media-modal .plenti-admin-status.success { color: #16a34a; }
+.plenti-admin-status.error {
   color: #f87171;
 }
-.plenti-admin-bar .plenti-admin-status .plenti-check {
+.plenti-media-modal .plenti-admin-status.error { color: #dc2626; }
+.plenti-admin-status .plenti-check {
   width: 14px;
   height: 14px;
   animation: plenti-check-pop .3s cubic-bezier(.34, 1.56, .64, 1) both;
 }
-.plenti-admin-bar .plenti-admin-status .plenti-check path {
+.plenti-admin-status .plenti-check path {
   stroke-dasharray: 24;
   stroke-dashoffset: 24;
   animation: plenti-check-draw .3s .1s ease-out forwards;
@@ -231,6 +234,9 @@
 }
 .plenti-admin-bar .plenti-edit-toggle:hover .plenti-icon svg {
   transform: rotate(-12deg) scale(1.1);
+}
+.plenti-admin-bar .plenti-media-toggle:hover .plenti-icon svg {
+  transform: scale(1.12) translateY(-1px);
 }
 .plenti-admin-bar .plenti-logout:hover .plenti-icon svg {
   transform: translateX(3px);
@@ -348,4 +354,125 @@ body.plenti-tray-resizing .plenti-admin-tray {
 }
 .plenti-admin-tray .plenti-admin-empty {
   color: #64748b;
+}
+
+/* ---------- Media modal ---------- */
+.plenti-media-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(15, 23, 42, .55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity .2s ease;
+  font-family: system-ui, sans-serif;
+}
+.plenti-media-overlay.open { opacity: 1; }
+.plenti-media-modal {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, .35);
+  width: min(760px, 92vw);
+  max-height: 84vh;
+  overflow-y: auto;
+  padding: 20px 24px 24px;
+  color: #1e293b;
+  transform: translateY(12px) scale(.97);
+  transition: transform .2s cubic-bezier(.34, 1.56, .64, 1);
+}
+.plenti-media-overlay.open .plenti-media-modal { transform: translateY(0) scale(1); }
+.plenti-media-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.plenti-media-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.plenti-media-header .plenti-admin-status { flex: 1; font-size: 13px; }
+.plenti-media-close {
+  border: none;
+  background: none;
+  font-size: 24px;
+  line-height: 1;
+  color: #64748b;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color .15s ease, background .15s ease;
+}
+.plenti-media-close:hover { color: #1e293b; background: #f1f5f9; }
+.plenti-media-dropzone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 26px 16px;
+  text-align: center;
+  color: #64748b;
+  cursor: pointer;
+  margin-bottom: 16px;
+  transition: border-color .15s ease, background .15s ease, color .15s ease;
+}
+.plenti-media-dropzone .plenti-icon svg {
+  width: 28px;
+  height: 28px;
+  display: block;
+  margin: 0 auto 6px;
+}
+.plenti-media-dropzone p { margin: 0; font-size: 13px; }
+.plenti-media-dropzone:hover { border-color: #94a3b8; background: #f8fafc; }
+.plenti-media-dropzone.plenti-dragover {
+  border-color: #3b82f6;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+.plenti-media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 12px;
+}
+.plenti-media-empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #94a3b8;
+  font-size: 13px;
+  text-align: center;
+  padding: 12px 0;
+}
+.plenti-media-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: pointer;
+  background: #f8fafc;
+  transition: box-shadow .15s ease, transform .15s ease;
+}
+.plenti-media-item:hover {
+  box-shadow: 0 4px 12px rgba(15, 23, 42, .12);
+  transform: translateY(-2px);
+}
+.plenti-media-item img {
+  width: 100%;
+  height: 80px;
+  object-fit: cover;
+  display: block;
+}
+.plenti-media-doc {
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+}
+.plenti-media-name {
+  padding: 5px 7px;
+  font-size: 11px;
+  color: #475569;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

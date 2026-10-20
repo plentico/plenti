@@ -129,6 +129,7 @@ var serveCmd = &cobra.Command{
 
 		// Check flags and config for directory to build to
 		buildDir := setBuildDir(siteConfig)
+		serveBuildDir = buildDir
 
 		// Check that the build directory exists
 		if _, err := os.Stat(buildDir); os.IsNotExist(err) {
@@ -160,6 +161,10 @@ var serveCmd = &cobra.Command{
 
 		// Handle local edits made via the Git-CMS
 		http.HandleFunc("/postlocal", postLocal)
+
+		// List media files on disk so the CMS library reflects uploads made
+		// after the last build (data.json would otherwise be stale).
+		http.HandleFunc("/plenti-media", mediaList)
 
 		// Watch filesystem for changes.
 		serve.Gowatch(buildDir, Build)
@@ -302,13 +307,46 @@ func postLocal(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "could not write file", http.StatusInternalServerError)
 				return
 			}
+			// Mirror media uploads into the build dir so they can be
+			// previewed immediately (a rebuild would otherwise be required
+			// before /media/<file> resolves).
+			if strings.HasPrefix(change.File, "media/") && serveBuildDir != "" {
+				if err := os.MkdirAll(filepath.Dir(filepath.Join(serveBuildDir, change.File)), 0755); err == nil {
+					_ = os.WriteFile(filepath.Join(serveBuildDir, change.File), contents, 0644)
+				}
+			}
 		case "delete":
 			if err := os.Remove(change.File); err != nil {
 				http.Error(w, "could not delete file", http.StatusInternalServerError)
 				return
 			}
+			if strings.HasPrefix(change.File, "media/") && serveBuildDir != "" {
+				_ = os.Remove(filepath.Join(serveBuildDir, change.File))
+			}
 		}
 	}
+}
+
+// serveBuildDir is the directory the dev server serves from; set in serveCmd.
+var serveBuildDir string
+
+// mediaList returns a JSON index of media files on disk (same "/media/..."
+// format as the build-time media index) so the CMS library stays current.
+func mediaList(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	out := []string{}
+	_ = filepath.Walk("media", func(p string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() || strings.HasPrefix(info.Name(), ".") {
+			return nil
+		}
+		out = append(out, "/"+filepath.ToSlash(p))
+		return nil
+	})
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(out)
 }
 
 func serveSSL(port int) {
