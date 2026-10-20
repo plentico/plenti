@@ -722,7 +722,7 @@
     next();
   }
 
-  function renderMediaLibrary(grid, onPick, onDelete, onCopy) {
+  function renderMediaLibrary(grid, onPick, onDelete, onCopy, ver) {
     grid.innerHTML = "";
     var items = state.data.media || [];
     if (!items.length) {
@@ -730,7 +730,7 @@
       return;
     }
     items.forEach(function (m) {
-      var full = state.data.env.baseurl.replace(/\/$/, "") + "/" + m.replace(/^\/+/, "");
+      var full = state.data.env.baseurl.replace(/\/$/, "") + "/" + m.replace(/^\/+/, "") + (ver ? "?v=" + ver : "");
       var name = m.replace(/^\/+media\/+/, "");
       grid.appendChild(h("div", {
         class: "plenti-media-item",
@@ -821,6 +821,7 @@
       clearSel();
     }
     function clearSel() {
+      dsel = null;
       sel = null;
       selection.style.display = "none";
       cropBtn.disabled = true;
@@ -829,35 +830,92 @@
       return workCanvas.width + " \u00D7 " + workCanvas.height + " \u2192 " +
         Math.round(workCanvas.width * scale / 100) + " \u00D7 " + Math.round(workCanvas.height * scale / 100) + "px";
     }
-    // Drag a crop marquee over the displayed (scaled) canvas.
-    var dragging = false, startX = 0, startY = 0;
+    // Interactive crop box: draw on the canvas, then drag the box to move
+    // it or pull one of the 8 handles to resize (coords tracked in display
+    // space, converted to source pixels when applying).
+    var dsel = null; // {x, y, w, h} relative to canvas top-left, in display px
+    var HANDLE_DIRS = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
+    HANDLE_DIRS.forEach(function (dir) {
+      var hd = h("div", { class: "plenti-editor-handle plenti-h-" + dir }, []);
+      hd.addEventListener("mousedown", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        beginDrag(dir, e);
+      });
+      selection.appendChild(hd);
+    });
+    selection.addEventListener("mousedown", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      beginDrag("move", e);
+    });
+
+    var mode = null, dragStart = null, boxStart = null;
     canvas.addEventListener("mousedown", function (e) {
       e.preventDefault();
       var rect = canvas.getBoundingClientRect();
-      dragging = true;
-      startX = e.clientX - rect.left;
-      startY = e.clientY - rect.top;
-      selection.style.display = "none";
+      dsel = { x: e.clientX - rect.left, y: e.clientY - rect.top, w: 0, h: 0 };
+      mode = "draw";
+      dragStart = { x: dsel.x, y: dsel.y };
+      showSel();
     });
+    function beginDrag(m, e) {
+      if (!dsel) return;
+      mode = m;
+      dragStart = { x: e.clientX, y: e.clientY };
+      boxStart = { x: dsel.x, y: dsel.y, w: dsel.w, h: dsel.h };
+    }
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
     function onMove(e) {
-      if (!dragging) return;
+      if (!mode) return;
       var rect = canvas.getBoundingClientRect();
-      var x = Math.min(Math.max(e.clientX - rect.left, 0), rect.width);
-      var y = Math.min(Math.max(e.clientY - rect.top, 0), rect.height);
-      var rx = Math.min(startX, x), ry = Math.min(startY, y);
-      var rw = Math.abs(x - startX), rh = Math.abs(y - startY);
-      selection.style.display = "block";
-      selection.style.left = (canvas.offsetLeft + rx) + "px";
-      selection.style.top = (canvas.offsetTop + ry) + "px";
-      selection.style.width = rw + "px";
-      selection.style.height = rh + "px";
-      var kx = workCanvas.width / rect.width, ky = workCanvas.height / rect.height;
-      sel = { x: Math.round(rx * kx), y: Math.round(ry * ky), w: Math.round(rw * kx), h: Math.round(rh * ky) };
-      cropBtn.disabled = !(sel.w >= 2 && sel.h >= 2);
+      if (mode === "draw") {
+        var x = Math.min(Math.max(e.clientX - rect.left, 0), rect.width);
+        var y = Math.min(Math.max(e.clientY - rect.top, 0), rect.height);
+        dsel = {
+          x: Math.min(dragStart.x, x), y: Math.min(dragStart.y, y),
+          w: Math.abs(x - dragStart.x), h: Math.abs(y - dragStart.y)
+        };
+      } else {
+        var dx = e.clientX - dragStart.x, dy = e.clientY - dragStart.y;
+        if (mode === "move") {
+          dsel.x = Math.min(Math.max(boxStart.x + dx, 0), rect.width - boxStart.w);
+          dsel.y = Math.min(Math.max(boxStart.y + dy, 0), rect.height - boxStart.h);
+        } else {
+          var nx = boxStart.x, ny = boxStart.y, nw = boxStart.w, nh = boxStart.h;
+          if (mode.indexOf("w") !== -1) { nx = Math.min(boxStart.x + dx, boxStart.x + boxStart.w - 2); nw = boxStart.w - (nx - boxStart.x); }
+          if (mode.indexOf("e") !== -1) { nw = Math.max(2, boxStart.w + dx); }
+          if (mode.indexOf("n") !== -1) { ny = Math.min(boxStart.y + dy, boxStart.y + boxStart.h - 2); nh = boxStart.h - (ny - boxStart.y); }
+          if (mode.indexOf("s") !== -1) { nh = Math.max(2, boxStart.h + dy); }
+          nx = Math.max(0, nx); ny = Math.max(0, ny);
+          nw = Math.min(nw, rect.width - nx); nh = Math.min(nh, rect.height - ny);
+          dsel = { x: nx, y: ny, w: nw, h: nh };
+        }
+      }
+      showSel();
     }
-    function onUp() { dragging = false; }
+    function onUp() {
+      if (mode === "draw" && dsel && (dsel.w < 3 || dsel.h < 3)) dsel = null;
+      mode = null;
+      showSel();
+    }
+    function showSel() {
+      if (!dsel) { selection.style.display = "none"; syncSel(); return; }
+      selection.style.display = "block";
+      selection.style.left = (canvas.offsetLeft + dsel.x) + "px";
+      selection.style.top = (canvas.offsetTop + dsel.y) + "px";
+      selection.style.width = dsel.w + "px";
+      selection.style.height = dsel.h + "px";
+      syncSel();
+    }
+    function syncSel() {
+      if (!dsel || dsel.w < 2 || dsel.h < 2) { sel = null; cropBtn.disabled = true; return; }
+      var rect = canvas.getBoundingClientRect();
+      var kx = workCanvas.width / rect.width, ky = workCanvas.height / rect.height;
+      sel = { x: Math.round(dsel.x * kx), y: Math.round(dsel.y * ky), w: Math.round(dsel.w * kx), h: Math.round(dsel.h * ky) };
+      cropBtn.disabled = false;
+    }
 
     var cropBtn = h("button", { class: "plenti-btn", disabled: "disabled" }, [icon("crop"), h("span", { class: "plenti-label" }, ["Apply crop"])]);
     cropBtn.addEventListener("click", applyCrop);
@@ -930,6 +988,16 @@
         })
         .catch(function (err) { flash(err.message, true); });
     }
+    // Find a non-clobbering copy name: name-2.ext, name-3.ext, ...
+    function copyName(base) {
+      var m2 = base.match(/^(.*?)(\.[a-z0-9]+)$/i);
+      var stem = m2 ? m2[1] : base, ext = m2 ? m2[2] : "";
+      var taken = (state.data.media || []).map(function (x) { return x.replace(/^\/+/, ""); });
+      var i = 2, cand;
+      do { cand = stem + "-" + i + ext; i++; } while (taken.indexOf("media/" + cand) !== -1);
+      return cand;
+    }
+
     var overlay = h("div", {
       class: "plenti-media-overlay plenti-editor-overlay",
       onclick: function (e) { if (e.target === overlay) close(); }
@@ -951,7 +1019,15 @@
         ]),
         h("div", { class: "plenti-editor-savebar" }, [
           nameInput,
-          h("button", { class: "plenti-btn", onclick: function () { save(nameInput.value, null); } }, ["Save as copy"]),
+          h("button", { class: "plenti-btn", onclick: function () {
+            var target = nameInput.value;
+            // Never silently clobber the original from "Save as copy".
+            if (target.trim().toLowerCase() === name.toLowerCase()) {
+              target = copyName(nameInput.value);
+              nameInput.value = target;
+            }
+            save(target, null);
+          } }, ["Save as copy"]),
           h("button", { class: "plenti-btn primary", onclick: function () {
             var ext = format === "jpeg" ? "jpg" : format;
             var target = name.replace(/\.[a-z0-9]+$/i, "") + "." + ext;
@@ -988,7 +1064,9 @@
     var grid = h("div", { class: "plenti-media-grid" }, []);
     var fileInput = h("input", { type: "file", multiple: "multiple", style: "display:none" }, []);
 
-    function refresh() { renderMediaLibrary(grid, pick, del, copyPath); }
+    var thumbVer = Date.now();
+    function refresh() { renderMediaLibrary(grid, pick, del, copyPath, thumbVer); }
+    function busted() { thumbVer = Date.now(); refresh(); }
     function copyPath(m) {
       if (!navigator.clipboard) return;
       navigator.clipboard.writeText(m).then(function () {
@@ -999,7 +1077,7 @@
     }
     function pick(m, full) {
       var name = m.replace(/^\/+media\/+/, "");
-      if (isImage(m)) openImageEditor(m, full, name, refresh);
+      if (isImage(m)) openImageEditor(m, full, name, busted);
       else window.open(full, "_blank");
     }
     function del(m, name) {
@@ -1009,7 +1087,7 @@
         commit([{ file: "media/" + name, action: "delete" }])
           .then(function () {
             state.data.media = (state.data.media || []).filter(function (x) { return x !== m; });
-            refresh();
+            busted();
             statusEl.innerHTML = ICONS.check + "Deleted " + name;
             statusEl.classList.add("success");
             setTimeout(function () { statusEl.textContent = ""; statusEl.classList.remove("success"); }, 2500);
@@ -1029,7 +1107,7 @@
           if (n) {
             statusEl.innerHTML = ICONS.check + "Uploaded " + n + " file" + (n > 1 ? "s" : "");
             statusEl.classList.add("success");
-            refresh();
+            busted();
           }
         });
     }

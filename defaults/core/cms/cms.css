@@ -569,8 +569,25 @@ body.plenti-tray-resizing .plenti-admin-tray {
   display: none;
   border: 2px dashed #3b82f6;
   background: rgba(59, 130, 246, .15);
-  pointer-events: none;
+  cursor: move;
 }
+.plenti-editor-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: #fff;
+  border: 2px solid #3b82f6;
+  border-radius: 2px;
+  box-sizing: border-box;
+}
+.plenti-h-nw { top: -6px; left: -6px; cursor: nwse-resize; }
+.plenti-h-n  { top: -6px; left: calc(50% - 5px); cursor: ns-resize; }
+.plenti-h-ne { top: -6px; right: -6px; cursor: nesw-resize; }
+.plenti-h-e  { top: calc(50% - 5px); right: -6px; cursor: ew-resize; }
+.plenti-h-se { bottom: -6px; right: -6px; cursor: nwse-resize; }
+.plenti-h-s  { bottom: -6px; left: calc(50% - 5px); cursor: ns-resize; }
+.plenti-h-sw { bottom: -6px; left: -6px; cursor: nesw-resize; }
+.plenti-h-w  { top: calc(50% - 5px); left: -6px; cursor: ew-resize; }
 .plenti-editor-toolbar,
 .plenti-editor-savebar {
   display: flex;
