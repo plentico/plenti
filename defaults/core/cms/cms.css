@@ -14,53 +14,6 @@
   --plenti-sidebar-width: 260px;
 }
 
-.plenti-cms {
-  margin: 0;
-  font-family: var(--plenti-font);
-  background: var(--plenti-bg);
-  color: var(--plenti-text);
-}
-
-.plenti-loading { padding: 2rem; color: var(--plenti-muted); }
-
-.plenti-layout { display: flex; min-height: 100vh; }
-
-.plenti-sidebar {
-  width: var(--plenti-sidebar-width);
-  background: var(--plenti-panel-bg);
-  border-right: 1px solid var(--plenti-border);
-  padding: 1rem;
-  overflow-y: auto;
-  flex-shrink: 0;
-}
-
-.plenti-sidebar h1 { font-size: 1.1rem; margin: 0 0 1rem; }
-.plenti-sidebar h2 {
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--plenti-muted);
-  margin: 1.25rem 0 0.4rem;
-}
-
-.plenti-nav-item {
-  display: block;
-  width: 100%;
-  text-align: left;
-  background: none;
-  border: none;
-  padding: 0.4rem 0.5rem;
-  border-radius: var(--plenti-radius);
-  cursor: pointer;
-  font: inherit;
-  color: var(--plenti-text);
-}
-.plenti-nav-item:hover { background: var(--plenti-bg); }
-.plenti-nav-item.plenti-active { background: var(--plenti-accent); color: var(--plenti-accent-text); }
-
-.plenti-main { flex: 1; padding: 2rem; max-width: 860px; }
-.plenti-main h2 { margin-top: 0; }
-
 .plenti-field { margin-bottom: 1.25rem; }
 .plenti-field label {
   display: block;
@@ -100,20 +53,6 @@
 .plenti-btn:hover { filter: brightness(1.08); }
 .plenti-btn:disabled { opacity: 0.6; cursor: default; }
 
-.plenti-btn-secondary { background: var(--plenti-panel-bg); color: var(--plenti-text); border: 1px solid var(--plenti-border); }
-.plenti-btn-danger { background: var(--plenti-danger); }
-
-.plenti-actions { display: flex; gap: 0.5rem; margin-top: 1.5rem; }
-
-.plenti-notice {
-  padding: 0.6rem 0.9rem;
-  border-radius: var(--plenti-radius);
-  margin-bottom: 1rem;
-  background: #e8f7ee;
-  border: 1px solid #b8e6c9;
-}
-.plenti-notice.plenti-error { background: #fdecec; border-color: #f5c2c2; color: var(--plenti-danger); }
-
 .plenti-media-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -134,16 +73,6 @@
   word-break: break-all;
   color: var(--plenti-muted);
   margin-top: 0.35rem;
-}
-
-.plenti-json-editor {
-  width: 100%;
-  min-height: 320px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  box-sizing: border-box;
-  padding: 0.75rem;
-  border: 1px solid var(--plenti-border);
-  border-radius: var(--plenti-radius);
 }
 
 /* ---------- Inline admin bar / edit tray (embedded CMS) ---------- */
@@ -234,6 +163,9 @@
 }
 .plenti-admin-bar .plenti-edit-toggle:hover .plenti-icon svg {
   transform: rotate(-12deg) scale(1.1);
+}
+.plenti-admin-bar .plenti-content-toggle:hover .plenti-icon svg {
+  transform: rotate(6deg) scale(1.12);
 }
 .plenti-admin-bar .plenti-media-toggle:hover .plenti-icon svg {
   transform: scale(1.12) translateY(-1px);
@@ -351,6 +283,108 @@ body.plenti-tray-resizing .plenti-admin-tray {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 12px;
 }
+
+/* ---------- Content modal ---------- */
+.plenti-content-modal { width: 480px; }
+.plenti-content-body { padding: 4px 20px 20px; overflow-y: auto; }
+.plenti-content-section { margin-bottom: 14px; }
+.plenti-content-section h4 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+}
+.plenti-content-list { display: flex; flex-direction: column; gap: 2px; }
+.plenti-content-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  color: #1e293b;
+  cursor: pointer;
+  transition: background .12s ease;
+}
+.plenti-content-item:hover { background: #f1f5f9; }
+.plenti-content-item svg { width: 15px; height: 15px; color: #94a3b8; flex-shrink: 0; }
+.plenti-content-path { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plenti-content-file {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+.plenti-content-add { color: #64748b; font-style: italic; }
+.plenti-content-add svg { color: inherit; }
+
+/* ---------- New-item modal ---------- */
+.plenti-newitem-title { margin: 0 0 12px; font-size: 16px; font-weight: 600; }
+.plenti-newitem-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.plenti-newitem-input {
+  display: flex;
+  align-items: center;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 0 10px;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.plenti-newitem-input:focus-within {
+  border-color: #94a3b8;
+  box-shadow: 0 0 0 3px rgba(148, 163, 184, .25);
+}
+.plenti-newitem-input input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 8px 0;
+  font: inherit;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  background: transparent;
+}
+.plenti-newitem-ext {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  color: #94a3b8;
+  user-select: none;
+}
+.plenti-newitem-preview {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* ---------- Toast notifications ---------- */
+.plenti-toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  background: #1e293b;
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  opacity: 0;
+  transition: opacity .18s ease, transform .18s ease;
+  z-index: 10003;
+}
+.plenti-toast.open { opacity: 1; transform: translateX(-50%) translateY(0); }
+.plenti-toast.plenti-error { background: #dc2626; }
 
 /* JSON source editor: highlighted <pre> under a transparent <textarea> */
 .plenti-json-wrap {
@@ -541,6 +575,7 @@ body.plenti-tray-resizing .plenti-admin-tray {
 }
 .plenti-media-header .plenti-admin-status { flex: 1; font-size: 13px; }
 .plenti-media-close {
+  margin-left: auto; /* pin to the right corner even without a status line */
   border: none;
   background: none;
   font-size: 24px;

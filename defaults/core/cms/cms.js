@@ -8,13 +8,6 @@
 
   var state = {
     data: null,        // payload from data.json
-    view: "content",   // "content" | "media"
-    current: null,     // index into data.content of the item being edited
-    fields: null,      // working copy of the fields being edited
-    notice: null,
-    jsonMode: false,
-    jsonText: "",
-    rootEl: null,      // element the full CMS app is mounted into
     trayItem: null,    // data.content node for the page shown in the tray
     pendingFilename: null, // staged filename change, applied on Save
     trayFields: null,  // working copy of the tray's field values
@@ -249,9 +242,6 @@
     return "text";
   }
 
-  function currentItem() { return state.data.content[state.current]; }
-  function currentType() { return currentItem().type; }
-
   // Rebuild a fields object with keys in the source JSON file's original
   // order (Go marshals the fields map alphabetically in data.json).
   function orderedFields(item, values) {
@@ -264,198 +254,6 @@
       if (!Object.prototype.hasOwnProperty.call(out, k)) out[k] = src[k];
     });
     return out;
-  }
-
-  /* ---------- Rendering ---------- */
-
-  function notify(msg, isError) {
-    state.notice = { msg: msg, isError: !!isError };
-    render();
-  }
-
-  function renderSidebar() {
-    var byType = {};
-    state.data.content.forEach(function (c, i) {
-      (byType[c.type] = byType[c.type] || []).push({ item: c, index: i });
-    });
-
-    var sections = Object.keys(byType).sort().map(function (type) {
-      return h("div", {}, [
-        h("h2", {}, [type]),
-        h("div", {}, byType[type].map(function (entry) {
-          return h("button", {
-            class: "plenti-nav-item" + (state.view === "content" && state.current === entry.index ? " plenti-active" : ""),
-            onclick: function () { openItem(entry.index); }
-          }, [entry.item.path]);
-        }).concat([
-          h("button", {
-            class: "plenti-nav-item",
-            onclick: function () { addItem(type); }
-          }, ["+ add"])
-        ]))
-      ]);
-    });
-
-    sections.push(h("div", {}, [
-      h("h2", {}, ["media"]),
-      h("button", {
-        class: "plenti-nav-item" + (state.view === "media" ? " plenti-active" : ""),
-        onclick: function () { state.view = "media"; state.jsonMode = false; render(); }
-      }, ["browse"])
-    ]));
-
-    return h("aside", { class: "plenti-sidebar" }, [h("h1", {}, ["Plenti CMS"])].concat(sections));
-  }
-
-  function renderEditor() {
-    var item = currentItem();
-    var schema = state.data.schemas[item.type] || {};
-    var children = [h("h2", {}, [item.filepath])];
-
-    if (state.notice) {
-      children.push(h("div", { class: "plenti-notice" + (state.notice.isError ? " plenti-error" : "") }, [state.notice.msg]));
-    }
-
-    if (state.jsonMode) {
-      children.push(h("textarea", {
-        class: "plenti-json-editor",
-        onchange: function (e) { state.jsonText = e.target.value; }
-      }, [state.jsonText]));
-    } else {
-      Object.keys(state.fields).forEach(function (key) {
-        var type = schemaType(schema, key, state.fields[key]);
-        children.push(h("div", { class: "plenti-field" }, [
-          h("label", {}, [key]),
-          fieldInput(key, type, state.fields[key], function (v) { state.fields[key] = v; }, schema)
-        ]));
-      });
-    }
-
-    children.push(h("div", { class: "plenti-actions" }, [
-      h("button", { class: "plenti-btn", onclick: saveItem }, ["Save"]),
-      h("button", {
-        class: "plenti-btn plenti-btn-secondary",
-        onclick: function () { toggleJsonMode(); }
-      }, [state.jsonMode ? "Form" : "JSON"]),
-      h("button", { class: "plenti-btn plenti-btn-danger", onclick: deleteItem }, ["Delete"])
-    ]));
-
-    return h("main", { class: "plenti-main" }, children);
-  }
-
-  function renderMedia() {
-    var children = [h("h2", {}, ["Media"])];
-    if (state.notice) {
-      children.push(h("div", { class: "plenti-notice" + (state.notice.isError ? " plenti-error" : "") }, [state.notice.msg]));
-    }
-    children.push(h("input", {
-      type: "file",
-      onchange: function (e) {
-        var file = e.target.files[0];
-        if (!file) return;
-        var reader = new FileReader();
-        reader.onload = function () {
-          commit([{ file: "media/" + file.name, action: "upsert", encoding: "base64", contents: reader.result }])
-            .then(function () {
-              state.data.media.push("/media/" + file.name);
-              notify("Uploaded " + file.name);
-            })
-            .catch(function (err) { notify(err.message, true); });
-        };
-        reader.readAsDataURL(file);
-      }
-    }));
-    children.push(h("div", { class: "plenti-media-grid" }, (state.data.media || []).map(function (m) {
-      var full = state.data.env.baseurl.replace(/\/$/, "") + "/" + m.replace(/^\/+/, "");
-      return h("div", { class: "plenti-media-item", onclick: function () { window.open(full, "_blank"); } }, [
-        isImage(m) ? h("img", { src: full, alt: m }) : h("div", {}, ["\uD83D\uDCC4"]),
-        h("div", { class: "plenti-media-name" }, [m])
-      ]);
-    })));
-    return h("main", { class: "plenti-main" }, children);
-  }
-
-  function render() {
-    var root = state.rootEl;
-    if (!root) return;
-    root.innerHTML = "";
-    var main = state.view === "media" ? renderMedia() : renderEditor();
-    root.appendChild(h("div", { class: "plenti-layout" }, [renderSidebar(), main]));
-  }
-
-  /* ---------- Actions ---------- */
-
-  function openItem(index) {
-    state.view = "content";
-    state.current = index;
-    state.fields = JSON.parse(JSON.stringify(orderedFields(state.data.content[index])));
-    state.jsonMode = false;
-    state.notice = null;
-    render();
-  }
-
-  function toggleJsonMode() {
-    if (state.jsonMode) {
-      try {
-        state.fields = JSON.parse(state.jsonText);
-        state.jsonMode = false;
-      } catch (err) {
-        notify("Invalid JSON: " + err.message, true);
-        return;
-      }
-    } else {
-      state.jsonText = JSON.stringify(state.fields, null, 2);
-      state.jsonMode = true;
-    }
-    render();
-  }
-
-  function addItem(type) {
-    var name = prompt("Name for the new " + type + " item (filename without extension):");
-    if (!name) return;
-    name = name.trim().toLowerCase().replace(/[^a-z0-9-_]+/g, "-");
-    if (!name) return;
-    var defaults = state.data.defaults[type] || {};
-    var item = {
-      type: type,
-      path: "/" + type + "/" + name,
-      filename: name,
-      filepath: type + "/" + name + ".json",
-      fields: JSON.parse(JSON.stringify(defaults))
-    };
-    commit([{ file: "content/" + item.filepath, action: "create", contents: JSON.stringify(item.fields, null, 2) }])
-      .then(function () {
-        state.data.content.push(item);
-        openItem(state.data.content.length - 1);
-        notify("Created " + item.filepath);
-      })
-      .catch(function (err) { notify(err.message, true); });
-  }
-
-  function saveItem() {
-    if (state.jsonMode) {
-      try { state.fields = JSON.parse(state.jsonText); }
-      catch (err) { notify("Invalid JSON: " + err.message, true); return; }
-    }
-    var item = currentItem();
-    commit([{ file: "content/" + item.filepath, action: "update", contents: JSON.stringify(orderedFields(item, state.fields), null, 2) }])
-      .then(function () {
-        item.fields = JSON.parse(JSON.stringify(state.fields));
-        notify("Saved " + item.filepath);
-      })
-      .catch(function (err) { notify(err.message, true); });
-  }
-
-  function deleteItem() {
-    var item = currentItem();
-    if (!confirm("Delete " + item.filepath + "?")) return;
-    commit([{ file: "content/" + item.filepath, action: "delete" }])
-      .then(function () {
-        state.data.content.splice(state.current, 1);
-        if (state.data.content.length) openItem(Math.max(0, state.current - 1));
-        else { state.current = null; state.view = "media"; render(); }
-      })
-      .catch(function (err) { notify(err.message, true); });
   }
 
   /* ---------- Auth ---------- */
@@ -538,18 +336,6 @@
         }
         return data;
       });
-  }
-
-  function mount(el) {
-    if (typeof el === "string") el = document.querySelector(el);
-    if (!el) return;
-    state.rootEl = el;
-    loadData().then(function () {
-      if (state.data.content.length) openItem(0);
-      else { state.view = "media"; render(); }
-    }).catch(function (err) {
-      el.textContent = "Could not load CMS data: " + err.message;
-    });
   }
 
   /* ---------- Inline admin bar (embedded CMS) ---------- */
@@ -1231,16 +1017,18 @@
       statusEl.textContent = "Saving...";
       statusEl.classList.remove("success", "error");
       var contents = JSON.stringify(orderedFields(item, state.trayFields), null, 2);
-      // Renames are a create + delete pair (the commit API has no move action).
+      // Renames are a create + delete pair (the commit API has no move
+      // action); a stubbed new page is a plain create.
       var files = pending
         ? [
             { file: "content/" + filepath, action: "create", contents: contents },
             { file: "content/" + item.filepath, action: "delete" }
           ]
-        : [{ file: "content/" + filepath, action: "update", contents: contents }];
+        : [{ file: "content/" + filepath, action: item.pendingCreate ? "create" : "update", contents: contents }];
       commit(files)
         .then(function () {
           item.fields = JSON.parse(JSON.stringify(state.trayFields));
+          delete item.pendingCreate;
           if (pending) {
             item.filepath = filepath;
             item.filename = pending;
@@ -1295,6 +1083,8 @@
     logout: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4\"/><path d=\"m16 17 5-5-5-5\"/><path d=\"M21 12H9\"/></svg>",
     check: "<svg class=\"plenti-check\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg>",
     image: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\"/><circle cx=\"9\" cy=\"9\" r=\"2\"/><path d=\"m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21\"/></svg>",
+    file: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z\"/><path d=\"M14 2v4a2 2 0 0 0 2 2h4\"/></svg>",
+    plus: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 12h14\"/><path d=\"M12 5v14\"/></svg>",
     upload: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><path d=\"m17 8-5-5-5 5\"/><path d=\"M12 3v12\"/></svg>",
     download: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><path d=\"m7 10 5 5 5-5\"/><path d=\"M12 15V3\"/></svg>",
     trash: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 6h18\"/><path d=\"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6\"/><path d=\"M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2\"/><path d=\"M10 11v6\"/><path d=\"M14 11v6\"/></svg>",
@@ -1341,6 +1131,142 @@
       document.addEventListener("mouseup", onUp);
     });
     tray.appendChild(handle);
+  }
+
+  /* ---------- Content modal (embedded CMS) ---------- */
+
+  // Stub a not-yet-built page locally: add it to the content index, route to
+  // its URL and open the tray with the _defaults.json fields applied. Nothing
+  // is committed until the user presses Save in the tray, so this works on
+  // remote sites where the real page only appears after the CI build.
+  function createItemStub(type, name) {
+    var defaults = state.data.defaults[type] || {};
+    var item = {
+      type: type,
+      path: computePath(type, type + "/" + name, defaults),
+      filename: name,
+      filepath: type + "/" + name + ".json",
+      fields: JSON.parse(JSON.stringify(defaults)),
+      pendingCreate: true
+    };
+    state.data.content.push(item);
+    history.pushState({}, "", item.path);
+    // Re-point the live page's content binding at the stub so templates and
+    // the tray both see the new page.
+    if (window.Pattr && window.Pattr.data) {
+      try { window.Pattr.data.content = item; } catch (e) { /* read-only scope */ }
+    }
+    state.trayItem = item;
+    state.trayFields = JSON.parse(JSON.stringify(orderedFields(item)));
+    setTrayOpen(true);
+  }
+
+  // Custom "new item" modal (replaces window.prompt): filename input with the
+  // .json extension ghosted inline and a live preview of the saved filepath.
+  function newItemModal(type) {
+    function cleanName() {
+      var name = input.value.trim().toLowerCase().replace(/[^a-z0-9-_]+/g, "-").replace(/^-+|-+$/g, "");
+      return /^[a-z0-9][a-z0-9-_]*$/.test(name) ? name : null;
+    }
+    var input = h("input", { type: "text", placeholder: "my-page", autocomplete: "off", spellcheck: "false" });
+    var preview = h("code", { class: "plenti-inline-code" }, [type + "/\u2026.json"]);
+    var okBtn = h("button", {
+      class: "plenti-btn primary", disabled: true,
+      onclick: function () { submit(); }
+    }, ["Create"]);
+    input.addEventListener("input", function () {
+      var name = cleanName();
+      okBtn.disabled = !name;
+      preview.textContent = type + "/" + (name || "\u2026") + ".json";
+    });
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); submit(); }
+      if (e.key === "Escape") { e.preventDefault(); close(); }
+    });
+    function submit() {
+      var name = cleanName();
+      if (!name) return;
+      close();
+      createItemStub(type, name);
+    }
+    var overlay = h("div", {
+      class: "plenti-media-overlay plenti-confirm-overlay",
+      onclick: function (e) { if (e.target === overlay) close(); }
+    }, [
+      h("div", { class: "plenti-media-modal plenti-confirm-dialog plenti-newitem-dialog" }, [
+        h("h3", { class: "plenti-newitem-title" }, ["New " + type]),
+        h("label", { class: "plenti-newitem-label" }, ["Filename"]),
+        h("div", { class: "plenti-newitem-input" }, [
+          input,
+          h("span", { class: "plenti-newitem-ext" }, [".json"])
+        ]),
+        h("div", { class: "plenti-newitem-preview" }, ["Saved as ", preview]),
+        h("div", { class: "plenti-confirm-actions" }, [
+          h("button", { class: "plenti-btn", onclick: function () { close(); } }, ["Cancel"]),
+          okBtn
+        ])
+      ])
+    ]);
+    function close() {
+      overlay.classList.remove("open");
+      setTimeout(function () { overlay.remove(); }, 200);
+    }
+    document.body.appendChild(overlay);
+    void overlay.offsetWidth; // reflow so the entrance transition runs
+    overlay.classList.add("open");
+    input.focus();
+  }
+
+  // Content browser: all content grouped by type, styled like the media
+  // modal. Clicking an item navigates to its page for editing in the tray.
+  function openContentModal() {
+    var byType = {};
+    (state.data.content || []).forEach(function (c) {
+      (byType[c.type] = byType[c.type] || []).push(c);
+    });
+    var sections = Object.keys(byType).sort().map(function (type) {
+      var rows = byType[type].map(function (c) {
+        return h("button", {
+          class: "plenti-content-item",
+          // Open the edit tray once the destination page has loaded.
+          onclick: function () {
+            sessionStorage.setItem("plenti_cms_open_tray", "1");
+            window.location.href = c.path;
+          }
+        }, [
+          icon("file"),
+          h("span", { class: "plenti-content-path" }, [c.path]),
+          h("span", { class: "plenti-content-file" }, [c.filepath])
+        ]);
+      });
+      rows.push(h("button", {
+        class: "plenti-content-item plenti-content-add",
+        onclick: function () { close(); newItemModal(type); }
+      }, [icon("plus"), h("span", { class: "plenti-content-path" }, ["add " + type])]));
+      return h("div", { class: "plenti-content-section" }, [
+        h("h4", {}, [type]),
+        h("div", { class: "plenti-content-list" }, rows)
+      ]);
+    });
+    var overlay = h("div", {
+      class: "plenti-media-overlay",
+      onclick: function (e) { if (e.target === overlay) close(); }
+    }, [
+      h("div", { class: "plenti-media-modal plenti-content-modal" }, [
+        h("div", { class: "plenti-media-header" }, [
+          h("h3", {}, ["Content"]),
+          h("button", { class: "plenti-media-close", onclick: function () { close(); } }, ["\u00D7"])
+        ]),
+        h("div", { class: "plenti-content-body" }, sections.length ? sections : [h("div", { class: "plenti-admin-empty" }, ["No content yet"])])
+      ])
+    ]);
+    function close() {
+      overlay.classList.remove("open");
+      setTimeout(function () { overlay.remove(); }, 200);
+    }
+    document.body.appendChild(overlay);
+    void overlay.offsetWidth; // reflow so the entrance transition runs
+    overlay.classList.add("open");
   }
 
   /* ---------- Media modal (embedded CMS) ---------- */
@@ -1818,6 +1744,10 @@
         onclick: function () { setTrayOpen(!state.trayOpen); }
       }, [icon("edit"), h("span", { class: "plenti-label" }, ["Edit"])]),
       h("button", {
+        class: "plenti-btn plenti-content-toggle",
+        onclick: function () { openContentModal(); }
+      }, [icon("file"), h("span", { class: "plenti-label" }, ["Content"])]),
+      h("button", {
         class: "plenti-btn plenti-media-toggle",
         onclick: function () { openMediaModal(); }
       }, [icon("image"), h("span", { class: "plenti-label" }, ["Media"])]),
@@ -1836,15 +1766,18 @@
   }
 
   function boot() {
-    var adminEl = document.getElementById("plenti-cms-app");
-    var el = adminEl || document.querySelector("[data-plenti-cms]");
+    var el = document.querySelector("[data-plenti-cms]");
     loadData().then(function () {
       publishUser();
-      // Only the dedicated admin page nags for a token; embedded instances
-      // wait for an explicit user.login() call.
-      if (adminEl && !isAuthenticated() && currentProvider() !== "local") login();
-      if (adminEl) mount(adminEl);
-      else if (el) mountAdminBar(el);
+      // Embedded instances wait for an explicit user.login() call.
+      if (el) {
+        mountAdminBar(el);
+        // The content browser asks for the tray to open after navigation.
+        if (sessionStorage.getItem("plenti_cms_open_tray")) {
+          sessionStorage.removeItem("plenti_cms_open_tray");
+          if (state.trayItem) setTrayOpen(true);
+        }
+      }
     }).catch(function (err) {
       if (el) el.textContent = "Could not load CMS data: " + err.message;
     });

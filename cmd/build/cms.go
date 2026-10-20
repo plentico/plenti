@@ -61,22 +61,9 @@ func Cms(buildPath string, siteConfig readers.SiteConfig, allContent []ContentNo
 		return fmt.Errorf("can't copy core files: %w", err)
 	}
 
-	// Render the CMS admin shell with Pico.
-	adminLayout := filepath.Join(coreDest, "cms", "admin.pico")
-	if _, err := os.Stat(adminLayout); err == nil {
-		props := map[string]any{"env": structToMap(getEnvProps(siteConfig))}
-		pageHTML, err := renderPage(adminLayout, props)
-		if err != nil {
-			return fmt.Errorf("can't render CMS admin: %w", err)
-		}
-		adminDest := filepath.Join(buildPath, "admin", "index.html")
-		if err := os.MkdirAll(filepath.Dir(adminDest), os.ModePerm); err != nil {
-			return err
-		}
-		if err := os.WriteFile(adminDest, []byte(pageHTML), 0644); err != nil {
-			return fmt.Errorf("can't write CMS admin page: %w", err)
-		}
-	}
+	// The CMS is embedded in every page (admin bar); there is no standalone
+	// /admin page anymore. Remove the shell template from the build output.
+	os.Remove(filepath.Join(coreDest, "cms", "admin.pico"))
 
 	// Write the data payload the CMS editor consumes (content, schemas, env).
 	if err := writeCmsData(buildPath, siteConfig, allContent, mediaIndex); err != nil {
