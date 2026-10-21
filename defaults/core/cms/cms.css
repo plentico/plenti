@@ -531,6 +531,24 @@ body.plenti-tray-resizing .plenti-admin-tray {
 .plenti-admin-tray .plenti-admin-actions .plenti-btn.primary:hover {
   background: #1d4ed8;
 }
+.plenti-admin-tray .plenti-admin-actions .plenti-btn.danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: auto;
+  border-color: #fca5a5;
+  background: #fff;
+  color: #dc2626;
+}
+.plenti-admin-tray .plenti-admin-actions .plenti-btn.danger svg {
+  width: 14px;
+  height: 14px;
+}
+.plenti-admin-tray .plenti-admin-actions .plenti-btn.danger:hover {
+  background: #dc2626;
+  border-color: #b91c1c;
+  color: #fff;
+}
 .plenti-admin-tray .plenti-admin-empty {
   color: #64748b;
 }

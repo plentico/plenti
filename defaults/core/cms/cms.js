@@ -817,12 +817,60 @@
       });
     }
     tray.appendChild(h("div", { class: "plenti-admin-actions" }, [
+      h("button", {
+        class: "plenti-btn danger",
+        title: "Delete this page",
+        onclick: function () { deleteTrayPage(statusEl); }
+      }, [icon("trash"), h("span", {}, ["Delete"])]),
       saveBtn,
       h("button", {
         class: "plenti-btn",
         onclick: function () { setTrayOpen(false); }
       }, ["Close"])
     ]));
+  }
+
+  // Delete the page shown in the tray: custom confirm modal, then a delete
+  // commit (skipped for stubs that were never saved), local index cleanup,
+  // and a redirect home since the current URL no longer exists.
+  function deleteTrayPage(statusEl) {
+    var item = state.trayItem;
+    if (!item) return;
+    confirmModal(
+      "Delete this page?",
+      [
+        "This permanently deletes ",
+        h("code", { class: "plenti-inline-code" }, ["content/" + item.filepath]),
+        ". This cannot be undone."
+      ],
+      "Delete",
+      true
+    ).then(function (ok) {
+      if (!ok) return;
+      statusEl.textContent = "Deleting...";
+      statusEl.classList.remove("success", "error");
+      var finish = function () {
+        var idx = state.data.content.indexOf(item);
+        if (idx >= 0) state.data.content.splice(idx, 1);
+        if (state.trayItem === item) state.trayItem = null;
+        setTrayOpen(false);
+        statusEl.innerHTML = ICONS.check + "Deleted";
+        statusEl.classList.add("success");
+        setTimeout(function () {
+          statusEl.textContent = "";
+          statusEl.classList.remove("success");
+        }, 3000);
+        setTimeout(function () { window.location.href = "/"; }, 400);
+      };
+      // A stubbed new page was never written to disk, so there's nothing to commit.
+      if (item.pendingCreate) { finish(); return; }
+      commit([{ file: "content/" + item.filepath, action: "delete" }])
+        .then(finish)
+        .catch(function (err) {
+          statusEl.textContent = "Error: " + err.message;
+          statusEl.classList.add("error");
+        });
+    });
   }
 
   // Mirror of cmd/build/data_source.go path resolution: route overrides from
@@ -853,7 +901,7 @@
   // media library delete confirm. msgChildren is an array of nodes/strings so
   // paths can be rendered as inline code. Resolves true on OK, false on
   // Cancel/Escape/backdrop click.
-  function confirmModal(title, msgChildren, okLabel) {
+  function confirmModal(title, msgChildren, okLabel, danger) {
     return new Promise(function (resolve) {
       var overlay, onKey;
       function done(val) {
@@ -866,7 +914,7 @@
         if (e.key === "Escape") { e.stopPropagation(); done(false); }
         if (e.key === "Enter") { done(true); }
       };
-      var okBtn = h("button", { class: "plenti-btn primary", onclick: function () { done(true); } }, [okLabel || "OK"]);
+      var okBtn = h("button", { class: danger ? "plenti-btn plenti-confirm-danger" : "plenti-btn primary", onclick: function () { done(true); } }, [okLabel || "OK"]);
       overlay = h("div", { class: "plenti-media-overlay plenti-confirm-overlay", onclick: function (e) { if (e.target === overlay) done(false); } }, [
         h("div", { class: "plenti-media-modal plenti-confirm-dialog" }, [
           h("p", { class: "plenti-confirm-msg" }, [h("strong", {}, [title])].concat([" "]).concat(msgChildren)),
