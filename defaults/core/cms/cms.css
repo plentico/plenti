@@ -150,7 +150,11 @@
   border-color: #64748b;
 }
 
-/* Icons: subtle motion on hover, kimi.ai style. */
+/* Icons: playful motion on hover, kimi.ai style. SVG-internal pieces
+   (writing lines, hills/sun, blink/scribble groups) are inert by default
+   so the same icons used elsewhere stay static. Icons never scale — hover
+   emphasis comes from a stroke-width bump (a paint change, re-rasterized
+   sharp) plus internal motion, so nothing ever blurs or shifts layout. */
 .plenti-admin-bar .plenti-icon {
   display: inline-flex;
   width: 14px;
@@ -161,14 +165,59 @@
   height: 100%;
   transition: transform .25s cubic-bezier(.34, 1.56, .64, 1);
 }
-.plenti-admin-bar .plenti-edit-toggle:hover .plenti-icon svg {
-  transform: rotate(-12deg) scale(1.1);
+/* Pencil needs to spill past the viewBox; everything else stays clipped
+   so e.g. the media sun never leaves the frame. */
+.plenti-admin-bar .plenti-edit-toggle .plenti-icon svg { overflow: visible; }
+.plenti-icon .plenti-write-line {
+  stroke-dasharray: 8;
+  stroke-dashoffset: 8;
+  transition: stroke-dashoffset .25s ease;
 }
+@keyframes plenti-scribble {
+  0%, 100% { transform: rotate(-12deg) translate(0, 0); }
+  25% { transform: rotate(-12deg) translate(.7px, .5px); }
+  50% { transform: rotate(-12deg) translate(-.5px, 1px); }
+  75% { transform: rotate(-12deg) translate(.5px, -.5px); }
+}
+/* Blink: squash the eye, and thicken the stroke while closed so the lid
+   stays a clear line instead of vanishing. */
+@keyframes plenti-blink {
+  0%, 100% { transform: scaleY(1); stroke-width: 2; }
+  40%, 60% { transform: scaleY(.12); stroke-width: 3.4; }
+}
+/* Sun rises from behind the hills while the frame tilts counterclockwise. */
+@keyframes plenti-sunrise {
+  0% { transform: translate(0, 6.5px); opacity: 0; }
+  55% { transform: translate(0, -.6px); opacity: 1; }
+  100% { transform: translate(0, 0); opacity: 1; }
+}
+/* Edit (pencil): little writing scribble; View (eye): a blink. */
+.plenti-admin-bar .plenti-edit-toggle:hover .plenti-icon .plenti-pencil {
+  animation: plenti-scribble .5s ease-in-out;
+  transform-box: fill-box;
+}
+.plenti-admin-bar .plenti-edit-toggle:hover .plenti-icon .plenti-eye {
+  animation: plenti-blink .8s ease;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+/* Content (paper): lines of "writing" appear one after another. */
 .plenti-admin-bar .plenti-content-toggle:hover .plenti-icon svg {
-  transform: rotate(6deg) scale(1.12);
+  transform: rotate(8deg);
 }
+.plenti-admin-bar .plenti-content-toggle:hover .plenti-icon .plenti-write-line {
+  stroke-dashoffset: 0;
+}
+.plenti-admin-bar .plenti-content-toggle:hover .plenti-icon .plenti-w2 { transition-delay: .15s; }
+.plenti-admin-bar .plenti-content-toggle:hover .plenti-icon .plenti-w3 { transition-delay: .3s; }
+/* Media (picture): the sun rises into the frame while it tilts counterclockwise. */
 .plenti-admin-bar .plenti-media-toggle:hover .plenti-icon svg {
-  transform: scale(1.12) translateY(-1px);
+  transform: rotate(-8deg);
+}
+.plenti-admin-bar .plenti-media-toggle:hover .plenti-icon .plenti-sun {
+  animation: plenti-sunrise .7s cubic-bezier(.34, 1.56, .64, 1);
+  transform-box: fill-box;
+  transform-origin: center;
 }
 .plenti-admin-bar .plenti-logout:hover .plenti-icon svg {
   transform: translateX(3px);
