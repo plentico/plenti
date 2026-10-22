@@ -1,6 +1,5 @@
 ---
 import Head from "./head.pico";
-import Cms from "../core/cms.pico";
 prop env;
 prop content;
 prop user;
@@ -8,10 +7,10 @@ prop user;
 
 <!DOCTYPE html>
 <html lang="en">
-  <Head {env} {content} />
+  <Head {env} {content} {user} />
   <body>
     {if user.loggedIn}
-      <Cms />
+      <div plenti-cms></div>
     {/if}
     <main>
       <='../content/{content.type}.pico' {content} />

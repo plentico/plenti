@@ -1814,7 +1814,7 @@
   }
 
   function boot() {
-    var el = document.querySelector("[data-plenti-cms]");
+    var el = document.querySelector("[plenti-cms]");
     loadData().then(function () {
       publishUser();
       // Embedded instances wait for an explicit user.login() call.

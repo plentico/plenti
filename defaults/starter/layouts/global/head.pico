@@ -1,6 +1,7 @@
 ---
 prop env;
 prop content;
+prop user;
 ---
 
 <head>
@@ -8,4 +9,8 @@ prop content;
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{content.fields.title}</title>
   <link rel="stylesheet" href="/global.css" />
+  {if user.loggedIn}
+    <script src="/core/cms/cms.js"></script>
+    <link rel="stylesheet" href="/core/cms/cms.css" />
+  {/if}
 </head>
