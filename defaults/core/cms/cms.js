@@ -405,6 +405,10 @@
       c.fields[key] = value;
       // Reassign so Pattr's Proxy set() fires and walkDom re-renders bindings.
       window.Pattr.data.content = Object.assign({}, c);
+      // Reactive body p-class bindings may replace CMS-managed classes while
+      // applying this content update. Restore them after Pattr's deferred DOM
+      // walk, including the admin bar's conditional mount when needed.
+      setTimeout(syncAdminBar, 0);
     }
   }
 
@@ -1089,6 +1093,7 @@
     state.trayJsonMode = mode === "json";
     state.trayInfoMode = mode === "info";
     renderTray(tray, statusEl);
+    syncBodyClasses();
   }
 
   function saveTray(statusEl) {
@@ -1162,7 +1167,7 @@
     }
     if (label) label.textContent = open ? "View" : "Edit";
     if (iconEl) iconEl.innerHTML = open ? ICONS.eye : ICONS.edit;
-    document.body.classList.toggle("plenti-tray-open", open);
+    syncBodyClasses();
   }
 
   var ICONS = {
@@ -1859,13 +1864,26 @@
     document.body.classList.add("plenti-admin-active");
   }
 
+  function syncBodyClasses() {
+    var authenticated = isAuthenticated();
+    var open = authenticated && state.trayOpen;
+    var mode = state.trayJsonMode ? "code" : state.trayInfoMode ? "info" : "form";
+    var classes = document.body.classList;
+    classes.toggle("plenti-admin-active", authenticated && !!document.querySelector("[plenti-cms]"));
+    classes.toggle("plenti-tray-open", open);
+    ["form", "info", "code"].forEach(function (name) {
+      classes.toggle("plenti-tray-" + name, open && mode === name);
+    });
+  }
+
   function syncAdminBar() {
     var el = document.querySelector("[plenti-cms]");
     if (!isAuthenticated() || !el) {
-      document.body.classList.remove("plenti-admin-active");
+      syncBodyClasses();
       return;
     }
     document.body.classList.add("plenti-admin-active");
+    syncBodyClasses();
     if (!el.querySelector(".plenti-admin-bar")) {
       mountAdminBar(el);
       // The content browser asks for the tray to open after navigation.

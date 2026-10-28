@@ -9,6 +9,11 @@ class ClassList {
     constructor() { this.values = new Set(); }
     add(...names) { names.forEach(name => this.values.add(name)); }
     remove(...names) { names.forEach(name => this.values.delete(name)); }
+    toggle(name, force) {
+        const enabled = force === undefined ? !this.contains(name) : force;
+        if (enabled) this.add(name); else this.remove(name);
+        return enabled;
+    }
     contains(name) { return this.values.has(name); }
 }
 
@@ -47,7 +52,7 @@ async function scenario(reactiveBody) {
         setItem: (key, value) => storage.set(key, String(value)),
         removeItem: key => storage.delete(key),
     };
-    const data = { user: { loggedIn: false } };
+    const data = { user: { loggedIn: false }, content: { fields: { title: 'Original' } } };
     const window = {
         Pattr: { data: {} },
         location: { pathname: '/' },
@@ -93,7 +98,9 @@ async function scenario(reactiveBody) {
         },
         console, URL, setTimeout, clearTimeout,
     };
-    vm.runInNewContext(await readFile(new URL('../defaults/core/cms/cms.js', import.meta.url), 'utf8'), context);
+    let source = await readFile(new URL('../defaults/core/cms/cms.js', import.meta.url), 'utf8');
+    source = source.replace(/\}\)\(\);\s*$/, '  window.cmsTest = { liveUpdate, setTrayOpen, setTrayMode, state, syncBodyClasses };\n})();');
+    vm.runInNewContext(source, context);
     await new Promise(resolve => setImmediate(resolve));
 
     assert.equal(body.classList.contains('plenti-admin-active'), false, 'logged out at boot');
@@ -106,9 +113,37 @@ async function scenario(reactiveBody) {
     window.user.login();
     await new Promise(resolve => setTimeout(resolve, 10));
     assert.equal(body.classList.contains('plenti-admin-active'), true, 'logged in again');
+
+    window.cmsTest.setTrayOpen(true);
+    assert.ok(body.classList.contains('plenti-tray-open'));
+    assert.ok(body.classList.contains('plenti-tray-form'));
+    window.cmsTest.state.trayInfoMode = true;
+    window.cmsTest.syncBodyClasses();
+    assert.ok(body.classList.contains('plenti-tray-info'));
+    assert.equal(body.classList.contains('plenti-tray-form'), false);
+    window.cmsTest.state.trayInfoMode = false;
+    window.cmsTest.state.trayJsonMode = true;
+    window.cmsTest.syncBodyClasses();
+    assert.ok(body.classList.contains('plenti-tray-code'));
+    assert.equal(body.classList.contains('plenti-tray-info'), false);
+
+    // Model Pattr replacing body classes when a JSON edit reassigns content.
+    body.className = 'site-class';
+    window.cmsTest.liveUpdate('title', 'Edited');
+    await new Promise(resolve => setTimeout(resolve, 10));
+    assert.ok(body.classList.contains('plenti-admin-active'), 'live update preserves admin state');
+    assert.ok(body.classList.contains('plenti-tray-open'), 'live update preserves tray state');
+    assert.ok(body.classList.contains('plenti-tray-code'), 'live update preserves JSON view state');
+    assert.ok(body.classList.contains('site-class'), 'live update preserves site classes');
+
+    window.cmsTest.setTrayOpen(false);
+    for (const name of ['plenti-tray-open', 'plenti-tray-form', 'plenti-tray-info', 'plenti-tray-code']) {
+        assert.equal(body.classList.contains(name), false, name + ' removed when tray closes');
+    }
 }
 
 await scenario(true);
 console.log('PASS auth state survives reactive body class updates');
 await scenario(false);
 console.log('PASS auth state with a static body and persistent CMS container');
+console.log('PASS tray view classes and JSON live updates preserve body state');
