@@ -493,6 +493,14 @@
     return !!v && typeof v === "object" && !Array.isArray(v);
   }
 
+  // Repeatable groups can contain either objects or nested groups (rows,
+  // columns, etc.). Scalar arrays remain simple comma-separated fields.
+  function isStructuredArray(v) {
+    return Array.isArray(v) && v.every(function (item) {
+      return isPlainObject(item) || Array.isArray(item);
+    });
+  }
+
   // Label for an array item: first non-empty string value, else "Item N".
   // Purely cosmetic — no key carries special meaning.
   function arrayItemLabel(item, i) {
@@ -522,19 +530,13 @@
   // with an indented body; arrays of objects recurse as collapsible groups.
   function renderArrayItemField(tray, statusEl, path, item, key, commit, schema, onEdit) {
     var v = item[key];
-    if (Array.isArray(v) && v.every(isPlainObject)) {
+    if (isStructuredArray(v)) {
       return renderArrayField(tray, statusEl, path + "." + key, key, v, commit, schema);
     }
     if (isPlainObject(v)) {
       var body = h("div", { class: "plenti-nested-body" }, []);
       Object.keys(v).forEach(function (nk) {
-        if (isPlainObject(v[nk]) || Array.isArray(v[nk])) return; // one level is plenty
-        body.appendChild(h("div", { class: "plenti-field" }, [
-          h("label", {}, [nk]),
-          fieldInput(nk, schemaType(schema, nk, v[nk]), v[nk], function (val) {
-            v[nk] = val; commit(); onEdit();
-          }, schema)
-        ]));
+        body.appendChild(renderArrayItemField(tray, statusEl, path + "." + key, v, nk, commit, schema, onEdit));
       });
       return h("div", { class: "plenti-field plenti-field-nested" }, [
         h("label", {}, [key]),
@@ -592,7 +594,7 @@
   // An array of objects = repeatable group. Top-level groups start expanded,
   // nested groups and individual items start collapsed. Items can be
   // reordered via up/down arrows or drag-and-drop, and removed via trash.
-  function renderArrayField(tray, statusEl, path, label, arr, commit, schema) {
+  function renderArrayField(tray, statusEl, path, label, arr, commit, schema, itemsOnly) {
     var open = arrayGroupOpen(path);
     var chevron = h("button", {
       class: "plenti-array-chevron" + (open ? " plenti-open" : ""),
@@ -682,9 +684,15 @@
           class: "plenti-array-item-fields",
           style: itemOpen ? "" : "display:none"
         }, []);
-        Object.keys(item).forEach(function (key) {
-          fieldsEl.appendChild(renderArrayItemField(tray, statusEl, itemPath, item, key, commit, schema, onEdit));
-        });
+        if (Array.isArray(item)) {
+          // An array inside an array renders its cards directly inside the
+          // existing outer card, without a second group header.
+          fieldsEl.appendChild(renderArrayField(tray, statusEl, itemPath, "Items", item, commit, schema, true));
+        } else {
+          Object.keys(item).forEach(function (key) {
+            fieldsEl.appendChild(renderArrayItemField(tray, statusEl, itemPath, item, key, commit, schema, onEdit));
+          });
+        }
         // Toggle in place (no re-render) so the fields slide open/closed.
         function toggleItem() {
           itemOpen = !itemOpen;
@@ -787,6 +795,12 @@
       if (dragFrom < 0) return;
       e.preventDefault();
     });
+    // Array-valued items already have a collapsible outer card. Only render
+    // their nested cards, without a redundant nested group header/wrapper.
+    if (itemsOnly) {
+      body.style.display = "";
+      return body;
+    }
     return h("div", { class: "plenti-array", "data-path": path }, [
       h("div", { class: "plenti-array-header", onclick: function (e) {
         if (e.target.closest(".plenti-array-chevron")) return;
@@ -847,7 +861,7 @@
     } else {
       Object.keys(state.trayFields).forEach(function (key) {
         var value = state.trayFields[key];
-        if (Array.isArray(value) && value.every(isPlainObject)) {
+        if (isStructuredArray(value)) {
           tray.appendChild(renderArrayField(tray, statusEl, key, key, value, function () {
             liveUpdate(key, value);
           }, schema));
