@@ -288,6 +288,9 @@
     if (window.Pattr && window.Pattr.data) {
       try { window.Pattr.data.user = u; } catch (e) { /* scope is read-only */ }
     }
+    syncAdminBar();
+    // Pattr may insert the embedded container after updating its root data.
+    setTimeout(syncAdminBar, 0);
     window.dispatchEvent(new CustomEvent("plenti:cms-auth"));
   }
 
@@ -1813,20 +1816,28 @@
     document.body.classList.add("plenti-admin-active");
   }
 
-  function boot() {
+  function syncAdminBar() {
     var el = document.querySelector("[plenti-cms]");
+    if (!isAuthenticated() || !el) {
+      document.body.classList.remove("plenti-admin-active");
+      return;
+    }
+    document.body.classList.add("plenti-admin-active");
+    if (!el.querySelector(".plenti-admin-bar")) {
+      mountAdminBar(el);
+      // The content browser asks for the tray to open after navigation.
+      if (sessionStorage.getItem("plenti_cms_open_tray")) {
+        sessionStorage.removeItem("plenti_cms_open_tray");
+        if (state.trayItem) setTrayOpen(true);
+      }
+    }
+  }
+
+  function boot() {
     loadData().then(function () {
       publishUser();
-      // Embedded instances wait for an explicit user.login() call.
-      if (el) {
-        mountAdminBar(el);
-        // The content browser asks for the tray to open after navigation.
-        if (sessionStorage.getItem("plenti_cms_open_tray")) {
-          sessionStorage.removeItem("plenti_cms_open_tray");
-          if (state.trayItem) setTrayOpen(true);
-        }
-      }
     }).catch(function (err) {
+      var el = document.querySelector("[plenti-cms]");
       if (el) el.textContent = "Could not load CMS data: " + err.message;
     });
   }

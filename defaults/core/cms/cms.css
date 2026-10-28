@@ -12,6 +12,7 @@
   --plenti-danger: #d64545;
   --plenti-radius: 6px;
   --plenti-sidebar-width: 260px;
+  --plenti-admin-bar-height: 46px;
 }
 
 .plenti-field { margin-bottom: 1.25rem; }
@@ -84,6 +85,8 @@
   right: 0;
   z-index: 9999;
   display: flex;
+  box-sizing: border-box;
+  height: var(--plenti-admin-bar-height);
   align-items: center;
   gap: 12px;
   padding: 8px 16px;
@@ -228,12 +231,12 @@
 }
 
 body.plenti-admin-active {
-  padding-top: 41px;
+  padding-top: var(--plenti-admin-bar-height);
 }
 
 .plenti-admin-tray {
   position: fixed;
-  top: 41px;
+  top: var(--plenti-admin-bar-height);
   left: 0;
   bottom: 0;
   z-index: 9998;
