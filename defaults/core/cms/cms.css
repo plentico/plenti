@@ -40,6 +40,34 @@
 .plenti-field .plenti-help { font-size: 0.8rem; color: var(--plenti-muted); margin-top: 0.25rem; }
 
 .plenti-checks label { display: block; font-weight: 400; margin-bottom: 0.25rem; }
+.plenti-fieldset {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--plenti-border);
+  border-radius: var(--plenti-radius);
+}
+.plenti-fieldset .plenti-field:last-child { margin-bottom: 0; }
+.plenti-media-field {
+  display: block;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--plenti-border);
+  border-radius: var(--plenti-radius);
+  background: var(--plenti-panel-bg);
+  color: var(--plenti-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.plenti-media-field:hover { border-color: var(--plenti-accent); }
+.plenti-media-field img {
+  display: block;
+  width: 100%;
+  max-height: 140px;
+  margin-bottom: 6px;
+  object-fit: contain;
+}
+.plenti-media-field-name { font-size: 12px; word-break: break-all; }
 
 .plenti-btn {
   display: inline-block;

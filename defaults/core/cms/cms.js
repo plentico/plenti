@@ -39,6 +39,10 @@
     return IMAGE_EXTS.indexOf(ext) !== -1;
   }
 
+  function isMediaPath(value) {
+    return typeof value === "string" && /^\/?media\/.+\.(jpe?g|png|webp|gif|svg|avif|apng|pdf|msword)$/i.test(value);
+  }
+
   /* ---------- Providers ---------- */
 
   function getToken() {
@@ -164,9 +168,10 @@
 
   /* ---------- Editor fields ---------- */
 
-  function fieldInput(key, type, value, onChange, schema) {
+  function fieldInput(key, type, value, onChange, schema, path) {
     schema = schema || {};
-    var def = schema[key];
+    path = path || key;
+    var def = schema[path] || schema[key];
     var options = def && def.options;
 
     if (type === "boolean") {
@@ -202,11 +207,43 @@
       }));
     }
     if (type === "media") {
-      return h("select", { onchange: function (e) { onChange(e.target.value); } },
-        [h("option", { value: "" }, ["-- choose media --"])].concat(
-          (state.data.media || []).map(function (m) {
-            return h("option", { value: m, selected: m === value ? "selected" : null }, [m]);
-          })));
+      var preview = h("div", { class: "plenti-media-preview" }, []);
+      function renderPreview() {
+        preview.innerHTML = "";
+        var full = state.data.env.baseurl.replace(/\/$/, "") + "/" + String(value || "").replace(/^\/+/, "");
+        preview.appendChild(h("button", {
+          type: "button", class: "plenti-media-field", title: "Change media",
+          onclick: function () {
+            openMediaModal(function (selected) {
+              value = selected;
+              onChange(selected);
+              renderPreview();
+            });
+          }
+        }, [
+          isImage(value || "")
+            ? h("img", { src: full, alt: "Click to change media" })
+            : h("span", { class: "plenti-media-doc" }, ["\uD83D\uDCC4"]),
+          h("span", { class: "plenti-media-field-name" }, [value || "Choose media"])
+        ]));
+      }
+      renderPreview();
+      return preview;
+    }
+    if (type === "object") {
+      var fieldset = h("fieldset", { class: "plenti-fieldset" }, []);
+      Object.keys(value).forEach(function (nestedKey) {
+        var nestedValue = value[nestedKey];
+        var nestedPath = path + "." + nestedKey;
+        fieldset.appendChild(h("div", { class: "plenti-field" }, [
+          h("label", {}, [nestedKey]),
+          fieldInput(nestedKey, schemaType(schema, nestedKey, nestedValue, nestedPath), nestedValue, function (nested) {
+            value[nestedKey] = nested;
+            onChange(value);
+          }, schema, nestedPath)
+        ]));
+      });
+      return fieldset;
     }
     if (type === "list") {
       return h("input", { type: "text", value: Array.isArray(value) ? value.join(", ") : (value || ""),
@@ -232,13 +269,15 @@
     return h("input", { type: "text", value: value == null ? "" : value, oninput: function (e) { onChange(e.target.value); } });
   }
 
-  function schemaType(schema, key, value) {
-    var def = schema[key];
+  function schemaType(schema, key, value, path) {
+    var def = schema[path || key] || schema[key];
     if (typeof def === "string") return def;
     if (def && def.type) return def.type;
     if (typeof value === "boolean") return "boolean";
     if (typeof value === "number") return "number";
     if (Array.isArray(value)) return "list";
+    if (isPlainObject(value)) return "object";
+    if (isMediaPath(value)) return "media";
     return "text";
   }
 
@@ -499,7 +538,6 @@
       ]);
     }
     var type = schemaType(schema, key, v);
-    if (type === "media") type = "text";
     return h("div", { class: "plenti-field" }, [
       h("label", {}, [key]),
       fieldInput(key, type, v, function (val) {
@@ -812,7 +850,6 @@
           return;
         }
         var type = schemaType(schema, key, state.trayFields[key]);
-        if (type === "media") type = "text"; // keep the tray simple: path inputs
         tray.appendChild(h("div", { class: "plenti-field" }, [
           h("label", {}, [key]),
           fieldInput(key, type, state.trayFields[key], function (v) { liveUpdate(key, v); }, schema)
@@ -1686,7 +1723,7 @@
     overlay.classList.add("open");
   }
 
-  function openMediaModal() {
+  function openMediaModal(onSelect) {
     if (document.querySelector(".plenti-media-overlay")) return;
     var statusEl = h("span", { class: "plenti-admin-status" }, []);
     var grid = h("div", { class: "plenti-media-grid" }, []);
@@ -1704,6 +1741,11 @@
       }).catch(function () { /* clipboard permission denied */ });
     }
     function pick(m, full) {
+      if (onSelect) {
+        close();
+        onSelect(m);
+        return;
+      }
       var name = m.replace(/^\/+media\/+/, "");
       if (isImage(m)) openImageEditor(m, full, name, busted);
       else window.open(full, "_blank");
@@ -1736,6 +1778,7 @@
             statusEl.innerHTML = ICONS.check + "Uploaded " + n + " file" + (n > 1 ? "s" : "");
             statusEl.classList.add("success");
             busted();
+            if (onSelect) pick("/media/" + files[files.length - 1].name, "");
           }
         });
     }
@@ -1762,7 +1805,7 @@
     }, [
       h("div", { class: "plenti-media-modal" }, [
         h("div", { class: "plenti-media-header" }, [
-          h("h3", {}, ["Media"]),
+          h("h3", {}, [onSelect ? "Select Media" : "Media"]),
           statusEl,
           h("button", { class: "plenti-media-close", onclick: function () { close(); } }, ["\u00D7"])
         ]),
