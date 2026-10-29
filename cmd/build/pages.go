@@ -78,6 +78,7 @@ func Pages(buildPath string, siteConfig readers.SiteConfig, allContent []Content
 
 	env := getEnvProps(siteConfig)
 	envMap := structToMap(env)
+	allContentProps := contentToMaps(allContent)
 
 	pageCounter := 0
 	for _, node := range allContent {
@@ -88,8 +89,9 @@ func Pages(buildPath string, siteConfig readers.SiteConfig, allContent []Content
 		}
 
 		props := map[string]any{
-			"env":     envMap,
-			"content": structToMap(node),
+			"env":        envMap,
+			"content":    structToMap(node),
+			"allContent": allContentProps,
 			// Auth state lives in the browser, so SSR always renders a
 			// logged-out user; cms.js publishes the real value to Pattr
 			// after hydration.
@@ -115,9 +117,10 @@ func Pages(buildPath string, siteConfig readers.SiteConfig, allContent []Content
 	notFoundLayout := filepath.Join(layoutsDir, "content", "404.pico")
 	if _, err := os.Stat(notFoundLayout); err == nil {
 		props := map[string]any{
-			"env":     envMap,
-			"content": map[string]any{"type": "404", "path": "/404", "fields": map[string]any{}},
-			"user":    map[string]any{"loggedIn": false},
+			"env":        envMap,
+			"content":    map[string]any{"type": "404", "path": "/404", "fields": map[string]any{}},
+			"allContent": allContentProps,
+			"user":       map[string]any{"loggedIn": false},
 		}
 		pageHTML, err := renderPage(rootLayout, props)
 		if err != nil {
@@ -145,6 +148,20 @@ func structToMap(v any) map[string]any {
 		return map[string]any{}
 	}
 	return m
+}
+
+// contentToMaps converts content nodes into plain values for Pico's template
+// scope and client-side hydration payload.
+func contentToMaps(content []ContentNode) []any {
+	b, err := json.Marshal(content)
+	if err != nil {
+		return []any{}
+	}
+	result := []any{}
+	if err := json.Unmarshal(b, &result); err != nil {
+		return []any{}
+	}
+	return result
 }
 
 // renderPage runs Pico and assembles the final HTML document with the
