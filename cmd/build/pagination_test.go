@@ -81,7 +81,7 @@ let totalPages = Math.ceil(posts.length / postsPerPage);
 		if !strings.Contains(html, expected) {
 			t.Errorf("page %d does not contain %q:\n%s", page, expected, html)
 		}
-		if !strings.Contains(html, "data-external-props") || strings.Contains(html, `"allContent":[{`) {
+		if !strings.Contains(html, "p-external-props") || strings.Contains(html, `"allContent":[{`) {
 			t.Errorf("page %d did not externalize its allContent hydration data", page)
 		}
 	}

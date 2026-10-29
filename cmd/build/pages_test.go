@@ -83,7 +83,7 @@ prop content;
 		`data-path="/events"`,
 		`>Hello</article>`,
 		`>Events</article>`,
-		`data-external-props="{&#34;allContent&#34;:&#34;/core/allContent.json&#34;}"`,
+		`p-external-props="{&#34;allContent&#34;:&#34;/core/allContent.json&#34;}"`,
 	} {
 		if !strings.Contains(html, expected) {
 			t.Errorf("rendered page does not contain %q:\n%s", expected, html)
@@ -104,7 +104,7 @@ prop content;
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(string(postPage), "data-external-props") || !strings.Contains(string(postPage), `"allContent":[]`) {
+	if strings.Contains(string(postPage), "p-external-props") || !strings.Contains(string(postPage), `"allContent":[]`) {
 		t.Fatalf("ordinary content page did not receive the lightweight empty allContent default:\n%s", postPage)
 	}
 }
