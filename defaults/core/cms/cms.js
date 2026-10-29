@@ -939,13 +939,13 @@
     var slugify = function (s) { return String(s).toLowerCase().replace(/[^a-z0-9./*]+/g, "-"); };
     var routes = (state.data.env && state.data.env.routes) || {};
     var path = null;
-    Object.keys(routes).forEach(function (route) {
-      if (routes[route] !== type) return;
+    var route = routes[type];
+    if (route != null) {
       path = route.replace(/:fields\(([^)]*)\)/g, function (m, name) {
         var v = fields ? fields[name] : null;
         return slugify(v == null ? "" : v);
-      });
-    });
+      }).replace(/:paginate\([^)]*\)/g, "").replace(/\/$/, "");
+    }
     if (path == null) {
       var parts = relPathNoExt.split("/");
       path = parts.length > 1 ? "/" + parts.slice(1).join("/") : "/" + parts[0];

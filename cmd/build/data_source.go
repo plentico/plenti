@@ -35,6 +35,7 @@ type ContentNode struct {
 	FilePath string         `json:"filepath"`
 	FileName string         `json:"filename"`
 	Fields   map[string]any `json:"fields"`
+	Pager    int            `json:"pager,omitempty"`
 	// FieldOrder preserves the key order of the source JSON file (maps
 	// marshal alphabetically) so the CMS can display and save fields in
 	// the order the author wrote them.
@@ -153,12 +154,8 @@ func DataSource(siteConfig readers.SiteConfig) ([]ContentNode, error) {
 		}
 
 		// Check for a route override for this content type.
-		routeOverridden := false
-		for route, routeType := range siteConfig.Routes {
-			if routeType != contentType {
-				continue
-			}
-			routeOverridden = true
+		route, routeOverridden := siteConfig.Routes[contentType]
+		if routeOverridden {
 			node.Path = resolveRoute(route, fields)
 		}
 		if !routeOverridden {

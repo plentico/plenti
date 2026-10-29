@@ -98,19 +98,38 @@ func Pages(buildPath string, siteConfig readers.SiteConfig, allContent []Content
 			"user": map[string]any{"loggedIn": false},
 		}
 
-		pageHTML, err := renderPage(rootLayout, props)
-		if err != nil {
-			return fmt.Errorf("can't render %s: %w", node.Path, err)
+		totalPages := 1
+		pager := paginationForType(siteConfig, node.Type)
+		if pager.variable != "" {
+			value := pico.Eval(contentLayout, props, pager.variable)
+			count, err := pageCount(value, pager.variable)
+			if err != nil {
+				return fmt.Errorf("can't paginate %s: %w", node.Path, err)
+			}
+			totalPages = count
 		}
 
-		dest := filepath.Join(buildPath, node.Path, "index.html")
-		if err := os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
-			return fmt.Errorf("can't create folder for %s: %w", node.Path, err)
+		for page := 1; page <= totalPages; page++ {
+			pageNode := node
+			if pager.variable != "" {
+				pageNode.Pager = page
+				pageNode.Path = pager.path(page)
+				props["content"] = structToMap(pageNode)
+			}
+			pageHTML, err := renderPage(rootLayout, props)
+			if err != nil {
+				return fmt.Errorf("can't render %s: %w", pageNode.Path, err)
+			}
+
+			dest := filepath.Join(buildPath, pageNode.Path, "index.html")
+			if err := os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
+				return fmt.Errorf("can't create folder for %s: %w", pageNode.Path, err)
+			}
+			if err := os.WriteFile(dest, []byte(pageHTML), 0644); err != nil {
+				return fmt.Errorf("can't write page %s: %w", dest, err)
+			}
+			pageCounter++
 		}
-		if err := os.WriteFile(dest, []byte(pageHTML), 0644); err != nil {
-			return fmt.Errorf("can't write page %s: %w", dest, err)
-		}
-		pageCounter++
 	}
 
 	// Render a 404 page if a 404 layout exists.
