@@ -31,12 +31,9 @@ func TestPagesProvidesAllContent(t *testing.T) {
 	root := `---
 prop content;
 prop allContent;
-let posts = allContent.filter(node => node.type === "posts");
 ---
 <html><head></head><body>
-{for let post in posts}
-<article data-path="{post.path}">{post.fields.title}</article>
-{/for}
+<='../content/{content.type}.pico' {content} {allContent} />
 </body></html>`
 	if err := os.WriteFile(rootLayout, []byte(root), 0644); err != nil {
 		t.Fatal(err)
@@ -46,7 +43,22 @@ let posts = allContent.filter(node => node.type === "posts");
 	if err := os.MkdirAll(filepath.Dir(pagesLayout), 0755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(pagesLayout, []byte("<main>{content.fields.title}</main>"), 0644); err != nil {
+	pagesTemplate := `---
+prop content, allContent;
+let posts = allContent.filter(node => node.type === "posts");
+---
+{for let post in posts}
+<article data-path="{post.path}">{post.fields.title}</article>
+{/for}`
+	if err := os.WriteFile(pagesLayout, []byte(pagesTemplate), 0644); err != nil {
+		t.Fatal(err)
+	}
+	postsLayout := filepath.Join("layouts", "content", "posts.pico")
+	postsTemplate := `---
+prop content;
+---
+<main>{content.fields.title}</main>`
+	if err := os.WriteFile(postsLayout, []byte(postsTemplate), 0644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -71,11 +83,28 @@ let posts = allContent.filter(node => node.type === "posts");
 		`data-path="/events"`,
 		`>Hello</article>`,
 		`>Events</article>`,
-		`"allContent":[{`,
-		`"filepath":"posts/hello.json"`,
+		`data-external-props="{&#34;allContent&#34;:&#34;/core/allContent.json&#34;}"`,
 	} {
 		if !strings.Contains(html, expected) {
 			t.Errorf("rendered page does not contain %q:\n%s", expected, html)
 		}
+	}
+	if strings.Contains(html, `"allContent":[{`) {
+		t.Fatal("aggregate page embedded allContent in its hydration data")
+	}
+	shared, err := os.ReadFile(filepath.Join(buildPath, "core", "allContent.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(shared), `"filepath":"posts/hello.json"`) {
+		t.Fatalf("shared data is incomplete: %s", shared)
+	}
+
+	postPage, err := os.ReadFile(filepath.Join(buildPath, "hello", "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(postPage), "data-external-props") || !strings.Contains(string(postPage), `"allContent":[]`) {
+		t.Fatalf("ordinary content page did not receive the lightweight empty allContent default:\n%s", postPage)
 	}
 }

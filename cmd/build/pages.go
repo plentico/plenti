@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -79,6 +80,8 @@ func Pages(buildPath string, siteConfig readers.SiteConfig, allContent []Content
 	env := getEnvProps(siteConfig)
 	envMap := structToMap(env)
 	allContentProps := contentToMaps(allContent)
+	externalAllContent := pico.NewExternalProp(allContentProps, "/core/allContent.json")
+	allContentWritten := false
 
 	pageCounter := 0
 	for _, node := range allContent {
@@ -91,7 +94,7 @@ func Pages(buildPath string, siteConfig readers.SiteConfig, allContent []Content
 		props := map[string]any{
 			"env":        envMap,
 			"content":    structToMap(node),
-			"allContent": allContentProps,
+			"allContent": []any{},
 			// Auth state lives in the browser, so SSR always renders a
 			// logged-out user; cms.js publishes the real value to Pattr
 			// after hydration.
@@ -100,6 +103,15 @@ func Pages(buildPath string, siteConfig readers.SiteConfig, allContent []Content
 
 		totalPages := 1
 		pager := paginationForType(siteConfig, node.Type)
+		if pager.variable != "" || templateUsesAllContent(contentLayout) {
+			props["allContent"] = externalAllContent
+			if !allContentWritten {
+				if err := writeAllContent(buildPath, allContentProps); err != nil {
+					return err
+				}
+				allContentWritten = true
+			}
+		}
 		if pager.variable != "" {
 			value := pico.Eval(contentLayout, props, pager.variable)
 			count, err := pageCount(value, pager.variable)
@@ -138,8 +150,16 @@ func Pages(buildPath string, siteConfig readers.SiteConfig, allContent []Content
 		props := map[string]any{
 			"env":        envMap,
 			"content":    map[string]any{"type": "404", "path": "/404", "fields": map[string]any{}},
-			"allContent": allContentProps,
+			"allContent": []any{},
 			"user":       map[string]any{"loggedIn": false},
+		}
+		if templateUsesAllContent(notFoundLayout) {
+			props["allContent"] = externalAllContent
+			if !allContentWritten {
+				if err := writeAllContent(buildPath, allContentProps); err != nil {
+					return err
+				}
+			}
 		}
 		pageHTML, err := renderPage(rootLayout, props)
 		if err != nil {
@@ -152,6 +172,40 @@ func Pages(buildPath string, siteConfig readers.SiteConfig, allContent []Content
 	}
 
 	Log(fmt.Sprintf("Number of pages rendered: %d", pageCounter))
+	return nil
+}
+
+var rePropDeclarations = regexp.MustCompile(`\bprop\s+([^;]+);`)
+
+// templateUsesAllContent detects both single and comma-separated prop declarations.
+func templateUsesAllContent(layoutPath string) bool {
+	source, err := os.ReadFile(layoutPath)
+	if err != nil {
+		return false
+	}
+	for _, declaration := range rePropDeclarations.FindAllStringSubmatch(string(source), -1) {
+		for _, name := range strings.Split(declaration[1], ",") {
+			name = strings.TrimSpace(strings.SplitN(name, "=", 2)[0])
+			if name == "allContent" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func writeAllContent(buildPath string, allContent []any) error {
+	data, err := json.Marshal(allContent)
+	if err != nil {
+		return fmt.Errorf("can't serialize allContent: %w", err)
+	}
+	dest := filepath.Join(buildPath, "core", "allContent.json")
+	if err := os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
+		return fmt.Errorf("can't create shared content folder: %w", err)
+	}
+	if err := os.WriteFile(dest, data, 0644); err != nil {
+		return fmt.Errorf("can't write shared content data: %w", err)
+	}
 	return nil
 }
 

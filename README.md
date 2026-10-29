@@ -93,7 +93,7 @@ Use `{if ...}` / `{/if}` for conditions and `{for let item in items}` / `{/for}`
 
 ### Default props
 
-Plenti provides `content`, `allContent`, `env`, and `user` to every page's base layout. The optional 404 layout receives them too. Declare each prop you use, and explicitly forward props to imported or dynamically selected components.
+Plenti provides `content`, `allContent`, `env`, and `user` to every page's base layout. The optional 404 layout receives them too. Declare each prop you use, and explicitly forward props to imported or dynamically selected components. To avoid duplicating a site's entire collection into every page, the complete `allContent` collection is supplied only to content types whose **content layout** declares `prop allContent;` and to content types with pagination routes. Other pages receive an empty array. For pages using the complete collection, Plenti writes one shared `/core/allContent.json` resource that Pattr loads before hydration; server-side rendering still receives the collection synchronously.
 
 #### `content`
 

@@ -81,9 +81,16 @@ let totalPages = Math.ceil(posts.length / postsPerPage);
 		if !strings.Contains(html, expected) {
 			t.Errorf("page %d does not contain %q:\n%s", page, expected, html)
 		}
-		if !strings.Contains(html, `"allContent":[`) || strings.Count(html, `"type":"posts"`) < 5 {
-			t.Errorf("page %d does not retain the complete allContent collection", page)
+		if !strings.Contains(html, "data-external-props") || strings.Contains(html, `"allContent":[{`) {
+			t.Errorf("page %d did not externalize its allContent hydration data", page)
 		}
+	}
+	shared, err := os.ReadFile(filepath.Join(buildPath, "core", "allContent.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Count(string(shared), `"type":"posts"`) < 5 {
+		t.Error("shared allContent resource does not retain the complete collection")
 	}
 	if _, err := os.Stat(filepath.Join(buildPath, "blog", "1", "index.html")); !os.IsNotExist(err) {
 		t.Error("page one should only be rendered at its clean base route")
