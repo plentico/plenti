@@ -389,10 +389,6 @@
     for (var i = 0; i < items.length; i++) {
       if ((items[i].path || "").replace(/\/+$/, "") === path || items[i].path === path) return items[i];
     }
-    // A page's path may be "/" while the browser shows "/index" and vice versa.
-    if (path === "/index") {
-      for (var j = 0; j < items.length; j++) if (items[j].path === "/") return items[j];
-    }
     return null;
   }
 
@@ -933,7 +929,7 @@
 
   // Mirror of cmd/build/data_source.go path resolution: route overrides from
   // plenti.json (":fields(name)" tokens replaced with slugified field values),
-  // else the default type-folder/file-name path, with "index" files mapping
+  // else the default type-folder/file-name path, with "_index" files mapping
   // to the root of their folder.
   function computePath(type, relPathNoExt, fields) {
     var slugify = function (s) { return String(s).toLowerCase().replace(/[^a-z0-9./*]+/g, "-"); };
@@ -948,10 +944,12 @@
     }
     if (path == null) {
       var parts = relPathNoExt.split("/");
-      path = parts.length > 1 ? "/" + parts.slice(1).join("/") : "/" + parts[0];
+      if (parts[parts.length - 1] === "_index") {
+        path = "/" + parts.slice(0, -1).join("/");
+      } else {
+        path = parts.length > 1 ? "/" + parts.slice(1).join("/") : "/" + parts[0];
+      }
     }
-    if (path === "/index") path = "/";
-    else if (path.slice(-6) === "/index") path = path.slice(0, -5);
     return path;
   }
 

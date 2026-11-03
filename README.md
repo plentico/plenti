@@ -47,13 +47,13 @@ A new site has this basic structure:
 ```text
 my-new-site/
 ├── content/               # JSON content nodes
+│   ├── _index.json        # Homepage
 │   └── pages/
-│       ├── index.json
 │       ├── _defaults.json # Starting values for new CMS entries
 │       └── _schema.json   # CMS field definitions
 ├── layouts/
 │   ├── content/           # One template per content type
-│   │   └── pages.pico
+│   │   └── _index.pico
 │   └── global/
 │       ├── html.pico      # Base layout (configurable)
 │       └── head.pico
@@ -62,7 +62,7 @@ my-new-site/
 └── plenti.json            # Site configuration
 ```
 
-Files and folders in `content/` whose names start with `_` configure the CMS and are not rendered as content nodes.
+Files and folders in `content/` whose names start with `_` configure the CMS and are not rendered as content nodes, except for the special `_index.json` content file described below.
 
 #### Templates
 
@@ -243,6 +243,12 @@ prop user;
 ```
 
 Components use regular PascalCase tags. The dynamic `<=` syntax above selects `layouts/content/pages.pico` when `content.type` is `pages`. Remember that each receiving template must declare forwarded props in its own frontmatter.
+
+### True index pages
+
+Use `_index.json` to create the landing page for its containing folder. A top-level `content/_index.json` renders at `/`, while `content/events/_index.json` renders at `/events` and writes `public/events/index.html`. This is useful for aggregate pages that list other content. Unlike ordinary content nodes, true indexes retain the content-type folder in their path.
+
+The underscore distinguishes this landing page from a regular `index.json` content node: `content/pages/index.json` renders at `/index`, not `/`. Other underscore-prefixed content files remain reserved for CMS configuration.
 
 ### Route overrides
 

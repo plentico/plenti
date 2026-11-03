@@ -30,10 +30,10 @@ var siteCmd = &cobra.Command{
 	The project scaffolding follows this convention:
 	  - plenti.json = sitewide configuration.
 	  - content/ = json files that hold site content.
+	  - content/_index.json = the homepage.
 	  - content/pages/ = regular site pages in json format.
 	  - content/pages/_defaults.json = template for the starting content of a page.
 	  - content/pages/_schema.json = defines the field types for the CMS editor.
-	  - content/pages/index.json = the homepage.
 	  - layouts/ =  the html structure of the site.
 	  - layouts/content/ = node level structure that has a route and correspond to content.
 	  - layouts/components/ = smaller reusable structures that can be used within larger ones.

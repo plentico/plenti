@@ -115,7 +115,7 @@ func DataSource(siteConfig readers.SiteConfig) ([]ContentNode, error) {
 			}
 			return nil
 		}
-		if filepath.Ext(path) != ".json" || strings.HasPrefix(d.Name(), "_") {
+		if filepath.Ext(path) != ".json" || (strings.HasPrefix(d.Name(), "_") && d.Name() != "_index.json") {
 			return nil
 		}
 
@@ -160,18 +160,15 @@ func DataSource(siteConfig readers.SiteConfig) ([]ContentNode, error) {
 		}
 		if !routeOverridden {
 			// Default path is the file path without the leading type folder
-			// (for multi types) or the file name (for single types).
-			if len(parts) > 1 {
+			// (for multi types) or the file name (for single types). A true
+			// index represents its containing folder instead of a child route.
+			if fileName == "_index" {
+				node.Path = "/" + strings.Join(parts[:len(parts)-1], "/")
+			} else if len(parts) > 1 {
 				node.Path = "/" + strings.Join(parts[1:], "/")
 			} else {
 				node.Path = "/" + fileName
 			}
-		}
-		// "index" files map to the root of their path.
-		if strings.HasSuffix(node.Path, "/index") {
-			node.Path = strings.TrimSuffix(node.Path, "index")
-		} else if node.Path == "/index" {
-			node.Path = "/"
 		}
 
 		allContent = append(allContent, node)
