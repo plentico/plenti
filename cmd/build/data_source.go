@@ -153,8 +153,13 @@ func DataSource(siteConfig readers.SiteConfig) ([]ContentNode, error) {
 			FieldOrder: jsonKeyOrder(fileBytes),
 		}
 
-		// Check for a route override for this content type.
-		route, routeOverridden := siteConfig.Routes[contentType]
+		// Check for a route override for this specific content file, then
+		// fall back to the override for its content type. File-specific routes
+		// allow a top-level aggregate to coexist with a same-named type folder.
+		route, routeOverridden := siteConfig.Routes[relPath]
+		if !routeOverridden {
+			route, routeOverridden = siteConfig.Routes[contentType]
+		}
 		if routeOverridden {
 			node.Path = resolveRoute(route, fields)
 		}

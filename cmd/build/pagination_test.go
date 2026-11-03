@@ -97,6 +97,59 @@ let totalPages = Math.ceil(posts.length / postsPerPage);
 	}
 }
 
+func TestPagesFileRoutePaginatesOnlyAggregate(t *testing.T) {
+	projectDir := t.TempDir()
+	previousDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(projectDir); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(previousDir) })
+
+	for _, dir := range []string{"layouts/global", "layouts/content"} {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	root := `---
+prop content;
+---
+<html><head></head><body><main data-path="{content.path}" data-pager="{content.pager}"></main></body></html>`
+	template := `---
+prop content;
+prop allContent;
+let totalPages = 2;
+---
+<div>{content.fields.title}</div>`
+	if err := os.WriteFile("layouts/global/html.pico", []byte(root), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile("layouts/content/references.pico", []byte(template), 0644); err != nil {
+		t.Fatal(err)
+	}
+	allContent := []ContentNode{
+		{Type: "references", FilePath: "references.json", Path: "/references/page", Fields: map[string]any{"title": "References"}},
+		{Type: "references", FilePath: "references/example.json", Path: "/references/example", Fields: map[string]any{"title": "Example"}},
+	}
+	config := readers.SiteConfig{BaseLayout: "global/html.pico", Routes: map[string]string{
+		"references.json": "/references/page/:paginate(totalPages)",
+		"references":      "/references/:fields(slug)",
+	}}
+	if err := Pages(filepath.Join(projectDir, "public"), config, allContent); err != nil {
+		t.Fatal(err)
+	}
+	for _, route := range []string{"references", "references/page/2", "references/example"} {
+		if _, err := os.Stat(filepath.Join(projectDir, "public", route, "index.html")); err != nil {
+			t.Errorf("expected %s: %v", route, err)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(projectDir, "public", "references", "example", "2", "index.html")); !os.IsNotExist(err) {
+		t.Error("detail node unexpectedly received file-specific pagination")
+	}
+}
+
 func TestPageCountRejectsInvalidValues(t *testing.T) {
 	for _, value := range []any{nil, "3", 0, -1, 1.5} {
 		if _, err := pageCount(value, "totalPages"); err == nil {

@@ -17,8 +17,11 @@ type paginationRoute struct {
 	variable string
 }
 
-func paginationForType(siteConfig readers.SiteConfig, contentType string) paginationRoute {
-	route := siteConfig.Routes[contentType]
+func paginationForNode(siteConfig readers.SiteConfig, node ContentNode) paginationRoute {
+	route, ok := siteConfig.Routes[node.FilePath]
+	if !ok {
+		route = siteConfig.Routes[node.Type]
+	}
 	match := rePaginate.FindStringSubmatch(route)
 	if len(match) == 2 {
 		return paginationRoute{route: route, variable: strings.TrimSpace(match[1])}
@@ -32,6 +35,9 @@ func (p paginationRoute) path(page int) string {
 		replacement = fmt.Sprint(page)
 	}
 	route := rePaginate.ReplaceAllString(p.route, replacement)
+	if page == 1 {
+		route = strings.TrimSuffix(strings.TrimSuffix(route, "/"), "/page")
+	}
 	return path.Clean("/" + strings.TrimPrefix(route, "/"))
 }
 

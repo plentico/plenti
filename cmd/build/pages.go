@@ -102,7 +102,7 @@ func Pages(buildPath string, siteConfig readers.SiteConfig, allContent []Content
 		}
 
 		totalPages := 1
-		pager := paginationForType(siteConfig, node.Type)
+		pager := paginationForNode(siteConfig, node)
 		if pager.variable != "" || templateUsesAllContent(contentLayout) {
 			props["allContent"] = externalAllContent
 			if !allContentWritten {

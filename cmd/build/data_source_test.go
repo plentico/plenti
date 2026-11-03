@@ -66,6 +66,48 @@ func TestDataSourceTrueIndexFiles(t *testing.T) {
 	}
 }
 
+func TestDataSourceFileRouteOverridesTypeRoute(t *testing.T) {
+	projectDir := t.TempDir()
+	previousDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(projectDir); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(previousDir) })
+
+	for name, body := range map[string]string{
+		"content/references.json":         `{"title":"References"}`,
+		"content/references/example.json": `{"title":"Example","slug":"example"}`,
+	} {
+		if err := os.MkdirAll(filepath.Dir(name), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(name, []byte(body), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	config := readers.SiteConfig{Routes: map[string]string{
+		"references.json": "/references/page/:paginate(totalPages)",
+		"references":      "/references/:fields(slug)",
+	}}
+	content, err := DataSource(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	paths := map[string]string{}
+	for _, node := range content {
+		paths[node.FilePath] = node.Path
+	}
+	if paths["references.json"] != "/references/page/:paginate(totalPages)" {
+		t.Errorf("aggregate path = %q, want unresolved file-specific route", paths["references.json"])
+	}
+	if paths["references/example.json"] != "/references/example" {
+		t.Errorf("detail path = %q, want type route", paths["references/example.json"])
+	}
+}
+
 func TestDataSourceRouteOverrideTakesPrecedenceOverTrueIndex(t *testing.T) {
 	projectDir := t.TempDir()
 	previousDir, err := os.Getwd()

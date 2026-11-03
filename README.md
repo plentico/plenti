@@ -264,6 +264,19 @@ By default, nested content types use their path below the type folder. For examp
 
 A post titled "Hello World" now has the path `blog/hello-world`. Route values are slugified before being inserted into `:fields(...)` tokens.
 
+A route can also target one content file by its path relative to `content/`. The file-specific route takes precedence over the type route. This is useful when an aggregate and its detail collection share a name:
+
+```json
+{
+  "routes": {
+    "references.json": "/references/page/:paginate(content.fields.totalPages)",
+    "references": "/references/:fields(slug)"
+  }
+}
+```
+
+Here `content/references.json` paginates, while files under `content/references/` use the detail route.
+
 ### Pagination
 
 Add a `:paginate(variable)` token to a route override to render an aggregate content node across multiple pages. The variable is evaluated in that content type's Pico template and must be a positive integer.
