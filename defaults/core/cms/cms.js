@@ -1324,16 +1324,25 @@
     input.focus();
   }
 
+  function matchesContentSearch(item, query) {
+    var terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
+    var fields = item.fields || {};
+    var text = [item.type, item.path, item.filepath, fields.title, fields.name]
+      .filter(function (value) { return value != null; }).join(" ").toLowerCase();
+    return terms.every(function (term) { return text.indexOf(term) !== -1; });
+  }
+
   // Content browser: all content grouped by type, styled like the media
   // modal. Clicking an item navigates to its page for editing in the tray.
   function openContentModal() {
     var byType = {};
+    var searchableRows = [];
     (state.data.content || []).forEach(function (c) {
       (byType[c.type] = byType[c.type] || []).push(c);
     });
     var sections = Object.keys(byType).sort().map(function (type) {
       var rows = byType[type].map(function (c) {
-        return h("button", {
+        var row = h("button", {
           class: "plenti-content-item",
           // Open the edit tray once the destination page has loaded.
           onclick: function () {
@@ -1345,6 +1354,8 @@
           h("span", { class: "plenti-content-path" }, [c.path]),
           h("span", { class: "plenti-content-file" }, [c.filepath])
         ]);
+        searchableRows.push({ item: c, row: row });
+        return row;
       });
       rows.push(h("button", {
         class: "plenti-content-item plenti-content-add",
@@ -1355,6 +1366,29 @@
         h("div", { class: "plenti-content-list" }, rows)
       ]);
     });
+    var noResults = h("div", { class: "plenti-admin-empty", style: "display:none" }, ["No matching content"]);
+    var search = h("input", {
+      class: "plenti-content-search", type: "search",
+      placeholder: "Search content\u2026", "aria-label": "Search content",
+      autocomplete: "off", spellcheck: "false"
+    });
+    search.addEventListener("input", function () {
+      var matches = 0;
+      searchableRows.forEach(function (entry) {
+        var visible = matchesContentSearch(entry.item, search.value);
+        entry.row.style.display = visible ? "" : "none";
+        if (visible) matches++;
+      });
+      noResults.style.display = matches || !searchableRows.length ? "none" : "";
+    });
+    search.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && search.value) {
+        e.preventDefault();
+        e.stopPropagation();
+        search.value = "";
+        search.dispatchEvent(new Event("input"));
+      }
+    });
     var overlay = h("div", {
       class: "plenti-media-overlay",
       onclick: function (e) { if (e.target === overlay) close(); }
@@ -1364,7 +1398,8 @@
           h("h3", {}, ["Content"]),
           h("button", { class: "plenti-media-close", onclick: function () { close(); } }, ["\u00D7"])
         ]),
-        h("div", { class: "plenti-content-body" }, sections.length ? sections : [h("div", { class: "plenti-admin-empty" }, ["No content yet"])])
+        search,
+        h("div", { class: "plenti-content-body" }, [noResults].concat(sections.length ? sections : [h("div", { class: "plenti-admin-empty" }, ["No content yet"])]))
       ])
     ]);
     function close() {
@@ -1374,6 +1409,7 @@
     document.body.appendChild(overlay);
     void overlay.offsetWidth; // reflow so the entrance transition runs
     overlay.classList.add("open");
+    search.focus();
   }
 
   /* ---------- Media modal (embedded CMS) ---------- */

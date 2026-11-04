@@ -100,7 +100,7 @@ async function scenario(reactiveBody, trayOpen = false) {
         console, URL, setTimeout, clearTimeout,
     };
     let source = await readFile(new URL('../defaults/core/cms/cms.js', import.meta.url), 'utf8');
-    source = source.replace(/\}\)\(\);\s*$/, '  window.cmsTest = { liveUpdate, setTrayOpen, setTrayMode, state, syncBodyClasses };\n})();');
+    source = source.replace(/\}\)\(\);\s*$/, '  window.cmsTest = { liveUpdate, matchesContentSearch, setTrayOpen, setTrayMode, state, syncBodyClasses };\n})();');
     vm.runInNewContext(source, context);
     await new Promise(resolve => setImmediate(resolve));
 
@@ -139,6 +139,12 @@ async function scenario(reactiveBody, trayOpen = false) {
     assert.ok(body.classList.contains('plenti-tray-open'), 'live update preserves tray state');
     assert.ok(body.classList.contains('plenti-tray-code'), 'live update preserves JSON view state');
     assert.ok(body.classList.contains('site-class'), 'live update preserves site classes');
+
+    const article = { type: 'articles', path: '/news/launch/', filepath: 'articles/launch.json', fields: { title: 'Product Launch' } };
+    assert.equal(window.cmsTest.matchesContentSearch(article, ''), true, 'empty search matches all content');
+    assert.equal(window.cmsTest.matchesContentSearch(article, 'PRODUCT news'), true, 'search is case-insensitive and matches multiple terms');
+    assert.equal(window.cmsTest.matchesContentSearch(article, 'articles/launch.json'), true, 'search matches filenames');
+    assert.equal(window.cmsTest.matchesContentSearch(article, 'missing'), false, 'search rejects non-matches');
 
     window.cmsTest.setTrayOpen(false);
     assert.equal(storage.has('plenti_cms_open_tray'), false, 'closed state saved for navigation');

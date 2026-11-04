@@ -366,7 +366,22 @@ body.plenti-tray-resizing .plenti-admin-tray {
 
 /* ---------- Content modal ---------- */
 .plenti-content-modal { width: 480px; }
+.plenti-content-search {
+  box-sizing: border-box;
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 6px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 5px;
+  background: #f8fafc;
+  color: #475569;
+  font: inherit;
+  font-size: 12px;
+}
+.plenti-content-search::placeholder { color: #94a3b8; }
+.plenti-content-search:focus { outline: none; border-color: #cbd5e1; background: #fff; }
 .plenti-content-body { padding: 4px 20px 20px; overflow-y: auto; }
+.plenti-content-body > .plenti-admin-empty { margin: 8px 0 16px; color: #64748b; font-size: 13px; text-align: center; }
 .plenti-content-section { margin-bottom: 14px; }
 .plenti-content-section h4 {
   margin: 0 0 6px;
