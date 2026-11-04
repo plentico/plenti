@@ -310,7 +310,10 @@
     schema = schema || {};
     path = path || key;
     var options = fieldOptions(schema, key, path);
-    var common = { disabled: options.disabled || type === "id", required: options.required };
+    var common = {
+      disabled: options.disabled === true || type === "id" ? "disabled" : null,
+      required: options.required === true ? "required" : null
+    };
     if (type === "rich_text") return richTextInput(value, onChange, options);
     if (type === "reference" || type === "references") return referenceInput(key, value, onChange, schema, path, type === "references");
     if (type === "component") return componentInput(value, onChange, schema, path);
