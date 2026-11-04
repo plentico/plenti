@@ -126,7 +126,7 @@ Fields are inferred from their JSON value when possible (`text`, `number`, `bool
 
 **Choice options:** `select` stores a single string; `radio` also stores a single string; `checkbox` stores an array of strings. Use `choices` for the available values and optionally `default` for new drafts.
 
-**Rich text:** `rich_text` stores HTML. Set `toolbar` to an array containing `bold`, `italic`, `link`, `heading2`, or `bullets`, or use `"all"`. The older `textarea` and `wysiwyg` names remain plain multiline editors.
+**Rich text:** `rich_text` stores HTML. Set `toolbar` to an array containing `bold`, `italic`, `link`, `heading2`, or `bullets`, or use `"all"`. `textarea` provides a plain multiline editor.
 
 **Date and time:** use ISO-compatible `YYYY-MM-DD` defaults for dates and `HH:MM` for times. Dynamic defaults accept `today` or `now`, optionally followed by a day offset such as `today+7` or `today-1`.
 

@@ -171,15 +171,12 @@
   function fieldOptions(schema, key, path) {
     var def = schema[path || key] || schema[key] || {};
     var options = def.options;
-    // Accept the former options array during migration, but prefer its object.
-    if (Array.isArray(options)) return options[0] || {};
     return isPlainObject(options) ? options : (isPlainObject(def) ? def : {});
   }
 
   function fieldChoices(schema, key, path) {
-    var def = schema[path || key] || schema[key];
     var options = fieldOptions(schema, key, path);
-    return options.choices || (Array.isArray(def && def.options) && typeof def.options[0] !== "object" ? def.options : []);
+    return options.choices || [];
   }
 
   function referenceValue(item, result) {
@@ -399,7 +396,7 @@
           onChange(e.target.value.split(",").map(function (s) { return s.trim(); }).filter(Boolean));
         } });
     }
-    if (type === "wysiwyg" || type === "textarea") {
+    if (type === "textarea") {
       return h("textarea", { disabled: common.disabled, required: common.required, oninput: function (e) { onChange(e.target.value); } }, [value || ""]);
     }
     if (type === "id") {

@@ -37,8 +37,6 @@ const schema = {
 };
 assert.deepEqual(fieldOptions(schema, 'featured'), { disabled: true, hidden: true, required: true });
 assert.deepEqual(Array.from(fieldChoices(schema, 'status')), ['draft', 'published']);
-assert.deepEqual(fieldChoices({ status: { options: ['draft', 'published'] } }, 'status'), ['draft', 'published'], 'legacy choice arrays remain compatible');
-assert.deepEqual(fieldOptions({ image: { options: [{ width: 500 }] } }, 'image'), { width: 500 }, 'legacy media option object remains compatible');
 const blog = { type: 'blog', path: '/blog/post', fields: { title: 'A post' } };
 const page = { type: 'pages', path: '/about', fields: { title: 'About' } };
 window.fieldTypes.setData({ content: [blog, page], schemas: { pages: schema }, defaults: { pages: { title: 'Existing' } } });
@@ -48,4 +46,4 @@ assert.equal(referenceValue(blog, 'path'), '/blog/post');
 const defaults = applyFieldDefaults('pages', {});
 assert.equal(defaults.status, 'draft');
 assert.equal(applyFieldDefaults('pages', { status: 'published' }).status, 'published', 'explicit defaults win');
-console.log('PASS object options, legacy migration, references, and draft defaults');
+console.log('PASS object options, references, and draft defaults');
