@@ -168,6 +168,11 @@
 
   /* ---------- Editor fields ---------- */
 
+  function fieldLabel(schema, key, path) {
+    var options = fieldOptions(schema, key, path);
+    return options.label || key;
+  }
+
   function fieldOptions(schema, key, path) {
     var def = schema[path || key] || schema[key] || {};
     var options = def.options;
@@ -266,7 +271,7 @@
     var body = h("div", { class: "plenti-component-fields" });
     Object.keys(values).forEach(function (key) {
       if (key === "_component") return;
-      body.appendChild(h("div", { class: "plenti-field" }, [h("label", {}, [key]), fieldInput(key, schemaType(componentSchema, key, values[key], key), values[key], function (next) { values[key] = next; onChange(values); }, componentSchema, key)]));
+      body.appendChild(h("div", { class: "plenti-field" }, [h("label", { hidden: schemaType(componentSchema, key, values[key], key) === "group" ? "hidden" : null }, [fieldLabel(componentSchema, key)]), fieldInput(key, schemaType(componentSchema, key, values[key], key), values[key], function (next) { values[key] = next; onChange(values); }, componentSchema, key)]));
     });
     return h("div", { class: "plenti-component" }, [select, body]);
   }
@@ -375,20 +380,36 @@
       renderPreview();
       return preview;
     }
-    if (type === "object") {
+    if (type === "object" || type === "group") {
       var fieldset = h("fieldset", { class: "plenti-fieldset" }, []);
-      Object.keys(value).forEach(function (nestedKey) {
+      Object.keys(value || {}).forEach(function (nestedKey) {
         var nestedValue = value[nestedKey];
         var nestedPath = path + "." + nestedKey;
         fieldset.appendChild(h("div", { class: "plenti-field" }, [
-          h("label", {}, [nestedKey]),
+          schemaType(schema, nestedKey, nestedValue, nestedPath) === "group" ? null : h("label", {}, [fieldLabel(schema, nestedKey, nestedPath)]),
           fieldInput(nestedKey, schemaType(schema, nestedKey, nestedValue, nestedPath), nestedValue, function (nested) {
             value[nestedKey] = nested;
             onChange(value);
           }, schema, nestedPath)
         ]));
       });
-      return fieldset;
+      var groupOpen = options.expand === true;
+      var groupChevron = h("button", {
+        type: "button",
+        class: "plenti-array-chevron" + (groupOpen ? " plenti-open" : ""),
+        "aria-label": "Toggle " + fieldLabel(schema, key, path)
+      }, [icon("chevron")]);
+      fieldset.style.display = groupOpen ? "" : "none";
+      var groupHeader = h("div", { class: "plenti-group-header", onclick: function () {
+        groupOpen = !groupOpen;
+        groupChevron.classList.toggle("plenti-open", groupOpen);
+        slideToggle(fieldset, groupOpen);
+      } }, [
+        groupChevron,
+        h("label", {}, [fieldLabel(schema, key, path)]),
+        h("span", { class: "plenti-group-count" }, [Object.keys(value || {}).length + " field" + (Object.keys(value || {}).length === 1 ? "" : "s")])
+      ]);
+      return h("div", { class: "plenti-group" }, [groupHeader, fieldset]);
     }
     if (type === "list") {
       return h("input", { type: "text", value: Array.isArray(value) ? value.join(", ") : (value || ""),
@@ -656,12 +677,12 @@
     return "Item " + (i + 1);
   }
 
-  // Group open-state defaults: top-level arrays expanded, nested collapsed.
-  // Item open-state defaults: collapsed.
-  function arrayGroupOpen(path) {
+  // Array groups are expanded by default; item cards remain collapsed.
+  function arrayGroupOpen(path, schema) {
     state.trayArrayOpen = state.trayArrayOpen || {};
     if (path in state.trayArrayOpen) return state.trayArrayOpen[path];
-    return path.indexOf(".") === -1;
+    var key = path.slice(path.lastIndexOf(".") + 1);
+    return fieldOptions(schema, key, path).expand === true;
   }
   function arrayItemOpen(path) {
     state.trayItemOpen = state.trayItemOpen || {};
@@ -681,13 +702,13 @@
         body.appendChild(renderArrayItemField(tray, statusEl, path + "." + key, v, nk, commit, schema, onEdit));
       });
       return h("div", { class: "plenti-field plenti-field-nested" }, [
-        h("label", {}, [key]),
+        h("label", {}, [fieldLabel(schema, key, path + "." + key)]),
         body
       ]);
     }
     var type = schemaType(schema, key, v);
     return h("div", { class: "plenti-field" }, [
-      h("label", {}, [key]),
+      type === "object" || type === "group" ? null : h("label", {}, [fieldLabel(schema, key)]),
       fieldInput(key, type, v, function (val) {
         item[key] = val; commit(); onEdit();
       }, schema)
@@ -737,7 +758,7 @@
   // nested groups and individual items start collapsed. Items can be
   // reordered via up/down arrows or drag-and-drop, and removed via trash.
   function renderArrayField(tray, statusEl, path, label, arr, commit, schema, itemsOnly) {
-    var open = arrayGroupOpen(path);
+    var open = arrayGroupOpen(path, schema);
     var chevron = h("button", {
       class: "plenti-array-chevron" + (open ? " plenti-open" : ""),
       title: open ? "Collapse" : "Expand",
@@ -943,6 +964,7 @@
       body.style.display = "";
       return body;
     }
+    label = fieldLabel(schema, label, path);
     return h("div", { class: "plenti-array", "data-path": path }, [
       h("div", { class: "plenti-array-header", onclick: function (e) {
         if (e.target.closest(".plenti-array-chevron")) return;
@@ -1012,7 +1034,7 @@
         }
         var type = schemaType(schema, key, state.trayFields[key]);
         tray.appendChild(h("div", { class: "plenti-field" }, [
-          h("label", {}, [key]),
+          type === "object" || type === "group" ? null : h("label", {}, [fieldLabel(schema, key)]),
           fieldInput(key, type, state.trayFields[key], function (v) { liveUpdate(key, v); }, schema)
         ]));
       });

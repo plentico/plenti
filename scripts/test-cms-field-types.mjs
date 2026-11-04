@@ -4,13 +4,13 @@ import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 
 let source = await readFile(new URL('../defaults/core/cms/cms.js', import.meta.url), 'utf8');
-source = source.replace(/\}\)\(\);\s*$/, '  window.fieldTypes = { schemaType, isMediaPath, isStructuredArray, fieldOptions, fieldChoices, referenceValue, referenceItems, applyFieldDefaults, setData: data => { state.data = data; } };\n})();');
+source = source.replace(/\}\)\(\);\s*$/, '  window.fieldTypes = { schemaType, isMediaPath, isStructuredArray, fieldOptions, fieldChoices, referenceValue, referenceItems, applyFieldDefaults, fieldLabel, arrayGroupOpen, setData: data => { state.data = data; } };\n})();');
 const window = {};
 vm.runInNewContext(source, {
     window,
     document: { readyState: 'loading', addEventListener() {} },
 });
-const { schemaType, isMediaPath, isStructuredArray, fieldOptions, fieldChoices, referenceValue, referenceItems, applyFieldDefaults } = window.fieldTypes;
+const { schemaType, isMediaPath, isStructuredArray, fieldOptions, fieldChoices, referenceValue, referenceItems, applyFieldDefaults, fieldLabel, arrayGroupOpen } = window.fieldTypes;
 
 assert.equal(schemaType({}, 'count', 165), 'number');
 assert.equal(schemaType({}, 'settings', { enabled: true }), 'object');
@@ -46,4 +46,9 @@ assert.equal(referenceValue(blog, 'path'), '/blog/post');
 const defaults = applyFieldDefaults('pages', {});
 assert.equal(defaults.status, 'draft');
 assert.equal(applyFieldDefaults('pages', { status: 'published' }).status, 'published', 'explicit defaults win');
-console.log('PASS object options, references, and draft defaults');
+const groupSchema = { seo: { type: 'group', options: { expand: true, label: 'SEO Settings' } } };
+assert.equal(schemaType(groupSchema, 'seo', {}), 'group');
+assert.equal(fieldLabel(groupSchema, 'seo'), 'SEO Settings');
+assert.equal(arrayGroupOpen('seo', groupSchema), true, 'expand opens arrays');
+assert.equal(arrayGroupOpen('untitled', {}), false, 'arrays default to collapsed');
+console.log('PASS object options, references, draft defaults, and group options');

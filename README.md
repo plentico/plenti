@@ -122,7 +122,9 @@ Fields are inferred from their JSON value when possible (`text`, `number`, `bool
 }
 ```
 
-**Common options:** `disabled` prevents editing, `hidden` removes the field from the form (its value is retained), and `required` marks the input as required. These options work with text, numeric, date/time, choice, media, and reference controls. Defaults are added only when creating a draft and the `_defaults.json` value does not already define that field.
+**Common options:** `label` overrides the displayed field label. `disabled` prevents editing, `hidden` removes the field from the form (its value is retained), and `required` marks the input as required. These options work with text, numeric, date/time, choice, media, and reference controls. Defaults are added only when creating a draft and the `_defaults.json` value does not already define that field.
+
+**Groups and arrays:** JSON objects and structured arrays are collapsible and collapsed by default. Set `"options": { "expand": true }` to start either field expanded. An object can also be declared explicitly with `"type": "group"`, for example `{ "type": "group", "options": { "expand": true, "label": "SEO Settings" } }`. Individual array item cards also start collapsed.
 
 **Choice options:** `select` stores a single string; `radio` also stores a single string; `checkbox` stores an array of strings. Use `choices` for the available values and optionally `default` for new drafts.
 

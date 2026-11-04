@@ -57,6 +57,11 @@
   border-radius: var(--plenti-radius);
 }
 .plenti-fieldset .plenti-field:last-child { margin-bottom: 0; }
+.plenti-group { border: 1px solid var(--plenti-border); border-radius: var(--plenti-radius); }
+.plenti-group-header { display: flex; align-items: center; gap: 8px; padding: 8px 10px; cursor: pointer; }
+.plenti-group-header label { font-size: 12px; color: rgb(100, 116, 139); margin: 0; cursor: pointer; }
+.plenti-group-count { margin-left: auto; font-size: 12px; color: rgb(100, 116, 139); }
+.plenti-group > .plenti-fieldset { border: 0; border-top: 1px solid var(--plenti-border); border-radius: 0; overflow: hidden; }
 .plenti-media-field {
   display: block;
   width: 100%;
