@@ -440,14 +440,21 @@ body.plenti-tray-resizing .plenti-admin-tray {
   border-color: #94a3b8;
   box-shadow: 0 0 0 3px rgba(148, 163, 184, .25);
 }
-.plenti-newitem-input input {
+.plenti-newitem-input input,
+.plenti-newitem-input input:focus {
+  all: unset;
+  box-sizing: border-box;
   flex: 1;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
   border: none;
   outline: none;
   padding: 8px 0;
   font: inherit;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 13px;
+  color: #1e293b;
   background: transparent;
 }
 .plenti-newitem-ext {
@@ -811,7 +818,7 @@ body.plenti-tray-resizing .plenti-admin-tray {
   padding: 20px 22px;
 }
 .plenti-confirm-msg { margin: 0 0 16px; font-size: 14px; }
-.plenti-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.plenti-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 .plenti-confirm-dialog .plenti-btn {
   padding: 7px 14px;
   border: 1px solid #cbd5e1;

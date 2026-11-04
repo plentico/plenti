@@ -1270,7 +1270,7 @@
 
   // Custom "new item" modal (replaces window.prompt): filename input with the
   // .json extension ghosted inline and a live preview of the saved filepath.
-  function newItemModal(type) {
+  function newItemModal(type, onCreate) {
     function cleanName() {
       var name = input.value.trim().toLowerCase().replace(/[^a-z0-9-_]+/g, "-").replace(/^-+|-+$/g, "");
       return /^[a-z0-9][a-z0-9-_]*$/.test(name) ? name : null;
@@ -1294,6 +1294,7 @@
       var name = cleanName();
       if (!name) return;
       close();
+      if (onCreate) onCreate();
       createItemStub(type, name);
     }
     var overlay = h("div", {
@@ -1332,6 +1333,10 @@
     return terms.every(function (term) { return text.indexOf(term) !== -1; });
   }
 
+  function isSingleType(item) {
+    return item.filepath.indexOf("/") === -1;
+  }
+
   // Content browser: all content grouped by type, styled like the media
   // modal. Clicking an item navigates to its page for editing in the tray.
   function openContentModal() {
@@ -1357,10 +1362,13 @@
         searchableRows.push({ item: c, row: row });
         return row;
       });
-      rows.push(h("button", {
-        class: "plenti-content-item plenti-content-add",
-        onclick: function () { close(); newItemModal(type); }
-      }, [icon("plus"), h("span", { class: "plenti-content-path" }, ["add " + type])]));
+      if (!isSingleType(byType[type][0])) {
+        rows.push(h("button", {
+          class: "plenti-content-item plenti-content-add",
+          // Leave Content open underneath so Cancel returns to it unchanged.
+          onclick: function () { newItemModal(type, close); }
+        }, [icon("plus"), h("span", { class: "plenti-content-path" }, ["add " + type])]));
+      }
       return h("div", { class: "plenti-content-section" }, [
         h("h4", {}, [type]),
         h("div", { class: "plenti-content-list" }, rows)

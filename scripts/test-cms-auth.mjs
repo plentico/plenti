@@ -100,7 +100,7 @@ async function scenario(reactiveBody, trayOpen = false) {
         console, URL, setTimeout, clearTimeout,
     };
     let source = await readFile(new URL('../defaults/core/cms/cms.js', import.meta.url), 'utf8');
-    source = source.replace(/\}\)\(\);\s*$/, '  window.cmsTest = { liveUpdate, matchesContentSearch, setTrayOpen, setTrayMode, state, syncBodyClasses };\n})();');
+    source = source.replace(/\}\)\(\);\s*$/, '  window.cmsTest = { isSingleType, liveUpdate, matchesContentSearch, setTrayOpen, setTrayMode, state, syncBodyClasses };\n})();');
     vm.runInNewContext(source, context);
     await new Promise(resolve => setImmediate(resolve));
 
@@ -145,6 +145,10 @@ async function scenario(reactiveBody, trayOpen = false) {
     assert.equal(window.cmsTest.matchesContentSearch(article, 'PRODUCT news'), true, 'search is case-insensitive and matches multiple terms');
     assert.equal(window.cmsTest.matchesContentSearch(article, 'articles/launch.json'), true, 'search matches filenames');
     assert.equal(window.cmsTest.matchesContentSearch(article, 'missing'), false, 'search rejects non-matches');
+    assert.equal(window.cmsTest.isSingleType({ filepath: '_index.json' }), true, 'root index is a single type');
+    assert.equal(window.cmsTest.isSingleType({ filepath: 'about.json' }), true, 'top-level content is a single type');
+    assert.equal(window.cmsTest.isSingleType({ filepath: 'pages/_index.json' }), false, 'collection index retains add action');
+    assert.equal(window.cmsTest.isSingleType(article), false, 'collection content retains add action');
 
     window.cmsTest.setTrayOpen(false);
     assert.equal(storage.has('plenti_cms_open_tray'), false, 'closed state saved for navigation');
