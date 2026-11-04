@@ -159,9 +159,10 @@ async function scenario(reactiveBody, trayOpen = false) {
     assert.equal(window.cmsTest.isSingleType(article), false, 'collection content retains add action');
 
     window.cmsTest.state.data.content = [article];
-    window.cmsTest.state.data.defaults = { articles: { title: 'Default title' }, empty: {} };
+    window.cmsTest.state.data.defaults = { articles: { title: 'Default title', summary: 'Summary', published: false }, empty: {} };
     assert.equal(window.cmsTest.startingContent('articles').source, 'defaults', 'defaults take precedence over existing content');
     assert.equal(window.cmsTest.startingContent('articles').fields.title, 'Default title');
+    assert.equal(window.cmsTest.startingContent('articles').fieldOrder.join(','), 'title,summary,published', 'defaults retain their original field order');
     assert.equal(window.cmsTest.startingContent('empty').source, 'defaults', 'empty defaults are still valid');
     delete window.cmsTest.state.data.defaults.articles;
     assert.equal(window.cmsTest.startingContent('articles').source, 'existing', 'existing content is an available fallback');

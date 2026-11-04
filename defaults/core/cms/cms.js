@@ -1295,18 +1295,18 @@
   function startingContent(type) {
     var defaults = state.data.defaults || {};
     if (Object.prototype.hasOwnProperty.call(defaults, type)) {
-      return { fields: defaults[type] || {}, source: "defaults" };
+      return { fields: defaults[type] || {}, fieldOrder: Object.keys(defaults[type] || {}), source: "defaults" };
     }
     var items = state.data.content || [];
     for (var i = 0; i < items.length; i++) {
       if (items[i].type === type) {
-        return { fields: items[i].fields || {}, source: "existing" };
+        return { fields: items[i].fields || {}, fieldOrder: Object.keys(orderedFields(items[i])), source: "existing" };
       }
     }
     return null;
   }
 
-  function createItemStub(type, name, startingFields) {
+  function createItemStub(type, name, startingFields, startingFieldOrder) {
     var defaults = startingFields || {};
     var host = (state.data.content || []).find(function (content) {
       return content.type === type && !content.pendingCreate;
@@ -1321,6 +1321,7 @@
       filename: name,
       filepath: type + "/" + name + ".json",
       fields: JSON.parse(JSON.stringify(defaults)),
+      fieldOrder: (startingFieldOrder || Object.keys(defaults)).slice(),
       previewPath: host.path,
       pendingCreate: true
     };
@@ -1363,7 +1364,7 @@
 
   // Custom "new item" modal (replaces window.prompt): filename input with the
   // .json extension ghosted inline and a live preview of the saved filepath.
-  function newItemModal(type, onCreate, startingFields) {
+  function newItemModal(type, onCreate, startingFields, startingFieldOrder) {
     var starting = startingContent(type);
     if (!starting) {
       missingDefaultsModal(type, false);
@@ -1371,11 +1372,12 @@
     }
     if (starting.source === "existing" && !startingFields) {
       missingDefaultsModal(type, true, function () {
-        newItemModal(type, onCreate, starting.fields);
+        newItemModal(type, onCreate, starting.fields, starting.fieldOrder);
       });
       return;
     }
     startingFields = startingFields || starting.fields;
+    startingFieldOrder = startingFieldOrder || starting.fieldOrder;
     function cleanName() {
       var name = input.value.trim().toLowerCase().replace(/[^a-z0-9-_]+/g, "-").replace(/^-+|-+$/g, "");
       return /^[a-z0-9][a-z0-9-_]*$/.test(name) ? name : null;
@@ -1400,7 +1402,7 @@
       if (!name) return;
       close();
       if (onCreate) onCreate();
-      createItemStub(type, name, startingFields);
+      createItemStub(type, name, startingFields, startingFieldOrder);
     }
     var overlay = h("div", {
       class: "plenti-media-overlay plenti-confirm-overlay",
@@ -1450,42 +1452,16 @@
     (state.data.content || []).forEach(function (c) {
       (byType[c.type] = byType[c.type] || []).push(c);
     });
-    var sections = Object.keys(byType).sort().map(function (type) {
-      var rows = byType[type].map(function (c) {
-        var row = h("button", {
-          class: "plenti-content-item",
-          // Open the edit tray once the destination page has loaded.
-          onclick: function () {
-            sessionStorage.setItem("plenti_cms_open_tray", "1");
-            window.location.href = c.path;
-          }
-        }, [
-          icon("file"),
-          h("span", { class: "plenti-content-path" }, [c.path]),
-          h("span", { class: "plenti-content-file" }, [c.filepath])
-        ]);
-        searchableRows.push({ item: c, row: row });
-        return row;
-      });
-      if (!isSingleType(byType[type][0])) {
-        rows.push(h("button", {
-          class: "plenti-content-item plenti-content-add",
-          // Leave Content open underneath so Cancel returns to it unchanged.
-          onclick: function () { newItemModal(type, close); }
-        }, [icon("plus"), h("span", { class: "plenti-content-path" }, ["add " + type])]));
-      }
-      return h("div", { class: "plenti-content-section" }, [
-        h("h4", {}, [type]),
-        h("div", { class: "plenti-content-list" }, rows)
-      ]);
-    });
     var noResults = h("div", { class: "plenti-admin-empty", style: "display:none" }, ["No matching content"]);
+    var loading = h("div", { class: "plenti-admin-empty" }, ["Loading content\u2026"]);
+    var spacer = h("div", { class: "plenti-content-loading-spacer", "aria-hidden": "true" }, []);
+    var body = h("div", { class: "plenti-content-body" }, [noResults, loading, spacer]);
     var search = h("input", {
       class: "plenti-content-search", type: "search",
       placeholder: "Search content\u2026", "aria-label": "Search content",
       autocomplete: "off", spellcheck: "false"
     });
-    search.addEventListener("input", function () {
+    function filterContent() {
       var matches = 0;
       searchableRows.forEach(function (entry) {
         var visible = matchesContentSearch(entry.item, search.value);
@@ -1493,7 +1469,8 @@
         if (visible) matches++;
       });
       noResults.style.display = matches || !searchableRows.length ? "none" : "";
-    });
+    }
+    search.addEventListener("input", filterContent);
     search.addEventListener("keydown", function (e) {
       if (e.key === "Escape" && search.value) {
         e.preventDefault();
@@ -1512,7 +1489,7 @@
           h("button", { class: "plenti-media-close", onclick: function () { close(); } }, ["\u00D7"])
         ]),
         search,
-        h("div", { class: "plenti-content-body" }, [noResults].concat(sections.length ? sections : [h("div", { class: "plenti-admin-empty" }, ["No content yet"])]))
+        body
       ])
     ]);
     function close() {
@@ -1523,6 +1500,84 @@
     void overlay.offsetWidth; // reflow so the entrance transition runs
     overlay.classList.add("open");
     search.focus();
+    // Fill the viewport with an initial chunk, then load the remaining rows in
+    // small tasks so a large content index never blocks modal interaction.
+    var types = Object.keys(byType).sort();
+    var typeIndex = 0;
+    var rowIndex = 0;
+    var list = null;
+    // Reserve the final list's height so batch rendering does not continually
+    // enlarge the scrollbar track. Rows are 30px plus a 2px gap; each section
+    // contributes a 22px heading and 14px bottom margin.
+    function reserveRemainingHeight() {
+      var height = 0;
+      for (var i = typeIndex; i < types.length; i++) {
+        var items = byType[types[i]];
+        var unloaded = items.length - (i === typeIndex ? rowIndex : 0);
+        height += unloaded * 32;
+        if (i > typeIndex || rowIndex === 0) height += 36;
+        if (i > typeIndex && !isSingleType(items[0])) height += 32;
+      }
+      spacer.style.height = height + "px";
+    }
+    function renderContentChunk() {
+      if (!overlay.isConnected) return;
+      var remaining = 80;
+      while (typeIndex < types.length && remaining > 0) {
+        var type = types[typeIndex];
+        var items = byType[type];
+        if (!list) {
+          list = h("div", { class: "plenti-content-list" }, []);
+          body.insertBefore(h("div", { class: "plenti-content-section" }, [
+            h("h4", {}, [type]), list
+          ]), spacer);
+          loading.remove();
+        }
+        while (rowIndex < items.length && remaining > 0) {
+          var c = items[rowIndex++];
+          var row = (function (item) {
+            return h("button", {
+              class: "plenti-content-item",
+              onclick: function () {
+                sessionStorage.setItem("plenti_cms_open_tray", "1");
+                window.location.href = item.path;
+              }
+            }, [
+              icon("file"),
+              h("span", { class: "plenti-content-path" }, [item.path]),
+              h("span", { class: "plenti-content-file" }, [item.filepath])
+            ]);
+          })(c);
+          list.appendChild(row);
+          searchableRows.push({ item: c, row: row });
+          remaining--;
+        }
+        if (rowIndex === items.length) {
+          if (!isSingleType(items[0])) {
+            list.appendChild(h("button", {
+              class: "plenti-content-item plenti-content-add",
+              // Leave Content open underneath so Cancel returns to it unchanged.
+              onclick: (function (contentType) {
+                return function () { newItemModal(contentType, close); };
+              })(type)
+            }, [icon("plus"), h("span", { class: "plenti-content-path" }, ["add " + type])]));
+          }
+          typeIndex++;
+          rowIndex = 0;
+          list = null;
+        }
+      }
+      reserveRemainingHeight();
+      filterContent();
+      if (typeIndex < types.length) {
+        setTimeout(renderContentChunk, 0);
+      } else {
+        loading.remove();
+        if (!searchableRows.length) body.appendChild(h("div", { class: "plenti-admin-empty" }, ["No content yet"]));
+      }
+    }
+    reserveRemainingHeight();
+    setTimeout(renderContentChunk, 0);
   }
 
   /* ---------- Media modal (embedded CMS) ---------- */
