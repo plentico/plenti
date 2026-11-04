@@ -36,7 +36,7 @@ Just make sure to account for this in the corresponding '/layouts/content/<your_
 
 Optionally add a _defaults.json file to define the default content for the type when creating a new instance.
 
-Optionally add a _schema.json file to define the input widgets used in the editor.
+Optionally add a _fieldtypes.json file to define the input widgets used in the editor.
 `,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
@@ -104,9 +104,9 @@ func createMultiType(typeName string) error {
 	if err != nil {
 		return fmt.Errorf("Can't create _defaults.json for type \"%s\": %w\n", typeName, err)
 	}
-	err = createJSONFile(typeContentPath + "/_schema.json")
+	err = createJSONFile(typeContentPath + "/_fieldtypes.json")
 	if err != nil {
-		return fmt.Errorf("Can't create _schema.json for type \"%s\": %w\n", typeName, err)
+		return fmt.Errorf("Can't create _fieldtypes.json for type \"%s\": %w\n", typeName, err)
 	}
 	return nil
 }

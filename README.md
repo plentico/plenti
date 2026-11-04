@@ -50,7 +50,7 @@ my-new-site/
 │   ├── _index.json        # Homepage
 │   └── pages/
 │       ├── _defaults.json # Starting values for new CMS entries
-│       └── _schema.json   # CMS field definitions
+│       └── _fieldtypes.json # CMS field definitions
 ├── layouts/
 │   ├── content/           # One template per content type
 │   │   └── _index.pico
@@ -66,13 +66,13 @@ Files and folders in `content/` whose names start with `_` configure the CMS and
 
 #### CMS schemas and new-item defaults
 
-Schemas define the field controls used by the CMS editing tray. For a collection, place `_schema.json` in its content folder:
+Field types define the field controls used by the CMS editing tray. For a collection, place `_fieldtypes.json` in its content folder:
 
 ```text
-content/pages/_schema.json
+content/pages/_fieldtypes.json
 ```
 
-For a single type, append `._schema.json` to the content filename. For example, `content/index.json` uses `content/index._schema.json`, and `content/_index.json` uses `content/_index._schema.json`. Single types do not use defaults because they are one-off pages rather than templates for new content.
+For a single type, use a field-types file alongside the content file. For example, `content/index.json` uses `content/index._fieldtypes.json`, and `content/_index.json` uses `content/_index.fieldtypes.json`. Single types do not use defaults because they are one-off pages rather than templates for new content.
 
 Collections can also provide `_defaults.json` containing the initial field values for new items:
 

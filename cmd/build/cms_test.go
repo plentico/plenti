@@ -21,12 +21,12 @@ func TestWriteCmsDataLoadsCollectionAndSingleTypeMetadata(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chdir(previousDir) })
 
 	files := map[string]string{
-		"content/pages/_defaults.json": `{"title":"Default page"}`,
-		"content/pages/_schema.json":   `{"title":"text"}`,
-		"content/index.json":           `{"title":"Home"}`,
-		"content/index._schema.json":   `{"title":"textarea"}`,
-		"content/_index.json":          `{"title":"Special home"}`,
-		"content/_index._schema.json":  `{"title":"markdown"}`,
+		"content/pages/_defaults.json":   `{"title":"Default page"}`,
+		"content/pages/_fieldtypes.json": `{"title":"text"}`,
+		"content/index.json":             `{"title":"Home"}`,
+		"content/index._fieldtypes.json": `{"title":"textarea"}`,
+		"content/_index.json":            `{"title":"Special home"}`,
+		"content/_index.fieldtypes.json": `{"title":"markdown"}`,
 	}
 	for name, body := range files {
 		if err := os.MkdirAll(filepath.Dir(name), 0755); err != nil {

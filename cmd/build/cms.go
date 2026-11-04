@@ -115,15 +115,19 @@ func writeCmsData(buildPath string, siteConfig readers.SiteConfig, allContent []
 		}
 		typeName := filepath.ToSlash(filepath.Dir(rel))
 		kind := ""
-		if name == "_schema.json" || name == "_defaults.json" {
+		if name == "_fieldtypes.json" || name == "_defaults.json" {
 			if typeName == "." {
 				return nil
 			}
 			kind = strings.TrimSuffix(strings.TrimPrefix(name, "_"), ".json")
 		} else if typeName == "." {
-			// Single types have schemas, but no defaults because they cannot be
-			// duplicated: index.json -> index._schema.json.
-			suffix := "._schema.json"
+			// Single types have field types, but no defaults because they cannot
+			// be duplicated: index.json -> index._fieldtypes.json. The homepage
+			// convention is _index.json -> _index.fieldtypes.json.
+			suffix := "._fieldtypes.json"
+			if name == "_index.fieldtypes.json" {
+				suffix = ".fieldtypes.json"
+			}
 			if !strings.HasSuffix(name, suffix) {
 				return nil
 			}
@@ -140,7 +144,7 @@ func writeCmsData(buildPath string, siteConfig readers.SiteConfig, allContent []
 		if err := json.Unmarshal(fileBytes, &parsed); err != nil {
 			return nil
 		}
-		if kind == "schema" {
+		if kind == "schema" || kind == "fieldtypes" {
 			data.Schemas[typeName] = parsed
 		} else {
 			// Keep the raw bytes so the CMS sees fields in the file's original

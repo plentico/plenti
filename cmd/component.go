@@ -27,7 +27,7 @@ The following are examples of components you could create that share common fiel
 You can define any component you'd like, but components must have a _defaults.json file.
 This file defines the structure and default values when creating a new component.
 
-Optionally add a _schema.json file to define the input widgets used in the editor.
+Optionally add a _fieldtypes.json file to define the input widgets used in the editor.
 `,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
@@ -68,9 +68,9 @@ func createComponent(componentName string) error {
 	if err != nil {
 		return fmt.Errorf("Can't create _defaults.json for component \"%s\": %w\n", componentName, err)
 	}
-	err = createJSONFile(componentPath + "/_schema.json")
+	err = createJSONFile(componentPath + "/_fieldtypes.json")
 	if err != nil {
-		return fmt.Errorf("Can't create _schema.json for component \"%s\": %w\n", componentName, err)
+		return fmt.Errorf("Can't create _fieldtypes.json for component \"%s\": %w\n", componentName, err)
 	}
 
 	return nil
