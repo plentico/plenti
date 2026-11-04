@@ -1160,6 +1160,8 @@
 
   function setTrayOpen(open) {
     state.trayOpen = open;
+    if (open) sessionStorage.setItem("plenti_cms_open_tray", "1");
+    else sessionStorage.removeItem("plenti_cms_open_tray");
     if (open) { state.trayJsonMode = false; state.trayInfoMode = false; state.trayArrayOpen = {}; state.trayItemOpen = {}; state.pendingFilename = null; } // always reopen in form mode, groups/items default
     var tray = document.querySelector(".plenti-admin-tray");
     var toggle = document.querySelector(".plenti-admin-bar .plenti-edit-toggle");
@@ -1898,11 +1900,8 @@
     syncBodyClasses();
     if (!el.querySelector(".plenti-admin-bar")) {
       mountAdminBar(el);
-      // The content browser asks for the tray to open after navigation.
-      if (sessionStorage.getItem("plenti_cms_open_tray")) {
-        sessionStorage.removeItem("plenti_cms_open_tray");
-        if (state.trayItem) setTrayOpen(true);
-      }
+      // Keep the tray open across page navigation, including content browser links.
+      if (sessionStorage.getItem("plenti_cms_open_tray")) setTrayOpen(true);
     }
   }
 

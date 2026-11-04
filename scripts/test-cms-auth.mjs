@@ -42,11 +42,12 @@ class Element {
     }
 }
 
-async function scenario(reactiveBody) {
+async function scenario(reactiveBody, trayOpen = false) {
     const body = new Element('body');
     body.className = 'site-class';
     let container = new Element('div');
     const storage = new Map([['plenti_cms_local_logout', '1']]);
+    if (trayOpen) storage.set('plenti_cms_open_tray', '1');
     const localStorage = {
         getItem: key => storage.get(key) || null,
         setItem: (key, value) => storage.set(key, String(value)),
@@ -108,6 +109,8 @@ async function scenario(reactiveBody) {
     await new Promise(resolve => setTimeout(resolve, 10));
     assert.equal(body.classList.contains('plenti-admin-active'), true, 'logged in');
     assert.ok(container.querySelector('.plenti-admin-bar'), 'admin bar mounted');
+    assert.equal(window.cmsTest.state.trayOpen, trayOpen, 'tray state restored after navigation');
+    assert.equal(body.classList.contains('plenti-tray-open'), trayOpen, 'restored tray body class');
     window.user.logout();
     assert.equal(body.classList.contains('plenti-admin-active'), false, 'logged out');
     window.user.login();
@@ -115,6 +118,7 @@ async function scenario(reactiveBody) {
     assert.equal(body.classList.contains('plenti-admin-active'), true, 'logged in again');
 
     window.cmsTest.setTrayOpen(true);
+    assert.equal(storage.get('plenti_cms_open_tray'), '1', 'open state saved for navigation');
     assert.ok(body.classList.contains('plenti-tray-open'));
     assert.ok(body.classList.contains('plenti-tray-form'));
     window.cmsTest.state.trayInfoMode = true;
@@ -137,6 +141,7 @@ async function scenario(reactiveBody) {
     assert.ok(body.classList.contains('site-class'), 'live update preserves site classes');
 
     window.cmsTest.setTrayOpen(false);
+    assert.equal(storage.has('plenti_cms_open_tray'), false, 'closed state saved for navigation');
     for (const name of ['plenti-tray-open', 'plenti-tray-form', 'plenti-tray-info', 'plenti-tray-code']) {
         assert.equal(body.classList.contains(name), false, name + ' removed when tray closes');
     }
@@ -146,4 +151,6 @@ await scenario(true);
 console.log('PASS auth state survives reactive body class updates');
 await scenario(false);
 console.log('PASS auth state with a static body and persistent CMS container');
+await scenario(true, true);
+console.log('PASS open tray is restored after navigation');
 console.log('PASS tray view classes and JSON live updates preserve body state');
