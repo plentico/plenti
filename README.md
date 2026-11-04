@@ -82,6 +82,62 @@ content/pages/_defaults.json
 
 When you add an item, the CMS uses this file whenever it exists, including when it contains an empty `{}` object. If the file is missing, the CMS displays **Missing _defaults.json** and offers **Use existing content as starting point**. Choosing that option copies an existing item of the same type into the new draft without modifying the original. If no existing item is available, the dialog explains that there is no content to copy. Drafts are not committed until you save them.
 
+#### Field types
+
+Fields are inferred from their JSON value when possible (`text`, `number`, `boolean`, `media`, `object`, or a scalar `list`). Declare a field type to select an editor explicitly. Each definition has a `type` and an optional `options` **object**. The complete supported field types are `text`, `number`, `boolean`, `date`, `time`, `rich_text`, `select`, `checkbox`, `radio`, `reference`, `references`, `id`, `media`, `component`, and `list_text`.
+
+```json
+{
+  "title": {
+    "type": "text",
+    "options": { "disabled": true, "hidden": false }
+  },
+  "status": {
+    "type": "select",
+    "options": {
+      "choices": ["draft", "published", "archived"],
+      "default": "draft"
+    }
+  },
+  "tags": {
+    "type": "checkbox",
+    "options": { "choices": ["newsletter", "events", "offers"] }
+  },
+  "hero_image": {
+    "type": "media",
+    "options": { "width": 1200, "height": 630, "crop": true, "convert": "webp", "quality": 0.82 }
+  },
+  "related_posts": {
+    "type": "references",
+    "options": { "types": ["blog"], "search": ["title", "slug"], "result": "path" }
+  },
+  "body": {
+    "type": "rich_text",
+    "options": { "toolbar": ["bold", "italic", "link", "heading2", "bullets"] }
+  },
+  "publish_date": {
+    "type": "date",
+    "options": { "default": "today" }
+  }
+}
+```
+
+**Common options:** `disabled` prevents editing, `hidden` removes the field from the form (its value is retained), and `required` marks the input as required. These options work with text, numeric, date/time, choice, media, and reference controls. Defaults are added only when creating a draft and the `_defaults.json` value does not already define that field.
+
+**Choice options:** `select` stores a single string; `radio` also stores a single string; `checkbox` stores an array of strings. Use `choices` for the available values and optionally `default` for new drafts.
+
+**Rich text:** `rich_text` stores HTML. Set `toolbar` to an array containing `bold`, `italic`, `link`, `heading2`, or `bullets`, or use `"all"`. The older `textarea` and `wysiwyg` names remain plain multiline editors.
+
+**Date and time:** use ISO-compatible `YYYY-MM-DD` defaults for dates and `HH:MM` for times. Dynamic defaults accept `today` or `now`, optionally followed by a day offset such as `today+7` or `today-1`.
+
+**Media:** `media` stores a `/media/...` path. `width` and `height` resize a selected image; with `crop: true`, resizing uses a centered cover crop. `convert` supports `png`, `jpeg`/`jpg`, and `webp`, and `quality` (0–1, default `0.82`) controls lossy output. Transformations are committed to the media library when the image is selected.
+
+**References:** `reference` stores one result and `references` stores an array. `types` restricts content types; omit it to include all types. `search` lists dot-separated properties searched by the input, for example `"fields.title"` or `"path"`. `result` determines the stored value: `"path"` (the default), a dot-separated property such as `"fields.title"`, or `"*"` for the complete content node.
+
+**Components:** `component` stores a component object. `allowed` lists directories under `content/_components/`. Selecting one copies its `_defaults.json`; its `_fieldtypes.json` controls the nested inputs. The selected component name is saved in `_component`.
+
+**Other types:** `id` is read-only and generated automatically for new drafts when no default is supplied. `list_text` is a comma-separated input that stores an array of strings. `number` stores a number (or `null` when cleared), and `boolean` stores `true` or `false`. Nested object field types can be declared with dot-separated keys such as `"seo.title"`.
+
 #### Templates
 
 Declare incoming values with `prop` in the frontmatter between `---` fences. Pico supports JavaScript expressions, conditionals, loops, components, and scoped styles:

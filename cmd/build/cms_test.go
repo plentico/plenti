@@ -21,12 +21,14 @@ func TestWriteCmsDataLoadsCollectionAndSingleTypeMetadata(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chdir(previousDir) })
 
 	files := map[string]string{
-		"content/pages/_defaults.json":   `{"title":"Default page"}`,
-		"content/pages/_fieldtypes.json": `{"title":"text"}`,
-		"content/index.json":             `{"title":"Home"}`,
-		"content/index._fieldtypes.json": `{"title":"textarea"}`,
-		"content/_index.json":            `{"title":"Special home"}`,
-		"content/_index.fieldtypes.json": `{"title":"markdown"}`,
+		"content/pages/_defaults.json":             `{"title":"Default page"}`,
+		"content/pages/_fieldtypes.json":           `{"title":"text"}`,
+		"content/index.json":                       `{"title":"Home"}`,
+		"content/index._fieldtypes.json":           `{"title":"textarea"}`,
+		"content/_index.json":                      `{"title":"Special home"}`,
+		"content/_index.fieldtypes.json":           `{"title":"markdown"}`,
+		"content/_components/cta/_defaults.json":   `{"label":"Learn more"}`,
+		"content/_components/cta/_fieldtypes.json": `{"label":{"type":"text","options":{"required":true}}}`,
 	}
 	for name, body := range files {
 		if err := os.MkdirAll(filepath.Dir(name), 0755); err != nil {
@@ -72,5 +74,12 @@ func TestWriteCmsDataLoadsCollectionAndSingleTypeMetadata(t *testing.T) {
 	}
 	if len(data.Defaults) != 1 {
 		t.Errorf("got %d defaults, want only the collection defaults", len(data.Defaults))
+	}
+	var component map[string]any
+	if err := json.Unmarshal(data.Components["cta"], &component); err != nil {
+		t.Fatal(err)
+	}
+	if component["label"] != "Learn more" || data.ComponentSchemas["cta"]["label"] == nil {
+		t.Error("component defaults and field types were not included in the CMS payload")
 	}
 }

@@ -4,13 +4,13 @@ import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 
 let source = await readFile(new URL('../defaults/core/cms/cms.js', import.meta.url), 'utf8');
-source = source.replace(/\}\)\(\);\s*$/, '  window.fieldTypes = { schemaType, isMediaPath, isStructuredArray };\n})();');
+source = source.replace(/\}\)\(\);\s*$/, '  window.fieldTypes = { schemaType, isMediaPath, isStructuredArray, fieldOptions, fieldChoices, referenceValue, referenceItems, applyFieldDefaults, setData: data => { state.data = data; } };\n})();');
 const window = {};
 vm.runInNewContext(source, {
     window,
     document: { readyState: 'loading', addEventListener() {} },
 });
-const { schemaType, isMediaPath, isStructuredArray } = window.fieldTypes;
+const { schemaType, isMediaPath, isStructuredArray, fieldOptions, fieldChoices, referenceValue, referenceItems, applyFieldDefaults } = window.fieldTypes;
 
 assert.equal(schemaType({}, 'count', 165), 'number');
 assert.equal(schemaType({}, 'settings', { enabled: true }), 'object');
@@ -30,3 +30,22 @@ assert.equal(isStructuredArray([{ title: 'Card' }, 'not an object']), false, 'mi
 console.log('PASS automatic number, object, and media field type inference');
 console.log('PASS explicit and nested schema overrides take precedence');
 console.log('PASS nested arrays are treated as recursive structured groups');
+
+const schema = {
+    status: { type: 'select', options: { choices: ['draft', 'published'], default: 'draft' } },
+    featured: { type: 'boolean', options: { disabled: true, hidden: true, required: true } },
+};
+assert.deepEqual(fieldOptions(schema, 'featured'), { disabled: true, hidden: true, required: true });
+assert.deepEqual(Array.from(fieldChoices(schema, 'status')), ['draft', 'published']);
+assert.deepEqual(fieldChoices({ status: { options: ['draft', 'published'] } }, 'status'), ['draft', 'published'], 'legacy choice arrays remain compatible');
+assert.deepEqual(fieldOptions({ image: { options: [{ width: 500 }] } }, 'image'), { width: 500 }, 'legacy media option object remains compatible');
+const blog = { type: 'blog', path: '/blog/post', fields: { title: 'A post' } };
+const page = { type: 'pages', path: '/about', fields: { title: 'About' } };
+window.fieldTypes.setData({ content: [blog, page], schemas: { pages: schema }, defaults: { pages: { title: 'Existing' } } });
+assert.deepEqual(Array.from(referenceItems({ related: { options: { types: ['blog'], search: ['fields.title'] } } }, 'related', null, 'post')), [blog]);
+assert.equal(referenceValue(blog, 'fields.title'), 'A post');
+assert.equal(referenceValue(blog, 'path'), '/blog/post');
+const defaults = applyFieldDefaults('pages', {});
+assert.equal(defaults.status, 'draft');
+assert.equal(applyFieldDefaults('pages', { status: 'published' }).status, 'published', 'explicit defaults win');
+console.log('PASS object options, legacy migration, references, and draft defaults');

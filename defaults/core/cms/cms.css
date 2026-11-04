@@ -40,6 +40,16 @@
 .plenti-field .plenti-help { font-size: 0.8rem; color: var(--plenti-muted); margin-top: 0.25rem; }
 
 .plenti-checks label { display: block; font-weight: 400; margin-bottom: 0.25rem; }
+.plenti-rich-text, .plenti-reference, .plenti-component { border: 1px solid var(--plenti-border); border-radius: var(--plenti-radius); overflow: hidden; }
+.plenti-rich-toolbar { display: flex; gap: 4px; padding: 5px; border-bottom: 1px solid var(--plenti-border); }
+.plenti-rich-command { border: 1px solid var(--plenti-border); border-radius: 3px; background: var(--plenti-panel-bg); color: var(--plenti-text); padding: 3px 7px; cursor: pointer; }
+.plenti-rich-editor { min-height: 140px; padding: 8px; outline: none; }
+.plenti-reference-search { width: 100%; box-sizing: border-box; padding: 7px; border: 0; border-bottom: 1px solid var(--plenti-border); }
+.plenti-reference-results { max-height: 200px; overflow: auto; padding: 6px; }
+.plenti-reference-option { display: flex; gap: 6px; padding: 4px; }
+.plenti-component > select { width: 100%; padding: 7px; border: 0; border-bottom: 1px solid var(--plenti-border); }
+.plenti-component-fields { padding: 8px; }
+.plenti-field [required] { border-left: 2px solid var(--plenti-accent); }
 .plenti-fieldset {
   margin: 0;
   padding: 12px;

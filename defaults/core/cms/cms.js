@@ -168,35 +168,178 @@
 
   /* ---------- Editor fields ---------- */
 
+  function fieldOptions(schema, key, path) {
+    var def = schema[path || key] || schema[key] || {};
+    var options = def.options;
+    // Accept the former options array during migration, but prefer its object.
+    if (Array.isArray(options)) return options[0] || {};
+    return isPlainObject(options) ? options : (isPlainObject(def) ? def : {});
+  }
+
+  function fieldChoices(schema, key, path) {
+    var def = schema[path || key] || schema[key];
+    var options = fieldOptions(schema, key, path);
+    return options.choices || (Array.isArray(def && def.options) && typeof def.options[0] !== "object" ? def.options : []);
+  }
+
+  function referenceValue(item, result) {
+    if (!result || result === "path") return item.path;
+    if (result === "*") return item;
+    var value = result.split(".").reduce(function (value, key) { return value == null ? null : value[key]; }, item);
+    if (value === undefined && result.indexOf(".") === -1 && item.fields) value = item.fields[result];
+    return value;
+  }
+
+  function referenceItems(schema, key, path, query) {
+    var options = fieldOptions(schema, key, path);
+    var types = options.types || [];
+    var search = options.search || ["path"];
+    query = (query || "").toLowerCase();
+    return (state.data.content || []).filter(function (item) {
+      if (item.pendingCreate || (types.length && types.indexOf(item.type) === -1)) return false;
+      if (!query) return true;
+      return search.some(function (field) {
+        return String(referenceValue(item, field) || "").toLowerCase().indexOf(query) !== -1;
+      });
+    });
+  }
+
+  function referenceInput(key, value, onChange, schema, path, multiple) {
+    var options = fieldOptions(schema, key, path);
+    var values = multiple ? (Array.isArray(value) ? value : []) : [value];
+    var search = h("input", { type: "search", placeholder: "Search content…", class: "plenti-reference-search" });
+    var list = h("div", { class: "plenti-reference-results" });
+    function matches(item) { return values.some(function (v) { return JSON.stringify(v) === JSON.stringify(referenceValue(item, options.result)); }); }
+    function refresh() {
+      list.innerHTML = "";
+      var items = referenceItems(schema, key, path, search.value).slice(0, 50);
+      if (!items.length) list.appendChild(h("div", { class: "plenti-help" }, ["No matching content"]));
+      items.forEach(function (item) {
+        var result = referenceValue(item, options.result);
+        list.appendChild(h("label", { class: "plenti-reference-option" }, [
+          h("input", { type: multiple ? "checkbox" : "radio", name: "reference-" + path, checked: matches(item), onchange: function () {
+            if (multiple) {
+              values = values.filter(function (v) { return JSON.stringify(v) !== JSON.stringify(result); });
+              if (matches(item)) values.push(result);
+              onChange(values);
+            } else { values = [result]; onChange(result); }
+            refresh();
+          } }),
+          h("span", {}, [(item.fields && (item.fields.title || item.fields.name)) || item.path])
+        ]));
+      });
+    }
+    search.addEventListener("input", refresh);
+    refresh();
+    return h("div", { class: "plenti-reference" }, [search, list]);
+  }
+
+  function richTextInput(value, onChange, options) {
+    var toolbar = options.toolbar || "all";
+    var commands = toolbar === "all" ? ["bold", "italic", "link", "heading2", "bullets"] : toolbar;
+    var editor = h("div", { class: "plenti-rich-editor", contenteditable: "true" });
+    editor.innerHTML = value || "";
+    editor.addEventListener("input", function () { onChange(editor.innerHTML); });
+    var buttons = commands.map(function (command) {
+      var names = { bold: "B", italic: "I", link: "Link", heading2: "H2", bullets: "• List" };
+      return h("button", { type: "button", class: "plenti-rich-command", title: command, onclick: function (e) {
+        e.preventDefault(); editor.focus();
+        if (command === "link") {
+          var url = window.prompt("Link URL", "https://");
+          if (url) document.execCommand("createLink", false, url);
+        } else if (command === "heading2") document.execCommand("formatBlock", false, "h2");
+        else if (command === "bullets") document.execCommand("insertUnorderedList", false, null);
+        else document.execCommand(command, false, null);
+        onChange(editor.innerHTML);
+      } }, [names[command] || command]);
+    });
+    return h("div", { class: "plenti-rich-text" }, [h("div", { class: "plenti-rich-toolbar" }, buttons), editor]);
+  }
+
+  function componentInput(value, onChange, schema, path) {
+    var allowed = fieldOptions(schema, path, path).allowed || [];
+    var components = state.data.components || {};
+    var componentSchemas = state.data.componentSchemas || {};
+    var selected = value && value._component || "";
+    var select = h("select", { disabled: fieldOptions(schema, path, path).disabled, onchange: function (e) { selected = e.target.value; var next = JSON.parse(JSON.stringify(components[selected] || {})); if (selected) next._component = selected; onChange(next); renderTray(document.querySelector(".plenti-admin-tray"), document.querySelector(".plenti-admin-status")); } }, [
+      h("option", { value: "" }, ["Choose a component"])
+    ].concat(allowed.map(function (name) { return h("option", { value: name, selected: name === selected ? "selected" : null }, [name]); })));
+    var values = value || {};
+    var componentSchema = componentSchemas[selected] || {};
+    var body = h("div", { class: "plenti-component-fields" });
+    Object.keys(values).forEach(function (key) {
+      if (key === "_component") return;
+      body.appendChild(h("div", { class: "plenti-field" }, [h("label", {}, [key]), fieldInput(key, schemaType(componentSchema, key, values[key], key), values[key], function (next) { values[key] = next; onChange(values); }, componentSchema, key)]));
+    });
+    return h("div", { class: "plenti-component" }, [select, body]);
+  }
+
+  function transformMedia(selected, options) {
+    if (!isImage(selected) || (!options.width && !options.height && !options.convert)) return Promise.resolve(selected);
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      img.onload = function () {
+        var width = Number(options.width) || img.naturalWidth;
+        var height = Number(options.height) || img.naturalHeight;
+        if (!options.width) width = Math.round(img.naturalWidth * height / img.naturalHeight);
+        if (!options.height) height = Math.round(img.naturalHeight * width / img.naturalWidth);
+        var canvas = document.createElement("canvas");
+        canvas.width = width; canvas.height = height;
+        var ctx = canvas.getContext("2d");
+        var sw = img.naturalWidth, sh = img.naturalHeight, sx = 0, sy = 0;
+        if (options.crop) {
+          var scale = Math.max(width / sw, height / sh);
+          sw = width / scale; sh = height / scale;
+          sx = (img.naturalWidth - sw) / 2; sy = (img.naturalHeight - sh) / 2;
+        }
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, width, height);
+        var format = (options.convert || selected.split(".").pop()).toLowerCase().replace("jpg", "jpeg");
+        var name = selected.replace(/^\/+/, "").replace(/\.[^.]+$/, "") + "." + (format === "jpeg" ? "jpg" : format);
+        commit([{ file: name, action: "upsert", encoding: "base64", contents: canvas.toDataURL("image/" + format, Number(options.quality) || 0.82) }]).then(function () {
+          state.data.media = state.data.media || [];
+          if (state.data.media.indexOf("/" + name) === -1) state.data.media.push("/" + name);
+          resolve("/" + name);
+        }).catch(reject);
+      };
+      img.onerror = function () { reject(new Error("Could not transform image")); };
+      img.src = state.data.env.baseurl.replace(/\/$/, "") + "/" + selected.replace(/^\/+/, "");
+    });
+  }
+
   function fieldInput(key, type, value, onChange, schema, path) {
     schema = schema || {};
     path = path || key;
-    var def = schema[path] || schema[key];
-    var options = def && def.options;
+    var options = fieldOptions(schema, key, path);
+    var common = { disabled: options.disabled || type === "id", required: options.required };
+    if (type === "rich_text") return richTextInput(value, onChange, options);
+    if (type === "reference" || type === "references") return referenceInput(key, value, onChange, schema, path, type === "references");
+    if (type === "component") return componentInput(value, onChange, schema, path);
+    if (type === "list_text") type = "list";
 
     if (type === "boolean") {
-      return h("input", { type: "checkbox", checked: !!value, onchange: function (e) { onChange(e.target.checked); } });
+      return h("input", { type: "checkbox", checked: !!value, disabled: common.disabled, required: common.required, onchange: function (e) { onChange(e.target.checked); } });
     }
     if (type === "number") {
-      return h("input", { type: "number", value: value == null ? "" : value, onchange: function (e) { onChange(e.target.value === "" ? null : Number(e.target.value)); } });
+      return h("input", { type: "number", disabled: common.disabled, required: common.required, value: value == null ? "" : value, onchange: function (e) { onChange(e.target.value === "" ? null : Number(e.target.value)); } });
     }
     if (type === "date") {
-      return h("input", { type: "date", value: value || "", onchange: function (e) { onChange(e.target.value); } });
+      return h("input", { type: "date", disabled: common.disabled, required: common.required, value: value || "", onchange: function (e) { onChange(e.target.value); } });
     }
     if (type === "time") {
-      return h("input", { type: "time", value: value || "", onchange: function (e) { onChange(e.target.value); } });
+      return h("input", { type: "time", disabled: common.disabled, required: common.required, value: value || "", onchange: function (e) { onChange(e.target.value); } });
     }
-    if ((type === "select" || type === "radio" || type === "checkbox") && options) {
+    if ((type === "select" || type === "radio" || type === "checkbox")) {
+      var choices = fieldChoices(schema, key, path);
       if (type === "select") {
-        return h("select", { onchange: function (e) { onChange(e.target.value); } },
-          options.map(function (opt) {
+        return h("select", { disabled: common.disabled, required: common.required, onchange: function (e) { onChange(e.target.value); } },
+          choices.map(function (opt) {
             return h("option", { value: opt, selected: opt === value ? "selected" : null }, [opt]);
           }));
       }
-      return h("div", { class: "plenti-checks" }, options.map(function (opt) {
+      return h("div", { class: "plenti-checks" }, choices.map(function (opt) {
         var input = type === "radio"
-          ? h("input", { type: "radio", name: key, value: opt, checked: opt === value, onchange: function () { onChange(opt); } })
-          : h("input", { type: "checkbox", value: opt, checked: Array.isArray(value) && value.indexOf(opt) !== -1,
+          ? h("input", { type: "radio", name: key, disabled: common.disabled, required: common.required, value: opt, checked: opt === value, onchange: function () { onChange(opt); } })
+          : h("input", { type: "checkbox", value: opt, disabled: common.disabled, required: common.required, checked: Array.isArray(value) && value.indexOf(opt) !== -1,
               onchange: function (e) {
                 var next = Array.isArray(value) ? value.slice() : [];
                 if (e.target.checked) next.push(opt);
@@ -212,12 +355,14 @@
         preview.innerHTML = "";
         var full = state.data.env.baseurl.replace(/\/$/, "") + "/" + String(value || "").replace(/^\/+/, "");
         preview.appendChild(h("button", {
-          type: "button", class: "plenti-media-field", title: "Change media",
+          type: "button", class: "plenti-media-field", title: "Change media", disabled: common.disabled,
           onclick: function () {
             openMediaModal(function (selected) {
-              value = selected;
-              onChange(selected);
-              renderPreview();
+              transformMedia(selected, options).then(function (result) {
+                value = result;
+                onChange(result);
+                renderPreview();
+              }).catch(function (err) { notify(err.message, true); });
             });
           }
         }, [
@@ -252,7 +397,7 @@
         } });
     }
     if (type === "wysiwyg" || type === "textarea") {
-      return h("textarea", { oninput: function (e) { onChange(e.target.value); } }, [value || ""]);
+      return h("textarea", { disabled: common.disabled, required: common.required, oninput: function (e) { onChange(e.target.value); } }, [value || ""]);
     }
     if (type === "id") {
       return h("input", { type: "text", value: value || "", disabled: "disabled" });
@@ -266,7 +411,7 @@
         }
       }, [JSON.stringify(value, null, 2)]);
     }
-    return h("input", { type: "text", value: value == null ? "" : value, oninput: function (e) { onChange(e.target.value); } });
+    return h("input", { type: "text", value: value == null ? "" : value, disabled: common.disabled, required: common.required, oninput: function (e) { onChange(e.target.value); } });
   }
 
   function schemaType(schema, key, value, path) {
@@ -858,7 +1003,8 @@
     } else {
       Object.keys(state.trayFields).forEach(function (key) {
         var value = state.trayFields[key];
-        if (isStructuredArray(value)) {
+        if (fieldOptions(schema, key).hidden) return;
+        if (isStructuredArray(value) && schemaType(schema, key, value) !== "references") {
           tray.appendChild(renderArrayField(tray, statusEl, key, key, value, function () {
             liveUpdate(key, value);
           }, schema));
@@ -1306,6 +1452,29 @@
     return null;
   }
 
+  function applyFieldDefaults(type, fields) {
+    var result = JSON.parse(JSON.stringify(fields || {}));
+    var schema = (state.data.schemas && state.data.schemas[type]) || {};
+    Object.keys(schema).forEach(function (key) {
+      if (key.indexOf(".") !== -1 || Object.prototype.hasOwnProperty.call(result, key)) return;
+      var options = fieldOptions(schema, key);
+      if (options.default !== undefined) {
+        var value = options.default;
+        var fieldType = schemaType(schema, key, value);
+        if ((fieldType === "date" || fieldType === "time") && typeof value === "string") {
+          var match = value.match(/^(today|now)(?:([+-])(\\d+))?$/);
+          if (match) {
+            var date = new Date();
+            if (match[2]) date.setDate(date.getDate() + (match[2] === "+" ? 1 : -1) * Number(match[3]));
+            value = fieldType === "date" ? date.toISOString().slice(0, 10) : date.toTimeString().slice(0, 5);
+          }
+        }
+        result[key] = JSON.parse(JSON.stringify(value));
+      } else if (schemaType(schema, key, null) === "id") result[key] = Date.now().toString(36);
+    });
+    return result;
+  }
+
   function createItemStub(type, name, startingFields, startingFieldOrder) {
     var defaults = startingFields || {};
     var host = (state.data.content || []).find(function (content) {
@@ -1378,6 +1547,8 @@
     }
     startingFields = startingFields || starting.fields;
     startingFieldOrder = startingFieldOrder || starting.fieldOrder;
+    startingFields = applyFieldDefaults(type, startingFields);
+    startingFieldOrder = Object.keys(startingFields);
     function cleanName() {
       var name = input.value.trim().toLowerCase().replace(/[^a-z0-9-_]+/g, "-").replace(/^-+|-+$/g, "");
       return /^[a-z0-9][a-z0-9-_]*$/.test(name) ? name : null;
