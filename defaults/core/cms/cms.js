@@ -384,6 +384,7 @@
 
   // Find the content node backing the page currently shown in the browser.
   function currentPageItem() {
+    if (state.trayItem && state.trayItem.pendingCreate) return state.trayItem;
     var path = window.location.pathname.replace(/\/+$/, "") || "/";
     var items = state.data.content || [];
     for (var i = 0; i < items.length; i++) {
@@ -904,6 +905,7 @@
       statusEl.textContent = "Deleting...";
       statusEl.classList.remove("success", "error");
       var finish = function () {
+        sessionStorage.removeItem("plenti_cms_draft");
         var idx = state.data.content.indexOf(item);
         if (idx >= 0) state.data.content.splice(idx, 1);
         if (state.trayItem === item) state.trayItem = null;
@@ -1119,6 +1121,7 @@
     var newPath = computePath(item.type, filepath.replace(/\.json$/, ""), state.trayFields);
     confirmRouteChange(item.path, newPath).then(function (ok) {
       if (!ok) return;
+      var creating = !!item.pendingCreate;
       statusEl.textContent = "Saving...";
       statusEl.classList.remove("success", "error");
       var contents = JSON.stringify(orderedFields(item, state.trayFields), null, 2);
@@ -1133,6 +1136,7 @@
       commit(files)
         .then(function () {
           item.fields = JSON.parse(JSON.stringify(state.trayFields));
+          sessionStorage.removeItem("plenti_cms_draft");
           delete item.pendingCreate;
           if (pending) {
             item.filepath = filepath;
@@ -1147,7 +1151,7 @@
             statusEl.textContent = "";
             statusEl.classList.remove("success");
           }, 3000);
-          if (pathChanged) {
+          if (creating || pathChanged) {
             setTimeout(function () { window.location.href = newPath; }, 400);
           }
         })
@@ -1189,6 +1193,7 @@
     eye: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><g class=\"plenti-eye\"><path d=\"M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></g></svg>",
     logout: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4\"/><path d=\"m16 17 5-5-5-5\"/><path d=\"M21 12H9\"/></svg>",
     check: "<svg class=\"plenti-check\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg>",
+    alert: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M10.3 3.7 2.2 18a2 2 0 0 0 1.7 3h16.2a2 2 0 0 0 1.7-3L13.7 3.7a2 2 0 0 0-3.4 0Z\"/><path d=\"M12 9v4\"/><path d=\"M12 17h.01\"/></svg>",
     image: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\"/><circle class=\"plenti-sun\" cx=\"9\" cy=\"9\" r=\"2\"/><path class=\"plenti-hills\" d=\"m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21\"/></svg>",
     file: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z\"/><path d=\"M14 2v4a2 2 0 0 0 2 2h4\"/><path class=\"plenti-write-line plenti-w1\" d=\"M8 12h8\"/><path class=\"plenti-write-line plenti-w2\" d=\"M8 15h8\"/><path class=\"plenti-write-line plenti-w3\" d=\"M8 18h5\"/></svg>",
     plus: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 12h14\"/><path d=\"M12 5v14\"/></svg>",
@@ -1242,35 +1247,135 @@
 
   /* ---------- Content modal (embedded CMS) ---------- */
 
-  // Stub a not-yet-built page locally: add it to the content index, route to
-  // its URL and open the tray with the _defaults.json fields applied. Nothing
-  // is committed until the user presses Save in the tray, so this works on
-  // remote sites where the real page only appears after the CI build.
-  function createItemStub(type, name) {
-    var defaults = state.data.defaults[type] || {};
+  function missingDefaultsModal(type, hasExisting, onUseExisting) {
+    var actions = [];
+    if (hasExisting) {
+      actions.push(h("button", { class: "plenti-btn", onclick: function () { close(); } }, ["Cancel"]));
+    } else {
+      actions.push(h("button", { class: "plenti-btn primary", onclick: function () { close(); } }, ["Close"]));
+    }
+    var children = [
+      h("h3", { class: "plenti-newitem-title" }, ["New " + type]),
+      h("div", { class: "plenti-newitem-warning", role: "alert" }, [icon("alert"), h("span", {}, ["Missing _defaults.json"])])
+    ];
+    if (hasExisting) {
+      children.push(h("button", {
+        class: "plenti-existing-choice",
+        onclick: function () { close(); if (onUseExisting) onUseExisting(); }
+      }, [
+        h("span", { class: "plenti-existing-check", "aria-hidden": "true" }, [icon("check")]),
+        h("span", {}, ["Use existing content as starting point"])
+      ]));
+    } else {
+      children.push(h("p", { class: "plenti-newitem-message" }, ["No existing content of type exists"]));
+    }
+    children.push(h("div", { class: "plenti-confirm-actions" }, actions));
+    var overlay = h("div", {
+      class: "plenti-media-overlay plenti-confirm-overlay",
+      onclick: function (e) { if (e.target === overlay) close(); }
+    }, [h("div", { class: "plenti-media-modal plenti-confirm-dialog plenti-newitem-dialog" }, children)]);
+    function onKey(e) { if (e.key === "Escape") { e.preventDefault(); close(); } }
+    function close() {
+      document.removeEventListener("keydown", onKey);
+      overlay.classList.remove("open");
+      setTimeout(function () { overlay.remove(); }, 200);
+    }
+    document.addEventListener("keydown", onKey);
+    document.body.appendChild(overlay);
+    void overlay.offsetWidth;
+    overlay.classList.add("open");
+    var primary = overlay.querySelector("button");
+    if (primary) primary.focus();
+  }
+
+
+  // Choose the initial fields for a draft. Prefer an explicit _defaults.json
+  // blueprint. Without one, an existing content node may be used after the
+  // editor opts in. Nothing is committed until Save in the tray.
+  function startingContent(type) {
+    var defaults = state.data.defaults || {};
+    if (Object.prototype.hasOwnProperty.call(defaults, type)) {
+      return { fields: defaults[type] || {}, source: "defaults" };
+    }
+    var items = state.data.content || [];
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].type === type) {
+        return { fields: items[i].fields || {}, source: "existing" };
+      }
+    }
+    return null;
+  }
+
+  function createItemStub(type, name, startingFields) {
+    var defaults = startingFields || {};
+    var host = (state.data.content || []).find(function (content) {
+      return content.type === type && !content.pendingCreate;
+    });
+    if (!host) {
+      notify("No existing page is available to preview this content type", true);
+      return;
+    }
     var item = {
       type: type,
       path: computePath(type, type + "/" + name, defaults),
       filename: name,
       filepath: type + "/" + name + ".json",
       fields: JSON.parse(JSON.stringify(defaults)),
+      previewPath: host.path,
       pendingCreate: true
     };
-    state.data.content.push(item);
-    history.pushState({}, "", item.path);
-    // Re-point the live page's content binding at the stub so templates and
-    // the tray both see the new page.
-    if (window.Pattr && window.Pattr.data) {
-      try { window.Pattr.data.content = item; } catch (e) { /* read-only scope */ }
+    sessionStorage.setItem("plenti_cms_draft", JSON.stringify(item));
+    sessionStorage.setItem("plenti_cms_open_tray", "1");
+    // Load a real page of this type so its compiled layout is available. The
+    // hash identifies the draft without pretending its final route exists.
+    window.location.href = host.path + "#add/" + encodeURIComponent(type) + "/" + encodeURIComponent(name);
+  }
+
+  function restoreDraft() {
+    var match = (window.location.hash || "").match(/^#add\/([^/]+)\/([^/]+)$/);
+    if (!match) return;
+    var raw = sessionStorage.getItem("plenti_cms_draft");
+    if (!raw) return;
+    try {
+      var item = JSON.parse(raw);
+      if (item.type !== decodeURIComponent(match[1]) || item.filename !== decodeURIComponent(match[2])) return;
+      var currentPath = window.location.pathname.replace(/\/+$/, "") || "/";
+      var previewPath = (item.previewPath || "").replace(/\/+$/, "") || "/";
+      if (previewPath !== currentPath) {
+        window.location.href = item.previewPath + window.location.hash;
+        return;
+      }
+      item.pendingCreate = true;
+      state.data.content.push(item);
+      state.trayItem = item;
+      state.trayFields = JSON.parse(JSON.stringify(orderedFields(item)));
+      if (window.Pattr && window.Pattr.data) {
+        try { window.Pattr.data.content = item; } catch (e) { /* read-only scope */ }
+      }
+      setTrayOpen(true);
+      // Keep the host's compiled template, but show a draft-specific URL that
+      // cannot be mistaken for the existing page's editing URL.
+      window.history.replaceState({}, "", "/#add/" + encodeURIComponent(item.type) + "/" + encodeURIComponent(item.filename));
+    } catch (e) {
+      sessionStorage.removeItem("plenti_cms_draft");
     }
-    state.trayItem = item;
-    state.trayFields = JSON.parse(JSON.stringify(orderedFields(item)));
-    setTrayOpen(true);
   }
 
   // Custom "new item" modal (replaces window.prompt): filename input with the
   // .json extension ghosted inline and a live preview of the saved filepath.
-  function newItemModal(type, onCreate) {
+  function newItemModal(type, onCreate, startingFields) {
+    var starting = startingContent(type);
+    if (!starting) {
+      missingDefaultsModal(type, false);
+      return;
+    }
+    if (starting.source === "existing" && !startingFields) {
+      missingDefaultsModal(type, true, function () {
+        newItemModal(type, onCreate, starting.fields);
+      });
+      return;
+    }
+    startingFields = startingFields || starting.fields;
     function cleanName() {
       var name = input.value.trim().toLowerCase().replace(/[^a-z0-9-_]+/g, "-").replace(/^-+|-+$/g, "");
       return /^[a-z0-9][a-z0-9-_]*$/.test(name) ? name : null;
@@ -1295,7 +1400,7 @@
       if (!name) return;
       close();
       if (onCreate) onCreate();
-      createItemStub(type, name);
+      createItemStub(type, name, startingFields);
     }
     var overlay = h("div", {
       class: "plenti-media-overlay plenti-confirm-overlay",
@@ -1951,6 +2056,7 @@
 
   function boot() {
     loadData().then(function () {
+      restoreDraft();
       publishUser();
     }).catch(function (err) {
       var el = document.querySelector("[plenti-cms]");

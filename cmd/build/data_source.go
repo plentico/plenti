@@ -115,7 +115,9 @@ func DataSource(siteConfig readers.SiteConfig) ([]ContentNode, error) {
 			}
 			return nil
 		}
-		if filepath.Ext(path) != ".json" || (strings.HasPrefix(d.Name(), "_") && d.Name() != "_index.json") {
+		if filepath.Ext(path) != ".json" ||
+			strings.HasSuffix(d.Name(), "._schema.json") ||
+			(strings.HasPrefix(d.Name(), "_") && d.Name() != "_index.json") {
 			return nil
 		}
 

@@ -83,11 +83,11 @@ func Cms(buildPath string, siteConfig readers.SiteConfig, allContent []ContentNo
 
 // cmsData is the payload served to the CMS editor at /admin/data.json.
 type cmsData struct {
-	Env      envProps                  `json:"env"`
-	Content  []ContentNode             `json:"content"`
-	Schemas  map[string]map[string]any `json:"schemas"`
+	Env      envProps                   `json:"env"`
+	Content  []ContentNode              `json:"content"`
+	Schemas  map[string]map[string]any  `json:"schemas"`
 	Defaults map[string]json.RawMessage `json:"defaults"`
-	Media    []string                  `json:"media"`
+	Media    []string                   `json:"media"`
 }
 
 func writeCmsData(buildPath string, siteConfig readers.SiteConfig, allContent []ContentNode, mediaIndex []string) error {
@@ -109,14 +109,29 @@ func writeCmsData(buildPath string, siteConfig readers.SiteConfig, allContent []
 			return nil
 		}
 		name := d.Name()
-		if name != "_schema.json" && name != "_defaults.json" {
-			return nil
-		}
 		rel, err := filepath.Rel(contentDir, path)
 		if err != nil {
 			return nil
 		}
 		typeName := filepath.ToSlash(filepath.Dir(rel))
+		kind := ""
+		if name == "_schema.json" || name == "_defaults.json" {
+			if typeName == "." {
+				return nil
+			}
+			kind = strings.TrimSuffix(strings.TrimPrefix(name, "_"), ".json")
+		} else if typeName == "." {
+			// Single types have schemas, but no defaults because they cannot be
+			// duplicated: index.json -> index._schema.json.
+			suffix := "._schema.json"
+			if !strings.HasSuffix(name, suffix) {
+				return nil
+			}
+			typeName = strings.TrimSuffix(name, suffix)
+			kind = "schema"
+		} else {
+			return nil
+		}
 		fileBytes, err := os.ReadFile(path)
 		if err != nil {
 			return nil
@@ -125,7 +140,7 @@ func writeCmsData(buildPath string, siteConfig readers.SiteConfig, allContent []
 		if err := json.Unmarshal(fileBytes, &parsed); err != nil {
 			return nil
 		}
-		if name == "_schema.json" {
+		if kind == "schema" {
 			data.Schemas[typeName] = parsed
 		} else {
 			// Keep the raw bytes so the CMS sees fields in the file's original

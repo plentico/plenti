@@ -57,6 +57,14 @@ async function scenario(reactiveBody, trayOpen = false) {
     const window = {
         Pattr: { data: {} },
         location: { pathname: '/' },
+        history: {
+            replaceState(_state, _title, url) {
+                this.lastURL = url;
+                window.location.href = url;
+                window.location.pathname = url.split('#')[0] || '/';
+                window.location.hash = url.includes('#') ? '#' + url.split('#')[1] : '';
+            },
+        },
         dispatchEvent() {},
     };
     Object.defineProperty(window.Pattr, 'data', {
@@ -100,7 +108,7 @@ async function scenario(reactiveBody, trayOpen = false) {
         console, URL, setTimeout, clearTimeout,
     };
     let source = await readFile(new URL('../defaults/core/cms/cms.js', import.meta.url), 'utf8');
-    source = source.replace(/\}\)\(\);\s*$/, '  window.cmsTest = { isSingleType, liveUpdate, matchesContentSearch, setTrayOpen, setTrayMode, state, syncBodyClasses };\n})();');
+    source = source.replace(/\}\)\(\);\s*$/, '  window.cmsTest = { createItemStub, currentPageItem, isSingleType, liveUpdate, matchesContentSearch, restoreDraft, setTrayOpen, setTrayMode, startingContent, state, syncBodyClasses };\n})();');
     vm.runInNewContext(source, context);
     await new Promise(resolve => setImmediate(resolve));
 
@@ -149,6 +157,37 @@ async function scenario(reactiveBody, trayOpen = false) {
     assert.equal(window.cmsTest.isSingleType({ filepath: 'about.json' }), true, 'top-level content is a single type');
     assert.equal(window.cmsTest.isSingleType({ filepath: 'pages/_index.json' }), false, 'collection index retains add action');
     assert.equal(window.cmsTest.isSingleType(article), false, 'collection content retains add action');
+
+    window.cmsTest.state.data.content = [article];
+    window.cmsTest.state.data.defaults = { articles: { title: 'Default title' }, empty: {} };
+    assert.equal(window.cmsTest.startingContent('articles').source, 'defaults', 'defaults take precedence over existing content');
+    assert.equal(window.cmsTest.startingContent('articles').fields.title, 'Default title');
+    assert.equal(window.cmsTest.startingContent('empty').source, 'defaults', 'empty defaults are still valid');
+    delete window.cmsTest.state.data.defaults.articles;
+    assert.equal(window.cmsTest.startingContent('articles').source, 'existing', 'existing content is an available fallback');
+    assert.equal(window.cmsTest.startingContent('articles').fields.title, 'Product Launch');
+    assert.equal(window.cmsTest.startingContent('missing'), null, 'missing type has no starting content');
+
+    window.cmsTest.createItemStub('articles', 'copy', { title: 'Draft title' });
+    assert.equal(window.location.href, '/news/launch/#add/articles/copy', 'draft loads a same-type template host');
+    const storedDraft = JSON.parse(storage.get('plenti_cms_draft'));
+    assert.equal(storedDraft.path, '/copy', 'draft retains its computed final path');
+    window.location.href = '/#add/articles/copy';
+    window.location.pathname = '/';
+    window.location.hash = '#add/articles/copy';
+    window.cmsTest.restoreDraft();
+    assert.equal(window.location.href, '/news/launch/#add/articles/copy', 'homepage draft reload retrieves its type template host');
+    window.location.pathname = '/news/launch/';
+    window.cmsTest.state.data.content = [article];
+    window.cmsTest.state.trayItem = null;
+    window.cmsTest.restoreDraft();
+    assert.equal(window.cmsTest.currentPageItem().fields.title, 'Draft title', 'draft replaces host content for template rendering');
+    assert.equal(data.content.fields.title, 'Draft title', 'restored draft updates the live Pattr binding');
+    assert.equal(window.location.href, '/#add/articles/copy', 'visible URL identifies a homepage draft, not the host page');
+    delete window.location.hash;
+    storage.delete('plenti_cms_draft');
+    window.cmsTest.state.data.content = [];
+    window.cmsTest.state.trayItem = null;
 
     window.cmsTest.setTrayOpen(false);
     assert.equal(storage.has('plenti_cms_open_tray'), false, 'closed state saved for navigation');

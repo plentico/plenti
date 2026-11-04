@@ -64,6 +64,24 @@ my-new-site/
 
 Files and folders in `content/` whose names start with `_` configure the CMS and are not rendered as content nodes, except for the special `_index.json` content file described below.
 
+#### CMS schemas and new-item defaults
+
+Schemas define the field controls used by the CMS editing tray. For a collection, place `_schema.json` in its content folder:
+
+```text
+content/pages/_schema.json
+```
+
+For a single type, append `._schema.json` to the content filename. For example, `content/index.json` uses `content/index._schema.json`, and `content/_index.json` uses `content/_index._schema.json`. Single types do not use defaults because they are one-off pages rather than templates for new content.
+
+Collections can also provide `_defaults.json` containing the initial field values for new items:
+
+```text
+content/pages/_defaults.json
+```
+
+When you add an item, the CMS uses this file whenever it exists, including when it contains an empty `{}` object. If the file is missing, the CMS displays **Missing _defaults.json** and offers **Use existing content as starting point**. Choosing that option copies an existing item of the same type into the new draft without modifying the original. If no existing item is available, the dialog explains that there is no content to copy. Drafts are not committed until you save them.
+
 #### Templates
 
 Declare incoming values with `prop` in the frontmatter between `---` fences. Pico supports JavaScript expressions, conditionals, loops, components, and scoped styles:

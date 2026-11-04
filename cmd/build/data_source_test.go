@@ -31,6 +31,7 @@ func TestDataSourceTrueIndexFiles(t *testing.T) {
 		"content/events/past/_index.json",
 		"content/events/workshop.json",
 		"content/events/_defaults.json",
+		"content/pages/index._schema.json",
 	}
 	for _, name := range files {
 		if err := os.MkdirAll(filepath.Dir(name), 0755); err != nil {
@@ -61,8 +62,8 @@ func TestDataSourceTrueIndexFiles(t *testing.T) {
 			t.Errorf("%s path = %q, want %q", file, got, want)
 		}
 	}
-	if len(content) != len(files)-1 {
-		t.Errorf("got %d content nodes, want %d; underscore configuration files must be excluded", len(content), len(files)-1)
+	if len(content) != len(files)-2 {
+		t.Errorf("got %d content nodes, want %d; metadata files must be excluded", len(content), len(files)-2)
 	}
 }
 
