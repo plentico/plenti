@@ -1739,16 +1739,31 @@
       placeholder: "Search content\u2026", "aria-label": "Search content",
       autocomplete: "off", spellcheck: "false"
     });
+    var typeSelect = h("select", { class: "plenti-media-folder plenti-content-type", "aria-label": "Filter by content type" }, [h("option", { value: "" }, ["All types"])].concat(Object.keys(byType).sort().map(function (type) {
+      return h("option", { value: type }, [type]);
+    })));
     function filterContent() {
       var matches = 0;
       searchableRows.forEach(function (entry) {
-        var visible = matchesContentSearch(entry.item, search.value);
+        var visible = (!typeSelect.value || entry.item.type === typeSelect.value) && matchesContentSearch(entry.item, search.value);
         entry.row.style.display = visible ? "" : "none";
         if (visible) matches++;
+      });
+      body.querySelectorAll(".plenti-content-section").forEach(function (section) {
+        var heading = section.querySelector("h4");
+        var add = section.querySelector(".plenti-content-add");
+        var typeMatches = !typeSelect.value || !heading || heading.textContent === typeSelect.value;
+        var hasVisible = section.querySelector(".plenti-content-item:not(.plenti-content-add):not([style*='display: none'])");
+        if (add) add.style.display = typeMatches ? "" : "none";
+        section.style.display = typeMatches && (hasVisible || add) ? "" : "none";
       });
       noResults.style.display = matches || !searchableRows.length ? "none" : "";
     }
     search.addEventListener("input", filterContent);
+    typeSelect.addEventListener("change", function () {
+      spacer.style.height = "0px";
+      filterContent();
+    });
     search.addEventListener("keydown", function (e) {
       if (e.key === "Escape" && search.value) {
         e.preventDefault();
@@ -1766,7 +1781,7 @@
           h("h3", {}, ["Content"]),
           h("button", { class: "plenti-media-close", onclick: function () { close(); } }, ["\u00D7"])
         ]),
-        search,
+        h("div", { class: "plenti-media-filters plenti-content-filters" }, [search, typeSelect]),
         body
       ])
     ]);
@@ -1788,6 +1803,10 @@
     // enlarge the scrollbar track. Rows are 30px plus a 2px gap; each section
     // contributes a 22px heading and 14px bottom margin.
     function reserveRemainingHeight() {
+      if (typeSelect.value) {
+        spacer.style.height = "0px";
+        return;
+      }
       var height = 0;
       for (var i = typeIndex; i < types.length; i++) {
         var items = byType[types[i]];

@@ -398,15 +398,16 @@ body.plenti-tray-resizing .plenti-admin-tray {
 }
 .plenti-content-search {
   box-sizing: border-box;
-  width: 100%;
-  margin-bottom: 10px;
-  padding: 6px 8px;
-  border: 1px solid #e2e8f0;
-  border-radius: 5px;
+  min-width: 0;
+  flex: 1;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
   background: #f8fafc;
-  color: #475569;
+  color: #1e293b;
   font: inherit;
-  font-size: 12px;
+  font-size: 13px;
 }
 .plenti-content-search::placeholder { color: #94a3b8; }
 .plenti-content-search:focus { outline: none; border-color: #cbd5e1; background: #fff; }
