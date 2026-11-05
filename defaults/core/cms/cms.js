@@ -1886,11 +1886,16 @@
     next();
   }
 
-  function renderMediaLibrary(grid, onPick, onDelete, onCopy, ver) {
+  function renderMediaLibrary(grid, onPick, onDelete, onCopy, ver, query, folder) {
     grid.innerHTML = "";
-    var items = state.data.media || [];
+    var allItems = state.data.media || [];
+    var items = allItems.filter(function (m) {
+      var name = m.replace(/^\/+media\/+/, "");
+      return (!query || name.toLowerCase().indexOf(query.toLowerCase()) !== -1) &&
+        (!folder || name.indexOf(folder + "/") === 0);
+    });
     if (!items.length) {
-      grid.appendChild(h("p", { class: "plenti-media-empty" }, ["No media yet — drop files above to upload."]));
+      grid.appendChild(h("p", { class: "plenti-media-empty" }, [allItems.length ? "No media matches your filters." : "No media yet — drop files above to upload."]));
       return;
     }
     items.forEach(function (m) {
@@ -2230,8 +2235,21 @@
     var grid = h("div", { class: "plenti-media-grid" }, []);
     var fileInput = h("input", { type: "file", multiple: "multiple", style: "display:none" }, []);
 
+    var search = h("input", { class: "plenti-media-search", type: "search", placeholder: "Search files…", "aria-label": "Search media" }, []);
+    var folders = {};
+    (state.data.media || []).forEach(function (m) {
+      var name = m.replace(/^\/+media\/+/, "");
+      var parts = name.split("/");
+      parts.pop();
+      parts.forEach(function (_, i) { folders[parts.slice(0, i + 1).join("/")] = true; });
+    });
+    var folderSelect = h("select", { class: "plenti-media-folder", "aria-label": "Filter by folder" }, [h("option", { value: "" }, ["All folders"])].concat(Object.keys(folders).sort().map(function (folder) {
+      return h("option", { value: folder }, [folder]);
+    })));
     var thumbVer = Date.now();
-    function refresh() { renderMediaLibrary(grid, pick, del, copyPath, thumbVer); }
+    function refresh() { renderMediaLibrary(grid, pick, del, copyPath, thumbVer, search.value.trim(), folderSelect.value); }
+    search.addEventListener("input", refresh);
+    folderSelect.addEventListener("change", refresh);
     function busted() { thumbVer = Date.now(); refresh(); }
     function copyPath(m) {
       if (!navigator.clipboard) return;
@@ -2304,7 +2322,7 @@
       class: "plenti-media-overlay",
       onclick: function (e) { if (e.target === overlay) close(); }
     }, [
-      h("div", { class: "plenti-media-modal" }, [
+      h("div", { class: "plenti-media-modal plenti-library-modal" }, [
         h("div", { class: "plenti-media-header" }, [
           h("h3", {}, [onSelect ? "Select Media" : "Media"]),
           statusEl,
@@ -2312,6 +2330,7 @@
         ]),
         dropzone,
         fileInput,
+        h("div", { class: "plenti-media-filters" }, [search, folderSelect]),
         grid
       ])
     ]);
