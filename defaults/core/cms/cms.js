@@ -1018,15 +1018,16 @@
         return h("option", { value: i }, [arrayItemLabel(item, i)]);
       }));
       copy.onchange = function () { itemSelect.style.display = copy.checked ? "block" : "none"; };
-      return h("div", {}, [h("label", { class: "plenti-existing-choice" }, [copy, h("span", { class: "plenti-existing-check", "aria-hidden": "true" }, [icon("check")]), h("span", {}, ["Use existing content as a starting point"])]), itemSelect, h("button", {
+      return h("div", {}, [h("label", { class: "plenti-existing-choice" }, [copy, h("span", { class: "plenti-existing-check", "aria-hidden": "true" }, [icon("check")]), h("span", {}, ["Use existing component as starting point"])]), itemSelect, h("button", {
         class: "plenti-btn primary", style: "display:none", onclick: function () {
           var component = JSON.parse(JSON.stringify(items[Number(itemSelect.value)]));
           close(); select(component);
         }
-      }, ["Copy item"])]);
+      }, ["Copy component"])]);
     }
     if (!names.length) {
-      var children = [h("h3", { class: "plenti-newitem-title" }, [title]), warning];
+      var children = [h("h3", { class: "plenti-newitem-title" }, [title])];
+      if (!items.length) children.push(warning);
       if (items.length) {
         var choice = existingChoice();
         var copyButton = choice.lastChild;
@@ -1494,10 +1495,10 @@
     } else {
       actions.push(h("button", { class: "plenti-btn primary", onclick: function () { close(); } }, ["Close"]));
     }
-    var children = [
-      h("h3", { class: "plenti-newitem-title" }, ["New " + type]),
-      h("div", { class: "plenti-newitem-warning", role: "alert" }, [icon("alert"), h("span", {}, ["Missing _defaults.json"])])
-    ];
+    var children = [h("h3", { class: "plenti-newitem-title" }, ["New " + type])];
+    if (!hasExisting) {
+      children.push(h("div", { class: "plenti-newitem-warning", role: "alert" }, [icon("alert"), h("span", {}, ["Missing _defaults.json"])]));
+    }
     if (hasExisting) {
       var copy = h("input", { class: "plenti-existing-input", type: "checkbox" }, []);
       var itemSelect = h("select", { class: "plenti-component-copy-select", style: "display:none" }, existingItems.map(function (item, i) {
@@ -1505,7 +1506,7 @@
       }));
       var copyButton = h("button", { class: "plenti-btn primary", style: "display:none", onclick: function () {
         close(); if (onUseExisting) onUseExisting(existingItems[Number(itemSelect.value)]);
-      } }, ["Copy item"]);
+      } }, ["Copy content"]);
       copy.onchange = function () {
         itemSelect.style.display = copy.checked ? "block" : "none";
         copyButton.style.display = copy.checked ? "inline-flex" : "none";
