@@ -887,7 +887,6 @@ body.plenti-tray-resizing .plenti-admin-tray {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-.plenti-media-action:hover .plenti-icon { color: #9dcff1; }
 
 }
 .plenti-media-actions {

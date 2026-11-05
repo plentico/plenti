@@ -1935,12 +1935,16 @@
             title: "Copy path",
             onclick: function (e) { e.stopPropagation(); onCopy(m); }
           }, [icon("link")]),
-          h("a", {
+          h("button", {
             class: "plenti-media-action",
-            href: full,
-            download: name,
             title: "Download",
-            onclick: function (e) { e.stopPropagation(); }
+            onclick: function (e) {
+              e.stopPropagation();
+              var download = h("a", { href: full, download: name, style: "display:none" }, []);
+              document.body.appendChild(download);
+              download.click();
+              download.remove();
+            }
           }, [icon("download")]),
           h("button", {
             class: "plenti-media-action plenti-media-delete",
