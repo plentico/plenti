@@ -794,16 +794,7 @@
         for (var k = 0; k < before.length; k++) if (before[k].item === it) oldTop = before[k].top;
         if (oldTop == null || !newCards[j]) return;
         var delta = oldTop - newCards[j].getBoundingClientRect().top;
-        if (!delta) return;
-        var c = newCards[j];
-        c.style.transition = "none";
-        c.style.transform = "translateY(" + delta + "px)";
-        requestAnimationFrame(function () {
-          requestAnimationFrame(function () {
-            c.style.transition = "transform .2s ease";
-            c.style.transform = "";
-          });
-        });
+        slideIn(newCards[j], delta);
       });
     }
     // Drag state shared by the items in this group. Reordering happens LIVE
@@ -817,15 +808,11 @@
       return Array.prototype.slice.call(body.querySelectorAll(":scope > .plenti-array-item"));
     }
     function slideIn(el, delta) {
-      if (!delta) return;
-      el.style.transition = "none";
-      el.style.transform = "translateY(" + delta + "px)";
-      requestAnimationFrame(function () {
-        requestAnimationFrame(function () {
-          el.style.transition = "transform .18s ease";
-          el.style.transform = "";
-        });
-      });
+      if (!delta || typeof el.animate !== "function") return;
+      el.animate([
+        { transform: "translateY(" + delta + "px)" },
+        { transform: "translateY(0)" }
+      ], { duration: 180, easing: "ease" });
     }
     if (!arr.length) body.appendChild(h("p", { class: "plenti-admin-empty" }, ["Empty."]));
     arr.forEach(function (item, i) {
