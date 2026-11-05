@@ -565,7 +565,12 @@
     if (window.Pattr && window.Pattr.data && window.Pattr.data.content) {
       var c = window.Pattr.data.content;
       c.fields = c.fields || {};
-      c.fields[key] = value;
+      // Preview from a fresh snapshot. Pattr skips loop refreshes when item
+      // identities are unchanged, while the form intentionally edits its
+      // existing objects in place to preserve the active input and cursor.
+      c.fields[key] = value && typeof value === "object"
+        ? JSON.parse(JSON.stringify(value))
+        : value;
       // Reassign so Pattr's Proxy set() fires and walkDom re-renders bindings.
       window.Pattr.data.content = Object.assign({}, c);
       // Reactive body p-class bindings may replace CMS-managed classes while
@@ -721,40 +726,32 @@
   // Animate expand/collapse by transitioning height between 0 and the
   // element's natural height (in-place; no re-render needed).
   function slideToggle(el, show) {
-    if (el._slideAnim) return;
-    if (show) {
-      el.style.display = "";
-      var ht = el.scrollHeight;
-      if (!ht) return;
-      el._slideAnim = true;
-      el.style.overflow = "hidden";
-      el.style.height = "0px";
-      requestAnimationFrame(function () {
-        el.style.transition = "height .2s ease";
-        el.style.height = ht + "px";
-        el.addEventListener("transitionend", function done() {
-          el.removeEventListener("transitionend", done);
-          el.style.transition = ""; el.style.height = ""; el.style.overflow = "";
-          el._slideAnim = false;
-        });
-      });
-    } else {
-      var ht2 = el.scrollHeight;
-      if (!ht2) { el.style.display = "none"; return; }
-      el._slideAnim = true;
-      el.style.overflow = "hidden";
-      el.style.height = ht2 + "px";
-      requestAnimationFrame(function () {
-        el.style.transition = "height .2s ease";
-        el.style.height = "0px";
-        el.addEventListener("transitionend", function done() {
-          el.removeEventListener("transitionend", done);
-          el.style.display = "none";
-          el.style.transition = ""; el.style.height = ""; el.style.overflow = "";
-          el._slideAnim = false;
-        });
-      });
-    }
+    if (el._slideFinish) el._slideFinish();
+    if (show) el.style.display = "";
+    var ht = el.scrollHeight;
+    if (!ht) { el.style.display = show ? "" : "none"; return; }
+    el.style.overflow = "hidden";
+    el.style.height = (show ? 0 : ht) + "px";
+    // Commit the starting height before scheduling the destination. Without
+    // this reflow, collapsing can jump straight to zero without transitioning.
+    void el.offsetHeight;
+    requestAnimationFrame(function () {
+      el.style.transition = "height .2s ease";
+      el.style.height = (show ? ht : 0) + "px";
+      var timer;
+      function done() {
+        el.removeEventListener("transitionend", done);
+        clearTimeout(timer);
+        if (!show) el.style.display = "none";
+        el.style.transition = ""; el.style.height = ""; el.style.overflow = "";
+        el._slideFinish = null;
+      }
+      el._slideFinish = done;
+      el.addEventListener("transitionend", done);
+      // transitionend is not guaranteed (reduced motion, detached nodes, or
+      // another toggle), so always settle the final state after the duration.
+      timer = setTimeout(done, 250);
+    });
   }
 
   // An array of objects = repeatable group. Top-level groups start expanded,
