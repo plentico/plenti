@@ -1486,7 +1486,8 @@
 
   /* ---------- Content modal (embedded CMS) ---------- */
 
-  function missingDefaultsModal(type, hasExisting, onUseExisting) {
+  function missingDefaultsModal(type, existingItems, onUseExisting) {
+    var hasExisting = existingItems && existingItems.length;
     var actions = [];
     if (hasExisting) {
       actions.push(h("button", { class: "plenti-btn", onclick: function () { close(); } }, ["Cancel"]));
@@ -1498,12 +1499,23 @@
       h("div", { class: "plenti-newitem-warning", role: "alert" }, [icon("alert"), h("span", {}, ["Missing _defaults.json"])])
     ];
     if (hasExisting) {
-      children.push(h("button", {
-        class: "plenti-existing-choice",
-        onclick: function () { close(); if (onUseExisting) onUseExisting(); }
-      }, [
-        h("span", { class: "plenti-existing-check", "aria-hidden": "true" }, [icon("check")]),
-        h("span", {}, ["Use existing content as starting point"])
+      var copy = h("input", { class: "plenti-existing-input", type: "checkbox" }, []);
+      var itemSelect = h("select", { class: "plenti-component-copy-select", style: "display:none" }, existingItems.map(function (item, i) {
+        return h("option", { value: i }, [(item.fields && (item.fields.title || item.fields.name)) || item.path || item.filename || "Item " + (i + 1)]);
+      }));
+      var copyButton = h("button", { class: "plenti-btn primary", style: "display:none", onclick: function () {
+        close(); if (onUseExisting) onUseExisting(existingItems[Number(itemSelect.value)]);
+      } }, ["Copy item"]);
+      copy.onchange = function () {
+        itemSelect.style.display = copy.checked ? "block" : "none";
+        copyButton.style.display = copy.checked ? "inline-flex" : "none";
+      };
+      children.push(h("div", {}, [
+        h("label", { class: "plenti-existing-choice" }, [
+          copy,
+          h("span", { class: "plenti-existing-check", "aria-hidden": "true" }, [icon("check")]),
+          h("span", {}, ["Use existing content as starting point"])
+        ]), itemSelect, copyButton
       ]));
     } else {
       children.push(h("p", { class: "plenti-newitem-message" }, ["No existing content of type exists"]));
@@ -1633,8 +1645,9 @@
       return;
     }
     if (starting.source === "existing" && !startingFields) {
-      missingDefaultsModal(type, true, function () {
-        newItemModal(type, onCreate, starting.fields, starting.fieldOrder);
+      var existingItems = state.data.content.filter(function (item) { return item.type === type && !item.pendingCreate; });
+      missingDefaultsModal(type, existingItems, function (item) {
+        newItemModal(type, onCreate, orderedFields(item), Object.keys(item.fields || {}));
       });
       return;
     }
