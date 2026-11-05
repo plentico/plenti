@@ -82,9 +82,14 @@ func Cms(buildPath string, siteConfig readers.SiteConfig, allContent []ContentNo
 }
 
 // cmsData is the payload served to the CMS editor at /admin/data.json.
+type cmsContentNode struct {
+	ContentNode
+	SourceFields json.RawMessage `json:"sourceFields,omitempty"`
+}
+
 type cmsData struct {
 	Env               envProps                   `json:"env"`
-	Content           []ContentNode              `json:"content"`
+	Content           []cmsContentNode           `json:"content"`
 	Schemas           map[string]map[string]any  `json:"schemas"`
 	Defaults          map[string]json.RawMessage `json:"defaults"`
 	Components        map[string]json.RawMessage `json:"components"`
@@ -101,13 +106,19 @@ func writeCmsData(buildPath string, siteConfig readers.SiteConfig, allContent []
 
 	data := cmsData{
 		Env:               getEnvProps(siteConfig),
-		Content:           allContent,
+		Content:           make([]cmsContentNode, len(allContent)),
 		Schemas:           map[string]map[string]any{},
 		Defaults:          map[string]json.RawMessage{},
 		Components:        map[string]json.RawMessage{},
 		ComponentSchemas:  map[string]map[string]any{},
 		ComponentPreviews: map[string]string{},
 		Media:             mediaIndex,
+	}
+	for i, item := range allContent {
+		data.Content[i].ContentNode = item
+		if source, err := os.ReadFile(filepath.Join(contentDir, filepath.FromSlash(item.FilePath))); err == nil && json.Valid(source) {
+			data.Content[i].SourceFields = json.RawMessage(source)
+		}
 	}
 
 	filepath.WalkDir(contentDir, func(path string, d fs.DirEntry, err error) error {

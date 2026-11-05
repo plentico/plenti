@@ -450,7 +450,7 @@
   // Rebuild a fields object with keys in the source JSON file's original
   // order (Go marshals the fields map alphabetically in data.json).
   function orderedFields(item, values) {
-    var src = values || (item && item.fields) || {};
+    var src = values || (item && item.sourceFields) || (item && item.fields) || {};
     var out = {};
     ((item && item.fieldOrder) || []).forEach(function (k) {
       if (Object.prototype.hasOwnProperty.call(src, k)) out[k] = src[k];
@@ -632,20 +632,23 @@
       code.innerHTML = highlightJson(text) + "\n";
       try {
         state.trayFields = JSON.parse(text);
-        errEl.style.display = "none";
-        wrap.classList.remove("plenti-json-invalid");
-        if (saveBtn) saveBtn.disabled = false;
-        // Live-update the page from valid JSON edits.
-        Object.keys(state.trayFields).forEach(function (key) {
-          liveUpdate(key, state.trayFields[key]);
-        });
       } catch (err) {
         var loc = jsonErrorLocation(text, err);
         errEl.textContent = "Invalid JSON" + (loc ? " (" + loc + ")" : "") + ": " + err.message;
         errEl.style.display = "block";
         wrap.classList.add("plenti-json-invalid");
         if (saveBtn) saveBtn.disabled = true;
+        return;
       }
+      errEl.style.display = "none";
+      wrap.classList.remove("plenti-json-invalid");
+      if (saveBtn) saveBtn.disabled = false;
+      // Live-update the page from valid JSON edits. Template errors are not
+      // JSON syntax errors, so keep them out of the JSON validation message.
+      Object.keys(state.trayFields).forEach(function (key) {
+        try { liveUpdate(key, state.trayFields[key]); }
+        catch (err) { console.error("Could not update the page preview:", err); }
+      });
     }
     validate();
   }
