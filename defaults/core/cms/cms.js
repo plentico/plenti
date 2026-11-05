@@ -964,6 +964,23 @@
       body.style.display = "";
       return body;
     }
+    var allowed = schema && schema.options && schema.options.allowed;
+    var componentNames = !Array.isArray(allowed) ? [] : Object.keys(state.data.components || {}).filter(function (name) {
+      return allowed.indexOf(name) !== -1;
+    }).sort();
+    function addComponent(name) {
+      var component = typeof name === "object" ? name : state.data.components[name];
+      component = JSON.parse(JSON.stringify(component));
+      component._component = name;
+      flip(function () { arr.push(component); commit(); });
+    }
+    body.appendChild(h("button", {
+      class: "plenti-array-add", title: "Add component",
+      onclick: function () {
+        if (componentNames.length === 1) return addComponent(componentNames[0]);
+        openComponentPicker(componentNames, addComponent, arr, label);
+      }
+    }, [icon("plus")]));
     label = fieldLabel(schema, label, path);
     return h("div", { class: "plenti-array", "data-path": path }, [
       h("div", { class: "plenti-array-header", onclick: function (e) {
@@ -976,6 +993,60 @@
       ]),
       body
     ]);
+  }
+
+  function openComponentPicker(names, select, items, label) {
+    var overlay = h("div", { class: "plenti-component-modal" }, []);
+    function close() { overlay.remove(); document.removeEventListener("keydown", escape); }
+    function escape(e) { if (e.key === "Escape") close(); }
+    document.addEventListener("keydown", escape);
+    overlay.onclick = function (e) { if (e.target === overlay) close(); };
+    var grid = h("div", { class: "plenti-component-grid" }, []);
+    names.forEach(function (name) {
+      var preview = h("div", { class: "plenti-component-preview" }, []);
+      if (state.data.componentPreviews && state.data.componentPreviews[name]) {
+        preview.appendChild(h("iframe", { srcdoc: state.data.componentPreviews[name], sandbox: "", title: name + " preview", tabindex: "-1" }, []));
+      }
+      grid.appendChild(h("button", { class: "plenti-component-choice", onclick: function () { close(); select(name); } }, [name, preview]));
+    });
+    var title = "New " + label;
+    var warning = h("div", { class: "plenti-newitem-warning", role: "alert" }, [icon("alert"), h("span", {}, ["Missing _fieldtypes.json entry"])]);
+    var closeButton = h("button", { class: "plenti-btn primary", onclick: close }, ["Close"]);
+    function existingChoice() {
+      var copy = h("input", { class: "plenti-existing-input", type: "checkbox" }, []);
+      var itemSelect = h("select", { class: "plenti-component-copy-select", style: "display:none" }, items.map(function (item, i) {
+        return h("option", { value: i }, [arrayItemLabel(item, i)]);
+      }));
+      copy.onchange = function () { itemSelect.style.display = copy.checked ? "block" : "none"; };
+      return h("div", {}, [h("label", { class: "plenti-existing-choice" }, [copy, h("span", { class: "plenti-existing-check", "aria-hidden": "true" }, [icon("check")]), h("span", {}, ["Use existing content as a starting point"])]), itemSelect, h("button", {
+        class: "plenti-btn primary", style: "display:none", onclick: function () {
+          var component = JSON.parse(JSON.stringify(items[Number(itemSelect.value)]));
+          close(); select(component);
+        }
+      }, ["Copy item"])]);
+    }
+    if (!names.length) {
+      var children = [h("h3", { class: "plenti-newitem-title" }, [title]), warning];
+      if (items.length) {
+        var choice = existingChoice();
+        var copyButton = choice.lastChild;
+        choice.firstChild.firstChild.addEventListener("change", function () { copyButton.style.display = this.checked ? "inline-flex" : "none"; });
+        children.push(choice);
+      }
+      children.push(h("div", { class: "plenti-confirm-actions" }, [closeButton]));
+      overlay.appendChild(h("div", { class: "plenti-media-modal plenti-confirm-dialog plenti-newitem-dialog", role: "dialog", "aria-modal": "true" }, children));
+    } else {
+      var extra = existingChoice();
+      extra.lastChild.onclick = function () {
+        var component = JSON.parse(JSON.stringify(items[Number(extra.childNodes[1].value)]));
+        close(); select(component);
+      };
+      overlay.appendChild(h("div", { class: "plenti-component-dialog", role: "dialog", "aria-modal": "true", "aria-label": title }, [
+        h("div", { class: "plenti-component-dialog-header" }, [title, h("button", { class: "plenti-media-close", onclick: close, title: "Close", "aria-label": "Close" }, ["×"])]),
+        items.length ? extra : "", grid
+      ]));
+    }
+    document.body.appendChild(overlay);
   }
 
   function renderTray(tray, statusEl) {

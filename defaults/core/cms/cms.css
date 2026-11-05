@@ -59,7 +59,17 @@
 .plenti-fieldset .plenti-field:last-child { margin-bottom: 0; }
 .plenti-group { border: 1px solid var(--plenti-border); border-radius: var(--plenti-radius); }
 .plenti-group-header { display: flex; align-items: center; gap: 8px; padding: 8px 10px; cursor: pointer; }
-.plenti-group-header label { font-size: 12px; color: rgb(100, 116, 139); margin: 0; cursor: pointer; }
+.plenti-admin-tray .plenti-group-header label { font-size: 12px; color: rgb(100, 116, 139); margin: 0; margin-bottom: 0; cursor: pointer; }
+.plenti-component-modal { position: fixed; inset: 0; z-index: 10001; display: grid; place-items: center; padding: 24px; background: rgba(15, 23, 42, .5); font-family: system-ui, sans-serif; }
+.plenti-component-dialog { width: min(900px, 100%); max-height: 85vh; overflow: auto; padding: 16px; background: #fff; border-radius: 8px; }
+.plenti-component-dialog-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; font-size: 16px; font-weight: 600; }
+.plenti-component-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.plenti-component-choice { padding: 10px; border: 1px solid var(--plenti-border); border-radius: 6px; background: #fff; text-align: left; cursor: pointer; }
+.plenti-component-choice:hover { border-color: #94a3b8; }
+.plenti-component-preview { height: 180px; margin-top: 8px; overflow: hidden; pointer-events: none; background: #f8fafc; }
+.plenti-component-preview iframe { width: 100%; height: 100%; border: 0; }
+.plenti-array-add { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; margin: 8px 0; padding: 5px; border: 1px solid var(--plenti-border); border-radius: var(--plenti-radius); background: #fff; color: var(--plenti-text); cursor: pointer; }
+.plenti-array-add svg { width: 16px; height: 16px; }
 .plenti-group-count { margin-left: auto; font-size: 12px; color: rgb(100, 116, 139); }
 .plenti-group > .plenti-fieldset { border: 0; border-top: 1px solid var(--plenti-border); border-radius: 0; overflow: hidden; }
 .plenti-media-field {
@@ -505,6 +515,12 @@ body.plenti-tray-resizing .plenti-admin-tray {
 }
 .plenti-existing-choice:hover .plenti-existing-check svg path,
 .plenti-existing-choice:focus-visible .plenti-existing-check svg path { stroke-dashoffset: 0; }
+.plenti-existing-input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.plenti-existing-input:checked + .plenti-existing-check { border-color: #10b981; background: #10b981; }
+.plenti-existing-input:checked + .plenti-existing-check svg path { stroke-dashoffset: 0; }
+.plenti-existing-input:focus-visible + .plenti-existing-check { outline: 2px solid #10b981; outline-offset: 2px; }
+.plenti-component-copy-select { box-sizing: border-box; width: 100%; margin: 8px 0 12px; padding: 9px 32px 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #f8fafc; color: #1e293b; font: inherit; font-size: 13px; cursor: pointer; }
+.plenti-component-copy-select:focus { border-color: #10b981; outline: 2px solid #d1fae5; }
 .plenti-newitem-message { margin: 0 0 12px; color: #64748b; font-size: 13px; }
 .plenti-newitem-title { margin: 0 0 12px; font-size: 16px; font-weight: 600; }
 .plenti-newitem-label {

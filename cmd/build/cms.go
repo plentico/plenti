@@ -83,13 +83,14 @@ func Cms(buildPath string, siteConfig readers.SiteConfig, allContent []ContentNo
 
 // cmsData is the payload served to the CMS editor at /admin/data.json.
 type cmsData struct {
-	Env              envProps                   `json:"env"`
-	Content          []ContentNode              `json:"content"`
-	Schemas          map[string]map[string]any  `json:"schemas"`
-	Defaults         map[string]json.RawMessage `json:"defaults"`
-	Components       map[string]json.RawMessage `json:"components"`
-	ComponentSchemas map[string]map[string]any  `json:"componentSchemas"`
-	Media            []string                   `json:"media"`
+	Env               envProps                   `json:"env"`
+	Content           []ContentNode              `json:"content"`
+	Schemas           map[string]map[string]any  `json:"schemas"`
+	Defaults          map[string]json.RawMessage `json:"defaults"`
+	Components        map[string]json.RawMessage `json:"components"`
+	ComponentSchemas  map[string]map[string]any  `json:"componentSchemas"`
+	ComponentPreviews map[string]string          `json:"componentPreviews"`
+	Media             []string                   `json:"media"`
 }
 
 func writeCmsData(buildPath string, siteConfig readers.SiteConfig, allContent []ContentNode, mediaIndex []string) error {
@@ -99,13 +100,14 @@ func writeCmsData(buildPath string, siteConfig readers.SiteConfig, allContent []
 	}
 
 	data := cmsData{
-		Env:              getEnvProps(siteConfig),
-		Content:          allContent,
-		Schemas:          map[string]map[string]any{},
-		Defaults:         map[string]json.RawMessage{},
-		Components:       map[string]json.RawMessage{},
-		ComponentSchemas: map[string]map[string]any{},
-		Media:            mediaIndex,
+		Env:               getEnvProps(siteConfig),
+		Content:           allContent,
+		Schemas:           map[string]map[string]any{},
+		Defaults:          map[string]json.RawMessage{},
+		Components:        map[string]json.RawMessage{},
+		ComponentSchemas:  map[string]map[string]any{},
+		ComponentPreviews: map[string]string{},
+		Media:             mediaIndex,
 	}
 
 	filepath.WalkDir(contentDir, func(path string, d fs.DirEntry, err error) error {
@@ -126,6 +128,17 @@ func writeCmsData(buildPath string, siteConfig readers.SiteConfig, allContent []
 			}
 			if name == "_defaults.json" {
 				data.Components[componentName] = json.RawMessage(fileBytes)
+				var props map[string]any
+				if json.Unmarshal(fileBytes, &props) == nil {
+					props["env"] = structToMap(data.Env)
+					props["content"] = props
+					layout := filepath.Join(getLayoutsDir(), "components", componentName+".pico")
+					if _, err := os.Stat(layout); err == nil {
+						if preview, renderErr := renderPage(layout, props); renderErr == nil {
+							data.ComponentPreviews[componentName] = preview
+						}
+					}
+				}
 			} else {
 				parsed := map[string]any{}
 				if json.Unmarshal(fileBytes, &parsed) == nil {
