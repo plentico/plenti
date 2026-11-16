@@ -36,7 +36,9 @@ func Minify(buildPath string) error {
 		// Retrieve minifier
 		m := minify.New()
 		// Load HTML
-		m.AddFunc("text/html", html.Minify)
+		// Pattr's p-for and p-comp templates are siblings of their SSR nodes.
+		// Keep optional end tags so templates cannot be reparented by the browser.
+		m.Add("text/html", &html.Minifier{KeepEndTags: true})
 		// Load CSS
 		m.AddFunc("text/css", css.Minify)
 		// Load JSON
