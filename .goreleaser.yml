@@ -3,39 +3,36 @@ version: 2
 before:
   hooks:
     - go mod download
-    - go generate ./...
-    - git diff
 builds:
-- id: linux-build
-  ldflags:
-  - -X github.com/plentico/plenti/cmd.Version={{.Tag}}
-  - -extldflags=-static
-  env:
-  - CGO_ENABLED=1
-  goos:
-  - linux
-  goarch:
-  - amd64
-- id: darwin-build
+- id: plenti
   ldflags:
   - -s
   - -X github.com/plentico/plenti/cmd.Version={{.Tag}}
   env:
-  - CGO_ENABLED=1
-  - CC=/home/runner/work/osxcross/target/bin/o64-clang
-  - CXX=/home/runner/work/osxcross/target/bin/o64-clang++
+  - CGO_ENABLED=0
   goos:
+  - linux
   - darwin
+  - windows
   goarch:
   - amd64
   - arm64
+  ignore:
+  - goos: linux
+    goarch: arm64
+  - goos: windows
+    goarch: arm64
 universal_binaries:
   -
     ids:
-      - darwin-build
+      - plenti
     replace: true
 archives:
-  - name_template: >-
+  - formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: >-
       {{ .ProjectName }}_
       {{- trimprefix .Version "." }}_
       {{- if eq .Os "darwin" }}mac_
@@ -61,7 +58,7 @@ homebrew_casks:
       owner: plentico
       name: homebrew-plenti
     homepage: "https://plenti.co/"
-    description: "Dead simple SSG with Svelte frontend and Go CLI."
+    description: "Dead simple SSG with Pico frontend and Go CLI."
     skip_upload: "{{ ne .Env.RELEASE_TRACK \"stable\" }}"
 snapcrafts:
   -
@@ -69,8 +66,8 @@ snapcrafts:
     name: plenti
     publish: true # publish the snap to the snapcraft store.
     disable: "{{ ne .Env.RELEASE_TRACK \"stable\" }}"
-    summary: A simple static site generator for the JAMstack. 
-    description: Dead simple SSG with Svelte frontend and Go CLI.
+    summary: A simple static site generator built with Pico.
+    description: Dead simple SSG with Pico frontend and Go CLI.
     grade: stable
     confinement: strict
     license: Apache-2.0
@@ -78,6 +75,15 @@ snapcrafts:
     apps:
       plenti:
         plugs: ["home", "network-bind", "removable-media"]
+scoops:
+  -
+    repository:
+      owner: plentico
+      name: scoop-plenti
+    homepage: "https://plenti.co/"
+    description: "Dead simple SSG with Pico frontend and Go CLI."
+    license: Apache-2.0
+    skip_upload: "{{ ne .Env.RELEASE_TRACK \"stable\" }}"
 release:
   make_latest: "{{ eq .Env.RELEASE_TRACK \"stable\" }}"
 dockers_v2:

@@ -19,7 +19,7 @@ Homebrew:
 Snap:
 1. Install: `snap install plenti`
 
-Scoop (**Windows is not supported yet**, see [details](https://github.com/plentico/plenti/issues/45#issuecomment-668819223)):
+Scoop (Windows):
 1. Add the bucket: `scoop bucket add plenti https://github.com/plentico/scoop-plenti`
 2. Install: `scoop install plenti`
 
