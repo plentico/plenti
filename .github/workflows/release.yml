@@ -12,14 +12,38 @@ jobs:
       -
         name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       -
-        name: Unshallow
-        run: git fetch --prune --unshallow
+        name: Validate release branch
+        run: |
+          set -euo pipefail
+          case "$GITHUB_REF_NAME" in
+            v0.7.*)
+              release_branch=svelte
+              release_track=legacy
+              ;;
+            *)
+              release_branch=master
+              release_track=stable
+              ;;
+          esac
+
+          git fetch origin "$release_branch"
+          tag_commit="$(git rev-parse "$GITHUB_REF^{}")"
+          if ! git merge-base --is-ancestor "$tag_commit" "origin/$release_branch"; then
+            echo "$GITHUB_REF_NAME must point to a commit on the $release_branch branch." >&2
+            exit 1
+          fi
+          echo "RELEASE_TRACK=$release_track" >> "$GITHUB_ENV"
       -
         name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: stable
+      -
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
       -
         name: Set up Snapcraft
         run: |
@@ -29,10 +53,17 @@ jobs:
         run: |
           echo '${{ secrets.DOCKER_PASSWORD }}' | docker login --username '${{ secrets.DOCKER_USERNAME }}' --password-stdin
       -
+        name: OSXCross for legacy Svelte releases
+        if: env.RELEASE_TRACK == 'legacy'
+        run: |
+          mkdir ../../osxcross
+          git clone https://github.com/plentico/osxcross-target.git ../../osxcross/target
+          echo "/home/runner/work/osxcross/target/bin" >> $GITHUB_PATH
+      -
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
-          version: v2.10.2
+          version: v2.20.1
           args: release --clean --verbose
         env:
           GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
