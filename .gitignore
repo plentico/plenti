@@ -19,6 +19,9 @@
 # Local dev binaries (e.g. feature builds for manual testing)
 /bin/
 
+# GoReleaser build artifacts
+/dist/
+
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
